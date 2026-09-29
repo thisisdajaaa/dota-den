@@ -69,5 +69,13 @@ later (v27 relies on `require(esm)`).
 
 - [x] **M0 foundation:** scaffold, design tokens, CI, Mongo layer, Steam OpenID
       sign-in and sessions, health endpoint, structured logs
-- [ ] **M1 MVP:** match import, dashboard, MMR journal, patch hub, local draft
+- [ ] **M1 MVP**
+  - [x] OpenDota adapter, provider gateway, match sync, solo/party/unknown classifier
+  - [ ] Dashboard and filters · MMR journal and calendar · patch hub · local draft
+
+## Branches
+
+`main` is for releases and `develop` is for integration. Feature work happens on
+`feature/*` branches cut from `develop` and merged back with `--no-ff`.
+
 - [ ] M2 social · M3 intelligence
