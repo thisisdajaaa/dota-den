@@ -11,6 +11,8 @@ import {
   BACKFILL_COOLDOWN_MS,
   HISTORY_REFRESH_INTERVAL_MS,
   MatchSyncService,
+  PERIODIC_REFRESH_INTERVAL_MS,
+  RESCAN_DELAY_MS,
   SYNC_COOLDOWN_MS,
 } from "@/modules/matches/application/match-sync-service";
 import type { PlayerMatchFact } from "@/modules/matches/domain/player-match-fact";
@@ -101,6 +103,7 @@ class MemorySyncState implements SyncStateRepository {
       backfillOffset: 0,
       backfillComplete: false,
       historyRefreshRequestedAt: null,
+      rescannedAt: null,
       lockedUntil: null,
     };
     if (this.state.lockedUntil && this.state.lockedUntil > now) return { type: "locked" };
@@ -209,6 +212,7 @@ describe("MatchSyncService", () => {
       backfillOffset: 0,
       backfillComplete,
       historyRefreshRequestedAt: null,
+      rescannedAt: null,
     });
     expect(MatchSyncService.isStale(null, now)).toBe(true);
     expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, false), now)).toBe(true);
@@ -234,12 +238,41 @@ describe("MatchSyncService", () => {
     expect(ctx.upstream.refreshRequests).toBe(2);
   });
 
-  it("does not keep asking once matches exist", async () => {
+  it("re-requests weekly (not every 6h) once matches exist", async () => {
     const ctx = setup(5);
     await ctx.service.sync(ACCOUNT); // first sync: one request
     ctx.advance(HISTORY_REFRESH_INTERVAL_MS + 1);
     await ctx.service.sync(ACCOUNT);
     expect(ctx.upstream.refreshRequests).toBe(1);
+    ctx.advance(PERIODIC_REFRESH_INTERVAL_MS);
+    await ctx.service.sync(ACCOUNT);
+    expect(ctx.upstream.refreshRequests).toBe(2);
+  });
+
+  it("re-walks the whole history once after a refresh, importing older matches the upstream found", async () => {
+    // Upstream initially knows 15 recent matches; after a refresh it finds 12 older ones.
+    const ctx = setup(15);
+    await ctx.service.sync(ACCOUNT); // imports 15, requests a refresh
+    expect(ctx.facts.byKey.size).toBe(15);
+    for (let i = 0; i < 12; i++) ctx.upstream.history.push(imported(-100 - i)); // older, at the end
+
+    // An incremental sync before the rescan delay finds nothing new.
+    ctx.advance(SYNC_COOLDOWN_MS + 1);
+    await ctx.service.sync(ACCOUNT);
+    expect(ctx.facts.byKey.size).toBe(15);
+
+    // After the delay, the next syncs re-walk from the top and pick up the older matches.
+    ctx.advance(RESCAN_DELAY_MS);
+    for (let i = 0; i < 4 && ctx.facts.byKey.size < 27; i++) {
+      await ctx.service.sync(ACCOUNT);
+      ctx.advance(SYNC_COOLDOWN_MS + 1);
+    }
+    expect(ctx.facts.byKey.size).toBe(27);
+
+    // Only once per refresh: later syncs don't restart the re-walk.
+    const callsBefore = ctx.upstream.calls.length;
+    await ctx.service.sync(ACCOUNT);
+    expect(ctx.upstream.calls.length - callsBefore).toBe(1); // head page only
   });
 
   it("gives a full backfill to a history that appears after an empty first sync", async () => {
