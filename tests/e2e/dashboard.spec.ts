@@ -74,6 +74,18 @@ test("match list filters and totals reconcile", async ({ page }) => {
     page.getByRole("region", { name: "Matches" }).locator('a[href^="/matches/"]'),
   ).toHaveCount(2);
 
+  // Regression: filtering to wins must not turn the record into "N-0, 100%".
+  await page.goto("/matches?result=win");
+  await expect(totals).toContainText("Showing wins");
+  await expect(totals).toContainText("count both wins and losses");
+  await expect(totals).not.toContainText("100.0%");
+  // Fixture history is 7 wins and 5 losses: 7 listed, record keeps the losses.
+  await expect(totals).toContainText("7 – 5");
+  await expect(totals).toContainText("58.3%");
+  await expect(
+    page.getByRole("region", { name: "Matches" }).locator('a[href^="/matches/"]'),
+  ).toHaveCount(7);
+
   // Garbage params fall back to defaults instead of erroring.
   await page.goto("/matches?queue=%24ne&result=drop&hero=abc&cursor=../../x");
   await expect(totals).toContainText("12");

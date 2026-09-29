@@ -156,7 +156,8 @@ describe("MongoMatchQueries.listMatches", () => {
     for (let i = 0; i < 5; i++) {
       const page = await q.listMatches(ACCOUNT, { ...all, cursor }, now, 12);
       seen.push(...page.items.map((m) => m.matchId));
-      expect(page.totals).toEqual({ games: 30, wins: 15 });
+      expect(page.record).toEqual({ games: 30, wins: 15 });
+      expect(page.matching).toBe(30);
       if (!page.nextCursor) break;
       cursor = page.nextCursor;
     }
@@ -169,12 +170,15 @@ describe("MongoMatchQueries.listMatches", () => {
     const q = new MongoMatchQueries(db);
     const now = new Date("2026-02-01");
     const unknown = await q.listMatches(ACCOUNT, { ...all, queue: "unknown" }, now, 50);
-    expect(unknown.totals.games).toBe(10);
+    expect(unknown.record.games).toBe(10);
+    expect(unknown.matching).toBe(10);
     expect(unknown.items.every((m) => m.queueClass === "unknown")).toBe(true);
 
     const pudgeWins = await q.listMatches(ACCOUNT, { ...all, hero: 14, result: "win" }, now, 50);
     expect(pudgeWins.items).toHaveLength(5);
-    expect(pudgeWins.totals).toEqual({ games: 5, wins: 5 });
+    // The list is wins only; the record keeps the losses on that hero for context.
+    expect(pudgeWins.matching).toBe(5);
+    expect(pudgeWins.record).toEqual({ games: 10, wins: 5 });
   });
 
   it("lists played heroes by games", async () => {
