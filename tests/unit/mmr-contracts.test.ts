@@ -15,6 +15,27 @@ describe("MmrEntryInputSchema", () => {
     });
   });
 
+  it.each([undefined, null, ""])("treats a missing or empty note (%j) as no note", (note) => {
+    const res = MmrEntryInputSchema.safeParse({
+      mmr: 5000,
+      observedAt: "2026-09-01T10:00:00Z",
+      note,
+    });
+    expect(res.success && res.data.note).toBeNull();
+  });
+
+  it("accepts its own output (what the form sends after parsing)", () => {
+    const first = MmrEntryInputSchema.parse({
+      mmr: "5000",
+      observedAt: "2026-09-01T10:00",
+      note: "",
+    });
+    const wire = JSON.parse(
+      JSON.stringify({ ...first, observedAt: first.observedAt.toISOString() }),
+    );
+    expect(MmrEntryInputSchema.safeParse(wire).success).toBe(true);
+  });
+
   it.each([
     [{ mmr: -1 }, "mmr"],
     [{ mmr: 15_001 }, "mmr"],

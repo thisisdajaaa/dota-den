@@ -18,7 +18,16 @@ test("log, validate, edit and delete MMR entries", async ({ page }) => {
   await dialog.getByRole("button", { name: "Log MMR" }).click();
   await expect(dialog).toBeHidden();
 
+  // Regression: an entry without a note must save (the form sends note: null).
+  await page.getByRole("button", { name: "Log MMR" }).click();
+  await page.getByRole("dialog").getByLabel("MMR").fill("5200");
+  // Earlier than the next entry, so "current MMR" is unambiguous.
+  await page.getByRole("dialog").getByLabel("When you saw it").fill("2026-09-01T10:00");
+  await page.getByRole("dialog").getByRole("button", { name: "Log MMR" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+
   const entries = page.getByRole("region", { name: "Your entries" });
+  await expect(entries).toContainText("5,200");
   await expect(entries).toContainText("5,230");
   await expect(entries).toContainText("after a good session");
   await expect(page.getByRole("region", { name: "Summary" })).toContainText("5,230");
@@ -28,11 +37,12 @@ test("log, validate, edit and delete MMR entries", async ({ page }) => {
   await page.getByRole("dialog").getByRole("button", { name: "Save changes" }).click();
   await expect(entries).toContainText("5,255");
 
-  await entries
-    .getByRole("button", { name: /Delete entry/ })
-    .first()
-    .click();
-  await entries.getByRole("button", { name: "Delete", exact: true }).click();
+  const deleteButtons = entries.getByRole("button", { name: /Delete entry/ });
+  for (const remaining of [1, 0]) {
+    await deleteButtons.first().click();
+    await entries.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(deleteButtons).toHaveCount(remaining);
+  }
   await expect(entries).toContainText("No entries yet.");
 });
 
