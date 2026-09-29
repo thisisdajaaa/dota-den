@@ -5,6 +5,7 @@ import { decodeCursor, encodeCursor, type MatchListFilter } from "../application
 import type {
   DashboardFact,
   MatchListPage,
+  RankedResultRow,
   DashboardFacts,
   DashboardFilter,
   ImportStatus,
@@ -314,6 +315,35 @@ export class MongoMatchQueries implements MatchQueries {
       totals: { games: totals[0]?.games ?? 0, wins: totals[0]?.wins ?? 0 },
       latestPatch,
     };
+  }
+
+  async rankedResults(
+    accountId32: number,
+    range: { from: Date; to: Date },
+  ): Promise<RankedResultRow[]> {
+    const docs = await this.facts
+      .find(
+        { accountId32, ranked: true, startedAt: { $gte: range.from, $lte: range.to } },
+        {
+          projection: {
+            _id: 0,
+            matchId: 1,
+            startedAt: 1,
+            heroId: 1,
+            result: 1,
+            "queue.queueClass": 1,
+          },
+          limit: 20_000,
+        },
+      )
+      .toArray();
+    return docs.map((d) => ({
+      matchId: d.matchId,
+      startedAt: d.startedAt,
+      heroId: d.heroId,
+      result: d.result,
+      queueClass: d.queue.queueClass,
+    }));
   }
 
   async playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>> {

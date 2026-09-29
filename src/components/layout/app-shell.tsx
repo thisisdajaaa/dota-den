@@ -7,12 +7,14 @@ import { getCurrentUser } from "@/modules/identity/composition";
 import { getPlayerProfile } from "@/modules/matches/composition";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
+import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
 import { MobileTabBar, PublicNav, SidebarNav, type NavKey } from "./app-nav";
 import { BrandMark } from "./brand-mark";
 import { SiteFooter } from "./site-footer";
 
 /** Sections that have shipped. Add a key here when its page lands. */
-const ENABLED: readonly NavKey[] = ["overview", "matches"];
+const ENABLED: readonly NavKey[] = ["overview", "matches", "mmr"];
 
 function Brand() {
   return (
@@ -78,7 +80,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const profile = await getPlayerProfile(user.accountId32);
+  const [profile, tz] = await Promise.all([
+    getPlayerProfile(user.accountId32),
+    getViewerTimeZone(),
+  ]);
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
   const name = profile?.personaName ?? `Player ${user.accountId32}`;
   const avatar = (
@@ -102,16 +107,20 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </p>
           <SidebarNav enabled={ENABLED} />
         </div>
-        <div className="flex items-center gap-3 border-t border-white/[0.06] p-4">
-          {avatar}
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{name}</div>
-            <div className="truncate text-xs text-muted-foreground">
-              {rank ? rankLabel(rank) : `Account ${user.accountId32}`}
-            </div>
+        <div className="space-y-3 border-t border-white/[0.06] p-4">
+          <div className="flex items-center gap-3">
+            {avatar}
+            <div className="min-w-0 flex-1 truncate text-sm font-medium">{name}</div>
+            <SignOutButton />
           </div>
-          {rank && <RankMedal rank={rank} size={36} />}
-          <SignOutButton />
+          {rank ? (
+            <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-1">
+              <RankMedal rank={rank} size={40} />
+              <span className="text-xs font-semibold text-gold">{rankLabel(rank)}</span>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">Account {user.accountId32}</div>
+          )}
         </div>
       </aside>
 
@@ -133,6 +142,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <SiteFooter />
       </div>
       <MobileTabBar enabled={ENABLED} />
+      <TimeZoneSync current={tz.known ? tz.timeZone : null} />
     </>
   );
 }

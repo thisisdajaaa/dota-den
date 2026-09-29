@@ -87,6 +87,14 @@ export interface ImportStatus {
 }
 
 /** Read models for Match Intelligence (query side). */
+export interface RankedResultRow {
+  matchId: string;
+  startedAt: Date;
+  heroId: number;
+  result: "win" | "loss";
+  queueClass: "solo" | "party" | "unknown";
+}
+
 export interface MatchListPage {
   items: DashboardFact[];
   nextCursor: string | null;
@@ -103,6 +111,8 @@ export interface MatchQueries {
     now: Date,
     limit: number,
   ): Promise<MatchListPage>;
+  /** Ranked results in a time range (for the MMR calendar). */
+  rankedResults(accountId32: number, range: { from: Date; to: Date }): Promise<RankedResultRow[]>;
   /** Heroes this account has imported matches on, most played first. */
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;

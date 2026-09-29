@@ -64,3 +64,12 @@ export async function getCurrentUser(
     return null;
   }
 }
+
+/** For route handlers: the signed-in user for this request, or null. */
+export async function getRouteUser(req: {
+  cookies: { get(name: string): { value: string } | undefined };
+}): Promise<User | null> {
+  const auth = await getAuthService();
+  const resolved = await auth.resolveSession(req.cookies.get(SESSION_COOKIE)?.value);
+  return resolved?.user ?? null;
+}
