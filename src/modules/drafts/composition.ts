@@ -1,4 +1,5 @@
 import "server-only";
+import { randomInt } from "node:crypto";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -6,9 +7,12 @@ import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
 import { AiOpponentService, type AiHero } from "./application/ai-opponent-service";
 import { ChallengeService } from "./application/challenge-service";
+import { DraftRoomService } from "./application/draft-room-service";
 import { GroqDraftAdvisor } from "./infrastructure/groq-draft-advisor";
 import { MongoDraftMetaCache } from "./infrastructure/mongo-draft-meta-cache";
+import { MongoDraftRoomRepository } from "./infrastructure/mongo-draft-rooms";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
+import type { DraftHero } from "./ui/types";
 
 export const DEFAULT_DRAFT_AI_MODEL = "openai/gpt-oss-120b";
 
@@ -71,4 +75,42 @@ export async function getChallengeService(): Promise<ChallengeService> {
     insights: await draftInsights(),
     heroes: await scoringHeroes(),
   });
+}
+
+const ROOM_ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+
+/** Unguessable 10-character room id (share links are the only way in). */
+function newRoomId(): string {
+  let id = "";
+  for (let i = 0; i < 10; i++) id += ROOM_ID_ALPHABET[randomInt(ROOM_ID_ALPHABET.length)];
+  return id;
+}
+
+export async function getDraftRoomService(): Promise<DraftRoomService> {
+  const db = await getDb();
+  return new DraftRoomService({
+    rooms: new MongoDraftRoomRepository(db),
+    heroPool: async () => [...(await getHeroMap()).keys()],
+    newId: newRoomId,
+    enabled: env().FEATURE_DRAFT_ROOMS,
+  });
+}
+
+export async function getDraftRoomEvents(roomId: string, after: number) {
+  return new MongoDraftRoomRepository(await getDb()).eventsSince(roomId, after, 100);
+}
+
+/** The hero catalog as the draft screens need it, sorted by name. Empty if unavailable. */
+export async function getDraftHeroes(): Promise<DraftHero[]> {
+  return [...(await getHeroMap()).values()]
+    .map((h) => ({
+      id: h.id,
+      name: h.name,
+      imageUrl: h.imageUrl,
+      iconUrl: h.iconUrl,
+      primaryAttr: h.primaryAttr,
+      roles: h.roles,
+      attackType: h.attackType,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
