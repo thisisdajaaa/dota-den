@@ -28,6 +28,8 @@ const EnvSchema = z
           .filter(Boolean),
       ),
     AUTH_TEST_MODE: booleanFlag,
+    /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
+    CRON_SECRET: z.string().min(16).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && env.AUTH_TEST_MODE) {
