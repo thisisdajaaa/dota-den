@@ -80,7 +80,8 @@ jobs:
     name: Deploy (${{ github.ref_name == 'main' && 'production' || 'staging' }})
     runs-on: ubuntu-latest
     needs: [verify, e2e]
-    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
+    # Pushes deploy automatically; "Run workflow" on main/develop redeploys on demand.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || github.ref_name == 'develop')
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
       url: ${{ steps.deploy.outputs.public_url }}
