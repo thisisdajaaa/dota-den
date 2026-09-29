@@ -217,7 +217,45 @@ function heroStats(id) {
   ];
 }
 
+// Synthetic public hero stats for the draft AI and challenges. Deterministic, made-up numbers:
+// the named heroes (1, 14) sit at 48% so they never top a suggestion list.
+const HERO_IDS = Object.keys(HEROES).map(Number);
+function publicHeroStats() {
+  return HERO_IDS.map((id) => {
+    const rate = id < 100 ? 0.48 : 0.44 + ((id * 7) % 13) / 100;
+    const bracket = (n) => {
+      const pick = 6_000 + (id % 9) * 1_000 + n * 500;
+      return [pick, Math.round(pick * rate)];
+    };
+    const [p6, w6] = bracket(0);
+    const [p7, w7] = bracket(1);
+    const [p8, w8] = bracket(2);
+    return {
+      id,
+      localized_name: HEROES[id].localized_name,
+      "6_pick": p6,
+      "6_win": w6,
+      "7_pick": p7,
+      "7_win": w7,
+      "8_pick": p8,
+      "8_win": w8,
+    };
+  });
+}
+/** Head-to-head of `id` against every other hero; `wins` are `id`'s wins. */
+function heroMatchups(id) {
+  const self = Number(id);
+  if (!HEROES[self]) return null;
+  return HERO_IDS.filter((other) => other !== self).map((other) => {
+    const skew = (((self * 31 + other * 17) % 21) - 10) / 200;
+    const games = 300 + (other % 5) * 20;
+    return { hero_id: other, games_played: games, wins: Math.round(games * (0.5 + skew)) };
+  });
+}
+
 const routes = [
+  [/^\/api\/heroStats$/, () => publicHeroStats()],
+  [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
   [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],
   [/^\/api\/search$/, (_m, url) => search(url.searchParams.get("q"))],
   [
