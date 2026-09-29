@@ -45,8 +45,9 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
   const heroHrefs: Record<string, string> = { all: withFilter({ hero: undefined }) };
   for (const o of heroOptions) heroHrefs[String(o.heroId)] = withFilter({ hero: o.heroId });
 
-  const { games, wins } = page.totals;
+  const { games, wins } = page.record;
   const rate = games === 0 ? null : wins / games;
+  const resultLabel = filter.result === "win" ? "wins" : filter.result === "loss" ? "losses" : null;
   const isFiltered =
     filter.range !== "all" ||
     filter.mode !== "all" ||
@@ -123,8 +124,10 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
       >
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">
           <div>
-            <div className="kicker">Matches</div>
-            <div className="text-2xl font-semibold sm:text-3xl">{games.toLocaleString()}</div>
+            <div className="kicker">{resultLabel ? `Showing ${resultLabel}` : "Matches"}</div>
+            <div className="text-2xl font-semibold sm:text-3xl">
+              {page.matching.toLocaleString()}
+            </div>
           </div>
           <div>
             <div className="kicker">Record</div>
@@ -140,10 +143,10 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
           </div>
         </div>
         <div className="space-y-1.5 sm:pl-6">
-          <WinRateBar rate={filter.result === "all" ? rate : null} muted={games < MIN_SAMPLE} />
+          <WinRateBar rate={rate} muted={games < MIN_SAMPLE} />
           <p className="text-xs text-muted-foreground">
-            {filter.result !== "all"
-              ? "Win rate isn't shown while you're filtering to only wins or only losses."
+            {resultLabel
+              ? `The list shows only your ${resultLabel}. Record and win rate count both wins and losses under your other filters.`
               : games < MIN_SAMPLE && games > 0
                 ? `Only ${plural(games, "game")} match, too few to judge a win rate.`
                 : "These totals include every match that fits your filters, not just this page. The line marks 50%."}

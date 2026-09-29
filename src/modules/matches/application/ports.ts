@@ -98,8 +98,13 @@ export interface RankedResultRow {
 export interface MatchListPage {
   items: DashboardFact[];
   nextCursor: string | null;
-  /** Totals across the whole filtered set (not just this page). */
-  totals: { games: number; wins: number };
+  /** Matches in the filtered list (every filter applied), across all pages. */
+  matching: number;
+  /**
+   * Record under every filter except `result`: a "wins only" view still reports the real
+   * wins and losses for the same heroes/queues/time, instead of a meaningless 100%.
+   */
+  record: { games: number; wins: number };
   latestPatch: string | null;
 }
 
