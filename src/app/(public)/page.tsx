@@ -1,8 +1,21 @@
-import { BookOpenText, ChartNoAxesColumn, FlaskConical, Swords, Users } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
+import {
+  ArrowRight,
+  BookOpenText,
+  ChartNoAxesColumn,
+  FlaskConical,
+  Swords,
+  Users,
+} from "lucide-react";
 import { redirect } from "next/navigation";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getHeroMap } from "@/modules/matches/composition";
+import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
+import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
 import { getCurrentUser } from "@/modules/identity/composition";
 
 const AUTH_ERRORS: Record<string, string> = {
@@ -47,64 +60,53 @@ const FEATURES = [
   },
 ];
 
-/** Static illustration of the dashboard. Clearly labelled as example data. */
-function PreviewCard() {
-  const rows = [
-    { label: "Solo", rate: 0.54, n: 212 },
-    { label: "Party", rate: 0.61, n: 148 },
-    { label: "Unknown", rate: 0.5, n: 9, low: true },
-  ];
+/** The newest official patch, straight from the patch hub (real data, never a mock). */
+async function LatestPatchCard() {
+  await ensurePatchesFresh();
+  const [latest, heroes] = await Promise.all([
+    (await getPatchQueries()).latest().catch(() => null),
+    getHeroMap(),
+  ]);
+  if (!latest) return null;
+  const patch = await (await getPatchQueries()).getByVersion(latest.version).catch(() => null);
+  const changed = (patch?.sections.heroes ?? []).slice(0, 10);
+
   return (
-    <div className="panel relative w-full max-w-md p-5" aria-label="Example dashboard preview">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <p className="kicker">Solo vs party</p>
-          <p className="font-semibold">Win rate by queue</p>
-        </div>
-        <span className="rounded border border-white/10 px-1.5 py-0.5 text-[0.6rem] tracking-wider text-muted-foreground uppercase">
-          Example data
-        </span>
-      </div>
-      <div className="space-y-3">
-        {rows.map((r) => (
-          <div
-            key={r.label}
-            className="grid grid-cols-[4.5rem_1fr_4.5rem] items-center gap-3 text-sm"
-          >
-            <span className="font-medium">{r.label}</span>
-            <span className="relative h-2 overflow-hidden rounded-full bg-white/[0.06]">
-              <span
-                className={
-                  r.low
-                    ? "absolute inset-y-0 left-0 rounded-full bg-unknown/60"
-                    : "absolute inset-y-0 left-0 rounded-full bg-win"
-                }
-                style={{ width: `${r.rate * 100}%` }}
-              />
-              <span className="absolute inset-y-0 left-1/2 w-px bg-foreground/40" />
-            </span>
-            <span className="text-right tabular-nums">
-              {(r.rate * 100).toFixed(0)}%{" "}
-              <span className="text-xs text-muted-foreground">{r.n} games</span>
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 flex gap-1.5">
-        {"WWLWLWWWLW".split("").map((c, i) => (
-          <span
-            key={i}
-            className={
-              c === "W"
-                ? "grid size-7 place-items-center rounded bg-win/15 text-xs font-bold text-win ring-1 ring-win/40"
-                : "grid size-7 place-items-center rounded bg-loss/15 text-xs font-bold text-loss ring-1 ring-loss/40"
-            }
-          >
-            {c}
-          </span>
-        ))}
-      </div>
-    </div>
+    <Link
+      href={`/patches/${latest.version}`}
+      className="panel group relative block w-full max-w-md p-6 transition-[transform,border-color] hover:-translate-y-1 hover:border-gold/30"
+      aria-label={`Latest patch ${latest.version}: read the notes`}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-gold/10 blur-3xl"
+      />
+      <p className="kicker">Latest patch</p>
+      <p className="mt-1 font-display text-5xl font-bold tracking-wide">{latest.version}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(
+          latest.publishedAt,
+        )}{" "}
+        · {latest.summary.heroesChanged} heroes and{" "}
+        {latest.summary.itemsChanged + latest.summary.neutralItemsChanged} items changed
+      </p>
+      {changed.length > 0 && (
+        <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Some of the heroes changed">
+          {changed.map((h) => (
+            <li key={h.heroId} title={heroName(heroes.get(h.heroId), h.heroId)}>
+              <HeroPortrait hero={heroes.get(h.heroId)} heroId={h.heroId} size="sm" />
+            </li>
+          ))}
+        </ul>
+      )}
+      <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-gold">
+        Read the patch notes{" "}
+        <ArrowRight
+          aria-hidden
+          className="size-4 transition-transform group-hover:translate-x-0.5"
+        />
+      </span>
+    </Link>
   );
 }
 
@@ -166,7 +168,9 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
           </div>
         </div>
         <div className="flex justify-center lg:justify-end">
-          <PreviewCard />
+          <Suspense fallback={<Skeleton className="h-64 w-full max-w-md rounded-2xl" />}>
+            <LatestPatchCard />
+          </Suspense>
         </div>
       </section>
 

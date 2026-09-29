@@ -31,11 +31,16 @@ function toFeedbackHero(h: DraftHero): FeedbackHero | null {
   };
 }
 
+/** With fewer picks every category reads as "weak", which is noise rather than advice. */
+export const MIN_PICKS_FOR_FEEDBACK = 3;
+
 /** Rule-based, explainable feedback per team. Never a win probability. */
 export function FeedbackPanel({ side, picks }: { side: Side; picks: DraftHero[] }) {
-  const findings = compositionFeedback(
-    picks.map(toFeedbackHero).filter((h): h is FeedbackHero => h !== null),
-  );
+  const enough = picks.length >= MIN_PICKS_FOR_FEEDBACK;
+  const findings = enough
+    ? compositionFeedback(picks.map(toFeedbackHero).filter((h): h is FeedbackHero => h !== null))
+    : [];
+  const missing = MIN_PICKS_FOR_FEEDBACK - picks.length;
   return (
     <section
       className="panel p-4"
@@ -47,10 +52,17 @@ export function FeedbackPanel({ side, picks }: { side: Side; picks: DraftHero[] 
           className={cn("h-4 w-1 rounded-full", side === "radiant" ? "bg-win" : "bg-loss")}
         />
         {side === "radiant" ? "Radiant" : "Dire"} lineup
+        {enough && picks.length < 5 && (
+          <span className="font-normal text-muted-foreground">
+            · based on {picks.length} of 5 picks
+          </span>
+        )}
       </h3>
       {findings.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Feedback appears once this team picks heroes.
+          {picks.length === 0
+            ? "Feedback appears once this team has a few heroes."
+            : `Pick ${missing} more hero${missing === 1 ? "" : "es"} to see lineup feedback.`}
         </p>
       ) : (
         <ul className="space-y-2.5">
