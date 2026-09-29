@@ -132,7 +132,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="flex min-h-full flex-col lg:pl-64">
+      <div className="flex flex-1 flex-col lg:pl-64">
         <main
           id="main"
           className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12"
