@@ -137,7 +137,7 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
       <PageHeader
         kicker="Draft practice"
         title="Captain's Mode drafting"
-        description="Draft against an AI captain, or practice both sides yourself. Every pick and ban is checked against the real Captain\u2019s Mode rules, and you can share any draft as a link."
+        description="Draft against an AI captain, or practice both sides yourself. Every pick and ban is checked against the real Captain's Mode rules, and you can share any draft as a link."
       />
       <DraftBoard heroes={heroes} />
     </div>
