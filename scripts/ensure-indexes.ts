@@ -5,11 +5,13 @@
 import { getDb, getMongoClient } from "@/lib/db/mongo";
 import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
+import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
 
 async function main(): Promise<void> {
   const db = await getDb();
   await ensureIdentityIndexes(db);
   await ensureMatchIndexes(db);
+  await ensureMmrIndexes(db);
   console.log(`Indexes ensured on ${db.databaseName}`);
   await (await getMongoClient()).close();
 }
