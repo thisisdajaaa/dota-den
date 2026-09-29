@@ -68,6 +68,8 @@ export interface SyncState {
   backfillComplete: boolean;
   /** Last time we asked the upstream to refetch this player's history. */
   historyRefreshRequestedAt: Date | null;
+  /** When the last full re-walk after a refresh request started. */
+  rescannedAt: Date | null;
 }
 
 export type LockOutcome =
