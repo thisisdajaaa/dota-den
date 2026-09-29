@@ -18,10 +18,10 @@ test("sign in with the test identity provider, survive reload, then sign out", a
   await page.getByRole("banner").getByRole("link", { name: "Sign in through Steam" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByTestId("steam-id")).toHaveText("76561197960287930");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Fixture Hero");
 
   await page.reload();
-  await expect(page.getByTestId("steam-id")).toHaveText("76561197960287930");
+  await expect(page.getByText("Account 22202")).toBeVisible();
 
   const me = await page.request.get("/api/v1/me");
   expect(me.status()).toBe(200);

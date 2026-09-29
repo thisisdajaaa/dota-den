@@ -69,5 +69,37 @@ later (v27 relies on `require(esm)`).
 
 - [x] **M0 foundation:** scaffold, design tokens, CI, Mongo layer, Steam OpenID
       sign-in and sessions, health endpoint, structured logs
-- [ ] **M1 MVP:** match import, dashboard, MMR journal, patch hub, local draft
+- [x] **M1 MVP**
+  - [x] OpenDota import, solo/party/unknown classifier, auto-sync
+  - [x] Dashboard, match list with filters, in-app match pages
+  - [x] MMR journal and calendar (exact vs estimated days)
+  - [x] Patch hub with official notes, your-heroes view and watchlist
+  - [x] Local Captain's Mode draft simulator with share links
+- [ ] M2 social · M3 intelligence
+
+## Branches, environments and deploys
+
+| Branch      | Environment | URL                                 |
+| ----------- | ----------- | ----------------------------------- |
+| `main`      | production  | https://dota-den.vercel.app         |
+| `develop`   | staging     | https://dota-den-develop.vercel.app |
+| `feature/*` | none        | checks only (via pull request)      |
+
+Feature work happens on `feature/*` branches cut from `develop`. Releases merge
+`develop` into `main`.
+
+GitHub Actions (`.github/workflows/ci-cd.yml`) runs format, lint, typecheck,
+unit, integration, build, audit and E2E on every push and PR. Pushes to `main`
+or `develop` then deploy through the Vercel CLI to the matching GitHub
+environment, apply database indexes and smoke-test `/api/health`. Vercel's own
+Git auto-deploys are disabled in `vercel.json`, so Actions is the only deploy
+path.
+
+- **Vercel variables:** production uses Vercel's Production environment.
+  Staging uses Preview variables scoped to the `develop` branch.
+- **GitHub secrets:** `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`
+  at the repo level. `MONGODB_URI` goes on each GitHub environment for index
+  setup. `VERCEL_AUTOMATION_BYPASS_SECRET` is optional, and lets smoke tests
+  reach protected deployments.
+
 - [ ] M2 social · M3 intelligence

@@ -15,6 +15,10 @@ const EnvSchema = z
     MONGODB_MAX_POOL_SIZE: z.coerce.number().int().min(1).max(100).default(10),
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     OPENDOTA_API_KEY: z.string().min(1).optional(),
+    /** Override for tests (fixture server). Defaults to the public API. */
+    OPENDOTA_BASE_URL: z.url().optional(),
+    /** Override for tests (fixture server). Defaults to Valve's datafeed. */
+    VALVE_DATAFEED_BASE_URL: z.url().optional(),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
     ADMIN_STEAM_IDS: z
       .string()
@@ -26,6 +30,8 @@ const EnvSchema = z
           .filter(Boolean),
       ),
     AUTH_TEST_MODE: booleanFlag,
+    /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
+    CRON_SECRET: z.string().min(16).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && env.AUTH_TEST_MODE) {

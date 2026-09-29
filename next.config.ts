@@ -4,6 +4,21 @@ const nextConfig: NextConfig = {
   // Lets E2E runs use a separate build directory from a developer's `next dev`.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   poweredByHeader: false,
+  // Keep the dev-mode badge away from the sidebar's account chip.
+  devIndicators: { position: "bottom-right" },
+  images: {
+    // Hotlinked from Valve/Steam CDNs, not rehosted (spec §10 legal note).
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn.cloudflare.steamstatic.com", pathname: "/apps/dota2/**" },
+      { protocol: "https", hostname: "avatars.steamstatic.com" },
+      // Valve's rank medal artwork as served by OpenDota (next/image caches optimized copies).
+      {
+        protocol: "https",
+        hostname: "www.opendota.com",
+        pathname: "/assets/images/dota2/rank_icons/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
