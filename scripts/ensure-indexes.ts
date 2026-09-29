@@ -1,0 +1,18 @@
+/**
+ * Apply all collection indexes. Idempotent.
+ * Usage: npm run db:indexes  (reads MONGODB_URI / MONGODB_DB_NAME from the environment)
+ */
+import { getDb, getMongoClient } from "@/lib/db/mongo";
+import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
+
+async function main(): Promise<void> {
+  const db = await getDb();
+  await ensureIdentityIndexes(db);
+  console.log(`Indexes ensured on ${db.databaseName}`);
+  await (await getMongoClient()).close();
+}
+
+main().catch((e: unknown) => {
+  console.error(e instanceof Error ? e.message : e);
+  process.exit(1);
+});
