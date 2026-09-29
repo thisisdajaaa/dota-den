@@ -4,7 +4,10 @@
  * The language model only chooses among these candidates and explains its choice, so the
  * draft is anchored in real numbers instead of the model's memory:
  * - meta: the hero's current public win rate at high ranks, shrunk toward 50% on small samples;
- * - matchup: head-to-head win rates against heroes already picked;
+ * - matchup: head-to-head win rates against heroes already picked, measured against what the
+ *   two heroes' overall win rates would predict (so a strong hero isn't counted twice);
+ * - tournaments: how often recent pro drafts pick or ban the hero, and how it does there;
+ * - synergy: how pro teams do with the hero next to heroes already on the same side;
  * - lineup rules: teams need cores and supports, so a 4th core or a 3rd support is excluded.
  */
 
@@ -23,6 +26,28 @@ export interface HeroMeta {
 /** Head-to-head record of a hero against others: opponentId -> {games, wins}. */
 export type MatchupTable = ReadonlyMap<number, { games: number; wins: number }>;
 
+/** One hero in recent professional drafts. `wins` counts games won when picked. */
+export interface ProHeroStat {
+  picks: number;
+  bans: number;
+  wins: number;
+}
+
+/** Recent tournament drafts (professional matches with a pick/ban phase). */
+export interface ProMeta {
+  /** Drafts in the window. */
+  matches: number;
+  days: number;
+  /** Leagues in the window, most matches first. */
+  leagues: readonly { name: string; matches: number }[];
+  heroes: ReadonlyMap<number, ProHeroStat>;
+}
+
+/** Same-team records of hero pairs in pro matches, keyed by `pairKey`. */
+export type SynergyTable = ReadonlyMap<string, { games: number; wins: number }>;
+
+export const pairKey = (a: number, b: number): string => (a < b ? `${a}:${b}` : `${b}:${a}`);
+
 export type LineupRole = "core" | "support";
 
 /** Primary role decides whether a hero occupies a core or a support slot. */
@@ -36,9 +61,17 @@ export function canSupport(hero: ScoringHero): boolean {
 
 export const CORE_SLOTS = 3;
 export const SUPPORT_SLOTS = 2;
-const MIN_MATCHUP_GAMES = 40;
+export const MIN_MATCHUP_GAMES = 40;
 /** Pseudo-games toward 50%: small samples barely move the score. */
 const SHRINK_GAMES = 500;
+/** Pro samples are small: fewer pseudo-games, but still damped. */
+const PRO_SHRINK_GAMES = 20;
+/** Pairs are picked because they did well, so small records regress hard: damp them a lot. */
+const SYNERGY_SHRINK_GAMES = 60;
+/** Head-to-head samples are small too: a 200-game record keeps about 60% of its edge. */
+const MATCHUP_SHRINK_GAMES = 130;
+/** A pair needs this many pro games together before it counts. */
+export const MIN_SYNERGY_GAMES = 6;
 
 export interface LineupNeeds {
   cores: number;
@@ -70,19 +103,75 @@ function fits(hero: ScoringHero, needs: LineupNeeds): boolean {
 }
 
 /** Win rate in percentage points above/below 50, shrunk toward 0 on small samples. */
-function metaEdge(meta: HeroMeta | undefined): number {
+export function metaEdge(meta: HeroMeta | undefined): number {
   if (!meta || meta.games <= 0) return 0;
   return ((meta.wins - meta.games / 2) / (meta.games + SHRINK_GAMES)) * 100;
 }
 
 /**
- * Candidate's win rate vs `opponent`, from the opponent's matchup table (whose "wins" are
- * the opponent's wins against the candidate). Null when the sample is too small.
+ * How much better `candidate` does against `opponent` than their overall win rates predict,
+ * in percentage points. Read from the opponent's matchup table (whose "wins" are the
+ * opponent's wins against the candidate), shrunk toward 0 on small samples. Null when the
+ * sample is too small to use at all.
  */
-function vsEdge(candidateId: number, opponentTable: MatchupTable | undefined): number | null {
+export function matchupAdvantage(
+  candidateId: number,
+  opponentId: number,
+  opponentTable: MatchupTable | undefined,
+  meta: ReadonlyMap<number, HeroMeta>,
+): number | null {
   const rec = opponentTable?.get(candidateId);
   if (!rec || rec.games < MIN_MATCHUP_GAMES) return null;
-  return (0.5 - rec.wins / rec.games) * 100;
+  const expected = (metaEdge(meta.get(candidateId)) - metaEdge(meta.get(opponentId))) / 100;
+  const raw = (0.5 - rec.wins / rec.games - expected) * 100;
+  return (raw * rec.games) / (rec.games + MATCHUP_SHRINK_GAMES);
+}
+
+/**
+ * How much better two heroes do together in pro matches than each does on its own, in
+ * percentage points, shrunk toward 0. "On its own" is the hero's pro win rate when there is
+ * tournament data (a pair of heroes that simply win a lot in pro games isn't synergy),
+ * otherwise its public win rate. Null when they rarely play together.
+ */
+export function synergyAdvantage(
+  a: number,
+  b: number,
+  synergy: SynergyTable | undefined,
+  meta: ReadonlyMap<number, HeroMeta>,
+  pro?: ProMeta,
+): { edge: number; games: number; winRate: number } | null {
+  const rec = synergy?.get(pairKey(a, b));
+  if (!rec || rec.games < MIN_SYNERGY_GAMES) return null;
+  const solo = (id: number) => (pro ? proWinEdge(pro.heroes.get(id)) : metaEdge(meta.get(id)));
+  const expected = rec.games * (0.5 + (solo(a) + solo(b)) / 100);
+  return {
+    edge: ((rec.wins - expected) / (rec.games + SYNERGY_SHRINK_GAMES)) * 100,
+    games: rec.games,
+    winRate: rec.wins / rec.games,
+  };
+}
+
+/** Share of recent pro drafts that picked or banned the hero (0..1). */
+export function contestRate(stat: ProHeroStat | undefined, pro: ProMeta | undefined): number {
+  if (!stat || !pro || pro.matches <= 0) return 0;
+  return Math.min(1, (stat.picks + stat.bans) / pro.matches);
+}
+
+/** Pro win rate edge when picked, in percentage points, shrunk toward 0. */
+export function proWinEdge(stat: ProHeroStat | undefined): number {
+  if (!stat || stat.picks <= 0) return 0;
+  return ((stat.wins - stat.picks / 2) / (stat.picks + PRO_SHRINK_GAMES)) * 100;
+}
+
+/** "PGL Wallachia and 6 more tournaments": where the pro numbers come from. */
+export function proSource(pro: ProMeta): string {
+  const [top, ...rest] = pro.leagues;
+  const where = top
+    ? rest.length
+      ? `${top.name.trim()} and ${rest.length} more tournament${rest.length === 1 ? "" : "s"}`
+      : top.name.trim()
+    : "pro matches";
+  return `${where}, last ${pro.days} days`;
 }
 
 export interface Candidate {
@@ -92,6 +181,10 @@ export interface Candidate {
   score: number;
   metaEdge: number;
   matchupEdge: number | null;
+  /** Share of recent pro drafts that picked or banned the hero (0..1). */
+  contest: number;
+  /** Average pro synergy edge with the relevant side's heroes; null without data. */
+  synergyEdge: number | null;
   /** Human-readable evidence the model sees and cites. */
   facts: string[];
 }
@@ -109,26 +202,40 @@ export function rankCandidates(input: {
   meta: ReadonlyMap<number, HeroMeta>;
   /** Matchup tables for heroes already picked (by hero id). */
   matchups: ReadonlyMap<number, MatchupTable>;
+  pro?: ProMeta;
+  synergy?: SynergyTable;
   limit?: number;
 }): Candidate[] {
-  const { action, available, own, enemy, meta, matchups } = input;
+  const { action, available, own, enemy, meta, matchups, pro, synergy } = input;
   const ownNeeds = lineupNeeds(own, input.ownPicksLeft);
   const enemyNeeds = lineupNeeds(enemy, input.enemyPicksLeft);
 
   // Picks: good against the enemy's heroes and fit our lineup.
   // Bans: good against OUR heroes and fit the enemy's lineup (deny what they'd want).
   const opponents = action === "pick" ? enemy : own;
+  // Synergy: picks pair with our heroes; bans deny heroes that pair with theirs.
+  const partners = action === "pick" ? own : enemy;
   const needs = action === "pick" ? ownNeeds : enemyNeeds;
   const pool = action === "pick" ? available.filter((h) => fits(h, ownNeeds)) : available;
 
   const scored = pool.map((hero): Candidate => {
     const m = metaEdge(meta.get(hero.id));
     const edges = opponents
-      .map((o) => ({ o, e: vsEdge(hero.id, matchups.get(o.id)) }))
+      .map((o) => ({ o, e: matchupAdvantage(hero.id, o.id, matchups.get(o.id), meta) }))
       .filter((x): x is { o: ScoringHero; e: number } => x.e !== null);
     const matchupEdge = edges.length ? edges.reduce((a, x) => a + x.e, 0) / edges.length : null;
+    const pairs = partners
+      .map((p) => ({ p, s: synergyAdvantage(hero.id, p.id, synergy, meta, pro) }))
+      .filter((x): x is { p: ScoringHero; s: NonNullable<typeof x.s> } => x.s !== null);
+    const synergyEdge = pairs.length
+      ? pairs.reduce((a, x) => a + x.s.edge, 0) / pairs.length
+      : null;
+    const proStat = pro?.heroes.get(hero.id);
+    const contest = contestRate(proStat, pro);
+    // Heroes the pros fight over are strong this patch; they matter most as bans.
+    const proScore = contest * (action === "ban" ? 5 : 2.5) + proWinEdge(proStat) * 0.3;
     const needBonus = fits(hero, needs) && (needs.mustPickSupport || needs.mustPickCore) ? 1.5 : 0;
-    const score = m + (matchupEdge ?? 0) * 1.5 + needBonus;
+    const score = m + (matchupEdge ?? 0) * 1.5 + (synergyEdge ?? 0) * 0.8 + proScore + needBonus;
 
     const facts: string[] = [];
     const rec = meta.get(hero.id);
@@ -142,6 +249,17 @@ export function rankCandidates(input: {
       const target = action === "pick" ? "vs opponent's" : "vs our";
       facts.push(`${target} ${strongest.map((x) => `${x.o.name} ${pct(x.e)}%`).join(", ")}`);
     }
+    if (pro && proStat && contest >= 0.1) {
+      const won = proStat.picks >= 5 ? ` (won ${proStat.wins} of ${proStat.picks})` : "";
+      facts.push(`picked or banned in ${Math.round(contest * 100)}% of recent pro drafts${won}`);
+    }
+    const bestPair = [...pairs].sort((a, b) => b.s.edge - a.s.edge)[0];
+    if (bestPair && Math.abs(bestPair.s.edge) >= 1) {
+      const whose = action === "pick" ? "with our" : "with their";
+      facts.push(
+        `${whose} ${bestPair.p.name}: ${Math.round(bestPair.s.winRate * 100)}% win rate together in ${bestPair.s.games} pro games`,
+      );
+    }
     facts.push(
       `plays as ${lineupRole(hero)}${canSupport(hero) && lineupRole(hero) === "core" ? " (can support)" : ""}`,
     );
@@ -152,6 +270,8 @@ export function rankCandidates(input: {
       score,
       metaEdge: m,
       matchupEdge,
+      contest,
+      synergyEdge,
       facts,
     };
   });

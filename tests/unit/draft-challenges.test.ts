@@ -210,7 +210,7 @@ describe("grading", () => {
     );
     const res = gradeAnswer(p, catalog, [candidate], { meta, matchups });
     expect(res.grade).toBe("excellent");
-    expect(res.choices[0].facts.join(" ")).toMatch(/vs opponent's Hero \d+ \+30\.0%/);
+    expect(res.choices[0].facts.join(" ")).toMatch(/vs opponent's Hero \d+ \+[1-9]\d\.\d%/);
   });
 
   it("calls the bottom band and lineup-breaking picks Risky", () => {

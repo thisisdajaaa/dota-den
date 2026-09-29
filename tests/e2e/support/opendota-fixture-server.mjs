@@ -253,7 +253,41 @@ function heroMatchups(id) {
   });
 }
 
+// Synthetic OpenDota explorer (pro match SQL). Answers by the shape of the query.
+function explorer(sql) {
+  const q = sql ?? "";
+  if (q.includes("player_matches a")) {
+    const rows = [];
+    for (let a = 100; a < 140; a += 3) {
+      const b = a + 1;
+      const games = 8 + (a % 7);
+      rows.push({ h1: a, h2: b, games, wins: Math.round(games * (a % 2 ? 0.7 : 0.35)) });
+    }
+    return { rows, err: null };
+  }
+  if (q.includes("leagues")) {
+    return {
+      rows: [
+        { league: "Fixture Invitational", matches: 90 },
+        { league: "Fixture Qualifier", matches: 30 },
+      ],
+      err: null,
+    };
+  }
+  if (q.includes("picks_bans")) {
+    return {
+      rows: HERO_IDS.filter((id) => id >= 100).map((id) => {
+        const picks = (id * 13) % 50;
+        return { hero_id: id, picks, bans: (id * 7) % 40, wins: Math.floor(picks / 2) };
+      }),
+      err: null,
+    };
+  }
+  return { rows: null, err: "unsupported fixture query" };
+}
+
 const routes = [
+  [/^\/api\/explorer$/, (_m, url) => explorer(url.searchParams.get("sql"))],
   [/^\/api\/heroStats$/, () => publicHeroStats()],
   [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
   [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],

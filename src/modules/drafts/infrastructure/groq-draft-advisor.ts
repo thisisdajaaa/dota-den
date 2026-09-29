@@ -35,11 +35,13 @@ export class GroqDraftAdvisor implements DraftAdvisor {
   ): Promise<Result<{ heroId: number; reason: string }, AdvisorError>> {
     const system = [
       "You are the captain of one team in a Dota 2 Captain's Mode draft against a human.",
-      "The server has already scored the legal options using current high-rank win rates and head-to-head matchup data.",
+      "The server has already scored the legal options using current high-rank public win rates, recent tournament picks and bans, pro hero pairings, and head-to-head matchup data.",
+      "Think like a pro captain in the current patch: early bans remove the heroes tournaments fight over (most contested) or that counter your picks; early picks favour contested, flexible heroes; last picks counter what the opponent has shown.",
       "Choose exactly ONE hero id from the CANDIDATES list. Never choose anything else.",
       "Keep the two teams straight: YOUR TEAM are your heroes; OPPONENT heroes are the enemy. Never call an opponent hero a teammate or 'synergy'.",
       "Follow the SITUATION line: a lineup needs about 3 cores and 2 supports; if it says you must pick a support, pick a support.",
       "Prefer higher-listed candidates unless there's a clear draft reason (lane pairing, a counter, a combo with YOUR heroes).",
+      "When you cite a percentage from a small sample (under 50 games), include the game count.",
       'Reply with JSON only: {"heroId": <number>, "reason": "<one sentence, max 30 words, plain language, citing the data or your heroes>"}.',
     ].join(" ");
     const user = [
@@ -47,6 +49,7 @@ export class GroqDraftAdvisor implements DraftAdvisor {
       `YOUR TEAM picks: ${list(req.ownPicks)}. Your bans: ${list(req.ownBans)}.`,
       `OPPONENT picks: ${list(req.enemyPicks)}. Opponent bans: ${list(req.enemyBans)}.`,
       `SITUATION: ${req.situation}`,
+      ...(req.metaContext?.length ? [`META: ${req.metaContext.join(" ")}`] : []),
       req.action === "ban"
         ? "For a ban, deny the opponent a hero that beats YOUR picks or completes THEIR lineup."
         : "For a pick, strengthen YOUR lineup and punish the OPPONENT's picks.",
