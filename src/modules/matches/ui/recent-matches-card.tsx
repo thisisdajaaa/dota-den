@@ -26,11 +26,27 @@ export function RecentMatchesCard({
             Recent matches
           </h2>
         </div>
-        <span className="text-xs text-muted-foreground">
-          Select a match for the full scoreboard
-        </span>
+        <Link href="/matches" className="text-xs text-gold hover:underline">
+          View all matches
+        </Link>
       </div>
+      <MatchRows matches={matches} heroes={heroes} now={now} />
+    </section>
+  );
+}
 
+/** Column header + clickable rows; shared by the dashboard and the match list. */
+export function MatchRows({
+  matches,
+  heroes,
+  now,
+}: {
+  matches: DashboardFact[];
+  heroes: Map<number, HeroInfo>;
+  now: Date;
+}) {
+  return (
+    <>
       <div
         aria-hidden
         className={cn(
@@ -136,6 +152,6 @@ export function RecentMatchesCard({
           );
         })}
       </ul>
-    </section>
+    </>
   );
 }

@@ -45,7 +45,7 @@ export function TopHeroesCard({
               <div className="w-16 text-right">
                 <div className="text-sm font-semibold tabular-nums">{formatPercent(h.winRate)}</div>
                 <div className="text-[0.7rem] text-muted-foreground tabular-nums">
-                  {h.kda.toFixed(2)} KDA
+                  KDA {h.kda.toFixed(2)}
                 </div>
               </div>
             </li>

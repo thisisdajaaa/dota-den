@@ -1,7 +1,9 @@
 import { BookOpenText, ChartNoAxesColumn, FlaskConical, Swords, Users } from "lucide-react";
+import { redirect } from "next/navigation";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/modules/identity/composition";
 
 const AUTH_ERRORS: Record<string, string> = {
   state_mismatch: "Your sign-in session expired or was started in another tab. Please try again.",
@@ -83,7 +85,7 @@ function PreviewCard() {
             </span>
             <span className="text-right tabular-nums">
               {(r.rate * 100).toFixed(0)}%{" "}
-              <span className="text-xs text-muted-foreground">n={r.n}</span>
+              <span className="text-xs text-muted-foreground">{r.n} games</span>
             </span>
           </div>
         ))}
@@ -107,6 +109,7 @@ function PreviewCard() {
 }
 
 export default async function LandingPage({ searchParams }: PageProps<"/">) {
+  if (await getCurrentUser({ tolerateErrors: true })) redirect("/dashboard");
   const { auth_error } = await searchParams;
   const authError = typeof auth_error === "string" ? auth_error : null;
   const signInRequired = authError === "signed_out";

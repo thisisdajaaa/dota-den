@@ -1,3 +1,13 @@
+/** Dota players' own names for party sizes. */
+export function partyName(size: number): string {
+  return size === 2 ? "Duo" : size === 3 ? "Trio" : `${size}-stack`;
+}
+
+export function plural(n: number, word: string): string {
+  const many = word.endsWith("s") ? `${word}es` : `${word}s`;
+  return `${n.toLocaleString("en-US")} ${n === 1 ? word : many}`;
+}
+
 export function formatPercent(rate: number | null): string {
   return rate === null ? "—" : `${(rate * 100).toFixed(1)}%`;
 }
@@ -25,7 +35,7 @@ export function queueLabel(
   partySize: number | null,
 ): string {
   if (queueClass === "solo") return "Solo";
-  if (queueClass === "party") return partySize ? `Party ×${partySize}` : "Party";
+  if (queueClass === "party") return partySize ? partyName(partySize) : "Party";
   return "Unknown";
 }
 

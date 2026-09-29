@@ -195,9 +195,9 @@ export default async function MatchPage({ params }: PageProps<"/matches/[matchId
       />
 
       <p className="text-xs text-muted-foreground">
-        Data from OpenDota, fetched <LocalTime iso={match.fetchedAt.toISOString()} />. Party markers
-        (P1, P2…) show players OpenDota reports as queued together; anonymous players are not
-        identified.
+        Data from OpenDota, fetched <LocalTime iso={match.fetchedAt.toISOString()} />. Players
+        marked P1, P2… queued together as a party. Players who keep their profile anonymous stay
+        anonymous here.
       </p>
     </div>
   );
