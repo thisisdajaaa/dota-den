@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/modules/identity/composition";
+import { getMatchQueries } from "@/modules/matches/composition";
+import { ImportStatusCard } from "@/modules/matches/ui/import-status-card";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) return null;
+  const status = await (await getMatchQueries()).importStatus(user.accountId32);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <ImportStatusCard status={status} />
       <Card>
         <CardHeader>
-          <CardTitle>Signed in</CardTitle>
-          <CardDescription>
-            Your Steam account is linked. Match import arrives in the next milestone.
-          </CardDescription>
+          <CardTitle>Account</CardTitle>
         </CardHeader>
         <CardContent className="text-sm">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
