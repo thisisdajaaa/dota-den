@@ -85,7 +85,59 @@ function matchDetail(id) {
   };
 }
 
+// Synthetic Valve patch feed (shape of www.dota2.com/datafeed).
+const PATCH_TIME = Math.floor(Date.now() / 1000) - 5 * DAY;
+const PATCH_LIST = {
+  success: true,
+  patches: [
+    { patch_number: "7.40", patch_name: "7.40", patch_timestamp: PATCH_TIME - 90 * DAY },
+    { patch_number: "7.41", patch_name: "7.41", patch_timestamp: PATCH_TIME },
+  ],
+};
+function patchNotes(version) {
+  const entry = PATCH_LIST.patches.find((p) => p.patch_number === version);
+  if (!entry) return { success: false, message: "Can't find patch notes" };
+  return {
+    ...entry,
+    success: true,
+    general_notes: [
+      { title: "Global Changes", generic: [{ indent_level: 1, note: "Fixture general change" }] },
+    ],
+    items: [
+      { ability_id: -1, title: "Basic Items", is_general_note: true, ability_notes: [] },
+      { ability_id: 36, ability_notes: [{ indent_level: 1, note: "Magic Wand cost decreased" }] },
+    ],
+    neutral_items: [],
+    heroes: [
+      {
+        hero_id: 14,
+        hero_notes: [{ indent_level: 1, note: "Base Armor increased by 1" }],
+        abilities: [
+          {
+            ability_id: 5075,
+            ability_notes: [{ indent_level: 1, note: "Meat Hook cooldown reduced" }],
+          },
+        ],
+      },
+      { hero_id: 1, talent_notes: [{ indent_level: 1, note: "Level 10 talent changed" }] },
+    ],
+    neutral_creeps: [],
+  };
+}
+
 const routes = [
+  [/^\/datafeed\/patchnoteslist$/, () => PATCH_LIST],
+  [/^\/datafeed\/patchnotes$/, (_m, url) => patchNotes(url.searchParams.get("version"))],
+  [/^\/api\/constants\/ability_ids$/, () => ({ 5075: "pudge_meat_hook" })],
+  [
+    /^\/api\/constants\/abilities$/,
+    () => ({
+      pudge_meat_hook: {
+        dname: "Meat Hook",
+        img: "/apps/dota2/images/dota_react/abilities/pudge_meat_hook.png",
+      },
+    }),
+  ],
   [
     /^\/api\/players\/(\d+)\/matches$/,
     (m, url) => {

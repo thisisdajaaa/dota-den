@@ -17,6 +17,8 @@ const EnvSchema = z
     OPENDOTA_API_KEY: z.string().min(1).optional(),
     /** Override for tests (fixture server). Defaults to the public API. */
     OPENDOTA_BASE_URL: z.url().optional(),
+    /** Override for tests (fixture server). Defaults to Valve's datafeed. */
+    VALVE_DATAFEED_BASE_URL: z.url().optional(),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
     ADMIN_STEAM_IDS: z
       .string()

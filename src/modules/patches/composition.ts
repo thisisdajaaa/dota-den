@@ -53,7 +53,7 @@ function referenceCatalog(): OpenDotaPatchReferenceCatalog {
 export async function getPatchImportService(): Promise<PatchImportService> {
   const db = await getDb();
   return new PatchImportService({
-    source: new ValvePatchAdapter(gateways().valve),
+    source: new ValvePatchAdapter(gateways().valve, { baseUrl: env().VALVE_DATAFEED_BASE_URL }),
     references: referenceCatalog(),
     patches: new MongoPatchRepository(db),
     refreshState: new MongoPatchRefreshStateRepository(db),

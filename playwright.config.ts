@@ -7,6 +7,8 @@ export default defineConfig({
   testDir: "tests/e2e",
   globalSetup: "./tests/e2e/support/global-setup.ts",
   fullyParallel: true,
+  // Runs against `next dev`, which compiles routes on first hit.
+  expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
@@ -34,6 +36,7 @@ export default defineConfig({
         NEXT_DIST_DIR: ".next-e2e",
         // Never call the real OpenDota API from tests.
         OPENDOTA_BASE_URL: "http://localhost:3101/api",
+        VALVE_DATAFEED_BASE_URL: "http://localhost:3101/datafeed",
       },
     },
   ],
