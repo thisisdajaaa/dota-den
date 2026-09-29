@@ -21,6 +21,11 @@ const EnvSchema = z
     VALVE_DATAFEED_BASE_URL: z.url().optional(),
     /** Groq key for the AI draft opponent; without it the AI uses a rule-based fallback. */
     GROQ_API_KEY: z.string().min(1).optional(),
+    /** Multiplayer draft rooms (spec release gate: feature flag). Default on. */
+    FEATURE_DRAFT_ROOMS: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((v) => v !== "false"),
     DRAFT_AI_MODEL: z.string().min(1).optional(),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
     ADMIN_STEAM_IDS: z

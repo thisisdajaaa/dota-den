@@ -56,6 +56,7 @@ export function TeamPanel({
   isFirst,
   reserveLabel,
   controller,
+  captainName,
 }: {
   side: Side;
   picks: readonly DraftSelection[];
@@ -68,6 +69,8 @@ export function TeamPanel({
   reserveLabel: string | null;
   /** Who drafts this side in a vs-AI game. */
   controller?: "you" | "ai";
+  /** Multiplayer: the captain drafting this side. */
+  captainName?: string | null;
 }) {
   const radiant = side === "radiant";
   return (
@@ -95,6 +98,11 @@ export function TeamPanel({
               )}
             >
               {controller === "you" ? "You" : "AI"}
+            </span>
+          )}
+          {captainName && (
+            <span className="max-w-32 truncate text-xs text-muted-foreground" title={captainName}>
+              {captainName}
             </span>
           )}
           {isFirst && (
