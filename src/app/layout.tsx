@@ -1,14 +1,24 @@
 import type { Metadata } from "next";
-import { Cinzel, Geist, Geist_Mono } from "next/font/google";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
+import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// Fonts are bundled (no Google Fonts download at build time, which made CI builds flaky).
+// Geist: the `geist` package's self-hosted files; variables --font-geist-sans/--font-geist-mono.
+const geistSans = GeistSans;
+const geistMono = GeistMono;
 // Display face for the wordmark and page titles only; numbers stay in the sans.
-const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"], weight: ["600", "700"] });
+// Cinzel variable font (OFL), vendored from Fontsource.
+const cinzel = localFont({
+  src: "./fonts/cinzel-latin-wght.woff2",
+  variable: "--font-cinzel",
+  weight: "400 900",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: { default: "Dota Den", template: "%s · Dota Den" },
