@@ -9,6 +9,7 @@ import type {
 } from "@/modules/matches/application/ports";
 import {
   BACKFILL_COOLDOWN_MS,
+  HISTORY_REFRESH_INTERVAL_MS,
   MatchSyncService,
   SYNC_COOLDOWN_MS,
 } from "@/modules/matches/application/match-sync-service";
@@ -43,6 +44,7 @@ function imported(i: number, overrides: Partial<ImportedPlayerMatch> = {}): Impo
 /** Upstream history, newest first, like OpenDota. */
 class FakeUpstream implements MatchProvider {
   calls: Array<{ offset: number; limit: number }> = [];
+  refreshRequests = 0;
   failOnCall: number | null = null;
   constructor(public history: ImportedPlayerMatch[]) {}
   add(m: ImportedPlayerMatch) {
@@ -56,6 +58,10 @@ class FakeUpstream implements MatchProvider {
       matches: this.history.slice(page.offset, page.offset + page.limit),
       rejectedCount: 0,
     });
+  }
+  async requestHistoryRefresh() {
+    this.refreshRequests++;
+    return ok(true as const);
   }
   async fetchPlayerProfile() {
     return err({ type: "not_found" as const });
@@ -94,6 +100,7 @@ class MemorySyncState implements SyncStateRepository {
       newestStartedAt: null,
       backfillOffset: 0,
       backfillComplete: false,
+      historyRefreshRequestedAt: null,
       lockedUntil: null,
     };
     if (this.state.lockedUntil && this.state.lockedUntil > now) return { type: "locked" };
@@ -147,7 +154,14 @@ describe("MatchSyncService", () => {
     const res = await ctx.service.sync(ACCOUNT);
     expect(res).toEqual({
       ok: true,
-      value: { fetched: 7, inserted: 7, updated: 0, rejected: 0, backfillComplete: true },
+      value: {
+        fetched: 7,
+        inserted: 7,
+        updated: 0,
+        rejected: 0,
+        backfillComplete: true,
+        historyRefreshRequested: true,
+      },
     });
     const fact = [...ctx.facts.byKey.values()][0];
     expect(fact.queue.queueClass).toBe("solo");
@@ -194,11 +208,54 @@ describe("MatchSyncService", () => {
       newestStartedAt: null,
       backfillOffset: 0,
       backfillComplete,
+      historyRefreshRequestedAt: null,
     });
     expect(MatchSyncService.isStale(null, now)).toBe(true);
     expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, false), now)).toBe(true);
     expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, true), now)).toBe(false);
     expect(MatchSyncService.isStale(at(SYNC_COOLDOWN_MS, true), now)).toBe(true);
+  });
+
+  it("asks the upstream to fetch history on first sync and while still empty, at most every 6h", async () => {
+    const ctx = setup(0);
+    const first = await ctx.service.sync(ACCOUNT);
+    expect(first.ok && first.value.historyRefreshRequested).toBe(true);
+    expect(ctx.upstream.refreshRequests).toBe(1);
+
+    // Still empty 10 minutes later: throttled.
+    ctx.advance(SYNC_COOLDOWN_MS * 2);
+    const second = await ctx.service.sync(ACCOUNT);
+    expect(second.ok && second.value.historyRefreshRequested).toBe(false);
+    expect(ctx.upstream.refreshRequests).toBe(1);
+
+    // Still empty after 6h: ask again.
+    ctx.advance(HISTORY_REFRESH_INTERVAL_MS);
+    await ctx.service.sync(ACCOUNT);
+    expect(ctx.upstream.refreshRequests).toBe(2);
+  });
+
+  it("does not keep asking once matches exist", async () => {
+    const ctx = setup(5);
+    await ctx.service.sync(ACCOUNT); // first sync: one request
+    ctx.advance(HISTORY_REFRESH_INTERVAL_MS + 1);
+    await ctx.service.sync(ACCOUNT);
+    expect(ctx.upstream.refreshRequests).toBe(1);
+  });
+
+  it("gives a full backfill to a history that appears after an empty first sync", async () => {
+    // Regression: an empty first sync marked history complete, so a later 45-match history
+    // stopped after the head pages and never backfilled the rest.
+    const ctx = setup(0);
+    await ctx.service.sync(ACCOUNT);
+    for (let i = 0; i < 45; i++) ctx.upstream.add(imported(i));
+
+    ctx.advance(SYNC_COOLDOWN_MS + 1);
+    const next = await ctx.service.sync(ACCOUNT);
+    expect(next.ok && next.value).toMatchObject({ fetched: 30, backfillComplete: false });
+    ctx.advance(BACKFILL_COOLDOWN_MS + 1);
+    const last = await ctx.service.sync(ACCOUNT);
+    expect(last.ok && last.value.backfillComplete).toBe(true);
+    expect(ctx.facts.byKey.size).toBe(45);
   });
 
   it("enforces the cooldown between syncs", async () => {

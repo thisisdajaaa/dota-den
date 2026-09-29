@@ -162,6 +162,7 @@ export class MongoSyncStateRepository implements SyncStateRepository {
             newestStartedAt: null,
             backfillOffset: 0,
             backfillComplete: false,
+            historyRefreshRequestedAt: null,
           },
         },
         { upsert: true, returnDocument: "after" },
@@ -202,6 +203,8 @@ function toState(doc: SyncStateDoc): SyncState {
     newestStartedAt: doc.newestStartedAt,
     backfillOffset: doc.backfillOffset,
     backfillComplete: doc.backfillComplete,
+    // Older documents predate this field.
+    historyRefreshRequestedAt: doc.historyRefreshRequestedAt ?? null,
   };
 }
 

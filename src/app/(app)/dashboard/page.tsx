@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/modules/identity/composition";
 import {
   BACKFILL_COOLDOWN_MS,
   MatchSyncService,
+  SYNC_COOLDOWN_MS,
 } from "@/modules/matches/application/match-sync-service";
 import type { DashboardFilter } from "@/modules/matches/application/ports";
 import { getHeroMap, getMatchQueries, getPlayerProfile } from "@/modules/matches/composition";
@@ -59,12 +60,23 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           stale={MatchSyncService.isStale(sync, now)}
           backfillComplete={sync?.backfillComplete ?? false}
           backfillCooldownMs={BACKFILL_COOLDOWN_MS}
+          recheckMs={SYNC_COOLDOWN_MS}
+          awaitingHistory={!hasAnyMatches && sync?.lastSyncAt != null}
           lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}
         />
       </PlayerBanner>
 
       {!hasAnyMatches ? (
-        <EmptyState syncing={!sync?.lastSyncAt} />
+        <EmptyState
+          stage={
+            !sync?.lastSyncAt
+              ? "first_sync"
+              : sync.historyRefreshRequestedAt &&
+                  now.getTime() - sync.historyRefreshRequestedAt.getTime() < 2 * 3_600_000
+                ? "fetching"
+                : "no_public_data"
+          }
+        />
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -133,20 +145,33 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   );
 }
 
-function EmptyState({ syncing }: { syncing: boolean }) {
+const EMPTY_COPY = {
+  first_sync: {
+    title: "Summoning your match history…",
+    body: "We're importing your games from OpenDota. This page updates automatically.",
+  },
+  fetching: {
+    title: "OpenDota is fetching your match history",
+    body: "We've asked OpenDota to pull your games from Steam. This usually takes a few minutes, sometimes longer for big histories. You can leave this page open: it checks again automatically.",
+  },
+  no_public_data: {
+    title: "No public matches found yet",
+    body: "OpenDota still has no games for this account. In Dota 2, go to Settings → Options → Social and turn on “Expose Public Match Data”. We ask OpenDota to re-fetch your history every few hours, and it also picks up games you play from now on.",
+  },
+} as const;
+
+function EmptyState({ stage }: { stage: keyof typeof EMPTY_COPY }) {
+  const copy = EMPTY_COPY[stage];
   return (
-    <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
+    <section
+      className="panel grid place-items-center gap-3 px-6 py-16 text-center"
+      aria-live="polite"
+    >
       <span className="grid size-14 place-items-center rounded-full bg-gold/10 text-gold ring-1 ring-gold/30">
         <Swords aria-hidden className="size-6" />
       </span>
-      <h2 className="text-lg font-semibold">
-        {syncing ? "Summoning your match history…" : "No matches found"}
-      </h2>
-      <p className="max-w-md text-sm text-muted-foreground">
-        {syncing
-          ? "We're importing your games from OpenDota. This page updates automatically."
-          : "OpenDota has no public matches for this account yet. In Dota 2, enable “Expose Public Match Data”, play a game, and we'll pick it up on your next visit."}
-      </p>
+      <h2 className="text-lg font-semibold">{copy.title}</h2>
+      <p className="max-w-md text-sm text-muted-foreground">{copy.body}</p>
     </section>
   );
 }

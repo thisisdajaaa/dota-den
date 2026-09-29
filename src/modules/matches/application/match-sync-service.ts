@@ -17,6 +17,8 @@ export const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
 export const BACKFILL_COOLDOWN_MS = 30 * 1000;
 export const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
 export const PAGE_SIZE = 100;
+/** How often we may ask the upstream to refetch a player's history. */
+export const HISTORY_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const MAX_PAGES_PER_SYNC = 5;
 
 export type SyncError =
@@ -30,6 +32,8 @@ export interface SyncSummary {
   updated: number;
   rejected: number;
   backfillComplete: boolean;
+  /** True when this sync asked the upstream to fetch the player's history from Steam. */
+  historyRefreshRequested: boolean;
 }
 
 export function toFact(
@@ -87,12 +91,16 @@ export class MatchSyncService {
     if (lock.type === "cooldown") return err({ type: "cooldown", retryAt: lock.retryAt });
 
     const state = lock.state;
+    // Nothing imported yet: treat as a fresh history, so a later non-empty result gets a
+    // full backfill instead of stopping after the head pages.
+    const fresh = state.newestStartedAt === null;
     const summary: SyncSummary = {
       fetched: 0,
       inserted: 0,
       updated: 0,
       rejected: 0,
-      backfillComplete: state.backfillComplete,
+      backfillComplete: fresh ? false : state.backfillComplete,
+      historyRefreshRequested: false,
     };
 
     try {
@@ -101,7 +109,7 @@ export class MatchSyncService {
       const entries = timeline.ok ? timeline.value : [];
 
       let newestStartedAt = state.newestStartedAt;
-      let backfillOffset = state.backfillOffset;
+      let backfillOffset = fresh ? 0 : state.backfillOffset;
       let offset = 0;
       let newCount = 0;
 
@@ -140,11 +148,26 @@ export class MatchSyncService {
         if (page.value.rawCount < pageSize) summary.backfillComplete = true;
       }
 
+      // First sync, or still nothing to import: ask the upstream to fetch the history from
+      // Steam (throttled). Best effort; the import itself already succeeded.
+      let historyRefreshRequestedAt = state.historyRefreshRequestedAt;
+      const refreshDue =
+        !historyRefreshRequestedAt ||
+        this.now().getTime() - historyRefreshRequestedAt.getTime() >= HISTORY_REFRESH_INTERVAL_MS;
+      if ((state.lastSyncAt === null || newestStartedAt === null) && refreshDue) {
+        const requested = await this.deps.provider.requestHistoryRefresh(accountId32);
+        if (requested.ok) {
+          historyRefreshRequestedAt = this.now();
+          summary.historyRefreshRequested = true;
+        }
+      }
+
       await this.deps.syncState.release(accountId32, {
         lastSyncAt: this.now(),
         newestStartedAt,
         backfillOffset,
         backfillComplete: summary.backfillComplete,
+        historyRefreshRequestedAt,
       });
       return ok(summary);
     } catch (e) {
