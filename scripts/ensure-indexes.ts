@@ -7,6 +7,7 @@ import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-i
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
 import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
 import { ensurePatchIndexes } from "@/modules/patches/infrastructure/mongo-patch-repositories";
+import { ensurePlayerIndexes } from "@/modules/players/infrastructure/mongo-follow-repository";
 
 async function main(): Promise<void> {
   const db = await getDb();
@@ -14,6 +15,7 @@ async function main(): Promise<void> {
   await ensureMatchIndexes(db);
   await ensureMmrIndexes(db);
   await ensurePatchIndexes(db);
+  await ensurePlayerIndexes(db);
   console.log(`Indexes ensured on ${db.databaseName}`);
   await (await getMongoClient()).close();
 }

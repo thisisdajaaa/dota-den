@@ -14,12 +14,15 @@ export function PlayerBanner({
   profile,
   accountId32,
   signature,
+  kicker = "Your den",
   children,
 }: {
   profile: PlayerProfileSnapshot | null;
   accountId32: number;
   /** Most-played hero in the current view; its render sits behind the banner. */
   signature?: SignatureHero | null;
+  /** Small label above the name. */
+  kicker?: string;
   /** Right-aligned slot (sync status). */
   children?: React.ReactNode;
 }) {
@@ -54,7 +57,7 @@ export function PlayerBanner({
 
       <div className="flex flex-col gap-6 p-5 sm:p-8">
         <div className="flex items-start justify-between gap-4">
-          <p className="kicker">Your den</p>
+          <p className="kicker">{kicker}</p>
           {children}
         </div>
 
