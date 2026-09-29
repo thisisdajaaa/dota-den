@@ -9,17 +9,19 @@ import {
   ScrollText,
   Swords,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
 
-export type NavKey = "overview" | "matches" | "mmr" | "players" | "patches" | "draft";
+export type NavKey = "overview" | "matches" | "mmr" | "together" | "players" | "patches" | "draft";
 
 const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
   [
     { key: "overview", href: "/dashboard", label: "Overview", icon: LayoutDashboard, auth: true },
     { key: "matches", href: "/matches", label: "Matches", icon: ScrollText, auth: true },
     { key: "mmr", href: "/mmr", label: "MMR journal", icon: CalendarRange, auth: true },
+    { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },

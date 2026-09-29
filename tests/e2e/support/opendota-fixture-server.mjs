@@ -52,9 +52,37 @@ function player(slot, extra = {}) {
   };
 }
 
+// "Play together" fixture: shared matches between ACCOUNT and Fixture Peer (40001), by index
+// into MATCHES. Party games carry a shared party id on the same team (matching their duo
+// party_size above); one same-team game has no party data; one is on opposite teams.
+const FRIEND = 40_001;
+const SHARED = { party: [6, 7, 8, 9], sameTeamUnknown: [10], opponents: [2] };
+const sharedIndices = [...SHARED.party, ...SHARED.sameTeamUnknown, ...SHARED.opponents];
+
+/** Seats for ACCOUNT and FRIEND in match `i`, or null when the friend isn't in it. */
+function sharedSeats(i, mySlot) {
+  const teammateSlot = mySlot < 128 ? 2 : 130;
+  const opponentSlot = mySlot < 128 ? 130 : 2;
+  const friend = { account_id: FRIEND, personaname: "Fixture Peer", hero_id: 101 };
+  if (SHARED.party.includes(i)) {
+    const party = { party_id: 900 + i, party_size: 2 };
+    return { me: party, friendSlot: teammateSlot, friend: { ...friend, ...party } };
+  }
+  if (SHARED.sameTeamUnknown.includes(i)) {
+    const none = { party_id: null, party_size: null };
+    return { me: none, friendSlot: teammateSlot, friend: { ...friend, ...none } };
+  }
+  if (SHARED.opponents.includes(i)) {
+    return { me: {}, friendSlot: opponentSlot, friend: { ...friend, party_size: 1 } };
+  }
+  return null;
+}
+
 function matchDetail(id) {
-  const row = MATCHES.find((m) => String(m.match_id) === id);
-  if (!row) return null;
+  const index = MATCHES.findIndex((m) => String(m.match_id) === id);
+  if (index < 0) return null;
+  const row = MATCHES[index];
+  const shared = sharedSeats(index, row.player_slot);
   const players = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot) =>
     slot === row.player_slot
       ? player(slot, {
@@ -62,8 +90,11 @@ function matchDetail(id) {
           personaname: "Fixture Hero",
           hero_id: row.hero_id,
           kills: row.kills,
+          ...shared?.me,
         })
-      : player(slot),
+      : shared && slot === shared.friendSlot
+        ? player(slot, shared.friend)
+        : player(slot),
   );
   return {
     match_id: row.match_id,
@@ -244,7 +275,14 @@ const routes = [
       if (Number(m[1]) !== ACCOUNT) return [];
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Number(url.searchParams.get("limit") ?? 100);
-      return MATCHES.slice(offset, offset + limit);
+      // Matches the other account also played in (either team).
+      const included = url.searchParams.get("included_account_id");
+      const rows = !included
+        ? MATCHES
+        : Number(included) === FRIEND
+          ? MATCHES.filter((_, i) => sharedIndices.includes(i))
+          : [];
+      return rows.slice(offset, offset + limit);
     },
   ],
   [/^\/api\/players\/(\d+)$/, (m) => profile(m[1])],

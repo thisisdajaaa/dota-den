@@ -92,6 +92,19 @@ export async function getPublicPlayer(accountId32: number): Promise<PublicPlayer
   };
 }
 
+/**
+ * Any player's public name, avatar and rank (cached upstream), with the avatar limited to
+ * Steam's CDN like every other profile view. null when OpenDota can't provide it.
+ */
+export async function getPublicProfile(accountId32: number): Promise<PlayerProfileSnapshot | null> {
+  const res = await getOpenDotaAdapter().fetchPlayerProfile(accountId32);
+  if (!res.ok) {
+    warnOnError("player_profile_failed", { accountId32 }, res);
+    return null;
+  }
+  return { ...res.value, avatarUrl: steamAvatar(res.value.avatarUrl) };
+}
+
 /** Run `fn` over `items` with at most `limit` in flight (be gentle with the upstream). */
 async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => Promise<R>) {
   const out: R[] = new Array(items.length);

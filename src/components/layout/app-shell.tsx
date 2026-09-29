@@ -14,7 +14,15 @@ import { BrandMark } from "./brand-mark";
 import { SiteFooter } from "./site-footer";
 
 /** Sections that have shipped. Add a key here when its page lands. */
-const ENABLED: readonly NavKey[] = ["overview", "matches", "mmr", "players", "patches", "draft"];
+const ENABLED: readonly NavKey[] = [
+  "overview",
+  "matches",
+  "mmr",
+  "together",
+  "players",
+  "patches",
+  "draft",
+];
 
 function Brand() {
   return (
