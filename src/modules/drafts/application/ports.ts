@@ -1,5 +1,5 @@
 import type { Result } from "@/modules/shared/domain/result";
-import type { HeroMeta, MatchupTable } from "../domain/draft-scoring";
+import type { HeroMeta, MatchupTable, ProMeta, SynergyTable } from "../domain/draft-scoring";
 
 export interface AdvisorHero {
   id: number;
@@ -26,6 +26,8 @@ export interface AdvisorRequest {
   enemyBans: readonly AdvisorHero[];
   /** Plain-language lineup situation, e.g. "You have 3 cores and 0 supports: pick a support." */
   situation: string;
+  /** Current tournament picture, e.g. the most contested heroes. Empty when unavailable. */
+  metaContext?: readonly string[];
   /** Pre-scored shortlist; the model must choose one of these. */
   candidates: readonly AdvisorCandidate[];
 }
@@ -47,4 +49,8 @@ export interface DraftInsights {
   heroMeta(): Promise<ReadonlyMap<number, HeroMeta>>;
   /** Head-to-head records for one hero against every other hero. */
   matchups(heroId: number): Promise<MatchupTable | null>;
+  /** Recent tournament drafts: picks, bans and pro win rates per hero. */
+  proMeta?(): Promise<ProMeta | null>;
+  /** Same-team pro records of hero pairs. */
+  synergy?(): Promise<SynergyTable | null>;
 }

@@ -25,6 +25,9 @@ const MATCHES = Array.from({ length: 12 }, (_, i) => ({
   assists: 10,
   average_rank: 55,
   party_size: i < 6 ? 1 : i < 10 ? 2 : null,
+  // Parsed-replay lane info (1 safe, 2 mid, 3 off): Anti-Mage in the safe lane, Pudge off.
+  lane_role: i % 3 === 0 ? 3 : 1,
+  is_roaming: false,
 }));
 
 function player(slot, extra = {}) {
@@ -217,7 +220,184 @@ function heroStats(id) {
   ];
 }
 
+// Synthetic public hero stats for the draft AI and challenges. Deterministic, made-up numbers:
+// the named heroes (1, 14) sit at 48% so they never top a suggestion list.
+const HERO_IDS = Object.keys(HEROES).map(Number);
+function publicHeroStats() {
+  return HERO_IDS.map((id) => {
+    const rate = id < 100 ? 0.48 : 0.44 + ((id * 7) % 13) / 100;
+    const bracket = (n) => {
+      const pick = 6_000 + (id % 9) * 1_000 + n * 500;
+      return [pick, Math.round(pick * rate)];
+    };
+    const [p6, w6] = bracket(0);
+    const [p7, w7] = bracket(1);
+    const [p8, w8] = bracket(2);
+    // 7 days of public picks: every 5th hero gains share, every 7th loses it, the rest are flat.
+    const drift = id % 5 === 0 ? 0.06 : id % 7 === 0 ? -0.06 : 0;
+    const pickTrend = Array.from({ length: 7 }, (_, d) =>
+      Math.round(20_000 * (1 + drift * (d - 3)) * (d === 5 || d === 6 ? 1.2 : 1)),
+    );
+    return {
+      id,
+      localized_name: HEROES[id].localized_name,
+      roles: HEROES[id].roles,
+      "6_pick": p6,
+      "6_win": w6,
+      "7_pick": p7,
+      "7_win": w7,
+      "8_pick": p8,
+      "8_win": w8,
+      pub_pick_trend: pickTrend,
+      pub_win_trend: pickTrend.map((n) => Math.round(n * rate)),
+      pro_pick: id % 4,
+      pro_win: id % 2,
+      pro_ban: id % 3,
+    };
+  });
+}
+
+/**
+ * Lane-role scenarios (rows per lane role and game-length bucket; counts as strings, like the
+ * real API). Lanes follow the fixture role sets: carries safe, nukers mid, initiators off,
+ * supports split between the safe and off lanes.
+ */
+const LANE_SPLITS = [
+  { 1: 0.8, 2: 0.2 },
+  { 1: 0.5, 3: 0.5 },
+  { 3: 0.8, 2: 0.2 },
+  { 2: 0.8, 3: 0.2 },
+  { 1: 0.6, 3: 0.4 },
+  { 3: 0.6, 1: 0.4 },
+];
+function laneRoles(heroId) {
+  const id = Number(heroId);
+  if (!HEROES[id]) return [];
+  const split = id === 1 ? { 1: 1 } : id === 14 ? { 3: 1 } : LANE_SPLITS[id % LANE_SPLITS.length];
+  return Object.entries(split).flatMap(([lane, share]) =>
+    [900, 1800, 2700].map((time) => {
+      const games = Math.round(300 * share);
+      const rate = 0.45 + ((id * 3 + Number(lane) * 7 + time / 900) % 11) / 100;
+      return {
+        hero_id: id,
+        lane_role: Number(lane),
+        time,
+        games: String(games),
+        wins: String(Math.round(games * rate)),
+      };
+    }),
+  );
+}
+
+/**
+ * Explorer (SQL over the pro match database). Only the two queries the Meta page sends are
+ * recognised, by the tables they read; anything else answers like a failed query.
+ */
+function metaExplorer(sql) {
+  const q = sql ?? "";
+  if (q.includes("picks_bans")) {
+    return {
+      rows: HERO_IDS.filter((id) => id >= 100).map((id) => ({
+        hero_id: id,
+        picks: (id * 7) % 23,
+        bans: (id * 5) % 31,
+        leagues: 1 + (id % 4),
+        drafts: 120,
+      })),
+      err: null,
+    };
+  }
+  if (q.includes("player_matches")) {
+    // Same-team lane pairs: a carry-type core with a support in the safe lane (1) and an
+    // initiator with a support in the off lane (3).
+    const rows = [];
+    const cores = HERO_IDS.filter((id) => id >= 100 && [0, 4].includes(id % 6));
+    const offlaners = HERO_IDS.filter((id) => id >= 100 && id % 6 === 2);
+    const supports = HERO_IDS.filter((id) => id >= 100 && [1, 5].includes(id % 6));
+    cores.slice(0, 5).forEach((c, i) => {
+      const s = supports[i];
+      const games = 8 + ((c + s) % 17);
+      rows.push({
+        h1: Math.min(c, s),
+        h2: Math.max(c, s),
+        lane_role: 1,
+        games,
+        wins: Math.round(games * (0.4 + (i % 4) * 0.08)),
+      });
+    });
+    offlaners.slice(0, 5).forEach((o, i) => {
+      const s = supports[supports.length - 1 - i];
+      const games = 9 + ((o + s) % 13);
+      rows.push({
+        h1: Math.min(o, s),
+        h2: Math.max(o, s),
+        lane_role: 3,
+        games,
+        wins: Math.round(games * (0.42 + (i % 3) * 0.09)),
+      });
+    });
+    // Too few games to show.
+    rows.push({ h1: 101, h2: 102, lane_role: 1, games: 5, wins: 5 });
+    return { rows, err: null };
+  }
+  return { rows: [], err: "error: unsupported fixture query" };
+}
+/** Head-to-head of `id` against every other hero; `wins` are `id`'s wins. */
+function heroMatchups(id) {
+  const self = Number(id);
+  if (!HEROES[self]) return null;
+  return HERO_IDS.filter((other) => other !== self).map((other) => {
+    const skew = (((self * 31 + other * 17) % 21) - 10) / 200;
+    const games = 300 + (other % 5) * 20;
+    return { hero_id: other, games_played: games, wins: Math.round(games * (0.5 + skew)) };
+  });
+}
+
+// Synthetic OpenDota explorer (pro match SQL). Answers by the shape of the query.
+function draftExplorer(sql) {
+  const q = sql ?? "";
+  if (q.includes("player_matches a")) {
+    const rows = [];
+    for (let a = 100; a < 140; a += 3) {
+      const b = a + 1;
+      const games = 8 + (a % 7);
+      rows.push({ h1: a, h2: b, games, wins: Math.round(games * (a % 2 ? 0.7 : 0.35)) });
+    }
+    return { rows, err: null };
+  }
+  if (q.includes("leagues")) {
+    return {
+      rows: [
+        { league: "Fixture Invitational", matches: 90 },
+        { league: "Fixture Qualifier", matches: 30 },
+      ],
+      err: null,
+    };
+  }
+  if (q.includes("picks_bans")) {
+    return {
+      rows: HERO_IDS.filter((id) => id >= 100).map((id) => {
+        const picks = (id * 13) % 50;
+        return { hero_id: id, picks, bans: (id * 7) % 40, wins: Math.floor(picks / 2) };
+      }),
+      err: null,
+    };
+  }
+  return { rows: null, err: "unsupported fixture query" };
+}
+
+/** Route explorer SQL to the Meta page's fixture or the draft AI's, by what each query reads. */
+function explorer(sql) {
+  const q = sql ?? "";
+  const meta = q.includes("AS drafts") || q.includes("a.lane");
+  return meta ? metaExplorer(q) : draftExplorer(q);
+}
+
 const routes = [
+  [/^\/api\/heroStats$/, () => publicHeroStats()],
+  [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
+  [/^\/api\/scenarios\/laneRoles$/, (_m, url) => laneRoles(url.searchParams.get("hero_id"))],
+  [/^\/api\/explorer$/, (_m, url) => explorer(url.searchParams.get("sql"))],
   [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],
   [/^\/api\/search$/, (_m, url) => search(url.searchParams.get("q"))],
   [

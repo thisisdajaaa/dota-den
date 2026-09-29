@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Eye } from "lucide-react";
+import { AlertTriangle, Eye, Puzzle, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { getHeroMap } from "@/modules/matches/composition";
@@ -138,6 +138,20 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
         kicker="Draft practice"
         title="Captain's Mode drafting"
         description="Draft against an AI captain, or practice both sides yourself. Every pick and ban is checked against the real Captain's Mode rules, and you can share any draft as a link."
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link href="/draft/rooms/new">
+                <Users aria-hidden className="size-4" /> Draft with a friend
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/draft/challenges">
+                <Puzzle aria-hidden className="size-4" /> Draft challenges
+              </Link>
+            </Button>
+          </>
+        }
       />
       <DraftBoard heroes={heroes} />
     </div>

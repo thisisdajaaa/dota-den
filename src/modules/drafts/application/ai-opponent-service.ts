@@ -1,11 +1,18 @@
 import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { draftOutlook, type DraftOutlook } from "../domain/draft-outlook";
 import {
+  contestRate,
   lineupNeeds,
+  proSource,
   rankCandidates,
   type Candidate,
+  type HeroMeta,
+  type MatchupTable,
+  type ProMeta,
   type ScoringHero,
+  type SynergyTable,
 } from "../domain/draft-scoring";
-import { availableHeroes, currentTurn, type Side } from "../domain/draft-state";
+import { availableHeroes, currentTurn, type DraftState, type Side } from "../domain/draft-state";
 import { getRuleset } from "../domain/rulesets";
 import type { DraftAdvisor, DraftInsights } from "./ports";
 import { replaySnapshot, type DraftSnapshot } from "./snapshot";
@@ -40,6 +47,29 @@ interface RankedTurn {
   enemyBans: AiHero[];
   situation: string;
   candidates: Candidate[];
+  metaContext: string[];
+}
+
+interface DraftData {
+  meta: ReadonlyMap<number, HeroMeta>;
+  matchups: Map<number, MatchupTable>;
+  pro: ProMeta | undefined;
+  synergy: SynergyTable | undefined;
+}
+
+/** What the tournaments are fighting over right now, in a few lines for the model. */
+function metaContext(pro: ProMeta | undefined, byId: ReadonlyMap<number, AiHero>): string[] {
+  if (!pro) return [];
+  const top = [...pro.heroes.entries()]
+    .map(([id, stat]) => ({ id, stat, contest: contestRate(stat, pro) }))
+    .filter((x) => byId.has(x.id))
+    .sort((a, b) => b.contest - a.contest)
+    .slice(0, 10)
+    .map((x) => `${byId.get(x.id)!.name} ${Math.round(x.contest * 100)}%`);
+  return [
+    `Recent tournaments (${proSource(pro)}, ${pro.matches} drafts).`,
+    `Most contested heroes (share of drafts that picked or banned them): ${top.join(", ")}.`,
+  ];
 }
 
 function situation(
@@ -105,17 +135,10 @@ export class AiOpponentService {
     const ownPicksLeft = remaining.filter((s) => (s.team === "first") === firstIsSide).length;
     const enemyPicksLeft = remaining.length - ownPicksLeft;
 
-    // Ground the choice in public data: meta plus head-to-heads vs the heroes that matter.
+    // Ground the choice in public data: meta, tournaments, and head-to-heads vs the heroes
+    // that matter.
     const relevant = turn.action === "pick" ? enemy : own;
-    const [meta, tables] = await Promise.all([
-      this.deps.insights?.heroMeta() ?? Promise.resolve(new Map()),
-      Promise.all(
-        relevant.map(async (h) => [h.id, await this.deps.insights?.matchups(h.id)] as const),
-      ),
-    ]);
-    const matchups = new Map(
-      tables.filter((t): t is readonly [number, NonNullable<(typeof t)[1]>] => !!t[1]),
-    );
+    const { meta, matchups, pro, synergy } = await this.data(relevant);
 
     const candidates = rankCandidates({
       action: turn.action,
@@ -126,6 +149,8 @@ export class AiOpponentService {
       enemyPicksLeft,
       meta,
       matchups,
+      pro,
+      synergy,
       limit,
     });
     if (candidates.length === 0) return err({ type: "no_heroes" });
@@ -141,7 +166,39 @@ export class AiOpponentService {
       enemyBans: lookup(state.sides[enemySide].bans),
       situation: situation(turn.action, needs, turn.action === "ban"),
       candidates,
+      metaContext: metaContext(pro, byId),
     });
+  }
+
+  /** Public stats, tournament data, and matchup tables for `picked`. Failures mean "no data". */
+  private async data(picked: readonly AiHero[]): Promise<DraftData> {
+    const insights = this.deps.insights;
+    const [meta, tables, pro, synergy] = await Promise.all([
+      insights?.heroMeta() ?? Promise.resolve(new Map<number, HeroMeta>()),
+      Promise.all(picked.map(async (h) => [h.id, await insights?.matchups(h.id)] as const)),
+      insights?.proMeta?.().catch(() => null) ?? Promise.resolve(null),
+      insights?.synergy?.().catch(() => null) ?? Promise.resolve(null),
+    ]);
+    const matchups = new Map<number, MatchupTable>();
+    for (const [id, table] of tables) if (table) matchups.set(id, table);
+    return { meta, matchups, pro: pro ?? undefined, synergy: synergy ?? undefined };
+  }
+
+  /** Which side the draft favours so far, with the evidence. Works on partial drafts. */
+  async outlook(snapshot: DraftSnapshot): Promise<Result<DraftOutlook, AiMoveError>> {
+    const replayed = replaySnapshot(
+      snapshot,
+      this.deps.heroes.map((h) => h.id),
+    );
+    if (!replayed.ok) return err({ type: "invalid_snapshot" });
+    const state: DraftState = replayed.value;
+    const byId = new Map(this.deps.heroes.map((h) => [h.id, h]));
+    const team = (side: Side) =>
+      state.sides[side].picks.map((p) => byId.get(p.heroId)).filter((h): h is AiHero => !!h);
+    const radiant = team("radiant");
+    const dire = team("dire");
+    const data = await this.data([...radiant, ...dire]);
+    return ok(draftOutlook({ radiant, dire, ...data }));
   }
 
   /** Data-only suggestions for a human's turn (no language model: instant and free). */
@@ -187,6 +244,7 @@ export class AiOpponentService {
         enemyPicks: enemy,
         enemyBans,
         situation: ranked.value.situation,
+        metaContext: ranked.value.metaContext,
         candidates: candidates.map((c) => ({
           id: c.heroId,
           name: c.name,
