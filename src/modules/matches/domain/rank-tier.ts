@@ -40,3 +40,20 @@ export function parseRankTier(
         : null,
   };
 }
+
+/**
+ * Average medal of the ranked players in a match (rank_tier averaged, then rounded).
+ * Null when nobody's rank is public. Leaderboard positions aren't averaged.
+ */
+export function averageRankTier(
+  rankTiers: ReadonlyArray<number | null>,
+): { rank: RankTier; ranked: number } | null {
+  const valid = rankTiers.filter((t): t is number => parseRankTier(t) !== null);
+  if (valid.length === 0) return null;
+  // Immortal has no stars; count it as tier 80 like the other medals' "x0".
+  const mean = valid.reduce((a, t) => a + t, 0) / valid.length;
+  const medal = Math.min(8, Math.max(1, Math.floor(mean / 10)));
+  const stars = medal === 8 ? 0 : Math.min(5, Math.max(1, Math.round(mean - medal * 10)));
+  const rank = parseRankTier(medal * 10 + (medal === 8 ? 0 : stars));
+  return rank ? { rank, ranked: valid.length } : null;
+}

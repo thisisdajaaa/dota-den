@@ -112,6 +112,9 @@ export function DraftBoard({
   const [aiLog, setAiLog] = useState<AiLogEntry[]>([]);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiRetry, setAiRetry] = useState(0);
+  const [suggestions, setSuggestions] = useState<SuggestionSet | null>(null);
+  /** Steps where you chose one of the suggestions (shown in the draft log). */
+  const [followed, setFollowed] = useState<ReadonlySet<number>>(new Set());
   const [state, setState] = useState<DraftState>(
     () => initial ?? newDraft("cm-2026", "radiant", false),
   );
@@ -205,6 +208,44 @@ export function DraftBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiTurn, state.stateVersion, aiRetry]);
 
+  const humanTurn =
+    state.status === "in_progress" && turn !== null && (!aiSide || turn.side !== aiSide);
+
+  // Data-backed suggestions for your turn; refetched after every move so they react to the
+  // opponent's latest pick or ban.
+  useEffect(() => {
+    if (!humanTurn || !turn) return;
+    const version = state.stateVersion;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/drafts/suggestions", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), side: turn.side }),
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as Omit<SuggestionSet, "version">;
+        if (stateRef.current.stateVersion === version) setSuggestions({ ...body, version });
+      } catch {
+        // Suggestions are optional; the draft works without them.
+      }
+    })();
+    return () => controller.abort();
+    // Keyed on the accepted event count; state is read at that version.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [humanTurn, state.stateVersion]);
+
+  function chooseSuggested(heroId: number) {
+    const step = stateRef.current.stepIndex;
+    const t = currentTurn(stateRef.current);
+    if (!t) return;
+    if (dispatch({ type: t.action, side: t.side, heroId })) {
+      setFollowed((prev) => new Set(prev).add(step));
+    }
+  }
+
   /** Undo; against the AI, keep undoing until it's your turn again. */
   function undo() {
     if (!dispatch({ type: "undo" })) return;
@@ -217,6 +258,7 @@ export function DraftBoard({
     }
     const step = stateRef.current.stepIndex;
     setAiLog((log) => log.filter((e) => e.step < step));
+    setFollowed((prev) => new Set([...prev].filter((s) => s < step)));
     setAiError(null);
   }
 
@@ -235,6 +277,8 @@ export function DraftBoard({
     if (next.opponent) setOpponent(next.opponent);
     setAiLog([]);
     setAiError(null);
+    setFollowed(new Set());
+    setSuggestions(null);
     const fresh = newDraft(r, f, t);
     stateRef.current = fresh;
     setState(fresh);
@@ -506,9 +550,12 @@ export function DraftBoard({
         ))}
       </div>
 
-      {aiSide && started && (
-        <AiCaptainPanel
-          log={aiLog}
+      {started && (
+        <DraftLogPanel
+          turns={state.turns}
+          aiSide={aiSide}
+          aiLog={aiLog}
+          followed={followed}
           heroes={heroMap}
           thinking={aiTurn && !aiError}
           error={aiError}
@@ -528,6 +575,17 @@ export function DraftBoard({
           heroes={heroMap}
         />
       </div>
+
+      {humanTurn && turn && (
+        <SuggestionsPanel
+          action={turn.action}
+          set={suggestions?.version === state.stateVersion ? suggestions : null}
+          heroes={heroMap}
+          unavailable={unavailable}
+          disabled={state.status !== "in_progress"}
+          onChoose={chooseSuggested}
+        />
+      )}
 
       {state.status !== "completed" && (
         <HeroGrid
@@ -558,34 +616,136 @@ export function DraftBoard({
   );
 }
 
-function AiCaptainPanel({
-  log,
+interface SuggestionSet {
+  version: number;
+  action: "pick" | "ban";
+  situation: string;
+  candidates: Array<{ heroId: number; name: string; role: "core" | "support"; facts: string[] }>;
+}
+
+function HeroThumb({ hero, dim }: { hero: DraftHero | undefined; dim?: boolean }) {
+  return (
+    <span className="relative h-6 w-[2.67rem] shrink-0 overflow-hidden rounded bg-muted">
+      {(hero?.imageUrl ?? hero?.iconUrl) && (
+        // eslint-disable-next-line @next/next/no-img-element -- tiny icon
+        <img
+          src={(hero.imageUrl ?? hero.iconUrl)!}
+          alt=""
+          className={cn("size-full object-cover", dim && "grayscale")}
+        />
+      )}
+    </span>
+  );
+}
+
+/** Top options for your turn, ranked with the same data the AI uses. Click to choose. */
+function SuggestionsPanel({
+  action,
+  set,
+  heroes,
+  unavailable,
+  disabled,
+  onChoose,
+}: {
+  action: "pick" | "ban";
+  set: SuggestionSet | null;
+  heroes: Map<number, DraftHero>;
+  unavailable: ReadonlySet<number>;
+  disabled: boolean;
+  onChoose: (heroId: number) => void;
+}) {
+  return (
+    <section className="panel p-4" aria-label="Suggestions">
+      <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold">
+          Suggested {action === "pick" ? "picks" : "bans"} for you
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          {set ? set.situation : "Looking at the draft…"}
+        </span>
+      </header>
+      {!set ? (
+        <div className="flex gap-2" aria-busy>
+          {Array.from({ length: 5 }, (_, i) => (
+            <span key={i} className="h-20 flex-1 animate-pulse rounded-lg bg-white/[0.04]" />
+          ))}
+        </div>
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {set.candidates.map((c) => {
+            const hero = heroes.get(c.heroId);
+            const taken = unavailable.has(c.heroId);
+            return (
+              <li key={c.heroId}>
+                <button
+                  type="button"
+                  disabled={disabled || taken}
+                  onClick={() => onChoose(c.heroId)}
+                  aria-label={`${action} ${c.name}: ${c.facts.join("; ")}`}
+                  className="group flex h-full w-full flex-col gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5 text-left transition hover:border-gold/40 hover:bg-gold/[0.05] focus-visible:border-gold disabled:opacity-40"
+                >
+                  <span className="flex items-center gap-2">
+                    <HeroThumb hero={hero} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium">{c.name}</span>
+                      <span className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
+                        {c.role}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="text-[0.7rem] leading-snug text-muted-foreground">
+                    {c.facts.slice(0, 2).join(" · ")}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** Every pick and ban in order (newest first), for both teams, with the AI's reasoning. */
+function DraftLogPanel({
+  turns,
+  aiSide,
+  aiLog,
+  followed,
   heroes,
   thinking,
   error,
   onRetry,
 }: {
-  log: AiLogEntry[];
+  turns: DraftState["turns"];
+  aiSide: Side | null;
+  aiLog: AiLogEntry[];
+  followed: ReadonlySet<number>;
   heroes: Map<number, DraftHero>;
   thinking: boolean;
   error: string | null;
   onRetry: () => void;
 }) {
-  const model = log.find((e) => e.source === "model")?.model;
+  const reasons = new Map(aiLog.map((e) => [e.step, e]));
+  const model = aiLog.find((e) => e.source === "model")?.model;
+  const who = (side: Side) =>
+    aiSide ? (side === aiSide ? "AI" : "You") : side === "radiant" ? "Radiant" : "Dire";
   return (
-    <section className="panel p-4" aria-label="AI captain">
+    <section className="panel p-4" aria-label="Draft log">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Bot aria-hidden className="size-4 text-gold" /> AI captain
+          <Bot aria-hidden className="size-4 text-gold" /> Draft log
         </h2>
-        <span className="text-xs text-muted-foreground">
-          {model ? `Drafting with ${model} via Groq` : "Waiting for its first move"}
-        </span>
+        {aiSide && (
+          <span className="text-xs text-muted-foreground">
+            {model ? `AI drafting with ${model} via Groq` : "AI captain ready"}
+          </span>
+        )}
       </header>
       {thinking && (
         <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground" role="status">
           <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-gold" />
-          Thinking about its next move…
+          AI captain is thinking about its next move…
         </p>
       )}
       {error && (
@@ -596,39 +756,49 @@ function AiCaptainPanel({
           </Button>
         </p>
       )}
-      {log.length === 0 ? (
-        !thinking && (
-          <p className="text-sm text-muted-foreground">
-            Its picks and bans will show here, with its reasoning.
-          </p>
-        )
+      {turns.length === 0 ? (
+        !thinking && <p className="text-sm text-muted-foreground">Picks and bans will show here.</p>
       ) : (
-        <ol className="max-h-60 space-y-2 overflow-y-auto">
-          {log.map((e) => {
-            const hero = heroes.get(e.heroId);
+        <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">
+          {[...turns].reverse().map((t) => {
+            const hero = t.heroId !== null ? heroes.get(t.heroId) : undefined;
+            const ai = reasons.get(t.stepIndex);
+            const label = who(t.side);
             return (
-              <li key={e.step} className="flex gap-3 text-sm">
-                <span className="relative mt-0.5 h-6 w-[2.67rem] shrink-0 overflow-hidden rounded bg-muted">
-                  {hero?.iconUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element -- tiny icon
-                    <img
-                      src={hero.imageUrl ?? hero.iconUrl}
-                      alt=""
-                      className={cn("size-full object-cover", e.action === "ban" && "grayscale")}
-                    />
-                  )}
+              <li key={t.stepIndex} className="flex gap-3 text-sm">
+                <span className="w-6 shrink-0 pt-0.5 text-right text-[0.65rem] text-muted-foreground tabular-nums">
+                  {t.stepIndex + 1}
                 </span>
-                <span>
-                  <span className="font-medium">
-                    {e.action === "ban" ? "Banned" : "Picked"} {hero?.name ?? `Hero #${e.heroId}`}
+                <HeroThumb hero={hero} dim={t.action === "ban"} />
+                <span className="min-w-0">
+                  <span
+                    className={cn(
+                      "mr-1.5 rounded px-1 text-[0.6rem] font-semibold tracking-wider uppercase",
+                      t.side === "radiant" ? "bg-win/15 text-win" : "bg-loss/15 text-loss",
+                    )}
+                  >
+                    {label}
                   </span>
-                  <span className="text-muted-foreground">: {e.reason}</span>
-                  {e.source === "heuristic" && (
+                  <span className="font-medium">
+                    {t.heroId === null
+                      ? "Ban skipped (time ran out)"
+                      : `${t.action === "ban" ? "Banned" : "Picked"} ${hero?.name ?? `Hero #${t.heroId}`}`}
+                  </span>
+                  {t.resolution === "timeout" && t.heroId !== null && (
+                    <span className="text-muted-foreground"> (random, time ran out)</span>
+                  )}
+                  {ai && <span className="text-muted-foreground">: {ai.reason}</span>}
+                  {ai?.source === "heuristic" && (
                     <span
                       className="ml-1.5 rounded border border-white/15 px-1 text-[0.6rem] text-muted-foreground"
-                      title="The language model was unavailable, so a rule-based choice was made"
+                      title="The language model was unavailable, so the top-scored option was used"
                     >
                       rule-based
+                    </span>
+                  )}
+                  {followed.has(t.stepIndex) && (
+                    <span className="ml-1.5 rounded border border-gold/30 px-1 text-[0.6rem] text-gold">
+                      suggested
                     </span>
                   )}
                 </span>

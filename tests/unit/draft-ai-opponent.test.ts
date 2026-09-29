@@ -110,6 +110,37 @@ describe("AiOpponentService", () => {
     expect(move.ok && move.value.heroId).toBeGreaterThan(20);
   });
 
+  it("suggests data-ranked options for a human's turn without calling the model", async () => {
+    const adv = advisor(ok({ heroId: 1, reason: "unused" }));
+    const svc = new AiOpponentService({
+      advisor: adv,
+      insights: insights({ 12: 0.57, 5: 0.54 }),
+      heroes,
+    });
+    const res = await svc.suggestions(start, "radiant");
+    expect(res.ok && res.value.action).toBe("ban");
+    expect(res.ok && res.value.candidates.map((c) => c.heroId).slice(0, 2)).toEqual([12, 5]);
+    expect(res.ok && res.value.candidates).toHaveLength(5);
+    expect(adv.suggest).not.toHaveBeenCalled();
+    expect(await svc.suggestions(start, "dire")).toMatchObject({
+      ok: false,
+      error: { type: "not_ai_turn" },
+    });
+  });
+
+  it("mixes cores and supports in pick suggestions when both roles are open", async () => {
+    // Cores 1-20 have the best win rates; supports 21-40 are lower but still offered.
+    const wr: Record<number, number> = {};
+    for (let id = 1; id <= 40; id++) wr[id] = id <= 20 ? 0.56 : 0.51;
+    const svc = new AiOpponentService({ advisor: null, insights: insights(wr), heroes });
+    // Steps 1-7 are bans; step 8 is Radiant's first pick.
+    const res = await svc.suggestions({ ...start, t: [31, 32, 33, 34, 35, 36, 37] }, "radiant");
+    const roles = res.ok ? res.value.candidates.map((c) => c.role) : [];
+    expect(res.ok && res.value.action).toBe("pick");
+    expect(roles.filter((r) => r === "core")).toHaveLength(3);
+    expect(roles.filter((r) => r === "support")).toHaveLength(2);
+  });
+
   it("refuses to move on the human's turn or for a tampered draft", async () => {
     const svc = new AiOpponentService({ advisor: null, insights: null, heroes });
     expect(await svc.move(start, "dire")).toEqual({ ok: false, error: { type: "not_ai_turn" } });
