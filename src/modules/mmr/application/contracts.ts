@@ -22,7 +22,8 @@ export const MmrEntryInputSchema = z.object({
     .string()
     .trim()
     .max(280, "Keep notes under 280 characters")
-    .optional()
+    // The form sends null for an empty note after its own parse; accept both.
+    .nullish()
     .transform((v) => (v ? v : null)),
 });
 
