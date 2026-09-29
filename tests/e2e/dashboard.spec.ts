@@ -5,20 +5,28 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   await expect(page).toHaveURL(/\/dashboard$/);
 
   // Immortal players show their leaderboard position, not just the medal.
-  await expect(page.getByTitle(/Immortal #1,234/)).toBeVisible();
+  const banner = page.getByRole("region", { name: "Player" });
+  await expect(banner.getByText("Immortal #1,234", { exact: true })).toBeVisible();
+  await expect(banner.getByRole("img", { name: "Immortal #1,234" }).first()).toBeAttached();
 
   // Auto-sync imports the 12 fixture matches without any button press.
-  await expect(page.getByText(/of 12 imported matches in view/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Showing 12 of your 12 matches")).toBeVisible({ timeout: 20_000 });
 
   // Solo/party/unknown totals reconcile: 6 solo + 4 party + 2 unknown = 12.
+  const stats = page.getByRole("region", { name: "Key stats" });
+  await expect(stats).toContainText("6 solo games");
+  await expect(stats).toContainText("4 party games");
   const split = page.getByRole("region", { name: "Win rate by queue" });
-  await expect(split).toContainText("n=6");
-  await expect(split).toContainText("n=4");
-  await expect(split).toContainText("n=2");
-  await expect(split).toContainText("never as solo");
+  await expect(split).toContainText("Queue known for 10 of 12 games");
+  await expect(split).toContainText("never assumed to be solo");
 
   // Match rows open our own match page, not an external site.
-  const firstMatch = page.getByRole("region", { name: "Recent matches" }).getByRole("link").first();
+  const recent = page.getByRole("region", { name: "Recent matches" });
+  await expect(recent.getByRole("link", { name: "View all matches" })).toHaveAttribute(
+    "href",
+    "/matches",
+  );
+  const firstMatch = recent.locator('a[href^="/matches/"]').first();
   await expect(firstMatch).toHaveAttribute("href", /^\/matches\/\d+$/);
   await firstMatch.click();
 
@@ -41,4 +49,28 @@ test("unknown and malformed match ids show not found", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Match not found" })).toBeVisible();
   await page.goto("/matches/abc");
   await expect(page.getByRole("heading", { name: "Match not found" })).toBeVisible();
+});
+
+test("match list filters and totals reconcile", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches")).toBeVisible({ timeout: 20_000 });
+
+  await page.goto("/matches");
+  const totals = page.getByRole("region", { name: "Filtered totals" });
+  await expect(totals).toContainText("12");
+
+  await page
+    .getByRole("navigation", { name: "Queue" })
+    .getByRole("link", { name: "Unknown" })
+    .click();
+  await expect(page).toHaveURL(/queue=unknown/);
+  await expect(totals).toContainText("2");
+  await expect(totals).toContainText("too few to judge");
+  await expect(
+    page.getByRole("region", { name: "Matches" }).locator('a[href^="/matches/"]'),
+  ).toHaveCount(2);
+
+  // Garbage params fall back to defaults instead of erroring.
+  await page.goto("/matches?queue=%24ne&result=drop&hero=abc&cursor=../../x");
+  await expect(totals).toContainText("12");
 });

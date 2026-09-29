@@ -86,25 +86,40 @@ export function Scoreboard({
                 Player
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                K / D / A
+                <abbr title="Kills / Deaths / Assists" className="cursor-help no-underline">
+                  K / D / A
+                </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                LH / DN
+                <abbr title="Last hits / Denies" className="cursor-help no-underline">
+                  LH / DN
+                </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                GPM / XPM
+                <abbr
+                  title="Gold per minute / Experience per minute"
+                  className="cursor-help no-underline"
+                >
+                  GPM / XPM
+                </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
                 Net worth
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                Hero dmg
+                <abbr title="Damage dealt to heroes" className="cursor-help no-underline">
+                  Hero dmg
+                </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                Tower dmg
+                <abbr title="Damage dealt to buildings" className="cursor-help no-underline">
+                  Tower dmg
+                </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                Healing
+                <abbr title="Healing done to allies" className="cursor-help no-underline">
+                  Healing
+                </abbr>
               </th>
               <th scope="col" className="py-2 pr-5 pl-3 font-medium">
                 Items

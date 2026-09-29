@@ -10,7 +10,7 @@ import type { DashboardFilter } from "@/modules/matches/application/ports";
 import { getHeroMap, getMatchQueries, getPlayerProfile } from "@/modules/matches/composition";
 import { summarizeMatches } from "@/modules/matches/domain/match-summary";
 import { DashboardFilters } from "@/modules/matches/ui/dashboard-filters";
-import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
+import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { FormStrip } from "@/modules/matches/ui/form-strip";
 import { PlayerBanner } from "@/modules/matches/ui/player-banner";
 import { QueueSplitCard } from "@/modules/matches/ui/queue-split-card";
@@ -46,11 +46,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const summary = summarizeMatches(facts);
   const { overall, averages, byQueue } = summary;
   const sync = status.sync;
+  const top = summary.heroes[0];
+  const topHero = top ? heroes.get(top.heroId) : undefined;
+  const signature =
+    top && topHero ? { hero: topHero, games: top.games, winRate: top.winRate } : null;
   const hasAnyMatches = status.totals.all > 0;
 
   return (
     <div className="space-y-6">
-      <PlayerBanner profile={profile} accountId32={user.accountId32}>
+      <PlayerBanner profile={profile} accountId32={user.accountId32} signature={signature}>
         <SyncControl
           stale={MatchSyncService.isStale(sync, now)}
           backfillComplete={sync?.backfillComplete ?? false}
@@ -66,7 +70,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           <div className="flex flex-wrap items-center justify-between gap-3">
             <DashboardFilters filter={filter} latestPatch={latestPatch} />
             <p className="text-xs text-muted-foreground tabular-nums">
-              {overall.games} of {status.totals.all} imported matches in view
+              Showing {overall.games.toLocaleString()} of your {status.totals.all.toLocaleString()}{" "}
+              matches
             </p>
           </div>
 
@@ -82,28 +87,28 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                   value={formatPercent(overall.winRate)}
                   meter={overall.winRate}
                   tone={overall.winRate !== null && overall.winRate >= 0.5 ? "win" : "loss"}
-                  detail={`${overall.wins}W · ${overall.losses}L · n=${overall.games}`}
+                  detail={`${plural(overall.wins, "win")} · ${plural(overall.losses, "loss")}`}
                 />
                 <StatTile
                   label="Solo win rate"
                   value={formatPercent(byQueue.solo.winRate)}
                   meter={byQueue.solo.winRate}
                   tone={byQueue.solo.lowSample ? "muted" : "gold"}
-                  detail={`n=${byQueue.solo.games}${byQueue.solo.lowSample ? " · low sample" : ""}`}
+                  detail={`${plural(byQueue.solo.games, "solo game")}${byQueue.solo.lowSample ? " · too few to judge" : ""}`}
                 />
                 <StatTile
                   label="Party win rate"
                   value={formatPercent(byQueue.party.winRate)}
                   meter={byQueue.party.winRate}
                   tone={byQueue.party.lowSample ? "muted" : "gold"}
-                  detail={`n=${byQueue.party.games}${byQueue.party.lowSample ? " · low sample" : ""}`}
+                  detail={`${plural(byQueue.party.games, "party game")}${byQueue.party.lowSample ? " · too few to judge" : ""}`}
                 />
                 <StatTile
-                  label="KDA"
+                  label="KDA ratio"
                   value={averages ? averages.kda.toFixed(2) : "—"}
                   detail={
                     averages
-                      ? `${averages.kills.toFixed(1)} / ${averages.deaths.toFixed(1)} / ${averages.assists.toFixed(1)} avg`
+                      ? `Avg ${averages.kills.toFixed(1)} kills · ${averages.deaths.toFixed(1)} deaths · ${averages.assists.toFixed(1)} assists`
                       : undefined
                   }
                 />

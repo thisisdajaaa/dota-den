@@ -1,8 +1,10 @@
 import type { AnyBulkWriteOperation, Collection, Db } from "mongodb";
 import type { PlayerMatchFact } from "../domain/player-match-fact";
 import type { QueueClass } from "../domain/queue-classification";
+import { decodeCursor, encodeCursor, type MatchListFilter } from "../application/match-list-filter";
 import type {
   DashboardFact,
+  MatchListPage,
   DashboardFacts,
   DashboardFilter,
   ImportStatus,
@@ -206,8 +208,124 @@ function isDuplicateKey(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === 11000;
 }
 
+const FACT_PROJECTION = {
+  _id: 0,
+  matchId: 1,
+  startedAt: 1,
+  durationSec: 1,
+  heroId: 1,
+  side: 1,
+  result: 1,
+  kills: 1,
+  deaths: 1,
+  assists: 1,
+  ranked: 1,
+  queue: 1,
+  patch: 1,
+} as const;
+
+function toDashboardFact(d: PlayerMatchFactDoc): DashboardFact {
+  return {
+    matchId: d.matchId,
+    startedAt: d.startedAt,
+    durationSec: d.durationSec,
+    heroId: d.heroId,
+    side: d.side,
+    result: d.result,
+    kills: d.kills,
+    deaths: d.deaths,
+    assists: d.assists,
+    ranked: d.ranked,
+    queueClass: d.queue.queueClass,
+    partySize: d.queue.partySize,
+    patch: d.patch.patch,
+    patchCertainty: d.patch.certainty,
+  };
+}
+
 export class MongoMatchQueries implements MatchQueries {
   constructor(private readonly db: Db) {}
+
+  private get facts(): Collection<PlayerMatchFactDoc> {
+    return this.db.collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
+  }
+
+  private async latestPatch(accountId32: number): Promise<string | null> {
+    const latest = await this.facts.findOne(
+      { accountId32 },
+      { sort: { startedAt: -1 }, projection: { "patch.patch": 1 } },
+    );
+    return latest?.patch.patch ?? null;
+  }
+
+  async listMatches(
+    accountId32: number,
+    filter: MatchListFilter,
+    now: Date,
+    limit: number,
+  ): Promise<MatchListPage> {
+    const latestPatch = await this.latestPatch(accountId32);
+    // Only allow-listed, typed values reach the query (no user-controlled operators).
+    const base: Record<string, unknown> = { accountId32 };
+    if (filter.mode === "ranked") base.ranked = true;
+    if (filter.range === "30d")
+      base.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
+    if (filter.range === "patch") base["patch.patch"] = latestPatch;
+    if (filter.queue !== "all") base["queue.queueClass"] = filter.queue;
+    if (filter.result !== "all") base.result = filter.result;
+    if (filter.hero !== undefined) base.heroId = filter.hero;
+
+    const page: Record<string, unknown> = { ...base };
+    const cursor = filter.cursor ? decodeCursor(filter.cursor) : null;
+    if (cursor) {
+      page.$or = [
+        { startedAt: { $lt: cursor.startedAt } },
+        { startedAt: cursor.startedAt, matchId: { $lt: cursor.matchId } },
+      ];
+    }
+
+    const [docs, totals] = await Promise.all([
+      this.facts
+        .find(page, {
+          sort: { startedAt: -1, matchId: -1 },
+          limit: limit + 1,
+          projection: FACT_PROJECTION,
+        })
+        .toArray(),
+      this.facts
+        .aggregate<{ games: number; wins: number }>([
+          { $match: base },
+          {
+            $group: {
+              _id: null,
+              games: { $sum: 1 },
+              wins: { $sum: { $cond: [{ $eq: ["$result", "win"] }, 1, 0] } },
+            },
+          },
+        ])
+        .toArray(),
+    ]);
+
+    const items = docs.slice(0, limit).map(toDashboardFact);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor: docs.length > limit && last ? encodeCursor(last.startedAt, last.matchId) : null,
+      totals: { games: totals[0]?.games ?? 0, wins: totals[0]?.wins ?? 0 },
+      latestPatch,
+    };
+  }
+
+  async playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>> {
+    const rows = await this.facts
+      .aggregate<{ _id: number; games: number }>([
+        { $match: { accountId32 } },
+        { $group: { _id: "$heroId", games: { $sum: 1 } } },
+        { $sort: { games: -1 } },
+      ])
+      .toArray();
+    return rows.map((r) => ({ heroId: r._id, games: r.games }));
+  }
 
   async importStatus(accountId32: number): Promise<ImportStatus> {
     const [sync, counts] = await Promise.all([
@@ -233,57 +351,16 @@ export class MongoMatchQueries implements MatchQueries {
     filter: DashboardFilter,
     now: Date,
   ): Promise<DashboardFacts> {
-    const col = this.db.collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
-    const latest = await col.findOne(
-      { accountId32 },
-      { sort: { startedAt: -1 }, projection: { "patch.patch": 1 } },
-    );
-    const latestPatch = latest?.patch.patch ?? null;
-
+    const latestPatch = await this.latestPatch(accountId32);
     const query: Record<string, unknown> = { accountId32 };
     if (filter.mode === "ranked") query.ranked = true;
     if (filter.range === "30d")
       query.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
     if (filter.range === "patch") query["patch.patch"] = latestPatch;
 
-    const docs = await col
-      .find(query, {
-        sort: { startedAt: -1 },
-        limit: 5_000,
-        projection: {
-          _id: 0,
-          matchId: 1,
-          startedAt: 1,
-          durationSec: 1,
-          heroId: 1,
-          side: 1,
-          result: 1,
-          kills: 1,
-          deaths: 1,
-          assists: 1,
-          ranked: 1,
-          queue: 1,
-          patch: 1,
-        },
-      })
+    const docs = await this.facts
+      .find(query, { sort: { startedAt: -1 }, limit: 5_000, projection: FACT_PROJECTION })
       .toArray();
-
-    const facts: DashboardFact[] = docs.map((d) => ({
-      matchId: d.matchId,
-      startedAt: d.startedAt,
-      durationSec: d.durationSec,
-      heroId: d.heroId,
-      side: d.side,
-      result: d.result,
-      kills: d.kills,
-      deaths: d.deaths,
-      assists: d.assists,
-      ranked: d.ranked,
-      queueClass: d.queue.queueClass,
-      partySize: d.queue.partySize,
-      patch: d.patch.patch,
-      patchCertainty: d.patch.certainty,
-    }));
-    return { facts, latestPatch };
+    return { facts: docs.map(toDashboardFact), latestPatch };
   }
 }

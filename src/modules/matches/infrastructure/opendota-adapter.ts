@@ -61,10 +61,13 @@ const HeroConstantsSchema = z.record(
   z.string(),
   z.object({
     id: z.number().int(),
+    name: z.string().optional(),
     localized_name: z.string(),
     img: z.string(),
     icon: z.string(),
     primary_attr: z.string().nullable().optional(),
+    attack_type: z.string().nullable().optional(),
+    roles: z.array(z.string()).optional(),
   }),
 );
 
@@ -295,6 +298,11 @@ export class OpenDotaAdapter
         name: h.localized_name,
         imageUrl: cdnImage(h.img),
         iconUrl: cdnImage(h.icon),
+        renderUrl: h.name?.startsWith("npc_dota_hero_")
+          ? cdnImage(`/apps/dota2/videos/dota_react/heroes/renders/${h.name.slice(14)}.png`)
+          : null,
+        roles: h.roles ?? [],
+        attackType: h.attack_type === "Melee" || h.attack_type === "Ranged" ? h.attack_type : null,
         primaryAttr:
           (["str", "agi", "int", "all"] as const).find((a) => a === h.primary_attr) ?? null,
       })),

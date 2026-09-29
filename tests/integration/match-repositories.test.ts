@@ -5,6 +5,7 @@ import type { ImportedPlayerMatch } from "@/modules/matches/application/ports";
 import {
   ensureMatchIndexes,
   MATCH_COLLECTIONS,
+  MongoMatchQueries,
   MongoPlayerMatchFactRepository,
   MongoSyncStateRepository,
 } from "@/modules/matches/infrastructure/mongo-match-repositories";
@@ -126,5 +127,60 @@ describe("MongoSyncStateRepository", () => {
     expect((await repo.acquire(44, opts(new Date(t0.getTime() + 60_001)))).type).toBe("acquired");
     await repo.abandon(44);
     expect((await repo.acquire(44, opts(new Date(t0.getTime() + 60_002)))).type).toBe("acquired");
+  });
+});
+
+describe("MongoMatchQueries.listMatches", () => {
+  const ACCOUNT = 777;
+  const all = { range: "all", mode: "all", queue: "all", result: "all" } as const;
+
+  beforeAll(async () => {
+    const repo = new MongoPlayerMatchFactRepository(db);
+    const facts = Array.from({ length: 30 }, (_, i) => {
+      const f = fact(ACCOUNT, `L${String(i).padStart(3, "0")}`, i % 3 === 0 ? null : i % 3);
+      return {
+        ...f,
+        startedAt: new Date(Date.UTC(2026, 0, 1) + i * 3_600_000),
+        result: i % 2 === 0 ? ("win" as const) : ("loss" as const),
+        heroId: i < 10 ? 14 : 1,
+      };
+    });
+    await repo.upsertMany(facts);
+  });
+
+  it("pages newest-first with a cursor, without gaps or duplicates", async () => {
+    const q = new MongoMatchQueries(db);
+    const now = new Date("2026-02-01");
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    for (let i = 0; i < 5; i++) {
+      const page = await q.listMatches(ACCOUNT, { ...all, cursor }, now, 12);
+      seen.push(...page.items.map((m) => m.matchId));
+      expect(page.totals).toEqual({ games: 30, wins: 15 });
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    expect(seen).toHaveLength(30);
+    expect(new Set(seen).size).toBe(30);
+    expect(seen[0]).toBe("L029");
+  });
+
+  it("applies queue, result and hero filters to items and totals alike", async () => {
+    const q = new MongoMatchQueries(db);
+    const now = new Date("2026-02-01");
+    const unknown = await q.listMatches(ACCOUNT, { ...all, queue: "unknown" }, now, 50);
+    expect(unknown.totals.games).toBe(10);
+    expect(unknown.items.every((m) => m.queueClass === "unknown")).toBe(true);
+
+    const pudgeWins = await q.listMatches(ACCOUNT, { ...all, hero: 14, result: "win" }, now, 50);
+    expect(pudgeWins.items).toHaveLength(5);
+    expect(pudgeWins.totals).toEqual({ games: 5, wins: 5 });
+  });
+
+  it("lists played heroes by games", async () => {
+    expect(await new MongoMatchQueries(db).playedHeroes(ACCOUNT)).toEqual([
+      { heroId: 1, games: 20 },
+      { heroId: 14, games: 10 },
+    ]);
   });
 });

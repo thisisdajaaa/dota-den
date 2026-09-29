@@ -1,5 +1,6 @@
 import type { Result } from "@/modules/shared/domain/result";
 import type { MatchDetail } from "../domain/match-detail";
+import type { MatchListFilter } from "./match-list-filter";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import type { PlayerMatchFact, Provenance } from "../domain/player-match-fact";
 
@@ -86,8 +87,24 @@ export interface ImportStatus {
 }
 
 /** Read models for Match Intelligence (query side). */
+export interface MatchListPage {
+  items: DashboardFact[];
+  nextCursor: string | null;
+  /** Totals across the whole filtered set (not just this page). */
+  totals: { games: number; wins: number };
+  latestPatch: string | null;
+}
+
 export interface MatchQueries {
   importStatus(accountId32: number): Promise<ImportStatus>;
+  listMatches(
+    accountId32: number,
+    filter: MatchListFilter,
+    now: Date,
+    limit: number,
+  ): Promise<MatchListPage>;
+  /** Heroes this account has imported matches on, most played first. */
+  playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
 }
 
@@ -97,6 +114,10 @@ export interface HeroInfo {
   /** null when upstream gives an unexpected image path (never render untrusted hosts). */
   imageUrl: string | null;
   iconUrl: string | null;
+  /** Large transparent hero render for banners. */
+  renderUrl: string | null;
+  roles: string[];
+  attackType: "Melee" | "Ranged" | null;
   primaryAttr: "str" | "agi" | "int" | "all" | null;
 }
 
