@@ -22,6 +22,15 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   await expect(split).toContainText("Queue known for 10 of 12 games");
   await expect(split).toContainText("never assumed to be solo");
 
+  // Hero pool sorting. Fixture: Anti-Mage 8 games, Pudge 4 (both under 10).
+  const pool = page.getByRole("region", { name: "Your heroes" });
+  await expect(pool.locator("li").first()).toContainText("Anti-Mage");
+  await pool.getByRole("radio", { name: "Recent" }).click();
+  await expect(pool.getByRole("radio", { name: "Recent" })).toHaveAttribute("aria-checked", "true");
+  await pool.getByRole("radio", { name: "Win rate" }).click();
+  await expect(pool).toContainText("No hero has 10+ games");
+  await pool.getByRole("radio", { name: "Most played" }).click();
+
   // Match rows open our own match page, not an external site.
   const recent = page.getByRole("region", { name: "Recent matches" });
   await expect(recent.getByRole("link", { name: "View all matches" })).toHaveAttribute(
