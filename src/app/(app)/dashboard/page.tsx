@@ -18,6 +18,9 @@ import { QueueSplitCard } from "@/modules/matches/ui/queue-split-card";
 import { RecentMatchesCard } from "@/modules/matches/ui/recent-matches-card";
 import { SyncControl } from "@/modules/matches/ui/sync-control";
 import { HeroPoolCard } from "@/modules/matches/ui/hero-pool-card";
+import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { getSessionService } from "@/modules/sessions/composition";
+import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -37,11 +40,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const now = new Date();
 
   const queries = await getMatchQueries();
-  const [status, { facts, latestPatch }, profile, heroes] = await Promise.all([
+  const [status, { facts, latestPatch }, profile, heroes, latestSession, tz] = await Promise.all([
     queries.importStatus(user.accountId32),
     queries.dashboardFacts(user.accountId32, filter, now),
     getPlayerProfile(user.accountId32),
     getHeroMap(),
+    // Optional card: a sessions failure must not take down the dashboard.
+    getSessionService()
+      .then((s) => s.latest({ userId: user.id, accountId32: user.accountId32 }))
+      .catch(() => null),
+    getViewerTimeZone(),
   ]);
 
   // Every hero in view (the card sorts and expands client-side).
@@ -66,6 +74,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}
         />
       </PlayerBanner>
+
+      {latestSession && (
+        <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />
+      )}
 
       {!hasAnyMatches ? (
         <EmptyState

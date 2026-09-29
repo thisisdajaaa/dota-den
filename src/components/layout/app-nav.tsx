@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpenText,
   CalendarRange,
+  History,
   LayoutDashboard,
   ScrollText,
   Swords,
@@ -13,13 +14,14 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 
-export type NavKey = "overview" | "matches" | "mmr" | "players" | "patches" | "draft";
+export type NavKey = "overview" | "matches" | "mmr" | "sessions" | "players" | "patches" | "draft";
 
 const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
   [
     { key: "overview", href: "/dashboard", label: "Overview", icon: LayoutDashboard, auth: true },
     { key: "matches", href: "/matches", label: "Matches", icon: ScrollText, auth: true },
     { key: "mmr", href: "/mmr", label: "MMR journal", icon: CalendarRange, auth: true },
+    { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },
