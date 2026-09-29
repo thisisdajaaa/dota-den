@@ -9,7 +9,7 @@ const CompletionSchema = z.object({
 });
 const AnswerSchema = z.object({
   heroId: z.coerce.number().int().positive(),
-  reason: z.string().trim().min(1).max(300),
+  reason: z.string().trim().min(1).max(400),
 });
 
 const list = (heroes: readonly AdvisorHero[]): string =>
@@ -21,7 +21,7 @@ export class GroqDraftAdvisor implements DraftAdvisor {
     private readonly opts: {
       apiKey: string;
       model: string;
-      fetch?: typeof fetch;
+      fetch?: (url: string, init: RequestInit) => Promise<Response>;
       timeoutMs?: number;
     },
   ) {}
@@ -33,18 +33,25 @@ export class GroqDraftAdvisor implements DraftAdvisor {
   async suggest(
     req: AdvisorRequest,
   ): Promise<Result<{ heroId: number; reason: string }, AdvisorError>> {
-    const system =
-      "You are an expert Dota 2 captain drafting in Captain's Mode against a human. " +
-      "Choose exactly one hero id from the AVAILABLE list for the current action. " +
-      'Reply with JSON only: {"heroId": <number>, "reason": "<one short sentence, plain language, max 25 words>"}. ' +
-      "For picks, build a coherent lineup (lanes, control, damage mix, a win condition). " +
-      "For bans, deny the strongest options for the enemy given their picks, or strong flexible heroes early.";
+    const system = [
+      "You are the captain of one team in a Dota 2 Captain's Mode draft against a human.",
+      "The server has already scored the legal options using current high-rank win rates and head-to-head matchup data.",
+      "Choose exactly ONE hero id from the CANDIDATES list. Never choose anything else.",
+      "Keep the two teams straight: YOUR TEAM are your heroes; OPPONENT heroes are the enemy. Never call an opponent hero a teammate or 'synergy'.",
+      "Follow the SITUATION line: a lineup needs about 3 cores and 2 supports; if it says you must pick a support, pick a support.",
+      "Prefer higher-listed candidates unless there's a clear draft reason (lane pairing, a counter, a combo with YOUR heroes).",
+      'Reply with JSON only: {"heroId": <number>, "reason": "<one sentence, max 30 words, plain language, citing the data or your heroes>"}.',
+    ].join(" ");
     const user = [
-      `Action: ${req.action.toUpperCase()} for ${req.side} (step ${req.stepNumber} of ${req.totalSteps}).`,
-      `Our picks: ${list(req.ownPicks)}. Our bans: ${list(req.ownBans)}.`,
-      `Enemy picks: ${list(req.enemyPicks)}. Enemy bans: ${list(req.enemyBans)}.`,
-      "AVAILABLE (id: name [roles]):",
-      ...req.available.map((h) => `${h.id}: ${h.name} [${h.roles.join(", ")}]`),
+      `ACTION: ${req.action.toUpperCase()} (step ${req.stepNumber} of ${req.totalSteps}).`,
+      `YOUR TEAM picks: ${list(req.ownPicks)}. Your bans: ${list(req.ownBans)}.`,
+      `OPPONENT picks: ${list(req.enemyPicks)}. Opponent bans: ${list(req.enemyBans)}.`,
+      `SITUATION: ${req.situation}`,
+      req.action === "ban"
+        ? "For a ban, deny the opponent a hero that beats YOUR picks or completes THEIR lineup."
+        : "For a pick, strengthen YOUR lineup and punish the OPPONENT's picks.",
+      "CANDIDATES (best first):",
+      ...req.candidates.map((c) => `${c.id}: ${c.name} [${c.role}] - ${c.facts.join("; ")}`),
     ].join("\n");
 
     let content: string | null;
@@ -57,16 +64,16 @@ export class GroqDraftAdvisor implements DraftAdvisor {
         },
         body: JSON.stringify({
           model: this.opts.model,
-          reasoning_effort: "low",
-          temperature: 0.7,
-          max_completion_tokens: 600,
+          reasoning_effort: "medium",
+          temperature: 0.3,
+          max_completion_tokens: 1500,
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
         }),
-        signal: AbortSignal.timeout(this.opts.timeoutMs ?? 12_000),
+        signal: AbortSignal.timeout(this.opts.timeoutMs ?? 15_000),
       });
       if (!res.ok) return err({ type: "unavailable", cause: `status ${res.status}` });
       const parsed = CompletionSchema.safeParse(await res.json());

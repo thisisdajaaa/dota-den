@@ -15,7 +15,8 @@ import {
 // One gateway per server instance so dedup, cache and circuit state are shared.
 const globalForGateway = globalThis as typeof globalThis & { __ddOpenDota?: ProviderGateway };
 
-function openDotaGateway(): ProviderGateway {
+/** Shared OpenDota gateway (one per instance: shared cache, dedup and circuit state). */
+export function openDotaGateway(): ProviderGateway {
   globalForGateway.__ddOpenDota ??= new ProviderGateway({
     name: "opendota",
     onRequest: ({ url, status, durationMs, attempt }) =>
