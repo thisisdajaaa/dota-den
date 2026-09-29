@@ -55,6 +55,7 @@ export function TeamPanel({
   activeAction,
   isFirst,
   reserveLabel,
+  controller,
 }: {
   side: Side;
   picks: readonly DraftSelection[];
@@ -65,6 +66,8 @@ export function TeamPanel({
   activeAction: "pick" | "ban" | null;
   isFirst: boolean;
   reserveLabel: string | null;
+  /** Who drafts this side in a vs-AI game. */
+  controller?: "you" | "ai";
 }) {
   const radiant = side === "radiant";
   return (
@@ -84,6 +87,16 @@ export function TeamPanel({
           <h2 className="font-display text-lg font-bold tracking-wider">
             {radiant ? "Radiant" : "Dire"}
           </h2>
+          {controller && (
+            <span
+              className={cn(
+                "rounded px-1.5 text-[0.6rem] font-semibold tracking-wider uppercase",
+                controller === "you" ? "bg-gold/15 text-gold" : "bg-white/10 text-foreground",
+              )}
+            >
+              {controller === "you" ? "You" : "AI"}
+            </span>
+          )}
           {isFirst && (
             <span className="rounded border border-white/15 px-1.5 text-[0.6rem] tracking-wider text-muted-foreground uppercase">
               First pick

@@ -19,6 +19,9 @@ const EnvSchema = z
     OPENDOTA_BASE_URL: z.url().optional(),
     /** Override for tests (fixture server). Defaults to Valve's datafeed. */
     VALVE_DATAFEED_BASE_URL: z.url().optional(),
+    /** Groq key for the AI draft opponent; without it the AI uses a rule-based fallback. */
+    GROQ_API_KEY: z.string().min(1).optional(),
+    DRAFT_AI_MODEL: z.string().min(1).optional(),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
     ADMIN_STEAM_IDS: z
       .string()
