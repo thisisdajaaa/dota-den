@@ -22,7 +22,9 @@ test("guests can browse patch notes with official attribution", async ({ page })
 
 test("signed-in users see their changed heroes and can star one", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
-  await expect(page.getByText("Showing 12 of your 12 matches")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 30_000,
+  });
 
   await page.goto("/patches/7.41");
   // Fixture history has 3+ ranked games on Anti-Mage and Pudge in the last 90 days.

@@ -66,6 +66,41 @@ export class ProviderGateway {
     return res;
   }
 
+  /** Fire-and-check POST (no retries or caching); used for upstream "refresh" requests. */
+  async postJson(url: string): Promise<GatewayResponse> {
+    if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
+    const fetchFn = this.opts.fetch ?? ((u, i) => fetch(u, i));
+    const started = this.now;
+    let status: number | null = null;
+    try {
+      const res = await fetchFn(url, {
+        method: "POST",
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(this.opts.timeoutMs ?? 8_000),
+      });
+      status = res.status;
+      if (res.ok) return { ok: true, status: res.status, body: await res.json().catch(() => null) };
+      if (res.status === 429) {
+        return {
+          ok: false,
+          kind: "rate_limited",
+          status: 429,
+          retryAfterMs: parseRetryAfter(res.headers.get("retry-after")),
+        };
+      }
+      return { ok: false, kind: "failed", status: res.status, cause: `status ${res.status}` };
+    } catch (e) {
+      return {
+        ok: false,
+        kind: "failed",
+        status: null,
+        cause: e instanceof Error ? e.name : "unknown",
+      };
+    } finally {
+      this.opts.onRequest?.({ url, status, durationMs: this.now - started, attempt: 0 });
+    }
+  }
+
   private async execute(url: string, headers?: HeadersInit): Promise<GatewayResponse> {
     if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
 

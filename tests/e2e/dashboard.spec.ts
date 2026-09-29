@@ -10,7 +10,9 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   await expect(banner.getByRole("img", { name: "Immortal #1,234" }).first()).toBeAttached();
 
   // Auto-sync imports the 12 fixture matches without any button press.
-  await expect(page.getByText("Showing 12 of your 12 matches")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
 
   // Solo/party/unknown totals reconcile: 6 solo + 4 party + 2 unknown = 12.
   const stats = page.getByRole("region", { name: "Key stats" });
@@ -53,7 +55,9 @@ test("unknown and malformed match ids show not found", async ({ page }) => {
 
 test("match list filters and totals reconcile", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
-  await expect(page.getByText("Showing 12 of your 12 matches")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
 
   await page.goto("/matches");
   const totals = page.getByRole("region", { name: "Filtered totals" });
@@ -69,6 +73,18 @@ test("match list filters and totals reconcile", async ({ page }) => {
   await expect(
     page.getByRole("region", { name: "Matches" }).locator('a[href^="/matches/"]'),
   ).toHaveCount(2);
+
+  // Regression: filtering to wins must not turn the record into "N-0, 100%".
+  await page.goto("/matches?result=win");
+  await expect(totals).toContainText("Showing wins");
+  await expect(totals).toContainText("count both wins and losses");
+  await expect(totals).not.toContainText("100.0%");
+  // Fixture history is 7 wins and 5 losses: 7 listed, record keeps the losses.
+  await expect(totals).toContainText("7 – 5");
+  await expect(totals).toContainText("58.3%");
+  await expect(
+    page.getByRole("region", { name: "Matches" }).locator('a[href^="/matches/"]'),
+  ).toHaveCount(7);
 
   // Garbage params fall back to defaults instead of erroring.
   await page.goto("/matches?queue=%24ne&result=drop&hero=abc&cursor=../../x");

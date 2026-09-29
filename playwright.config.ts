@@ -37,6 +37,8 @@ export default defineConfig({
         // Never call the real OpenDota API from tests.
         OPENDOTA_BASE_URL: "http://localhost:3101/api",
         VALVE_DATAFEED_BASE_URL: "http://localhost:3101/datafeed",
+        // Never call a paid model from tests (overrides any key in .env.local).
+        GROQ_API_KEY: "",
       },
     },
   ],

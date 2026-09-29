@@ -162,6 +162,7 @@ export class MongoSyncStateRepository implements SyncStateRepository {
             newestStartedAt: null,
             backfillOffset: 0,
             backfillComplete: false,
+            historyRefreshRequestedAt: null,
           },
         },
         { upsert: true, returnDocument: "after" },
@@ -202,6 +203,8 @@ function toState(doc: SyncStateDoc): SyncState {
     newestStartedAt: doc.newestStartedAt,
     backfillOffset: doc.backfillOffset,
     backfillComplete: doc.backfillComplete,
+    // Older documents predate this field.
+    historyRefreshRequestedAt: doc.historyRefreshRequestedAt ?? null,
   };
 }
 
@@ -273,10 +276,12 @@ export class MongoMatchQueries implements MatchQueries {
       base.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
     if (filter.range === "patch") base["patch.patch"] = latestPatch;
     if (filter.queue !== "all") base["queue.queueClass"] = filter.queue;
-    if (filter.result !== "all") base.result = filter.result;
     if (filter.hero !== undefined) base.heroId = filter.hero;
+    // The record ignores the result filter; the list and its count apply it.
+    const listed: Record<string, unknown> =
+      filter.result === "all" ? base : { ...base, result: filter.result };
 
-    const page: Record<string, unknown> = { ...base };
+    const page: Record<string, unknown> = { ...listed };
     const cursor = filter.cursor ? decodeCursor(filter.cursor) : null;
     if (cursor) {
       page.$or = [
@@ -294,13 +299,14 @@ export class MongoMatchQueries implements MatchQueries {
         })
         .toArray(),
       this.facts
-        .aggregate<{ games: number; wins: number }>([
+        .aggregate<{ games: number; wins: number; losses: number }>([
           { $match: base },
           {
             $group: {
               _id: null,
               games: { $sum: 1 },
               wins: { $sum: { $cond: [{ $eq: ["$result", "win"] }, 1, 0] } },
+              losses: { $sum: { $cond: [{ $eq: ["$result", "loss"] }, 1, 0] } },
             },
           },
         ])
@@ -312,7 +318,13 @@ export class MongoMatchQueries implements MatchQueries {
     return {
       items,
       nextCursor: docs.length > limit && last ? encodeCursor(last.startedAt, last.matchId) : null,
-      totals: { games: totals[0]?.games ?? 0, wins: totals[0]?.wins ?? 0 },
+      matching:
+        filter.result === "win"
+          ? (totals[0]?.wins ?? 0)
+          : filter.result === "loss"
+            ? (totals[0]?.losses ?? 0)
+            : (totals[0]?.games ?? 0),
+      record: { games: totals[0]?.games ?? 0, wins: totals[0]?.wins ?? 0 },
       latestPatch,
     };
   }

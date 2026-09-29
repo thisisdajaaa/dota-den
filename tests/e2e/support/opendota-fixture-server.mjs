@@ -125,7 +125,43 @@ function patchNotes(version) {
   };
 }
 
+// Synthetic hero catalog: the two named heroes the specs refer to, plus a pool large
+// enough for full drafts. The role mix lets the rule-based AI make meaningful choices.
+const ROLE_SETS = [
+  ["Carry", "Escape"],
+  ["Support", "Disabler"],
+  ["Initiator", "Durable", "Disabler"],
+  ["Nuker", "Pusher"],
+  ["Carry", "Durable"],
+  ["Support", "Nuker"],
+];
+const hero = (id, key, name, attr, attack, roles) => ({
+  id,
+  name: `npc_dota_hero_${key}`,
+  localized_name: name,
+  img: `/apps/dota2/images/dota_react/heroes/${key}.png?`,
+  icon: `/apps/dota2/images/dota_react/heroes/icons/${key}.png?`,
+  primary_attr: attr,
+  attack_type: attack,
+  roles,
+});
+const HEROES = {
+  1: hero(1, "antimage", "Anti-Mage", "agi", "Melee", ["Carry", "Escape"]),
+  14: hero(14, "pudge", "Pudge", "str", "Melee", ["Disabler", "Initiator", "Durable"]),
+};
+for (let id = 100; id < 140; id++) {
+  HEROES[id] = hero(
+    id,
+    `fixture_${id}`,
+    `Fixture Hero ${id}`,
+    ["str", "agi", "int", "all"][id % 4],
+    id % 2 ? "Ranged" : "Melee",
+    ROLE_SETS[id % ROLE_SETS.length],
+  );
+}
+
 const routes = [
+  [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],
   [/^\/datafeed\/patchnoteslist$/, () => PATCH_LIST],
   [/^\/datafeed\/patchnotes$/, (_m, url) => patchNotes(url.searchParams.get("version"))],
   [/^\/api\/constants\/ability_ids$/, () => ({ 5075: "pudge_meat_hook" })],
@@ -165,25 +201,7 @@ const routes = [
   ],
   [/^\/api\/matches\/(\d+)$/, (m) => matchDetail(m[1])],
   [/^\/api\/constants\/patch$/, () => [{ name: "7.41", date: "2026-03-24T00:00:00Z", id: 60 }]],
-  [
-    /^\/api\/constants\/heroes$/,
-    () => ({
-      1: {
-        id: 1,
-        localized_name: "Anti-Mage",
-        img: "/fixture/antimage.png?",
-        icon: "/fixture/antimage_icon.png?",
-        primary_attr: "agi",
-      },
-      14: {
-        id: 14,
-        localized_name: "Pudge",
-        img: "/fixture/pudge.png?",
-        icon: "/fixture/pudge_icon.png?",
-        primary_attr: "str",
-      },
-    }),
-  ],
+  [/^\/api\/constants\/heroes$/, () => HEROES],
   [/^\/api\/constants\/item_ids$/, () => ({ 36: "magic_wand" })],
   [
     /^\/api\/constants\/items$/,
