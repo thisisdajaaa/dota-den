@@ -8,6 +8,8 @@ import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap, getItemMap, getOpenDotaAdapter } from "@/modules/matches/composition";
 import { partyGroups } from "@/modules/matches/domain/match-detail";
 import { isRanked } from "@/modules/matches/domain/queue-classification";
+import { averageRankTier } from "@/modules/matches/domain/rank-tier";
+import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { AdvantageChart } from "@/modules/matches/ui/advantage-chart";
 import { formatDuration, gameModeLabel, regionLabel } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
@@ -65,6 +67,7 @@ export default async function MatchPage({ params }: PageProps<"/matches/[matchId
       : undefined;
   const myWin = me ? (me.side === "radiant") === match.radiantWin : null;
   const region = regionLabel(match.region);
+  const avgRank = averageRankTier(match.players.map((p) => p.rankTier));
 
   return (
     <div className="space-y-6">
@@ -133,6 +136,19 @@ export default async function MatchPage({ params }: PageProps<"/matches/[matchId
               <li>First blood {formatDuration(match.firstBloodSec)}</li>
             )}
           </ul>
+          {avgRank && (
+            <p className="flex items-center gap-2 text-sm">
+              <RankMedal rank={avgRank.rank} size={32} />
+              <span>
+                Average rank{" "}
+                <span className="font-semibold text-gold">{rankLabel(avgRank.rank)}</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {avgRank.ranked} of {match.players.length} players show a rank
+                </span>
+              </span>
+            </p>
+          )}
 
           {me && myWin !== null && (
             <p

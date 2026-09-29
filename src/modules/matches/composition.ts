@@ -3,8 +3,16 @@ import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
-import { MatchSyncService } from "./application/match-sync-service";
-import type { HeroInfo, ItemInfo, MatchQueries, PlayerProfileSnapshot } from "./application/ports";
+import { MatchSyncService, toFact } from "./application/match-sync-service";
+import type {
+  DashboardFact,
+  HeroInfo,
+  ItemInfo,
+  MatchQueries,
+  PlayerProfileSnapshot,
+  ProviderError,
+} from "./application/ports";
+import type { Result } from "@/modules/shared/domain/result";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
 import {
   MongoMatchQueries,
@@ -15,7 +23,8 @@ import {
 // One gateway per server instance so dedup, cache and circuit state are shared.
 const globalForGateway = globalThis as typeof globalThis & { __ddOpenDota?: ProviderGateway };
 
-function openDotaGateway(): ProviderGateway {
+/** Shared OpenDota gateway (one per instance: shared cache, dedup and circuit state). */
+export function openDotaGateway(): ProviderGateway {
   globalForGateway.__ddOpenDota ??= new ProviderGateway({
     name: "opendota",
     onRequest: ({ url, status, durationMs, attempt }) =>
@@ -72,4 +81,44 @@ export async function getItemMap(): Promise<Map<number, ItemInfo>> {
   const res = await getOpenDotaAdapter().getItems();
   if (!res.ok) logger.warn("item_catalog_unavailable", { reason: res.error.type });
   return new Map((res.ok ? res.value : []).map((i) => [i.id, i]));
+}
+
+/**
+ * Any player's most recent public matches, straight from OpenDota (nothing stored), in the
+ * same row shape as the dashboard so match lists can be shared. Cached briefly upstream.
+ */
+export async function getPublicRecentMatches(
+  accountId32: number,
+  limit = 20,
+): Promise<Result<DashboardFact[], ProviderError>> {
+  const adapter = getOpenDotaAdapter();
+  const [page, timeline] = await Promise.all([
+    adapter.fetchPlayerMatches(accountId32, { offset: 0, limit }, { cacheTtlMs: 10 * 60 * 1000 }),
+    adapter.getTimeline(),
+  ]);
+  if (!page.ok) return page;
+  // Without the patch timeline, rows just show no patch; never guess one.
+  const patches = timeline.ok ? timeline.value : [];
+  return {
+    ok: true,
+    value: page.value.matches.map((m) => {
+      const f = toFact(m, patches);
+      return {
+        matchId: f.matchId,
+        startedAt: f.startedAt,
+        durationSec: f.durationSec,
+        heroId: f.heroId,
+        side: f.side,
+        result: f.result,
+        kills: f.kills,
+        deaths: f.deaths,
+        assists: f.assists,
+        ranked: f.ranked,
+        queueClass: f.queue.queueClass,
+        partySize: f.queue.partySize,
+        patch: f.patch.patch,
+        patchCertainty: f.patch.certainty,
+      };
+    }),
+  };
 }

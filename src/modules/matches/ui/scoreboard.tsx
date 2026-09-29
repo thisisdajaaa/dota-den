@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { cn } from "cn";
 import type { HeroInfo, ItemInfo } from "../application/ports";
 import type { MatchPlayer, PartyGroup } from "../domain/match-detail";
 import { HeroPortrait, heroName } from "./hero-portrait";
 import { ItemIcon } from "./item-icon";
+import { parseRankTier } from "../domain/rank-tier";
+import { RankMedal, rankLabel } from "./rank-medal";
 
 function num(v: number | null): string {
   if (v === null) return "—";
@@ -69,7 +72,7 @@ export function Scoreboard({
         <table className="w-full min-w-[68rem] table-fixed text-sm whitespace-nowrap">
           {/* Fixed widths so Radiant and Dire columns line up. */}
           <colgroup>
-            <col className="w-[14rem]" />
+            <col className="w-[16rem]" />
             <col className="w-[6rem]" />
             <col className="w-[5rem]" />
             <col className="w-[6.5rem]" />
@@ -131,6 +134,7 @@ export function Scoreboard({
               const hero = heroes.get(p.heroId);
               const party = partyOf(p.playerSlot);
               const isViewer = viewerAccountId !== null && p.accountId32 === viewerAccountId;
+              const rank = parseRankTier(p.rankTier);
               return (
                 <tr
                   key={p.playerSlot}
@@ -156,11 +160,18 @@ export function Scoreboard({
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="max-w-32 truncate font-medium">
-                            {p.personaName ?? (
-                              <span className="text-muted-foreground italic">Anonymous</span>
-                            )}
-                          </span>
+                          {p.accountId32 !== null && p.personaName ? (
+                            <Link
+                              href={`/players/${p.accountId32}`}
+                              className="max-w-32 truncate font-medium hover:text-gold hover:underline"
+                            >
+                              {p.personaName}
+                            </Link>
+                          ) : (
+                            <span className="max-w-32 truncate font-medium text-muted-foreground italic">
+                              Anonymous
+                            </span>
+                          )}
                           {isViewer && (
                             <span className="rounded bg-gold/15 px-1 text-[0.6rem] font-semibold text-gold">
                               YOU
@@ -175,10 +186,31 @@ export function Scoreboard({
                             </span>
                           )}
                         </div>
-                        <div className="text-[0.7rem] text-muted-foreground">
+                        <div
+                          className="max-w-44 truncate text-[0.7rem] text-muted-foreground"
+                          title={[
+                            rank ? rankLabel(rank) : "Unranked",
+                            heroName(hero, p.heroId),
+                            p.hasScepter ? "Aghanim's Scepter" : null,
+                            p.hasShard ? "Aghanim's Shard" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        >
+                          {rank ? (
+                            <span className="font-medium text-gold/90">
+                              <span className="mr-0.5 inline-block align-[-4px]">
+                                <RankMedal rank={rank} size={16} />
+                              </span>
+                              {rankLabel(rank)}
+                            </span>
+                          ) : (
+                            "Unranked"
+                          )}
+                          {" · "}
                           {heroName(hero, p.heroId)}
-                          {p.hasScepter && <span title="Aghanim's Scepter"> · Scepter</span>}
-                          {p.hasShard && <span title="Aghanim's Shard"> · Shard</span>}
+                          {p.hasScepter && " · Scepter"}
+                          {p.hasShard && " · Shard"}
                         </div>
                       </div>
                     </div>

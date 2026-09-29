@@ -2,6 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
+// Overridable so parallel runs (e.g. other worktrees) don't collide on the fixture port or DB.
+const FIXTURE_PORT = Number(process.env.FIXTURE_PORT ?? 3101);
+const fixtureURL = `http://localhost:${FIXTURE_PORT}`;
+const DB_NAME = process.env.E2E_DB_NAME ?? "dota_den_e2e";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -17,9 +21,9 @@ export default defineConfig({
   webServer: [
     {
       command: "node tests/e2e/support/opendota-fixture-server.mjs",
-      url: "http://localhost:3101/health",
+      url: `${fixtureURL}/health`,
       reuseExistingServer: !process.env.CI,
-      env: { FIXTURE_PORT: "3101" },
+      env: { FIXTURE_PORT: String(FIXTURE_PORT) },
     },
     {
       // `next dev`, not `next start`: the fake identity provider is refused when NODE_ENV=production.
@@ -30,13 +34,13 @@ export default defineConfig({
       env: {
         APP_URL: baseURL,
         MONGODB_URI: process.env.MONGODB_TEST_URI ?? "mongodb://127.0.0.1:27017",
-        MONGODB_DB_NAME: "dota_den_e2e",
+        MONGODB_DB_NAME: DB_NAME,
         AUTH_TEST_MODE: "true",
         // Keep the E2E build separate from a developer's `next dev`.
         NEXT_DIST_DIR: ".next-e2e",
         // Never call the real OpenDota API from tests.
-        OPENDOTA_BASE_URL: "http://localhost:3101/api",
-        VALVE_DATAFEED_BASE_URL: "http://localhost:3101/datafeed",
+        OPENDOTA_BASE_URL: `${fixtureURL}/api`,
+        VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
         // Never call a paid model from tests (overrides any key in .env.local).
         GROQ_API_KEY: "",
       },
