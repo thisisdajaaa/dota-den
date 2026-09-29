@@ -8,6 +8,7 @@ import type {
   SyncStateRepository,
 } from "@/modules/matches/application/ports";
 import {
+  BACKFILL_COOLDOWN_MS,
   MatchSyncService,
   SYNC_COOLDOWN_MS,
 } from "@/modules/matches/application/match-sync-service";
@@ -80,7 +81,12 @@ class MemorySyncState implements SyncStateRepository {
   state: (SyncState & { lockedUntil: Date | null }) | null = null;
   async acquire(
     accountId32: number,
-    { now, lockTtlMs, cooldownMs }: { now: Date; lockTtlMs: number; cooldownMs: number },
+    {
+      now,
+      lockTtlMs,
+      cooldownMs,
+      backfillCooldownMs,
+    }: { now: Date; lockTtlMs: number; cooldownMs: number; backfillCooldownMs: number },
   ): Promise<LockOutcome> {
     this.state ??= {
       accountId32,
@@ -91,8 +97,9 @@ class MemorySyncState implements SyncStateRepository {
       lockedUntil: null,
     };
     if (this.state.lockedUntil && this.state.lockedUntil > now) return { type: "locked" };
-    if (this.state.lastSyncAt && now.getTime() - this.state.lastSyncAt.getTime() < cooldownMs) {
-      return { type: "cooldown", retryAt: new Date(this.state.lastSyncAt.getTime() + cooldownMs) };
+    const wait = this.state.backfillComplete ? cooldownMs : backfillCooldownMs;
+    if (this.state.lastSyncAt && now.getTime() - this.state.lastSyncAt.getTime() < wait) {
+      return { type: "cooldown", retryAt: new Date(this.state.lastSyncAt.getTime() + wait) };
     }
     this.state.lockedUntil = new Date(now.getTime() + lockTtlMs);
     return { type: "acquired", state: { ...this.state } };
@@ -148,12 +155,12 @@ describe("MatchSyncService", () => {
     expect(fact.patch).toEqual({ patch: "7.41", certainty: "confident" });
   });
 
-  it("backfills long histories across syncs within the page budget", async () => {
+  it("backfills long histories across syncs, with the short backfill cooldown", async () => {
     const ctx = setup(45);
     const first = await ctx.service.sync(ACCOUNT);
     expect(first.ok && first.value).toMatchObject({ fetched: 30, backfillComplete: false });
 
-    ctx.advance(SYNC_COOLDOWN_MS + 1);
+    ctx.advance(BACKFILL_COOLDOWN_MS + 1);
     const second = await ctx.service.sync(ACCOUNT);
     expect(second.ok && second.value).toMatchObject({ backfillComplete: true });
     expect(ctx.facts.byKey.size).toBe(45);
@@ -177,6 +184,21 @@ describe("MatchSyncService", () => {
     const res = await ctx.service.sync(ACCOUNT);
     expect(res.ok && res.value.inserted).toBe(0);
     expect(ctx.facts.byKey.size).toBe(5);
+  });
+
+  it("reports staleness against the applicable cooldown", () => {
+    const now = new Date("2026-09-29T12:00:00Z");
+    const at = (msAgo: number, backfillComplete: boolean) => ({
+      accountId32: ACCOUNT,
+      lastSyncAt: new Date(now.getTime() - msAgo),
+      newestStartedAt: null,
+      backfillOffset: 0,
+      backfillComplete,
+    });
+    expect(MatchSyncService.isStale(null, now)).toBe(true);
+    expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, false), now)).toBe(true);
+    expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, true), now)).toBe(false);
+    expect(MatchSyncService.isStale(at(SYNC_COOLDOWN_MS, true), now)).toBe(true);
   });
 
   it("enforces the cooldown between syncs", async () => {

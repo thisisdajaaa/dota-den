@@ -5,3 +5,6 @@ package-lock.json
 playwright-report
 test-results
 coverage
+# Rewritten by Next.js (next dev / typegen)
+tsconfig.json
+next-env.d.ts

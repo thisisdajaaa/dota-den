@@ -4,9 +4,14 @@ import type {
   GatewayResponse,
   ProviderGateway,
 } from "@/modules/shared/infrastructure/provider-gateway";
+import type { MatchDetail, MatchPlayer } from "../domain/match-detail";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import { resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
 import type {
+  HeroCatalog,
+  HeroInfo,
+  ItemInfo,
+  MatchDetailProvider,
   ImportedPage,
   ImportedPlayerMatch,
   MatchProvider,
@@ -16,6 +21,7 @@ import type {
 } from "../application/ports";
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
+export const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com";
 
 const nullableInt = z.number().int().nullable().optional();
 
@@ -50,6 +56,89 @@ const ProfileSchema = z.object({
   rank_tier: nullableInt,
 });
 
+const HeroConstantsSchema = z.record(
+  z.string(),
+  z.object({
+    id: z.number().int(),
+    localized_name: z.string(),
+    img: z.string(),
+    icon: z.string(),
+    primary_attr: z.string().nullable().optional(),
+  }),
+);
+
+const nullableNum = z.number().nullable().optional();
+
+const MatchPlayerSchema = z.object({
+  player_slot: z.number().int().min(0).max(255),
+  account_id: nullableInt,
+  personaname: z.string().nullable().optional(),
+  hero_id: z.number().int().min(0),
+  level: z.number().int().min(0).default(0),
+  kills: z.number().int().min(0).default(0),
+  deaths: z.number().int().min(0).default(0),
+  assists: z.number().int().min(0).default(0),
+  last_hits: z.number().int().min(0).default(0),
+  denies: z.number().int().min(0).default(0),
+  gold_per_min: z.number().int().min(0).default(0),
+  xp_per_min: z.number().int().min(0).default(0),
+  net_worth: nullableNum,
+  hero_damage: nullableNum,
+  tower_damage: nullableNum,
+  hero_healing: nullableNum,
+  item_0: nullableInt,
+  item_1: nullableInt,
+  item_2: nullableInt,
+  item_3: nullableInt,
+  item_4: nullableInt,
+  item_5: nullableInt,
+  backpack_0: nullableInt,
+  backpack_1: nullableInt,
+  backpack_2: nullableInt,
+  item_neutral: nullableInt,
+  aghanims_scepter: nullableInt,
+  aghanims_shard: nullableInt,
+  party_id: nullableInt,
+  party_size: nullableInt,
+  rank_tier: nullableInt,
+});
+
+const MatchDetailSchema = z.object({
+  match_id: z.number().int().positive(),
+  start_time: z.number().int().positive(),
+  duration: z.number().int().min(0),
+  radiant_win: z.boolean(),
+  radiant_score: z.number().int().min(0).default(0),
+  dire_score: z.number().int().min(0).default(0),
+  game_mode: nullableInt,
+  lobby_type: nullableInt,
+  region: nullableInt,
+  first_blood_time: nullableInt,
+  version: nullableInt,
+  radiant_gold_adv: z.array(z.number()).nullable().optional(),
+  radiant_xp_adv: z.array(z.number()).nullable().optional(),
+  players: z.array(MatchPlayerSchema).min(1).max(24),
+});
+
+const ItemIdsSchema = z.record(z.string(), z.string());
+const ItemsSchema = z.record(
+  z.string(),
+  z.object({ id: z.number().int(), img: z.string().optional(), dname: z.string().optional() }),
+);
+
+/** Only image paths under the Dota CDN tree are allowed (matches next.config remotePatterns). */
+export function cdnImage(path: string | undefined): string | null {
+  if (!path) return null;
+  const clean = path.replace(/\?.*$/, "");
+  if (clean.includes("..")) return null;
+  return /^\/apps\/dota2\/[\w./-]+\.png$/.test(clean) ? `${STEAM_CDN}${clean}` : null;
+}
+
+/** OpenDota's anonymous-account sentinel. */
+const ANONYMOUS_ACCOUNT_ID = 4294967295;
+
+const slotItem = (id: number | null | undefined): number | null => (id ? id : null);
+
 const PatchConstantsSchema = z.array(z.object({ name: z.string(), date: z.string() }));
 
 const MATCH_FIELDS = [
@@ -80,7 +169,9 @@ function toProviderError(res: Exclude<GatewayResponse, { ok: true }>): ProviderE
 }
 
 /** Anti-corruption layer: OpenDota payloads → internal typed facts with provenance. */
-export class OpenDotaAdapter implements MatchProvider, PatchTimelineSource {
+export class OpenDotaAdapter
+  implements MatchProvider, PatchTimelineSource, HeroCatalog, MatchDetailProvider
+{
   constructor(
     private readonly gateway: ProviderGateway,
     private readonly opts: { apiKey?: string; baseUrl?: string; now?: () => Date } = {},
@@ -187,5 +278,114 @@ export class OpenDotaAdapter implements MatchProvider, PatchTimelineSource {
         .map((p) => ({ name: p.name, releasedAt: new Date(p.date) }))
         .filter((p) => !Number.isNaN(p.releasedAt.getTime())),
     );
+  }
+
+  async getHeroes(): Promise<Result<HeroInfo[], ProviderError>> {
+    const res = await this.gateway.getJson(this.url("/constants/heroes"), {
+      cacheTtlMs: 24 * 60 * 60 * 1000,
+    });
+    if (!res.ok) return err(toProviderError(res));
+    const parsed = HeroConstantsSchema.safeParse(res.body);
+    if (!parsed.success) return err({ type: "invalid_payload", cause: "hero constants" });
+    return ok(
+      Object.values(parsed.data).map((h) => ({
+        id: h.id,
+        name: h.localized_name,
+        imageUrl: cdnImage(h.img),
+        iconUrl: cdnImage(h.icon),
+        primaryAttr:
+          (["str", "agi", "int", "all"] as const).find((a) => a === h.primary_attr) ?? null,
+      })),
+    );
+  }
+
+  async fetchMatch(matchId: string): Promise<Result<MatchDetail, ProviderError>> {
+    if (!/^\d{1,20}$/.test(matchId)) return err({ type: "not_found" });
+    const res = await this.gateway.getJson(this.url(`/matches/${matchId}`), {
+      cacheTtlMs: 10 * 60 * 1000,
+    });
+    if (!res.ok) return err(toProviderError(res));
+    const parsed = MatchDetailSchema.safeParse(res.body);
+    if (!parsed.success) return err({ type: "invalid_payload", cause: "match" });
+    const m = parsed.data;
+
+    const players: MatchPlayer[] = m.players.map((p) => {
+      const known =
+        p.account_id !== null &&
+        p.account_id !== undefined &&
+        p.account_id !== ANONYMOUS_ACCOUNT_ID;
+      return {
+        playerSlot: p.player_slot,
+        side: sideFromPlayerSlot(p.player_slot),
+        accountId32: known ? p.account_id! : null,
+        personaName: known ? (p.personaname ?? null) : null,
+        heroId: p.hero_id,
+        level: p.level,
+        kills: p.kills,
+        deaths: p.deaths,
+        assists: p.assists,
+        lastHits: p.last_hits,
+        denies: p.denies,
+        goldPerMin: p.gold_per_min,
+        xpPerMin: p.xp_per_min,
+        netWorth: p.net_worth ?? null,
+        heroDamage: p.hero_damage ?? null,
+        towerDamage: p.tower_damage ?? null,
+        heroHealing: p.hero_healing ?? null,
+        items: [p.item_0, p.item_1, p.item_2, p.item_3, p.item_4, p.item_5].map(slotItem),
+        backpack: [p.backpack_0, p.backpack_1, p.backpack_2].map(slotItem),
+        neutralItem: slotItem(p.item_neutral),
+        hasScepter: p.aghanims_scepter === 1,
+        hasShard: p.aghanims_shard === 1,
+        partyId: p.party_id ?? null,
+        partySize: p.party_size ?? null,
+        rankTier: p.rank_tier ?? null,
+      };
+    });
+
+    const advantage = (xs: number[] | null | undefined) => (xs && xs.length > 1 ? xs : null);
+    return ok({
+      matchId: String(m.match_id),
+      startedAt: new Date(m.start_time * 1000),
+      durationSec: m.duration,
+      radiantWin: m.radiant_win,
+      radiantScore: m.radiant_score,
+      direScore: m.dire_score,
+      gameMode: m.game_mode ?? null,
+      lobbyType: m.lobby_type ?? null,
+      region: m.region ?? null,
+      firstBloodSec: m.first_blood_time ?? null,
+      parsed: m.version !== null && m.version !== undefined,
+      goldAdvantage: advantage(m.radiant_gold_adv),
+      xpAdvantage: advantage(m.radiant_xp_adv),
+      players,
+      fetchedAt: (this.opts.now ?? (() => new Date()))(),
+    });
+  }
+
+  async getItems(): Promise<Result<ItemInfo[], ProviderError>> {
+    const ttl = { cacheTtlMs: 24 * 60 * 60 * 1000 };
+    const [idsRes, itemsRes] = await Promise.all([
+      this.gateway.getJson(this.url("/constants/item_ids"), ttl),
+      this.gateway.getJson(this.url("/constants/items"), ttl),
+    ]);
+    if (!idsRes.ok) return err(toProviderError(idsRes));
+    if (!itemsRes.ok) return err(toProviderError(itemsRes));
+    const ids = ItemIdsSchema.safeParse(idsRes.body);
+    const items = ItemsSchema.safeParse(itemsRes.body);
+    if (!ids.success || !items.success)
+      return err({ type: "invalid_payload", cause: "item constants" });
+
+    const out: ItemInfo[] = [];
+    for (const [id, key] of Object.entries(ids.data)) {
+      const item = items.data[key];
+      if (!item) continue;
+      out.push({
+        id: Number(id),
+        name: item.dname ?? key.replaceAll("_", " "),
+        imageUrl: cdnImage(item.img),
+      });
+    }
+    return ok(out);
   }
 }

@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
 import { MatchSyncService } from "./application/match-sync-service";
-import type { MatchQueries } from "./application/ports";
+import type { HeroInfo, ItemInfo, MatchQueries, PlayerProfileSnapshot } from "./application/ports";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
 import {
   MongoMatchQueries,
@@ -31,7 +31,11 @@ function openDotaGateway(): ProviderGateway {
 }
 
 export function getOpenDotaAdapter(): OpenDotaAdapter {
-  return new OpenDotaAdapter(openDotaGateway(), { apiKey: env().OPENDOTA_API_KEY });
+  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
+  return new OpenDotaAdapter(openDotaGateway(), {
+    apiKey: OPENDOTA_API_KEY,
+    baseUrl: OPENDOTA_BASE_URL,
+  });
 }
 
 export async function getMatchSyncService(): Promise<MatchSyncService> {
@@ -47,4 +51,25 @@ export async function getMatchSyncService(): Promise<MatchSyncService> {
 
 export async function getMatchQueries(): Promise<MatchQueries> {
   return new MongoMatchQueries(await getDb());
+}
+
+/** Public profile (persona, avatar, rank). Tolerates upstream failure: returns null. */
+export async function getPlayerProfile(accountId32: number): Promise<PlayerProfileSnapshot | null> {
+  const res = await getOpenDotaAdapter().fetchPlayerProfile(accountId32);
+  if (!res.ok) logger.warn("profile_unavailable", { accountId32, reason: res.error.type });
+  return res.ok ? res.value : null;
+}
+
+/** Hero lookup by id. Empty map if the catalog is unavailable (UI falls back to "Hero #id"). */
+export async function getHeroMap(): Promise<Map<number, HeroInfo>> {
+  const res = await getOpenDotaAdapter().getHeroes();
+  if (!res.ok) logger.warn("hero_catalog_unavailable", { reason: res.error.type });
+  return new Map((res.ok ? res.value : []).map((h) => [h.id, h]));
+}
+
+/** Item lookup by id. Empty map if unavailable (UI shows an empty slot with the id). */
+export async function getItemMap(): Promise<Map<number, ItemInfo>> {
+  const res = await getOpenDotaAdapter().getItems();
+  if (!res.ok) logger.warn("item_catalog_unavailable", { reason: res.error.type });
+  return new Map((res.ok ? res.value : []).map((i) => [i.id, i]));
 }

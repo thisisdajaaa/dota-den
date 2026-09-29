@@ -1,4 +1,5 @@
 import type { Result } from "@/modules/shared/domain/result";
+import type { MatchDetail } from "../domain/match-detail";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import type { PlayerMatchFact, Provenance } from "../domain/player-match-fact";
 
@@ -63,10 +64,13 @@ export type LockOutcome =
   { type: "acquired"; state: SyncState } | { type: "locked" } | { type: "cooldown"; retryAt: Date };
 
 export interface SyncStateRepository {
-  /** Atomically take the per-account lock if not held and not cooling down. */
+  /**
+   * Atomically take the per-account lock if not held and not cooling down.
+   * `backfillCooldownMs` applies instead of `cooldownMs` while history is still importing.
+   */
   acquire(
     accountId32: number,
-    opts: { now: Date; lockTtlMs: number; cooldownMs: number },
+    opts: { now: Date; lockTtlMs: number; cooldownMs: number; backfillCooldownMs: number },
   ): Promise<LockOutcome>;
   release(accountId32: number, next: Omit<SyncState, "accountId32">): Promise<void>;
   /** Release without recording a completed sync (so the user can retry). */
@@ -82,4 +86,61 @@ export interface ImportStatus {
 /** Read models for Match Intelligence (query side). */
 export interface MatchQueries {
   importStatus(accountId32: number): Promise<ImportStatus>;
+  dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
+}
+
+export interface HeroInfo {
+  id: number;
+  name: string;
+  /** null when upstream gives an unexpected image path (never render untrusted hosts). */
+  imageUrl: string | null;
+  iconUrl: string | null;
+  primaryAttr: "str" | "agi" | "int" | "all" | null;
+}
+
+export interface HeroCatalog {
+  getHeroes(): Promise<Result<HeroInfo[], ProviderError>>;
+}
+
+export type DashboardRange = "all" | "patch" | "30d";
+export type DashboardMode = "all" | "ranked";
+
+export interface DashboardFilter {
+  range: DashboardRange;
+  mode: DashboardMode;
+}
+
+/** Row shape for dashboard read models. */
+export interface DashboardFact {
+  matchId: string;
+  startedAt: Date;
+  durationSec: number;
+  heroId: number;
+  side: "radiant" | "dire";
+  result: "win" | "loss";
+  kills: number;
+  deaths: number;
+  assists: number;
+  ranked: boolean;
+  queueClass: "solo" | "party" | "unknown";
+  partySize: number | null;
+  patch: string | null;
+  patchCertainty: "confident" | "boundary" | "unknown";
+}
+
+export interface DashboardFacts {
+  facts: DashboardFact[];
+  /** Patch of the most recent imported match; the "current patch" filter uses it. */
+  latestPatch: string | null;
+}
+
+export interface ItemInfo {
+  id: number;
+  name: string;
+  imageUrl: string | null;
+}
+
+export interface MatchDetailProvider {
+  fetchMatch(matchId: string): Promise<Result<MatchDetail, ProviderError>>;
+  getItems(): Promise<Result<ItemInfo[], ProviderError>>;
 }
