@@ -8,7 +8,7 @@ import {
   toSessionNoteDto,
 } from "@/modules/sessions/application/contracts";
 import { getSessionService } from "@/modules/sessions/composition";
-import { SESSION_ID_PATTERN } from "@/modules/sessions/domain/session";
+import { sessionIdFromParam } from "@/modules/sessions/domain/session";
 
 type Ctx = { params: Promise<{ sessionId: string }> };
 
@@ -20,8 +20,8 @@ export async function PUT(req: NextRequest, { params }: Ctx): Promise<NextRespon
   if (!rateLimit(`session-notes:${user.id}`, NOTE_SAVES_PER_MINUTE, 60_000))
     return apiError("rate_limited", "Too many saves. Try again in a minute.");
 
-  const { sessionId } = await params;
-  if (!SESSION_ID_PATTERN.test(sessionId)) return apiError("not_found", "Session not found");
+  const sessionId = sessionIdFromParam((await params).sessionId);
+  if (!sessionId) return apiError("not_found", "Session not found");
 
   const parsed = SessionNoteInputSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

@@ -80,6 +80,17 @@ export function sessionIdFor(accountId32: number, firstMatchId: string): string 
   return `${accountId32}:${firstMatchId}`;
 }
 
+/** A session id from a URL segment, where the ":" may arrive percent-encoded. */
+export function sessionIdFromParam(raw: string): string | null {
+  let id: string;
+  try {
+    id = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  return SESSION_ID_PATTERN.test(id) ? id : null;
+}
+
 export function parseSessionId(id: string): { accountId32: number; firstMatchId: string } | null {
   const m = SESSION_ID_PATTERN.exec(id);
   if (!m) return null;

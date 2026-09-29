@@ -24,6 +24,8 @@ export interface SessionNoteRepository {
   get(userId: string, sessionId: string): Promise<SessionNote | null>;
   /** The owner's notes for these sessions (missing ones are simply absent). */
   listForSessions(userId: string, sessionIds: readonly string[]): Promise<SessionNote[]>;
+  /** The owner's notes for one account, most recently edited first. */
+  listRecent(userId: string, accountId32: number, limit: number): Promise<SessionNote[]>;
 }
 
 export interface SessionSettingsRepository {

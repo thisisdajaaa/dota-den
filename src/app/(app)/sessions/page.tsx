@@ -7,6 +7,7 @@ import { getHeroMap } from "@/modules/matches/composition";
 import { ESTIMATE_PER_GAME } from "@/modules/mmr";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
 import { getSessionService } from "@/modules/sessions/composition";
+import { EarlierNotes } from "@/modules/sessions/ui/earlier-notes";
 import { GapSelector } from "@/modules/sessions/ui/gap-selector";
 import { SessionList } from "@/modules/sessions/ui/session-list";
 
@@ -108,6 +109,23 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
               </Link>
             )}
           </nav>
+        </section>
+      )}
+
+      {page.page === 1 && page.earlierNotes.length > 0 && (
+        <section className="panel space-y-3 p-5" aria-labelledby="earlier-notes-title">
+          <div>
+            <p className="kicker">Kept for you</p>
+            <h2 id="earlier-notes-title" className="text-lg font-semibold">
+              Notes from a different grouping
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              You wrote these when your games were split with another break length, so they
+              don&apos;t match a session exactly any more. Switch the break back to see them on
+              their session again.
+            </p>
+          </div>
+          <EarlierNotes items={page.earlierNotes} timeZone={timeZone} />
         </section>
       )}
 

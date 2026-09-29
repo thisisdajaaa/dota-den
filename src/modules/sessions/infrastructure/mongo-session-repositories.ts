@@ -40,6 +40,7 @@ function toNote(d: SessionNoteDoc): SessionNote {
     accountId32: d.accountId32,
     sessionId: d.sessionId,
     matchIds: d.matchIds ?? [],
+    sessionStartedAt: d.sessionStartedAt,
     note: d.note ?? "",
     goal: d.goal ?? "",
     goalMet: d.goalMet ?? null,
@@ -90,6 +91,16 @@ export class MongoSessionNoteRepository implements SessionNoteRepository {
     const docs = await this.col
       .find({ userId, sessionId: { $in: [...sessionIds] } }, { projection: PROJECTION })
       .limit(sessionIds.length)
+      .toArray();
+    return docs.map(toNote);
+  }
+
+  async listRecent(userId: string, accountId32: number, limit: number): Promise<SessionNote[]> {
+    // Served by the (userId, updatedAt) index; the account filter is applied on those rows.
+    const docs = await this.col
+      .find({ userId, accountId32 }, { projection: PROJECTION })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
       .toArray();
     return docs.map(toNote);
   }

@@ -13,13 +13,14 @@ import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
 import { toSessionNoteDto } from "@/modules/sessions/application/contracts";
 import { getSessionService } from "@/modules/sessions/composition";
-import { SESSION_ID_PATTERN, type GamePick } from "@/modules/sessions/domain/session";
+import { sessionIdFromParam, type GamePick } from "@/modules/sessions/domain/session";
 import {
   formatSpan,
   recapHeadline,
   sessionTimeLabels,
 } from "@/modules/sessions/domain/session-labels";
 import type { SessionMmr } from "@/modules/sessions/domain/session-mmr";
+import { EarlierNotes } from "@/modules/sessions/ui/earlier-notes";
 import { ESTIMATE_REASONS, MmrChangeBadge } from "@/modules/sessions/ui/mmr-change-badge";
 import { queueMix, SessionRecord } from "@/modules/sessions/ui/session-list";
 import { SessionNoteForm } from "@/modules/sessions/ui/session-note-form";
@@ -29,8 +30,8 @@ export const metadata: Metadata = { title: "Session recap" };
 export default async function SessionPage({ params }: PageProps<"/sessions/[sessionId]">) {
   const user = await getCurrentUser();
   if (!user) return null;
-  const { sessionId } = await params;
-  if (!SESSION_ID_PATTERN.test(sessionId)) notFound();
+  const sessionId = sessionIdFromParam((await params).sessionId);
+  if (!sessionId) notFound();
 
   const [service, heroes, { timeZone }] = await Promise.all([
     getSessionService(),
@@ -192,6 +193,21 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
                 Notes &amp; goal
               </h2>
             </div>
+            {detail.earlierNotes.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Notes you saved when these games were grouped with a different break length:
+                </p>
+                <EarlierNotes
+                  items={detail.earlierNotes.map((n) => ({
+                    note: n,
+                    currentSessionId: session.id,
+                  }))}
+                  timeZone={timeZone}
+                  linkToSession={false}
+                />
+              </div>
+            )}
             <SessionNoteForm
               sessionId={session.id}
               initial={note ? toSessionNoteDto(note) : null}

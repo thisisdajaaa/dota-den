@@ -14,7 +14,7 @@ import {
   type RankedGame,
   type SessionMmr,
 } from "../domain/session-mmr";
-import type { SessionNote } from "../domain/session-note";
+import { placeEarlierNotes, type EarlierNote, type SessionNote } from "../domain/session-note";
 import type { SessionNoteInput } from "./contracts";
 import type {
   MmrObservationSource,
@@ -25,6 +25,8 @@ import type {
 } from "./ports";
 
 export const SESSIONS_PAGE_SIZE = 10;
+/** How many recent notes are checked for ones left behind by a regrouping. */
+const RECENT_NOTES_SCAN = 200;
 
 export interface SessionView<M extends SessionMatch = SessionMatch> {
   session: PlaySession<M>;
@@ -39,11 +41,15 @@ export interface SessionsPage<M extends SessionMatch = SessionMatch> {
   totalSessions: number;
   page: number;
   pageCount: number;
+  /** Notes whose session no longer exists under the current break length (newest first). */
+  earlierNotes: EarlierNote[];
 }
 
 export interface SessionDetail<M extends SessionMatch = SessionMatch> extends SessionView<M> {
   gapMinutes: GapMinutes;
   note: SessionNote | null;
+  /** Notes saved when this session's games were grouped differently (read-only). */
+  earlierNotes: SessionNote[];
   /** Neighbouring sessions for prev/next navigation. */
   olderId: string | null;
   newerId: string | null;
@@ -108,6 +114,7 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
       slice.map((s) => s.id),
     );
     const bySession = new Map(notes.map((n) => [n.sessionId, n]));
+    const earlierNotes = await this.earlierNotes(owner, sessions);
     return {
       gapMinutes,
       totalMatches: matches.length,
@@ -118,7 +125,20 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
       totalSessions: sessions.length,
       page: current,
       pageCount,
+      earlierNotes,
     };
+  }
+
+  private async earlierNotes(
+    owner: SessionOwner,
+    sessions: readonly PlaySession<M>[],
+  ): Promise<EarlierNote[]> {
+    const recent = await this.deps.notes.listRecent(
+      owner.userId,
+      owner.accountId32,
+      RECENT_NOTES_SCAN,
+    );
+    return placeEarlierNotes(recent, sessions);
   }
 
   /** The newest session, or null when nothing is imported. */
@@ -134,10 +154,15 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
     const { sessions, observations, rankedGames } = await this.load(owner, gapMinutes);
     const i = sessions.findIndex((s) => s.id === sessionId);
     if (i === -1) return null;
+    const [note, earlier] = await Promise.all([
+      this.deps.notes.get(owner.userId, sessionId),
+      this.earlierNotes(owner, sessions),
+    ]);
     return {
       ...this.view(sessions[i], observations, rankedGames),
       gapMinutes,
-      note: await this.deps.notes.get(owner.userId, sessionId),
+      note,
+      earlierNotes: earlier.filter((e) => e.currentSessionId === sessionId).map((e) => e.note),
       newerId: sessions[i - 1]?.id ?? null,
       olderId: sessions[i + 1]?.id ?? null,
     };
@@ -161,6 +186,7 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
       accountId32: owner.accountId32,
       sessionId,
       matchIds: session.matches.map((m) => m.matchId),
+      sessionStartedAt: session.startedAt,
       note: input.note,
       goal: input.goal,
       goalMet: input.goalMet,

@@ -23,10 +23,12 @@ export function LatestSessionCard({
   const labels = sessionTimeLabels(session.startedAt, session.endedAt, timeZone);
   const s = session.stats;
   return (
-    <section className="panel p-5" aria-labelledby="latest-session-title">
+    <section className="panel p-5" aria-labelledby="latest-session-kicker latest-session-title">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 space-y-1">
-          <p className="kicker">Latest session</p>
+          <p id="latest-session-kicker" className="kicker">
+            Latest session
+          </p>
           <h2 id="latest-session-title" className="text-lg font-semibold">
             {labels.date}
           </h2>
