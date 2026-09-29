@@ -160,8 +160,72 @@ for (let id = 100; id < 140; id++) {
   );
 }
 
+// Synthetic players for search, profiles and "plays with". Names are made up.
+const PEERS = [
+  { account_id: 40_001, personaname: "Fixture Peer", with_games: 54, with_win: 28 },
+  { account_id: 40_002, personaname: "Fixture Duo", with_games: 12, with_win: 5 },
+  // Only ever an opponent: never listed under "Plays with".
+  { account_id: 40_003, personaname: "Fixture Rival", with_games: 0, with_win: 0 },
+];
+const PLAYERS = [{ account_id: ACCOUNT, personaname: "Fixture Hero" }, ...PEERS];
+const playerById = (id) => PLAYERS.find((p) => p.account_id === Number(id));
+
+function profile(id) {
+  const p = playerById(id);
+  if (!p) return { profile: null, rank_tier: null };
+  return {
+    profile: {
+      account_id: p.account_id,
+      personaname: p.personaname,
+      avatarfull: null,
+      fh_unavailable: false,
+    },
+    rank_tier: p.account_id === ACCOUNT ? 80 : 54,
+    leaderboard_rank: p.account_id === ACCOUNT ? 1234 : null,
+  };
+}
+
+function search(q) {
+  const needle = (q ?? "").toLowerCase();
+  return PLAYERS.filter((p) => p.personaname.toLowerCase().includes(needle)).map((p, i) => ({
+    account_id: p.account_id,
+    personaname: p.personaname,
+    avatarfull: null,
+    last_match_time: new Date((NOW - (i + 1) * DAY) * 1000).toISOString(),
+    similarity: 10 - i,
+  }));
+}
+
+function peers(id) {
+  if (Number(id) !== ACCOUNT) return [];
+  return PEERS.map((p, i) => ({
+    ...p,
+    last_played: NOW - (i + 1) * DAY,
+    win: p.with_win + 1,
+    games: p.with_games + 3,
+    against_win: 1,
+    against_games: 3,
+    avatarfull: null,
+  }));
+}
+
+function heroStats(id) {
+  if (Number(id) !== ACCOUNT) return [];
+  return [
+    { hero_id: 1, last_played: NOW - DAY, games: 8, win: 5 },
+    { hero_id: 14, last_played: NOW - 2 * DAY, games: 4, win: 2 },
+  ];
+}
+
 const routes = [
   [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],
+  [/^\/api\/search$/, (_m, url) => search(url.searchParams.get("q"))],
+  [
+    /^\/api\/players\/(\d+)\/wl$/,
+    (m) => (Number(m[1]) === ACCOUNT ? { win: 7, lose: 5 } : { win: 0, lose: 0 }),
+  ],
+  [/^\/api\/players\/(\d+)\/heroes$/, (m) => heroStats(m[1])],
+  [/^\/api\/players\/(\d+)\/peers$/, (m) => peers(m[1])],
   [/^\/datafeed\/patchnoteslist$/, () => PATCH_LIST],
   [/^\/datafeed\/patchnotes$/, (_m, url) => patchNotes(url.searchParams.get("version"))],
   [/^\/api\/constants\/ability_ids$/, () => ({ 5075: "pudge_meat_hook" })],
@@ -183,22 +247,7 @@ const routes = [
       return MATCHES.slice(offset, offset + limit);
     },
   ],
-  [
-    /^\/api\/players\/(\d+)$/,
-    (m) =>
-      Number(m[1]) === ACCOUNT
-        ? {
-            profile: {
-              account_id: ACCOUNT,
-              personaname: "Fixture Hero",
-              avatarfull: null,
-              fh_unavailable: false,
-            },
-            rank_tier: 80,
-            leaderboard_rank: 1234,
-          }
-        : { profile: null, rank_tier: null },
-  ],
+  [/^\/api\/players\/(\d+)$/, (m) => profile(m[1])],
   [/^\/api\/matches\/(\d+)$/, (m) => matchDetail(m[1])],
   [/^\/api\/constants\/patch$/, () => [{ name: "7.41", date: "2026-03-24T00:00:00Z", id: 60 }]],
   [/^\/api\/constants\/heroes$/, () => HEROES],

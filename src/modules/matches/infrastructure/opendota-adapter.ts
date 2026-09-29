@@ -194,6 +194,7 @@ export class OpenDotaAdapter
   async fetchPlayerMatches(
     accountId32: number,
     page: { offset: number; limit: number },
+    opts: { cacheTtlMs?: number } = {},
   ): Promise<Result<ImportedPage, ProviderError>> {
     const res = await this.gateway.getJson(
       this.url(`/players/${accountId32}/matches`, {
@@ -203,6 +204,8 @@ export class OpenDotaAdapter
         significant: 0,
         project: MATCH_FIELDS,
       }),
+      // Sync never caches (it needs fresh pages); read-only public views may.
+      { cacheTtlMs: opts.cacheTtlMs },
     );
     if (!res.ok) return err(toProviderError(res));
     if (!Array.isArray(res.body)) return err({ type: "invalid_payload", cause: "expected array" });
