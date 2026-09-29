@@ -34,6 +34,8 @@ export interface PlayerProfileSnapshot {
    */
   matchHistory: "full" | "limited" | "unknown";
   rankTier: number | null;
+  /** Valve's Immortal leaderboard position for the player's region, when listed. */
+  leaderboardRank: number | null;
 }
 
 export interface MatchProvider {

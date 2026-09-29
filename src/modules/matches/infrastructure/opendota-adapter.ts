@@ -54,6 +54,7 @@ const ProfileSchema = z.object({
     .nullable()
     .optional(),
   rank_tier: nullableInt,
+  leaderboard_rank: nullableInt,
 });
 
 const HeroConstantsSchema = z.record(
@@ -263,6 +264,7 @@ export class OpenDotaAdapter
             ? "full"
             : "unknown",
       rankTier: parsed.data.rank_tier ?? null,
+      leaderboardRank: parsed.data.leaderboard_rank ?? null,
     });
   }
 

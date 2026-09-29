@@ -16,13 +16,27 @@ export interface RankTier {
   medal: Medal;
   /** 0 for Immortal, which has no stars. */
   stars: number;
+  /** Immortal only: leaderboard position (1 = best), when listed. */
+  leaderboardRank: number | null;
 }
 
-export function parseRankTier(rankTier: number | null | undefined): RankTier | null {
+export function parseRankTier(
+  rankTier: number | null | undefined,
+  leaderboardRank?: number | null,
+): RankTier | null {
   if (!rankTier || !Number.isInteger(rankTier)) return null;
   const medalIndex = Math.floor(rankTier / 10) - 1;
   const stars = rankTier % 10;
   const medal = MEDALS[medalIndex];
   if (!medal || stars > 5) return null;
-  return { medal, stars: medal === "Immortal" ? 0 : stars };
+  const immortal = medal === "Immortal";
+  return {
+    medal,
+    stars: immortal ? 0 : stars,
+    // A leaderboard position only means something for Immortal players.
+    leaderboardRank:
+      immortal && leaderboardRank && Number.isInteger(leaderboardRank) && leaderboardRank > 0
+        ? leaderboardRank
+        : null,
+  };
 }
