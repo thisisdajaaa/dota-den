@@ -271,6 +271,11 @@ export class OpenDotaAdapter
     });
   }
 
+  async requestHistoryRefresh(accountId32: number): Promise<Result<true, ProviderError>> {
+    const res = await this.gateway.postJson(this.url(`/players/${accountId32}/refresh`));
+    return res.ok ? ok(true) : err(toProviderError(res));
+  }
+
   async getTimeline(): Promise<Result<PatchTimelineEntry[], ProviderError>> {
     const res = await this.gateway.getJson(this.url("/constants/patch"), {
       cacheTtlMs: 6 * 60 * 60 * 1000,

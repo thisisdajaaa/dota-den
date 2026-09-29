@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 interface SyncSummary {
   inserted: number;
+  fetched: number;
   backfillComplete: boolean;
 }
 
@@ -23,17 +24,26 @@ export function SyncControl({
   stale,
   backfillComplete,
   backfillCooldownMs,
+  recheckMs,
+  awaitingHistory,
   lastSyncedLabel,
 }: {
   stale: boolean;
   backfillComplete: boolean;
   backfillCooldownMs: number;
+  /** Re-check interval while waiting for the upstream to fetch a new player's history. */
+  recheckMs: number;
+  /** No matches imported yet: keep checking until the upstream has them. */
+  awaitingHistory: boolean;
   lastSyncedLabel: string | null;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [importing, setImporting] = useState(!backfillComplete);
-  const importingRef = useRef(!backfillComplete);
+  // Keep scheduling syncs while importing older history or waiting for a first history.
+  const importingRef = useRef(!backfillComplete || awaitingHistory);
+  const [awaiting, setAwaiting] = useState(awaitingHistory);
+  const awaitingRef = useRef(awaitingHistory);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const started = useRef(false);
   // Timers call through this ref so a scheduled retry always runs the latest `sync`.
@@ -52,8 +62,11 @@ export function SyncControl({
       const body: unknown = await res.json().catch(() => null);
       if (res.ok) {
         const s = body as SyncSummary;
+        const stillEmpty = awaitingRef.current && s.fetched === 0;
+        awaitingRef.current = stillEmpty;
+        setAwaiting(stillEmpty);
         setImporting(!s.backfillComplete);
-        importingRef.current = !s.backfillComplete;
+        importingRef.current = !s.backfillComplete || stillEmpty;
         if (s.inserted > 0) {
           toast.success(`${s.inserted} match${s.inserted === 1 ? "" : "es"} imported`);
         } else if (manual) {
@@ -63,6 +76,9 @@ export function SyncControl({
         if (!s.backfillComplete) {
           setStatus("waiting");
           schedule(backfillCooldownMs + 1_000);
+        } else if (stillEmpty) {
+          setStatus("waiting");
+          schedule(recheckMs + 1_000);
         } else {
           setStatus("idle");
         }
@@ -102,6 +118,7 @@ export function SyncControl({
     started.current = true;
     if (stale) void syncRef.current(false);
     else if (!backfillComplete) schedule(backfillCooldownMs);
+    else if (awaitingHistory) schedule(backfillCooldownMs); // cooldown reply reschedules precisely
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
@@ -115,7 +132,9 @@ export function SyncControl({
         ? "Importing match history…"
         : "Syncing…"
       : status === "waiting"
-        ? "Importing older matches…"
+        ? awaiting
+          ? "Waiting for OpenDota to fetch your history…"
+          : "Importing older matches…"
         : status === "error"
           ? "Sync paused. OpenDota may be unavailable."
           : lastSyncedLabel

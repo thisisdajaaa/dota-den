@@ -96,6 +96,7 @@ describe("MongoSyncStateRepository", () => {
       newestStartedAt: null,
       backfillOffset: 0,
       backfillComplete: true,
+      historyRefreshRequestedAt: null,
     });
 
     const during = await repo.acquire(43, opts(new Date(t0.getTime() + 1000)));
@@ -112,6 +113,7 @@ describe("MongoSyncStateRepository", () => {
       newestStartedAt: null,
       backfillOffset: 500,
       backfillComplete: false,
+      historyRefreshRequestedAt: null,
     });
     expect(await repo.acquire(45, opts(new Date(t0.getTime() + 10_000)))).toEqual({
       type: "cooldown",

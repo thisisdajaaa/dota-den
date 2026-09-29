@@ -161,6 +161,7 @@ for (let id = 100; id < 140; id++) {
 }
 
 const routes = [
+  [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],
   [/^\/datafeed\/patchnoteslist$/, () => PATCH_LIST],
   [/^\/datafeed\/patchnotes$/, (_m, url) => patchNotes(url.searchParams.get("version"))],
   [/^\/api\/constants\/ability_ids$/, () => ({ 5075: "pudge_meat_hook" })],

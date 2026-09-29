@@ -45,6 +45,11 @@ export interface MatchProvider {
     page: { offset: number; limit: number },
   ): Promise<Result<ImportedPage, ProviderError>>;
   fetchPlayerProfile(accountId32: number): Promise<Result<PlayerProfileSnapshot, ProviderError>>;
+  /**
+   * Ask the upstream to (re)fetch this player's full match history from Steam. Needed after
+   * a player turns on "Expose Public Match Data": the upstream doesn't notice on its own.
+   */
+  requestHistoryRefresh(accountId32: number): Promise<Result<true, ProviderError>>;
 }
 
 export interface PatchTimelineSource {
@@ -61,6 +66,8 @@ export interface SyncState {
   newestStartedAt: Date | null;
   backfillOffset: number;
   backfillComplete: boolean;
+  /** Last time we asked the upstream to refetch this player's history. */
+  historyRefreshRequestedAt: Date | null;
 }
 
 export type LockOutcome =
