@@ -17,7 +17,7 @@ import { PlayerBanner } from "@/modules/matches/ui/player-banner";
 import { QueueSplitCard } from "@/modules/matches/ui/queue-split-card";
 import { RecentMatchesCard } from "@/modules/matches/ui/recent-matches-card";
 import { SyncControl } from "@/modules/matches/ui/sync-control";
-import { TopHeroesCard } from "@/modules/matches/ui/top-heroes-card";
+import { HeroPoolCard } from "@/modules/matches/ui/hero-pool-card";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -44,7 +44,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     getHeroMap(),
   ]);
 
-  const summary = summarizeMatches(facts);
+  // Every hero in view (the card sorts and expands client-side).
+  const summary = summarizeMatches(facts, { topHeroes: Number.POSITIVE_INFINITY });
   const { overall, averages, byQueue } = summary;
   const sync = status.sync;
   const top = summary.heroes[0];
@@ -132,7 +133,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                   <FormStrip form={summary.form} heroes={heroes} />
                 </div>
                 <div className="lg:col-span-2">
-                  <TopHeroesCard summary={summary} heroes={heroes} />
+                  <HeroPoolCard
+                    rows={summary.heroes.map((h) => ({
+                      ...h,
+                      lastPlayed: h.lastPlayed.toISOString(),
+                    }))}
+                    heroes={summary.heroes
+                      .map((h) => heroes.get(h.heroId))
+                      .filter((h) => h !== undefined)}
+                    now={now.toISOString()}
+                  />
                 </div>
               </div>
 

@@ -106,3 +106,43 @@ describe("averageRankTier", () => {
     expect(averageRankTier([null, 0, undefined as unknown as null])).toBeNull();
   });
 });
+
+describe("sortHeroes", () => {
+  const hero = (heroId: number, games: number, wins: number, kda: number, day: number) => ({
+    heroId,
+    games,
+    wins,
+    losses: games - wins,
+    winRate: wins / games,
+    lowSample: games < 10,
+    kda,
+    lastPlayed: new Date(Date.UTC(2026, 8, day)),
+  });
+  const pool = [
+    hero(1, 40, 20, 3, 1),
+    hero(2, 1, 1, 12, 29),
+    hero(3, 8, 6, 4.5, 10),
+    hero(4, 12, 9, 2, 20),
+  ];
+
+  it("sorts by games, win rate, KDA and recency", async () => {
+    const { sortHeroes } = await import("@/modules/matches/domain/match-summary");
+    expect(sortHeroes(pool, "games").map((h) => h.heroId)).toEqual([1, 4, 3, 2]);
+    // Win rate and KDA only rank heroes with 10+ games (1 and 4 here).
+    expect(sortHeroes(pool, "winrate").map((h) => h.heroId)).toEqual([4, 1]);
+    expect(sortHeroes(pool, "kda").map((h) => h.heroId)).toEqual([1, 4]);
+    expect(sortHeroes(pool, "recent").map((h) => h.heroId)).toEqual([2, 4, 3, 1]);
+  });
+
+  it("leaves out small samples (fewer than 10 games) from win rate and KDA sorts", async () => {
+    const { sortHeroes } = await import("@/modules/matches/domain/match-summary");
+    expect(sortHeroes(pool, "winrate").some((h) => h.heroId === 2)).toBe(false);
+    expect(sortHeroes(pool, "kda").some((h) => h.heroId === 3)).toBe(false); // 8 games
+  });
+
+  it("breaks win-rate ties by games played", async () => {
+    const { sortHeroes } = await import("@/modules/matches/domain/match-summary");
+    const tied = [hero(7, 12, 9, 2, 1), hero(8, 20, 15, 2, 1)]; // both 75%
+    expect(sortHeroes(tied, "winrate").map((h) => h.heroId)).toEqual([8, 7]);
+  });
+});

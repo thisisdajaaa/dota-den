@@ -28,6 +28,7 @@ export interface WinRecord {
 export interface HeroSummary extends WinRecord {
   heroId: number;
   kda: number;
+  lastPlayed: Date;
 }
 
 export interface MatchSummary {
@@ -82,6 +83,8 @@ export function summarizeMatches(
       heroId,
       ...winRecord(results(games)),
       kda: kdaRatio(sum(games, "kills"), sum(games, "deaths"), sum(games, "assists")),
+      // Matches are sorted newest first, so the first one is the most recent.
+      lastPlayed: games[0].startedAt,
     }))
     .sort((a, b) => b.games - a.games || (b.winRate ?? 0) - (a.winRate ?? 0))
     .slice(0, opts.topHeroes ?? 6);
@@ -117,4 +120,33 @@ export function summarizeMatches(
 
 function sum(xs: readonly SummaryInput[], key: "kills" | "deaths" | "assists"): number {
   return xs.reduce((acc, m) => acc + m[key], 0);
+}
+
+export type HeroSort = "games" | "winrate" | "kda" | "recent";
+
+/**
+ * Win rate and KDA from a handful of games are noise, so those sorts need as many games as
+ * the rest of the app treats as enough to judge.
+ */
+export const HERO_SORT_MIN_GAMES = MIN_SAMPLE;
+
+/**
+ * Order a hero pool. "winrate" and "kda" leave out heroes with fewer than
+ * HERO_SORT_MIN_GAMES games (a 1-0 hero would otherwise top the list at 100%).
+ * Ties break by games played, then hero id, so the order is stable.
+ */
+export function sortHeroes(heroes: readonly HeroSummary[], by: HeroSort): HeroSummary[] {
+  const pool =
+    by === "winrate" || by === "kda"
+      ? heroes.filter((h) => h.games >= HERO_SORT_MIN_GAMES)
+      : [...heroes];
+  const key = (h: HeroSummary): number =>
+    by === "games"
+      ? h.games
+      : by === "winrate"
+        ? (h.winRate ?? 0)
+        : by === "kda"
+          ? h.kda
+          : h.lastPlayed.getTime();
+  return pool.sort((a, b) => key(b) - key(a) || b.games - a.games || a.heroId - b.heroId);
 }
