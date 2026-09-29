@@ -13,7 +13,7 @@ export function PlayerBanner({
   /** Right-aligned slot (sync status). */
   children?: React.ReactNode;
 }) {
-  const rank = parseRankTier(profile?.rankTier);
+  const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
   const name = profile?.personaName ?? `Player ${accountId32}`;
 
   return (

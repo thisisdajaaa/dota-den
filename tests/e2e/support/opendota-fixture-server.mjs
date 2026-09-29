@@ -106,7 +106,8 @@ const routes = [
               avatarfull: null,
               fh_unavailable: false,
             },
-            rank_tier: 54,
+            rank_tier: 80,
+            leaderboard_rank: 1234,
           }
         : { profile: null, rank_tier: null },
   ],

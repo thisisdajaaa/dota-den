@@ -75,8 +75,14 @@ describe("summarizeMatches", () => {
 
 describe("parseRankTier", () => {
   it("decodes medal and stars", () => {
-    expect(parseRankTier(54)).toEqual({ medal: "Legend", stars: 4 });
-    expect(parseRankTier(80)).toEqual({ medal: "Immortal", stars: 0 });
+    expect(parseRankTier(54)).toEqual({ medal: "Legend", stars: 4, leaderboardRank: null });
+    expect(parseRankTier(80)).toEqual({ medal: "Immortal", stars: 0, leaderboardRank: null });
+  });
+
+  it("attaches the leaderboard position to Immortal only", () => {
+    expect(parseRankTier(80, 1053)).toMatchObject({ medal: "Immortal", leaderboardRank: 1053 });
+    expect(parseRankTier(75, 1053)).toMatchObject({ medal: "Divine", leaderboardRank: null });
+    expect(parseRankTier(80, 0)?.leaderboardRank).toBeNull();
   });
 
   it("rejects missing or malformed tiers", () => {

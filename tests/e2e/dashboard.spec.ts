@@ -4,6 +4,9 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   await page.goto("/api/v1/auth/steam/login");
   await expect(page).toHaveURL(/\/dashboard$/);
 
+  // Immortal players show their leaderboard position, not just the medal.
+  await expect(page.getByTitle(/Immortal #1,234/)).toBeVisible();
+
   // Auto-sync imports the 12 fixture matches without any button press.
   await expect(page.getByText(/of 12 imported matches in view/)).toBeVisible({ timeout: 20_000 });
 

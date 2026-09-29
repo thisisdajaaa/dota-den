@@ -88,7 +88,8 @@ describe("OpenDotaAdapter.fetchPlayerProfile", () => {
         avatarfull: "https://a/x.jpg",
         fh_unavailable: true,
       },
-      rank_tier: 54,
+      rank_tier: 80,
+      leaderboard_rank: 1053,
     });
     expect(await adapter.fetchPlayerProfile(7)).toEqual({
       ok: true,
@@ -97,7 +98,8 @@ describe("OpenDotaAdapter.fetchPlayerProfile", () => {
         personaName: "Tester",
         avatarUrl: "https://a/x.jpg",
         matchHistory: "limited",
-        rankTier: 54,
+        rankTier: 80,
+        leaderboardRank: 1053,
       },
     });
   });
