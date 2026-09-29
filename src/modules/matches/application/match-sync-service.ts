@@ -17,8 +17,15 @@ export const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
 export const BACKFILL_COOLDOWN_MS = 30 * 1000;
 export const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
 export const PAGE_SIZE = 100;
-/** How often we may ask the upstream to refetch a player's history. */
+/** While nothing is imported: how often we may ask the upstream to refetch the history. */
 export const HISTORY_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
+/**
+ * Once matches exist: re-request periodically anyway. The upstream's copy of a history is
+ * often incomplete (it only has matches it happened to collect) until it's asked.
+ */
+export const PERIODIC_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Time for the upstream to finish a refresh before we re-walk the whole history. */
+export const RESCAN_DELAY_MS = 15 * 60 * 1000;
 export const MAX_PAGES_PER_SYNC = 5;
 
 export type SyncError =
@@ -94,12 +101,21 @@ export class MatchSyncService {
     // Nothing imported yet: treat as a fresh history, so a later non-empty result gets a
     // full backfill instead of stopping after the head pages.
     const fresh = state.newestStartedAt === null;
+    // After a refresh request has had time to finish, re-walk the whole history once:
+    // incremental syncs only look for newer matches, so older ones the upstream just found
+    // would otherwise never be imported. Upserts make the re-walk safe.
+    const requestedAt = state.historyRefreshRequestedAt;
+    const rescan =
+      !fresh &&
+      requestedAt !== null &&
+      this.now().getTime() - requestedAt.getTime() >= RESCAN_DELAY_MS &&
+      (state.rescannedAt === null || state.rescannedAt < requestedAt);
     const summary: SyncSummary = {
       fetched: 0,
       inserted: 0,
       updated: 0,
       rejected: 0,
-      backfillComplete: fresh ? false : state.backfillComplete,
+      backfillComplete: fresh || rescan ? false : state.backfillComplete,
       historyRefreshRequested: false,
     };
 
@@ -109,7 +125,7 @@ export class MatchSyncService {
       const entries = timeline.ok ? timeline.value : [];
 
       let newestStartedAt = state.newestStartedAt;
-      let backfillOffset = fresh ? 0 : state.backfillOffset;
+      let backfillOffset = fresh || rescan ? 0 : state.backfillOffset;
       let offset = 0;
       let newCount = 0;
 
@@ -148,13 +164,15 @@ export class MatchSyncService {
         if (page.value.rawCount < pageSize) summary.backfillComplete = true;
       }
 
-      // First sync, or still nothing to import: ask the upstream to fetch the history from
-      // Steam (throttled). Best effort; the import itself already succeeded.
+      // Ask the upstream to fetch the full history from Steam: on first sync, every 6h while
+      // still empty, and weekly otherwise. Best effort; the import itself already succeeded.
       let historyRefreshRequestedAt = state.historyRefreshRequestedAt;
+      const interval =
+        newestStartedAt === null ? HISTORY_REFRESH_INTERVAL_MS : PERIODIC_REFRESH_INTERVAL_MS;
       const refreshDue =
         !historyRefreshRequestedAt ||
-        this.now().getTime() - historyRefreshRequestedAt.getTime() >= HISTORY_REFRESH_INTERVAL_MS;
-      if ((state.lastSyncAt === null || newestStartedAt === null) && refreshDue) {
+        this.now().getTime() - historyRefreshRequestedAt.getTime() >= interval;
+      if (refreshDue) {
         const requested = await this.deps.provider.requestHistoryRefresh(accountId32);
         if (requested.ok) {
           historyRefreshRequestedAt = this.now();
@@ -168,6 +186,7 @@ export class MatchSyncService {
         backfillOffset,
         backfillComplete: summary.backfillComplete,
         historyRefreshRequestedAt,
+        rescannedAt: rescan ? this.now() : state.rescannedAt,
       });
       return ok(summary);
     } catch (e) {
