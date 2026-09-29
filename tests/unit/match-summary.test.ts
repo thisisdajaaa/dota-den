@@ -89,3 +89,20 @@ describe("parseRankTier", () => {
     for (const t of [null, undefined, 0, 9, 96, 57]) expect(parseRankTier(t)).toBeNull();
   });
 });
+
+describe("averageRankTier", () => {
+  it("averages public ranks and ignores missing ones", async () => {
+    const { averageRankTier } = await import("@/modules/matches/domain/rank-tier");
+    expect(averageRankTier([54, 52, null, 53])).toEqual({
+      rank: { medal: "Legend", stars: 3, leaderboardRank: null },
+      ranked: 3,
+    });
+    expect(averageRankTier([80, 80, 75])?.rank.medal).toBe("Divine");
+    expect(averageRankTier([80, 80])?.rank).toEqual({
+      medal: "Immortal",
+      stars: 0,
+      leaderboardRank: null,
+    });
+    expect(averageRankTier([null, 0, undefined as unknown as null])).toBeNull();
+  });
+});

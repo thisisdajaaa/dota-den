@@ -42,25 +42,32 @@ test("tampered share links show a friendly error", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "This draft link is broken" })).toBeVisible();
 });
 
-test("play against the AI captain (rule-based fallback without a model key)", async ({ page }) => {
+test("play against the AI captain with suggestions and a two-sided draft log", async ({ page }) => {
   await page.goto("/draft");
   await expect(page.getByRole("combobox", { name: "Opponent" })).toContainText("vs AI captain");
   await page.getByRole("button", { name: "Start draft" }).click();
 
-  const grid = page.getByRole("region", { name: "Heroes" });
-  // Current CM: the first-pick team (you, Radiant) bans twice, then the AI (Dire) bans twice.
-  await grid.getByRole("button", { name: "ban Pudge", exact: true }).click();
-  await grid.getByRole("button", { name: "ban Anti-Mage", exact: true }).click();
+  // Your turn: data-backed suggestions appear; take one.
+  const suggestions = page.getByRole("region", { name: "Suggestions" });
+  await expect(suggestions).toContainText("Suggested bans for you");
+  await suggestions.getByRole("button").first().click();
 
-  const ai = page.getByRole("region", { name: "AI captain" });
-  await expect(ai.getByRole("listitem")).toHaveCount(2, { timeout: 20_000 });
-  await expect(ai).toContainText("rule-based");
+  // Second ban from the grid. Then the AI (Dire) bans twice.
+  const grid = page.getByRole("region", { name: "Heroes" });
+  await grid.getByRole("button", { name: "ban Pudge", exact: true }).click();
+
+  const log = page.getByRole("region", { name: "Draft log" });
+  await expect(log.getByRole("listitem")).toHaveCount(4, { timeout: 20_000 });
+  await expect(log).toContainText("suggested");
+  await expect(log).toContainText("rule-based"); // no model key in tests
+  await expect(log.getByText("You", { exact: true })).toHaveCount(2);
+  await expect(log.getByText("AI", { exact: true })).toHaveCount(2);
   await expect(page.getByText("Step 5 of 24", { exact: true })).toBeVisible();
 
   // Undo rewinds the AI's replies too, back to your own turn.
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByText("Step 2 of 24", { exact: true })).toBeVisible();
-  await expect(ai.getByRole("listitem")).toHaveCount(0);
+  await expect(log.getByRole("listitem")).toHaveCount(1);
 });
 
 test("the AI move endpoint validates input and rejects cross-origin calls", async ({ request }) => {
