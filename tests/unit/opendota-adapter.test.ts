@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { OpenDotaAdapter } from "@/modules/matches/infrastructure/opendota-adapter";
+import { cdnImage, OpenDotaAdapter } from "@/modules/matches/infrastructure/opendota-adapter";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
 import { matchRow, PATCH_CONSTANTS } from "../fixtures/opendota";
 
@@ -116,5 +116,137 @@ describe("OpenDotaAdapter.getTimeline", () => {
     const { adapter } = adapterWith(PATCH_CONSTANTS);
     const res = await adapter.getTimeline();
     expect(res.ok && res.value.map((p) => p.name)).toEqual(["7.40", "7.41"]);
+  });
+});
+
+describe("OpenDotaAdapter.fetchMatch", () => {
+  const base = {
+    match_id: 123,
+    start_time: 1_790_000_000,
+    duration: 2000,
+    radiant_win: false,
+    radiant_score: 10,
+    dire_score: 30,
+    game_mode: 22,
+    lobby_type: 7,
+    region: 5,
+    version: 22,
+    radiant_gold_adv: [0, -500, -1500],
+    radiant_xp_adv: [0, -200, -900],
+  };
+  const p = (slot: number, extra: Record<string, unknown> = {}) => ({
+    player_slot: slot,
+    account_id: 1000 + slot,
+    personaname: `P${slot}`,
+    hero_id: 1,
+    item_0: 36,
+    item_1: 0,
+    item_neutral: null,
+    ...extra,
+  });
+
+  it("maps players, sides, empty slots and advantage series", async () => {
+    const { adapter } = adapterWith({ ...base, players: [p(0), p(128)] });
+    const res = await adapter.fetchMatch("123");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value).toMatchObject({
+      matchId: "123",
+      radiantWin: false,
+      parsed: true,
+      goldAdvantage: [0, -500, -1500],
+    });
+    expect(res.value.players.map((x) => x.side)).toEqual(["radiant", "dire"]);
+    expect(res.value.players[0].items.slice(0, 2)).toEqual([36, null]);
+    expect(res.value.players[0].neutralItem).toBeNull();
+  });
+
+  it("never exposes identity for anonymous players", async () => {
+    const { adapter } = adapterWith({
+      ...base,
+      players: [p(0, { account_id: 4294967295, personaname: "leak" }), p(1, { account_id: null })],
+    });
+    const res = await adapter.fetchMatch("123");
+    expect(res.ok && res.value.players.map((x) => [x.accountId32, x.personaName])).toEqual([
+      [null, null],
+      [null, null],
+    ]);
+  });
+
+  it("marks unparsed matches and drops missing advantage data", async () => {
+    const { adapter } = adapterWith({
+      ...base,
+      version: null,
+      radiant_gold_adv: null,
+      radiant_xp_adv: undefined,
+      players: [p(0, { net_worth: null, hero_damage: null })],
+    });
+    const res = await adapter.fetchMatch("123");
+    expect(res.ok && res.value).toMatchObject({
+      parsed: false,
+      goldAdvantage: null,
+      xpAdvantage: null,
+    });
+    expect(res.ok && res.value.players[0].heroDamage).toBeNull();
+  });
+
+  it("rejects non-numeric ids without calling upstream", async () => {
+    const { adapter, fetch } = adapterWith({});
+    expect(await adapter.fetchMatch("../players/1")).toEqual({
+      ok: false,
+      error: { type: "not_found" },
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("OpenDotaAdapter.getItems", () => {
+  it("joins item ids to item metadata and strips cache-busting query strings", async () => {
+    const fetch = vi.fn(
+      async (url: string) =>
+        new Response(
+          JSON.stringify(
+            url.includes("item_ids")
+              ? { "36": "magic_wand", "999": "missing_item" }
+              : {
+                  magic_wand: {
+                    id: 36,
+                    img: "/apps/dota2/images/dota_react/items/magic_wand.png?t=1",
+                    dname: "Magic Wand",
+                  },
+                },
+          ),
+        ),
+    );
+    const gateway = new ProviderGateway({
+      name: "opendota",
+      fetch,
+      sleep: async () => {},
+      maxRetries: 0,
+    });
+    const res = await new OpenDotaAdapter(gateway).getItems();
+    expect(res).toEqual({
+      ok: true,
+      value: [
+        {
+          id: 36,
+          name: "Magic Wand",
+          imageUrl:
+            "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/magic_wand.png",
+        },
+      ],
+    });
+  });
+});
+
+describe("cdnImage", () => {
+  it("allows only Dota CDN paths and strips query strings", () => {
+    expect(cdnImage("/apps/dota2/images/dota_react/heroes/pudge.png?")).toBe(
+      "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png",
+    );
+    expect(cdnImage("https://evil.example/x.png")).toBeNull();
+    expect(cdnImage("/apps/dota2/../../x.png?")).toBeNull();
+    expect(cdnImage("/other/pudge.png")).toBeNull();
+    expect(cdnImage(undefined)).toBeNull();
   });
 });

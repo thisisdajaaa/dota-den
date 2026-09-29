@@ -2,6 +2,9 @@ import type { AnyBulkWriteOperation, Collection, Db } from "mongodb";
 import type { PlayerMatchFact } from "../domain/player-match-fact";
 import type { QueueClass } from "../domain/queue-classification";
 import type {
+  DashboardFact,
+  DashboardFacts,
+  DashboardFilter,
   ImportStatus,
   LockOutcome,
   MatchQueries,
@@ -123,16 +126,30 @@ export class MongoSyncStateRepository implements SyncStateRepository {
 
   async acquire(
     accountId32: number,
-    { now, lockTtlMs, cooldownMs }: { now: Date; lockTtlMs: number; cooldownMs: number },
+    {
+      now,
+      lockTtlMs,
+      cooldownMs,
+      backfillCooldownMs,
+    }: { now: Date; lockTtlMs: number; cooldownMs: number; backfillCooldownMs: number },
   ): Promise<LockOutcome> {
-    const cooledDownBefore = new Date(now.getTime() - cooldownMs);
+    const before = (ms: number) => new Date(now.getTime() - ms);
     try {
       const doc = await this.col.findOneAndUpdate(
         {
           accountId32,
           $and: [
             { $or: [{ lockedUntil: null }, { lockedUntil: { $lte: now } }] },
-            { $or: [{ lastSyncAt: null }, { lastSyncAt: { $lte: cooledDownBefore } }] },
+            {
+              $or: [
+                { lastSyncAt: null },
+                { backfillComplete: true, lastSyncAt: { $lte: before(cooldownMs) } },
+                {
+                  backfillComplete: { $ne: true },
+                  lastSyncAt: { $lte: before(backfillCooldownMs) },
+                },
+              ],
+            },
           ],
         },
         {
@@ -154,7 +171,8 @@ export class MongoSyncStateRepository implements SyncStateRepository {
       const existing = await this.col.findOne({ accountId32 });
       if (existing?.lockedUntil && existing.lockedUntil > now) return { type: "locked" };
       if (existing?.lastSyncAt) {
-        return { type: "cooldown", retryAt: new Date(existing.lastSyncAt.getTime() + cooldownMs) };
+        const wait = existing.backfillComplete ? cooldownMs : backfillCooldownMs;
+        return { type: "cooldown", retryAt: new Date(existing.lastSyncAt.getTime() + wait) };
       }
       return { type: "locked" };
     }
@@ -208,5 +226,64 @@ export class MongoMatchQueries implements MatchQueries {
       totals.all += c.n;
     }
     return { sync, totals };
+  }
+
+  async dashboardFacts(
+    accountId32: number,
+    filter: DashboardFilter,
+    now: Date,
+  ): Promise<DashboardFacts> {
+    const col = this.db.collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
+    const latest = await col.findOne(
+      { accountId32 },
+      { sort: { startedAt: -1 }, projection: { "patch.patch": 1 } },
+    );
+    const latestPatch = latest?.patch.patch ?? null;
+
+    const query: Record<string, unknown> = { accountId32 };
+    if (filter.mode === "ranked") query.ranked = true;
+    if (filter.range === "30d")
+      query.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
+    if (filter.range === "patch") query["patch.patch"] = latestPatch;
+
+    const docs = await col
+      .find(query, {
+        sort: { startedAt: -1 },
+        limit: 5_000,
+        projection: {
+          _id: 0,
+          matchId: 1,
+          startedAt: 1,
+          durationSec: 1,
+          heroId: 1,
+          side: 1,
+          result: 1,
+          kills: 1,
+          deaths: 1,
+          assists: 1,
+          ranked: 1,
+          queue: 1,
+          patch: 1,
+        },
+      })
+      .toArray();
+
+    const facts: DashboardFact[] = docs.map((d) => ({
+      matchId: d.matchId,
+      startedAt: d.startedAt,
+      durationSec: d.durationSec,
+      heroId: d.heroId,
+      side: d.side,
+      result: d.result,
+      kills: d.kills,
+      deaths: d.deaths,
+      assists: d.assists,
+      ranked: d.ranked,
+      queueClass: d.queue.queueClass,
+      partySize: d.queue.partySize,
+      patch: d.patch.patch,
+      patchCertainty: d.patch.certainty,
+    }));
+    return { facts, latestPatch };
   }
 }

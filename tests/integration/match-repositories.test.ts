@@ -69,7 +69,12 @@ describe("MongoPlayerMatchFactRepository", () => {
 });
 
 describe("MongoSyncStateRepository", () => {
-  const opts = (now: Date) => ({ now, lockTtlMs: 60_000, cooldownMs: 300_000 });
+  const opts = (now: Date) => ({
+    now,
+    lockTtlMs: 60_000,
+    cooldownMs: 300_000,
+    backfillCooldownMs: 30_000,
+  });
 
   it("lets exactly one concurrent caller acquire the lock", async () => {
     const repo = new MongoSyncStateRepository(db);
@@ -95,6 +100,23 @@ describe("MongoSyncStateRepository", () => {
     const during = await repo.acquire(43, opts(new Date(t0.getTime() + 1000)));
     expect(during).toEqual({ type: "cooldown", retryAt: new Date(t0.getTime() + 300_000) });
     expect((await repo.acquire(43, opts(new Date(t0.getTime() + 300_001)))).type).toBe("acquired");
+  });
+
+  it("uses the shorter backfill cooldown while history is incomplete", async () => {
+    const repo = new MongoSyncStateRepository(db);
+    const t0 = new Date("2026-09-29T00:00:00Z");
+    await repo.acquire(45, opts(t0));
+    await repo.release(45, {
+      lastSyncAt: t0,
+      newestStartedAt: null,
+      backfillOffset: 500,
+      backfillComplete: false,
+    });
+    expect(await repo.acquire(45, opts(new Date(t0.getTime() + 10_000)))).toEqual({
+      type: "cooldown",
+      retryAt: new Date(t0.getTime() + 30_000),
+    });
+    expect((await repo.acquire(45, opts(new Date(t0.getTime() + 30_001)))).type).toBe("acquired");
   });
 
   it("recovers from an expired lock and from abandon", async () => {

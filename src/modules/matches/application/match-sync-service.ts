@@ -8,10 +8,13 @@ import type {
   PatchTimelineSource,
   PlayerMatchFactRepository,
   ProviderError,
+  SyncState,
   SyncStateRepository,
 } from "./ports";
 
 export const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
+/** Shorter wait between syncs while older history is still being imported. */
+export const BACKFILL_COOLDOWN_MS = 30 * 1000;
 export const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
 export const PAGE_SIZE = 100;
 export const MAX_PAGES_PER_SYNC = 5;
@@ -59,6 +62,13 @@ export class MatchSyncService {
     this.now = deps.now ?? (() => new Date());
   }
 
+  /** Whether a sync is due: never synced, or past the applicable cooldown. */
+  static isStale(state: SyncState | null, now: Date): boolean {
+    if (!state?.lastSyncAt) return true;
+    const cooldown = state.backfillComplete ? SYNC_COOLDOWN_MS : BACKFILL_COOLDOWN_MS;
+    return now.getTime() - state.lastSyncAt.getTime() >= cooldown;
+  }
+
   /**
    * Import new matches first (head), then spend any remaining page budget on backfill.
    * Idempotent: facts are upserted by (accountId32, matchId).
@@ -71,6 +81,7 @@ export class MatchSyncService {
       now: this.now(),
       lockTtlMs: SYNC_LOCK_TTL_MS,
       cooldownMs: SYNC_COOLDOWN_MS,
+      backfillCooldownMs: BACKFILL_COOLDOWN_MS,
     });
     if (lock.type === "locked") return err({ type: "sync_in_progress" });
     if (lock.type === "cooldown") return err({ type: "cooldown", retryAt: lock.retryAt });

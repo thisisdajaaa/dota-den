@@ -21,6 +21,8 @@
   --color-win: var(--win);
   --color-loss: var(--loss);
   --color-unknown: var(--unknown);
+  --color-gold: var(--gold);
+  --font-display: var(--font-cinzel);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -58,8 +60,8 @@
   --card-foreground: oklch(0.2 0.012 40);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.012 40);
-  --primary: oklch(0.52 0.17 30);
-  --primary-foreground: oklch(0.985 0.003 60);
+  --primary: oklch(0.6 0.13 70);
+  --primary-foreground: oklch(0.18 0.02 60);
   --secondary: oklch(0.95 0.006 60);
   --secondary-foreground: oklch(0.25 0.012 40);
   --muted: oklch(0.95 0.006 60);
@@ -69,35 +71,37 @@
   --destructive: oklch(0.55 0.21 27);
   --border: oklch(0.9 0.006 60);
   --input: oklch(0.88 0.006 60);
-  --ring: oklch(0.52 0.17 30);
-  --win: oklch(0.5 0.13 150);
-  --loss: oklch(0.52 0.17 27);
+  --ring: oklch(0.6 0.13 70);
+  /* win/loss validated for CVD separation (dataviz validator, light surface) */
+  --win: oklch(0.6 0.12 185);
+  --loss: oklch(0.52 0.19 30);
+  --gold: oklch(0.6 0.13 70);
   --unknown: oklch(0.55 0.01 60);
-  --chart-1: oklch(0.52 0.17 30);
-  --chart-2: oklch(0.5 0.13 150);
+  --chart-1: oklch(0.6 0.13 70);
+  --chart-2: oklch(0.6 0.12 185);
   --chart-3: oklch(0.6 0.12 80);
   --chart-4: oklch(0.5 0.1 250);
   --chart-5: oklch(0.45 0.01 60);
   --radius: 0.5rem;
   --sidebar: oklch(0.97 0.004 60);
   --sidebar-foreground: oklch(0.2 0.012 40);
-  --sidebar-primary: oklch(0.52 0.17 30);
+  --sidebar-primary: oklch(0.6 0.13 70);
   --sidebar-primary-foreground: oklch(0.985 0.003 60);
   --sidebar-accent: oklch(0.94 0.012 60);
   --sidebar-accent-foreground: oklch(0.25 0.012 40);
   --sidebar-border: oklch(0.9 0.006 60);
-  --sidebar-ring: oklch(0.52 0.17 30);
+  --sidebar-ring: oklch(0.6 0.13 70);
 }
 
 .dark {
-  --background: oklch(0.155 0.008 40);
+  --background: oklch(0.13 0.008 40);
   --foreground: oklch(0.93 0.008 70);
-  --card: oklch(0.195 0.01 40);
+  --card: oklch(0.175 0.01 40);
   --card-foreground: oklch(0.93 0.008 70);
   --popover: oklch(0.2 0.01 40);
   --popover-foreground: oklch(0.93 0.008 70);
-  --primary: oklch(0.63 0.17 32);
-  --primary-foreground: oklch(0.15 0.01 40);
+  --primary: oklch(0.8 0.13 80);
+  --primary-foreground: oklch(0.2 0.03 60);
   --secondary: oklch(0.25 0.01 40);
   --secondary-foreground: oklch(0.93 0.008 70);
   --muted: oklch(0.24 0.01 40);
@@ -107,23 +111,25 @@
   --destructive: oklch(0.68 0.19 25);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.63 0.17 32);
-  --win: oklch(0.72 0.14 150);
-  --loss: oklch(0.68 0.17 27);
+  --ring: oklch(0.8 0.13 80);
+  /* win/loss validated for CVD separation (dataviz validator, dark card surface) */
+  --win: oklch(0.66 0.12 190);
+  --loss: oklch(0.56 0.19 32);
+  --gold: oklch(0.8 0.13 80);
   --unknown: oklch(0.68 0.01 60);
-  --chart-1: oklch(0.63 0.17 32);
-  --chart-2: oklch(0.72 0.14 150);
+  --chart-1: oklch(0.8 0.13 80);
+  --chart-2: oklch(0.66 0.12 190);
   --chart-3: oklch(0.78 0.12 80);
   --chart-4: oklch(0.68 0.1 250);
   --chart-5: oklch(0.6 0.01 60);
   --sidebar: oklch(0.18 0.01 40);
   --sidebar-foreground: oklch(0.93 0.008 70);
-  --sidebar-primary: oklch(0.63 0.17 32);
-  --sidebar-primary-foreground: oklch(0.15 0.01 40);
+  --sidebar-primary: oklch(0.8 0.13 80);
+  --sidebar-primary-foreground: oklch(0.2 0.03 60);
   --sidebar-accent: oklch(0.27 0.014 40);
   --sidebar-accent-foreground: oklch(0.93 0.008 70);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.63 0.17 32);
+  --sidebar-ring: oklch(0.8 0.13 80);
 }
 
 @layer base {
@@ -132,6 +138,20 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .dark body {
+    /* Atmosphere: ember glow top-left, Radiant teal haze right, faint grid. */
+    background-image:
+      radial-gradient(60rem 30rem at 10% -10%, oklch(0.45 0.12 45 / 0.22), transparent 60%),
+      radial-gradient(50rem 30rem at 100% 10%, oklch(0.5 0.09 200 / 0.1), transparent 60%),
+      linear-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 0.025) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      48px 48px,
+      48px 48px;
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
@@ -146,5 +166,19 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  /* Glassy panel with a gold-tinted top highlight. */
+  .panel {
+    @apply relative rounded-2xl border border-white/[0.07] bg-card/80 shadow-[0_1px_0_0_oklch(1_0_0/0.06)_inset,0_20px_40px_-24px_oklch(0_0_0/0.8)] backdrop-blur-sm;
+  }
+  .panel::before {
+    content: "";
+    @apply pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent;
+  }
+  .kicker {
+    @apply text-[0.68rem] font-semibold tracking-[0.18em] text-gold/90 uppercase;
   }
 }

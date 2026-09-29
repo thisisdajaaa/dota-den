@@ -15,6 +15,8 @@ const EnvSchema = z
     MONGODB_MAX_POOL_SIZE: z.coerce.number().int().min(1).max(100).default(10),
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     OPENDOTA_API_KEY: z.string().min(1).optional(),
+    /** Override for tests (fixture server). Defaults to the public API. */
+    OPENDOTA_BASE_URL: z.url().optional(),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
     ADMIN_STEAM_IDS: z
       .string()
