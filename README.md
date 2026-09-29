@@ -69,9 +69,13 @@ later (v27 relies on `require(esm)`).
 
 - [x] **M0 foundation:** scaffold, design tokens, CI, Mongo layer, Steam OpenID
       sign-in and sessions, health endpoint, structured logs
-- [ ] **M1 MVP**
-  - [x] OpenDota adapter, provider gateway, match sync, solo/party/unknown classifier
-  - [ ] Dashboard and filters · MMR journal and calendar · patch hub · local draft
+- [x] **M1 MVP**
+  - [x] OpenDota import, solo/party/unknown classifier, auto-sync
+  - [x] Dashboard, match list with filters, in-app match pages
+  - [x] MMR journal and calendar (exact vs estimated days)
+  - [x] Patch hub with official notes, your-heroes view and watchlist
+  - [x] Local Captain's Mode draft simulator with share links
+- [ ] M2 social · M3 intelligence
 
 ## Branches
 
