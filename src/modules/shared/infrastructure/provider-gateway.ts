@@ -1,8 +1,20 @@
 /**
  * Outbound HTTP for upstream providers (spec §6): timeout, bounded retries with
  * jitter, Retry-After, a light circuit breaker, in-flight dedup and a TTL cache.
- * State is per server instance; that's the intended scope for a serverless prototype.
+ * Circuit, dedup and the first cache layer are per server instance. Optionally (ADR 0008)
+ * a shared cache sits behind the local one and a shared budget caps upstream calls.
  */
+
+/** Cache shared by all instances (e.g. Redis). Implementations may throw; we fail open. */
+export interface SharedResponseCache {
+  get(key: string): Promise<{ value: GatewayResponse; expiresAt: number } | null>;
+  set(key: string, value: GatewayResponse, ttlMs: number): Promise<void>;
+}
+
+/** Global call budget. `take` reserves one upstream call; false when exhausted. */
+export interface UpstreamBudget {
+  take(): Promise<{ allowed: boolean; retryAfterMs: number | null }>;
+}
 export type GatewayResponse =
   | { ok: true; status: number; body: unknown }
   | { ok: false; kind: "not_found"; status: 404 }
@@ -28,6 +40,12 @@ export interface GatewayOptions {
     durationMs: number;
     attempt: number;
   }) => void;
+  /** Second cache layer shared across instances; only used for GETs with `cacheTtlMs`. */
+  sharedCache?: SharedResponseCache;
+  /** Checked before every upstream call (each retry counts). */
+  budget?: UpstreamBudget;
+  /** Shared cache or budget store failed; the gateway carried on without it. */
+  onSharedError?: (event: { op: "cache_get" | "cache_set" | "budget"; error: unknown }) => void;
 }
 
 interface CacheEntry {
@@ -57,18 +75,53 @@ export class ProviderGateway {
     const pending = this.inFlight.get(url);
     if (pending) return pending;
 
-    const request = this.execute(url, opts.headers).finally(() => this.inFlight.delete(url));
+    const request = this.fetchThroughShared(url, opts).finally(() => this.inFlight.delete(url));
     this.inFlight.set(url, request);
-    const res = await request;
+    return request;
+  }
+
+  private async fetchThroughShared(
+    url: string,
+    opts: { cacheTtlMs?: number; headers?: HeadersInit },
+  ): Promise<GatewayResponse> {
+    const shared = opts.cacheTtlMs ? this.opts.sharedCache : undefined;
+    if (shared) {
+      const hit = await shared.get(url).catch((error: unknown) => {
+        this.opts.onSharedError?.({ op: "cache_get", error });
+        return null;
+      });
+      if (hit && hit.expiresAt > this.now) {
+        this.cache.set(url, hit);
+        return hit.value;
+      }
+    }
+    const res = await this.execute(url, opts.headers);
     if (opts.cacheTtlMs && (res.ok || res.kind === "not_found")) {
       this.cache.set(url, { expiresAt: this.now + opts.cacheTtlMs, value: res });
+      await shared?.set(url, res, opts.cacheTtlMs).catch((error: unknown) => {
+        this.opts.onSharedError?.({ op: "cache_set", error });
+      });
     }
     return res;
+  }
+
+  /** Reserve a call from the shared budget: null when allowed (or no budget, or store down). */
+  private async overBudget(): Promise<GatewayResponse | null> {
+    if (!this.opts.budget) return null;
+    try {
+      const { allowed, retryAfterMs } = await this.opts.budget.take();
+      return allowed ? null : { ok: false, kind: "rate_limited", status: 429, retryAfterMs };
+    } catch (error) {
+      this.opts.onSharedError?.({ op: "budget", error });
+      return null;
+    }
   }
 
   /** Fire-and-check POST (no retries or caching); used for upstream "refresh" requests. */
   async postJson(url: string): Promise<GatewayResponse> {
     if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
+    const exhausted = await this.overBudget();
+    if (exhausted) return exhausted;
     const fetchFn = this.opts.fetch ?? ((u, i) => fetch(u, i));
     const started = this.now;
     let status: number | null = null;
@@ -110,6 +163,9 @@ export class ProviderGateway {
     let last: GatewayResponse = { ok: false, kind: "failed", status: null, cause: "no attempt" };
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Out of shared budget: don't call upstream; callers take their degraded path.
+      const exhausted = await this.overBudget();
+      if (exhausted) return exhausted;
       const started = this.now;
       let status: number | null = null;
       try {

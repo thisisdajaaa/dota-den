@@ -4,7 +4,11 @@ import { env } from "@/lib/env";
 import { apiError, requestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
 import { draftInsights } from "@/modules/drafts/composition";
+import { bucketedKey } from "@/modules/jobs/domain/job";
+import { getJobQueue } from "@/modules/jobs/composition";
 import { getPatchImportService } from "@/modules/patches/composition";
+
+const DAY_MS = 24 * 3_600_000;
 
 const digest = (s: string): Buffer => createHash("sha256").update(s).digest();
 
@@ -23,13 +27,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const service = await getPatchImportService();
   const started = Date.now();
   // Refresh the cached tournament data alongside the patch (it's slow to query on demand).
+  // Refresh the draft AI's tournament data: a retried background job with QStash, or right
+  // here alongside the patch import without it.
+  const queue = getJobQueue();
   const [result, tournaments] = await Promise.all([
     service.importLatest(),
-    draftInsights()
-      .then((i) => i.warm())
-      .catch(() => [{ key: "tournaments", ok: false }]),
+    queue.durable
+      ? queue
+          .enqueue(
+            "draft-meta-warm",
+            {},
+            { dedupKey: bucketedKey("draft-meta-warm", DAY_MS, Date.now()) },
+          )
+          .catch(() => "enqueue_failed")
+      : draftInsights()
+          .then((i) => i.warm())
+          .catch(() => [{ key: "tournaments", ok: false }]),
   ]);
-  logger.info("draft_meta_refreshed", { requestId: requestId(req), tournaments });
+  logger.info("draft_meta_refresh", { requestId: requestId(req), tournaments });
   const log = { requestId: requestId(req), trigger: "cron", durationMs: Date.now() - started };
 
   if (!result.ok) {

@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
 import { AiOpponentService, type AiHero } from "./application/ai-opponent-service";
 import { ChallengeService } from "./application/challenge-service";
 import { DraftHistoryService } from "./application/draft-history-service";
@@ -33,6 +34,7 @@ function explorerGateway(): ProviderGateway {
   const { OPENDOTA_EXPLORER_TIMEOUT_MS, OPENDOTA_EXPLORER_MAX_RETRIES } = env();
   globalForExplorer.__ddExplorer ??= new ProviderGateway({
     name: "opendota-explorer",
+    ...sharedGatewayOptions("opendota"),
     timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
     maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
     onRequest: ({ status, durationMs, attempt }) =>

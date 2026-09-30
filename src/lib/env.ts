@@ -107,6 +107,26 @@ const EnvSchema = z
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
     ...TUNING,
+
+    // ---- Redis and background jobs (Upstash, ADR 0008). All optional. -----------------
+    // Unset: per-instance rate limits and caches, and background work runs in-process
+    // with `after()`, exactly as before.
+    /** Upstash Redis REST endpoint: shared rate limits, upstream cache, OpenDota budget. */
+    UPSTASH_REDIS_REST_URL: z.url().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+    /** Upstash QStash token: durable jobs POSTed to `${APP_URL}/api/jobs/<name>`. */
+    QSTASH_TOKEN: z.string().min(1).optional(),
+    /** QStash API base URL (regional endpoint or local dev server). Defaults to QStash's. */
+    QSTASH_URL: z.url().optional(),
+    /** Signing keys that job endpoints verify QStash requests with. */
+    QSTASH_CURRENT_SIGNING_KEY: z.string().min(1).optional(),
+    QSTASH_NEXT_SIGNING_KEY: z.string().min(1).optional(),
+    /** Global OpenDota call budget (needs Redis). Defaults depend on OPENDOTA_API_KEY. */
+    OPENDOTA_BUDGET_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+    OPENDOTA_BUDGET_PER_DAY: z.coerce.number().int().min(1).optional(),
+    /** Set by Vercel when deployment protection allows automation: lets QStash reach staging. */
+    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
+    // ---- end Redis and background jobs ------------------------------------------------
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && env.AUTH_TEST_MODE) {
@@ -116,7 +136,30 @@ const EnvSchema = z
         message: "AUTH_TEST_MODE must never be enabled in production",
       });
     }
+    // Redis and background jobs (ADR 0008).
+    if (!env.UPSTASH_REDIS_REST_URL !== !env.UPSTASH_REDIS_REST_TOKEN) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["UPSTASH_REDIS_REST_TOKEN"],
+        message: "Set both UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN, or neither",
+      });
+    }
+    if (env.QSTASH_TOKEN && !env.QSTASH_CURRENT_SIGNING_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["QSTASH_CURRENT_SIGNING_KEY"],
+        message: "QSTASH_TOKEN needs QSTASH_CURRENT_SIGNING_KEY so job endpoints can verify calls",
+      });
+    }
   });
+
+/** OpenDota budget defaults: the free tier's limits, or higher with an API key. */
+export function openDotaBudget(e: Env): { perMinute: number; perDay: number } {
+  return {
+    perMinute: e.OPENDOTA_BUDGET_PER_MINUTE ?? (e.OPENDOTA_API_KEY ? 1_200 : 60),
+    perDay: e.OPENDOTA_BUDGET_PER_DAY ?? (e.OPENDOTA_API_KEY ? 100_000 : 3_000),
+  };
+}
 
 export type Env = z.infer<typeof EnvSchema>;
 

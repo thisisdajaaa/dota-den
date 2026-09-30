@@ -14,7 +14,7 @@ const BodySchema = z.object({
 /** Data-backed pick/ban suggestions for the side whose turn it is (no language model). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`draft-suggest:${clientKey(req)}`, ...apiLimitArgs("draftSuggestions"))) {
+  if (!(await rateLimit(`draft-suggest:${clientKey(req)}`, ...apiLimitArgs("draftSuggestions")))) {
     return apiError("rate_limited", "Too many suggestion requests in the last minute.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

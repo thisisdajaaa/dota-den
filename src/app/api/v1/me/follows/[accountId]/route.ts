@@ -13,7 +13,7 @@ export async function DELETE(
   { params }: RouteContext<"/api/v1/me/follows/[accountId]">,
 ): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`follows:${clientKey(req)}`, FOLLOW_MUTATIONS_PER_MINUTE, 60_000))
+  if (!(await rateLimit(`follows:${clientKey(req)}`, FOLLOW_MUTATIONS_PER_MINUTE, 60_000)))
     return apiError("rate_limited", "Too many changes. Try again in a minute.");
   const user = await getRouteUser(req);
   if (!user) return apiError("unauthorized", "Not signed in");

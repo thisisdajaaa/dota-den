@@ -18,7 +18,7 @@ const toMap = (r: Record<string, 1 | 2 | 3 | 4 | 5> | undefined) =>
 /** An AI review of a finished draft (a language model call, so it's rate limited). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`draft-review:${clientKey(req)}`, ...apiLimitArgs("draftReview"))) {
+  if (!(await rateLimit(`draft-review:${clientKey(req)}`, ...apiLimitArgs("draftReview")))) {
     return apiError("rate_limited", "Too many reviews in the last minute. Try again shortly.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

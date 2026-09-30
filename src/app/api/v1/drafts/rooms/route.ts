@@ -18,7 +18,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
   const actor = await routeActor(req);
   if (!actor) return apiError("unauthorized", "Sign in to create a draft room");
-  if (!rateLimit(`room-create:${clientKey(req)}`, ...apiLimitArgs("roomCreate"))) {
+  if (!(await rateLimit(`room-create:${clientKey(req)}`, ...apiLimitArgs("roomCreate")))) {
     return apiError("rate_limited", "You've created a lot of rooms recently. Try again later.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

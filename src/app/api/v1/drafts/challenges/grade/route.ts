@@ -42,7 +42,7 @@ async function recordForUser(
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`draft-challenge:${clientKey(req)}`, ...apiLimitArgs("draftChallenge"))) {
+  if (!(await rateLimit(`draft-challenge:${clientKey(req)}`, ...apiLimitArgs("draftChallenge")))) {
     return apiError("rate_limited", "Too many answers in the last minute. Take a breath.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

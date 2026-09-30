@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
   const user = await getRouteUser(req);
   if (!user) return apiError("unauthorized", "Not signed in");
-  if (!rateLimit(`session-gap:${user.id}`, GAP_CHANGES_PER_MINUTE, 60_000))
+  if (!(await rateLimit(`session-gap:${user.id}`, GAP_CHANGES_PER_MINUTE, 60_000)))
     return apiError("rate_limited", "Too many changes. Try again in a minute.");
 
   const parsed = SessionGapInputSchema.safeParse(await req.json().catch(() => null));
