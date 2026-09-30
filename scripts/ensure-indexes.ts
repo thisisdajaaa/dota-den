@@ -7,6 +7,7 @@ import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo
 import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import { ensureDraftRoomIndexes } from "@/modules/drafts/infrastructure/mongo-draft-rooms";
 import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
+import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
 import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
 import { ensurePatchIndexes } from "@/modules/patches/infrastructure/mongo-patch-repositories";
@@ -20,6 +21,7 @@ async function main(): Promise<void> {
   await ensureIdentityIndexes(db);
   await ensureDraftRoomIndexes(db);
   await ensureDraftHistoryIndexes(db);
+  await ensureLeaderboardIndexes(db);
   await ensureMatchIndexes(db);
   await ensureMmrIndexes(db);
   await ensurePatchIndexes(db);

@@ -114,18 +114,27 @@ type Status =
   | { kind: "error"; message: string }
   | { kind: "graded"; result: ChallengeResult; counted: boolean };
 
+/** Your streak as saved on your account (signed in); guests use this device's progress. */
+export interface SavedStreak {
+  streak: number;
+  best: number;
+}
+
 /** One draft challenge: the position, a hero picker, and the graded result. */
 export function ChallengeBoard({
   puzzle,
   info,
   situation,
   heroes,
+  saved: savedInitial = null,
 }: {
   puzzle: Puzzle;
   info: ChallengeInfo;
   /** Plain-language description of the position. */
   situation: string;
   heroes: DraftHero[];
+  /** Signed in: the streak saved on your account. */
+  saved?: SavedStreak | null;
 }) {
   const router = useRouter();
   const heroMap = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes]);
@@ -135,7 +144,9 @@ export function ChallengeBoard({
   );
   const [selected, setSelected] = useState<number[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "choosing" });
-  const progress = useChallengeProgress();
+  const local = useChallengeProgress();
+  const [saved, setSaved] = useState<SavedStreak | null>(savedInitial);
+  const progress = saved ?? local;
   const verb = puzzle.action === "pick" ? "pick" : "ban";
   const name = (id: number) => heroMap.get(id)?.name ?? `Hero #${id}`;
 
@@ -159,7 +170,12 @@ export function ChallengeBoard({
         body: JSON.stringify({ type: puzzle.type, seed: puzzle.seed, heroIds: selected }),
       });
       const body = (await res.json().catch(() => null)) as
-        (ChallengeResult & { error?: undefined }) | { error: { message: string } } | null;
+        | (ChallengeResult & {
+            error?: undefined;
+            saved?: (SavedStreak & { counted: boolean }) | null;
+          })
+        | { error: { message: string } }
+        | null;
       if (!res.ok || !body || body.error) {
         setStatus({
           kind: "error",
@@ -168,14 +184,17 @@ export function ChallengeBoard({
         return;
       }
       const result = body as ChallengeResult;
-      const counted = saveResult({
+      const account = "saved" in body ? (body.saved ?? null) : null;
+      const countedHere = saveResult({
         type: puzzle.type,
         seed: puzzle.seed,
         grade: result.grade,
         answer: selected.map(name),
         at: new Date().toISOString(),
       });
-      setStatus({ kind: "graded", result, counted });
+      // Signed in, the account's streak is the one that counts.
+      if (account) setSaved({ streak: account.streak, best: account.best });
+      setStatus({ kind: "graded", result, counted: account ? account.counted : countedHere });
     } catch {
       setStatus({ kind: "error", message: "Network problem. Check your connection and retry." });
     }

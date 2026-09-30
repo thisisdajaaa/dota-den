@@ -25,6 +25,7 @@ const ENABLED: readonly NavKey[] = [
   "players",
   "patches",
   "draft",
+  "leaderboards",
 ];
 
 function Brand() {

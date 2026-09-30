@@ -23,7 +23,9 @@ import { getViewerTimeZone } from "@/modules/mmr/composition";
 import { getSessionService } from "@/modules/sessions/composition";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
+import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
+import { StandingSection } from "./standing-section";
 import { TeammatesSection } from "./teammates-section";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -176,6 +178,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {/* From OpenDota, not the filters above: streams in without holding up the page. */}
       <Suspense fallback={<TeammatesSkeleton />}>
         <TeammatesSection user={user} />
+      </Suspense>
+
+      {/* Your all-time rank on each friends leaderboard. */}
+      <Suspense fallback={<StandingSkeleton />}>
+        <StandingSection user={user} />
       </Suspense>
     </div>
   );

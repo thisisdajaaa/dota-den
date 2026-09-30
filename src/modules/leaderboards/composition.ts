@@ -1,0 +1,169 @@
+import "server-only";
+import { createHash } from "node:crypto";
+import { getDb } from "@/lib/db/mongo";
+import { logger } from "@/lib/logger";
+import {
+  decodeSnapshot,
+  encodeSnapshot,
+  replaySnapshot,
+  snapshotOf,
+} from "@/modules/drafts/application/snapshot";
+import { getAiOpponent, getDraftHistoryService } from "@/modules/drafts/composition";
+import {
+  findUsersByAccountIds,
+  findUsersByIds,
+  getCurrentUser,
+} from "@/modules/identity/composition";
+import type { User } from "@/modules/identity/domain/user";
+import { getHeroMap } from "@/modules/matches/composition";
+import { ownerOf } from "@/modules/players/application/follow-service";
+import {
+  getFollowService,
+  getPlayerDirectory,
+  getPublicProfile,
+} from "@/modules/players/composition";
+import { err, ok } from "@/modules/shared/domain/result";
+import { ActivityService } from "./application/activity-service";
+import { LeaderboardService } from "./application/leaderboard-service";
+import type {
+  AccountDirectory,
+  DraftReferee,
+  FriendFinder,
+  PlayerAccount,
+} from "./application/ports";
+import { MongoActivityRepository } from "./infrastructure/mongo-activity-repository";
+
+/** OpenDota teammates considered as friends (most games on the same team first). */
+const MAX_PEER_FRIENDS = 200;
+/** Room captains you've drafted with, considered as friends. */
+const MAX_ROOM_FRIENDS = 100;
+
+/** Replays drafts with the drafts context's engine and asks its AI captain for the outlook. */
+const referee: DraftReferee = {
+  async replay(encoded) {
+    const decoded = decodeSnapshot(encoded);
+    if (!decoded.ok) return err({ type: "invalid_snapshot" });
+    const pool = [...(await getHeroMap()).keys()];
+    if (pool.length === 0) return err({ type: "heroes_unavailable" });
+    const replayed = replaySnapshot(decoded.value, pool);
+    if (!replayed.ok) return err({ type: "invalid_snapshot" });
+    const state = replayed.value;
+    return ok({
+      canonical: encodeSnapshot(snapshotOf(state)),
+      completed: state.status === "completed",
+      rulesetId: state.rulesetId,
+      rulesetVersion: state.rulesetVersion,
+    });
+  },
+  async outlook(canonical) {
+    const decoded = decodeSnapshot(canonical);
+    if (!decoded.ok) return null;
+    const res = await (await getAiOpponent()).outlook(decoded.value);
+    return res.ok ? res.value : null;
+  },
+};
+
+export async function getActivityService(): Promise<ActivityService> {
+  return new ActivityService({
+    repo: new MongoActivityRepository(await getDb()),
+    referee,
+    hash: (text) => createHash("sha256").update(text).digest("hex"),
+    onScoreError: (error) => logger.warn("draft_score_failed", { error }),
+  });
+}
+
+const toAccount = (u: User): PlayerAccount => ({
+  userId: u.id,
+  accountId32: u.accountId32,
+  name: u.persona?.name ?? null,
+  avatarUrl: u.persona?.avatarUrl ?? null,
+});
+
+const accounts: AccountDirectory = {
+  byUserIds: async (ids) => (await findUsersByIds(ids)).map(toAccount),
+  byAccountIds: async (ids) => (await findUsersByAccountIds(ids)).map(toAccount),
+};
+
+/**
+ * Friends: tracked players, OpenDota teammates and captains you've drafted with in rooms.
+ * A source that fails is skipped (and reported), so the board still shows the rest.
+ */
+const friends: FriendFinder = {
+  async friendAccountIds(viewer) {
+    const user = { id: viewer.userId, accountId32: viewer.accountId32 };
+    const [tracked, peers, rooms] = await Promise.allSettled([
+      getFollowService().then((s) => s.list(ownerOf(user))),
+      getPlayerDirectory().peers(viewer.accountId32),
+      getDraftHistoryService().then((s) => s.opponents(viewer.userId, MAX_ROOM_FRIENDS)),
+    ]);
+    let incomplete = false;
+    const ids: number[] = [];
+    if (tracked.status === "fulfilled") ids.push(...tracked.value.map((f) => f.accountId32));
+    else {
+      incomplete = true;
+      logger.warn("leaderboard_friends_tracked_failed", { error: tracked.reason });
+    }
+    if (peers.status === "fulfilled" && peers.value.ok) {
+      ids.push(
+        ...peers.value.value
+          .filter((p) => p.withGames > 0)
+          .sort((a, b) => b.withGames - a.withGames)
+          .slice(0, MAX_PEER_FRIENDS)
+          .map((p) => p.accountId32),
+      );
+    } else {
+      incomplete = true;
+      logger.warn("leaderboard_friends_peers_failed", {
+        reason:
+          peers.status === "fulfilled" && !peers.value.ok ? peers.value.error.type : "exception",
+      });
+    }
+    if (rooms.status === "fulfilled") ids.push(...rooms.value.map((o) => o.accountId32));
+    else {
+      incomplete = true;
+      logger.warn("leaderboard_friends_rooms_failed", { error: rooms.reason });
+    }
+    return { accountIds: [...new Set(ids)], incomplete };
+  },
+};
+
+/**
+ * The signed-in viewer's saved challenge streak, or null for guests. An outage returns null
+ * too, so the page falls back to this device's progress.
+ */
+export async function getViewerChallengeStreak(): Promise<{ streak: number; best: number } | null> {
+  const user = await getCurrentUser({ tolerateErrors: true });
+  if (!user) return null;
+  try {
+    const s = await (await getActivityService()).challengeStreak(user.id);
+    return { streak: s.current, best: s.best };
+  } catch (error) {
+    logger.error("challenge_streak_lookup_failed", { error });
+    return null;
+  }
+}
+
+export async function getLeaderboardService(): Promise<LeaderboardService> {
+  const db = await getDb();
+  return new LeaderboardService({
+    activity: new MongoActivityRepository(db),
+    rooms: {
+      totals: async (query) => (await getDraftHistoryService()).captainTotals(query),
+    },
+    accounts,
+    profiles: {
+      profile: async (accountId32) => {
+        const p = await getPublicProfile(accountId32);
+        return p
+          ? {
+              personaName: p.personaName,
+              avatarUrl: p.avatarUrl,
+              rankTier: p.rankTier,
+              leaderboardRank: p.leaderboardRank,
+            }
+          : null;
+      },
+    },
+    friends,
+  });
+}

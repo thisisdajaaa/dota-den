@@ -9,6 +9,7 @@ import {
   type ChallengeType,
 } from "@/modules/drafts/domain/challenges";
 import { ChallengeHistory } from "@/modules/drafts/ui/challenge-history";
+import { getViewerChallengeStreak } from "@/modules/leaderboards/composition";
 
 export const metadata: Metadata = { title: "Draft challenges" };
 
@@ -19,7 +20,9 @@ const ICONS: Record<ChallengeType, typeof Swords> = {
   first_phase_bans: ListOrdered,
 };
 
-export default function DraftChallengesPage() {
+export default async function DraftChallengesPage() {
+  // Signed in: the streak saved on the account; guests keep this device's progress.
+  const saved = await getViewerChallengeStreak();
   return (
     <div className="space-y-6">
       <PageHeader
@@ -54,7 +57,17 @@ export default function DraftChallengesPage() {
         })}
       </ul>
 
-      <ChallengeHistory />
+      <ChallengeHistory saved={saved} />
+
+      {saved && (
+        <p className="text-sm text-muted-foreground">
+          Every first answer counts on the{" "}
+          <Link href="/leaderboards?board=challenges" className="text-gold hover:underline">
+            draft challenges leaderboard
+          </Link>
+          .
+        </p>
+      )}
 
       <p className="text-xs text-muted-foreground">
         Grades are based on high-rank win rates and head-to-head matchups; drafting also depends on

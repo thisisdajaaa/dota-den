@@ -8,7 +8,7 @@ import {
 } from "../domain/draft-history";
 import { otherSide, type DraftRoom, type RoomCaptain } from "../domain/draft-room";
 import { getRuleset } from "../domain/rulesets";
-import type { DraftHistoryRepository, HistoryOpponent } from "./draft-history-ports";
+import type { CaptainTotals, DraftHistoryRepository, HistoryOpponent } from "./draft-history-ports";
 import type {
   HeadToHeadView,
   HistoryEntryView,
@@ -170,6 +170,14 @@ export class DraftHistoryService {
 
   opponents(viewerUserId: string, limit = 50): Promise<HistoryOpponent[]> {
     return this.deps.history.opponents(viewerUserId, limit);
+  }
+
+  /** Finished room drafts per captain, with self-reported wins and losses (leaderboards). */
+  captainTotals(query: {
+    since: Date | null;
+    userIds: readonly string[] | null;
+  }): Promise<CaptainTotals[]> {
+    return this.deps.history.captainTotals(query);
   }
 
   private resultView(record: DraftHistoryRecord, viewerUserId: string | null): RoomResultView {
