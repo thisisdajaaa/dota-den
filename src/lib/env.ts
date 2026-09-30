@@ -124,6 +124,8 @@ const EnvSchema = z
     /** Global OpenDota call budget (needs Redis). Defaults depend on OPENDOTA_API_KEY. */
     OPENDOTA_BUDGET_PER_MINUTE: z.coerce.number().int().min(1).optional(),
     OPENDOTA_BUDGET_PER_DAY: z.coerce.number().int().min(1).optional(),
+    /** Set by Vercel when deployment protection allows automation: lets QStash reach staging. */
+    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
     // ---- end Redis and background jobs ------------------------------------------------
   })
   .superRefine((env, ctx) => {

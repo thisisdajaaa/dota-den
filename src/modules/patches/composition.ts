@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
 import { PatchImportService } from "./application/patch-import-service";
 import { PatchWatchlistService } from "./application/patch-watchlist-service";
 import type { PatchQueries } from "./application/ports";
@@ -26,6 +27,7 @@ function gateways(): { valve: ProviderGateway; openDota: ProviderGateway } {
   const make = (name: string) =>
     new ProviderGateway({
       name,
+      ...sharedGatewayOptions("valve"),
       // Full patch payloads are ~200KB; allow a little longer than the default.
       timeoutMs: 15_000,
       onRequest: ({ url, status, durationMs, attempt }) =>

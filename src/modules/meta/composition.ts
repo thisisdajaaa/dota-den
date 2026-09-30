@@ -5,6 +5,7 @@ import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
 import type { Patch } from "@/modules/patches/domain/patch";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
 import { MetaService } from "./application/meta-service";
 import type { MetaStatsSource, PlayerLaneHistory } from "./application/ports";
 import type { HeroPatchChange, LatestPatch } from "./domain/patch-tips";
@@ -28,6 +29,7 @@ function metaSource(): OpenDotaMetaSource {
   // trouble never trips the circuit for the rest of the OpenDota API.
   const explorer = new ProviderGateway({
     name: "opendota-explorer",
+    ...sharedGatewayOptions("opendota"),
     timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
     maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
     onRequest: ({ status, durationMs, attempt }) =>

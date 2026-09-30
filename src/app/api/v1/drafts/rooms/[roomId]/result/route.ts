@@ -18,7 +18,9 @@ type Ctx = { params: Promise<{ roomId: string }> };
 export async function GET(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   const roomId = await readRoomParams(ctx);
   if (!roomId) return apiError("not_found", "Draft room not found");
-  if (!(await rateLimit(`room-poll:${clientKey(req)}`, ...apiLimitArgs("roomPoll"), { local: true }))) {
+  if (
+    !(await rateLimit(`room-poll:${clientKey(req)}`, ...apiLimitArgs("roomPoll"), { local: true }))
+  ) {
     return apiError("rate_limited", "Polling too fast");
   }
   const user = await getRouteUser(req);

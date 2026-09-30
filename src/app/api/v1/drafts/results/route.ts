@@ -18,7 +18,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
   const user = await getRouteUser(req);
   if (!user) return apiError("unauthorized", "Sign in to save your drafts");
-  if (!(await rateLimit(`draft-results:${user.id}`, DRAFT_RESULTS_PER_WINDOW, DRAFT_RESULTS_WINDOW_MS))) {
+  if (
+    !(await rateLimit(
+      `draft-results:${user.id}`,
+      DRAFT_RESULTS_PER_WINDOW,
+      DRAFT_RESULTS_WINDOW_MS,
+    ))
+  ) {
     return apiError("rate_limited", "Too many drafts saved in the last few minutes.");
   }
   const body = DraftResultInputSchema.safeParse(await req.json().catch(() => null));

@@ -64,6 +64,7 @@ test("public pages fit a phone screen, and guests get navigation", async ({ page
 test("signed-in pages fit a phone screen, and the footer isn't hidden by the tab bar", async ({
   page,
 }) => {
+  test.setTimeout(120_000); // eleven pages
   await page.goto("/api/v1/auth/steam/login");
   for (const path of [
     "/dashboard",

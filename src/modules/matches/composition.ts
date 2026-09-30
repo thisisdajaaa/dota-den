@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
 import { MatchSyncService, toFact } from "./application/match-sync-service";
 import type {
   DashboardFact,
@@ -28,6 +29,7 @@ export function openDotaGateway(): ProviderGateway {
   const { OPENDOTA_TIMEOUT_MS, OPENDOTA_MAX_RETRIES } = env();
   globalForGateway.__ddOpenDota ??= new ProviderGateway({
     name: "opendota",
+    ...sharedGatewayOptions("opendota"),
     timeoutMs: OPENDOTA_TIMEOUT_MS,
     maxRetries: OPENDOTA_MAX_RETRIES,
     onRequest: ({ url, status, durationMs, attempt }) =>

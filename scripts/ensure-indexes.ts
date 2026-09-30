@@ -6,6 +6,7 @@ import { getDb, getMongoClient } from "@/lib/db/mongo";
 import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo-draft-history";
 import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import { ensureDraftRoomIndexes } from "@/modules/drafts/infrastructure/mongo-draft-rooms";
+import { ensureJobIndexes } from "@/modules/jobs/infrastructure/mongo-job-runs";
 import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
 import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
@@ -19,6 +20,7 @@ async function main(): Promise<void> {
   const db = await getDb();
   await ensureDraftMetaCacheIndexes(db);
   await ensureIdentityIndexes(db);
+  await ensureJobIndexes(db);
   await ensureDraftRoomIndexes(db);
   await ensureDraftHistoryIndexes(db);
   await ensureLeaderboardIndexes(db);

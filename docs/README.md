@@ -20,5 +20,6 @@
 | [0005](adr/0005-draft-rulesets.md)              | Versioned draft rulesets                                         |
 | [0006](adr/0006-patch-ingestion.md)             | Patch ingestion from Valve's datafeed                            |
 | [0007](adr/0007-mmr-attribution.md)             | Exact vs estimated MMR attribution                               |
+| [0008](adr/0008-redis-and-background-jobs.md)   | Shared state in Upstash Redis, background jobs in QStash         |
 
 The product and engineering spec is `docs/spec.pdf`.

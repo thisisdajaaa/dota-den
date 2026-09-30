@@ -96,7 +96,7 @@ Per-user throttles on settings (follows, notes, session gap, visibility, draft r
 ## Redis and background jobs (optional)
 
 With these unset, the app behaves exactly as without them: in-memory rate limits and caches per server instance, and
-slow work done inline. The design is in ADR 0008 (added with the Redis work).
+slow work done inline. The design is in [ADR 0008](adr/0008-redis-and-background-jobs.md).
 
 | Variable                                                                              | Meaning                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
