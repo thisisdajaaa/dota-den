@@ -147,6 +147,33 @@ describe("OpenDotaAdapter.fetchMatch", () => {
     ...extra,
   });
 
+  it("keeps complete benchmarks for shown stats and tolerates odd ones", async () => {
+    const { adapter } = adapterWith({
+      ...base,
+      players: [
+        p(0, {
+          benchmarks: {
+            gold_per_min: { raw: 612, pct: 0.83, pct_bracket: 0.7 },
+            last_hits_per_min: { raw: 8.4, pct: 0.97 },
+            kills_per_min: { raw: 0.2, pct: 0.6 },
+            tower_damage: { raw: null, pct: 0.1 },
+          },
+        }),
+        p(128, { benchmarks: "garbage" }),
+        p(129),
+      ],
+    });
+    const res = await adapter.fetchMatch("123");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.players[0].benchmarks).toEqual({
+      gold_per_min: { raw: 612, pct: 0.83, pctBracket: 0.7 },
+      last_hits_per_min: { raw: 8.4, pct: 0.97, pctBracket: null },
+    });
+    expect(res.value.players[1].benchmarks).toBeNull();
+    expect(res.value.players[2].benchmarks).toBeNull();
+  });
+
   it("maps players, sides, empty slots and advantage series", async () => {
     const { adapter } = adapterWith({ ...base, players: [p(0), p(128)] });
     const res = await adapter.fetchMatch("123");

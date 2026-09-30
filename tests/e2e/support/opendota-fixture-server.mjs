@@ -112,10 +112,19 @@ function matchDetail(id) {
           hero_id: row.hero_id,
           kills: row.kills,
           ...shared?.me,
+          benchmarks: {
+            gold_per_min: { raw: 612, pct: 0.83, pct_bracket: 0.7 },
+            xp_per_min: { raw: 700, pct: 0.55, pct_bracket: 0.5 },
+            last_hits_per_min: { raw: 8.4, pct: 0.97, pct_bracket: 0.95 },
+            tower_damage: { raw: 300, pct: 0.12, pct_bracket: 0.1 },
+          },
         })
       : shared && slot === shared.friendSlot
         ? player(slot, shared.friend)
-        : player(slot),
+        : {
+            ...player(slot),
+            benchmarks: { gold_per_min: { raw: 400, pct: 0.5, pct_bracket: null } },
+          },
   );
   return {
     match_id: row.match_id,
