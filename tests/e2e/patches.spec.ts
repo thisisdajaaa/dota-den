@@ -46,9 +46,9 @@ test("signed-in users see their changed heroes and can star one", async ({ page 
 
   // The overview sums up how the latest patch touched your heroes.
   await page.goto("/dashboard");
-  const digest = page.getByRole("region", { name: /changed in 7\.41/ });
+  const digest = page.getByRole("region", { name: /^7\.41 changed \d+ heroes? you play$/ });
   await expect(digest).toBeVisible({ timeout: 20_000 });
-  await expect(digest.getByRole("link", { name: "Pudge" })).toBeVisible();
+  await expect(digest.getByRole("link", { name: "What changed for Pudge in 7.41" })).toBeVisible();
   await expect(digest).toContainText("Base Armor increased by 1");
 });
 

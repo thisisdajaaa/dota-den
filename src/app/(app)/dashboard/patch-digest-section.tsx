@@ -38,10 +38,10 @@ export async function PatchDigestSection({ user }: { user: User }) {
       kicker={`Patch ${version}`}
       title={
         changed.length
-          ? `${plural(changed.length, "of your heroes")} changed in ${version}`
-          : `${version} didn't change your heroes`
+          ? `${version} changed ${changed.length} ${changed.length === 1 ? "hero" : "heroes"} you play`
+          : `${version} didn't change the heroes you play`
       }
-      description="Your heroes: 3+ ranked games in the last 90 days, or starred on a patch page."
+      description="Heroes you play: 3+ ranked games in the last 90 days, or starred on a patch page."
       footer={
         <Link href={`/patches/${version}`} className="text-gold hover:underline">
           All of {version}
@@ -60,6 +60,7 @@ export async function PatchDigestSection({ user }: { user: User }) {
                 <div className="min-w-0 flex-1 space-y-1">
                   <Link
                     href={`/patches/${version}#hero-${h.heroId}`}
+                    aria-label={`What changed for ${name} in ${version}`}
                     className="font-medium hover:text-gold"
                   >
                     {name}
