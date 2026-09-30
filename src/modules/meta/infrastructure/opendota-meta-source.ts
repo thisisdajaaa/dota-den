@@ -96,7 +96,20 @@ const PlayerLaneRowSchema = z.object({
   hero_id: z.number().int().min(0),
   lane_role: z.number().int().nullable().optional(),
   is_roaming: z.boolean().nullable().optional(),
+  // Always returned by the match list, whatever is projected.
+  player_slot: z.number().int().min(0).max(255).nullable().optional(),
+  radiant_win: z.boolean().nullable().optional(),
 });
+
+/** Win or loss from the player's slot and the winning side; null when either is missing. */
+function resultOf(
+  slot: number | null | undefined,
+  radiantWin: boolean | null | undefined,
+): "win" | "loss" | null {
+  if (slot === null || slot === undefined || radiantWin === null || radiantWin === undefined)
+    return null;
+  return slot < 128 === radiantWin ? "win" : "loss";
+}
 
 /** Parse an explorer body; `err` or a malformed row fails the whole result. */
 export function parseExplorer<T extends z.ZodType>(
@@ -310,6 +323,7 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
           heroId: row.data.hero_id,
           laneRole: row.data.lane_role ?? null,
           isRoaming: row.data.is_roaming ?? null,
+          result: resultOf(row.data.player_slot, row.data.radiant_win),
         });
       }
       return ok({ windowDays: PLAYER_LANE_DAYS, games });

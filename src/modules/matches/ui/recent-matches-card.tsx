@@ -6,7 +6,7 @@ import { formatAgo, formatDuration, queueLabel } from "./format";
 import { HeroPortrait, heroName } from "./hero-portrait";
 
 const COLS =
-  "grid grid-cols-[1fr_auto] items-center gap-x-4 sm:grid-cols-[minmax(0,1.6fr)_4.5rem_6.5rem_5.5rem_4rem_4.5rem_1rem]";
+  "grid grid-cols-[1fr_auto] items-center gap-x-4 @3xl/rows:grid-cols-[minmax(0,1.6fr)_4.5rem_6.5rem_5.5rem_4rem_4.5rem_1rem]";
 
 export function RecentMatchesCard({
   matches,
@@ -45,13 +45,14 @@ export function MatchRows({
   heroes: Map<number, HeroInfo>;
   now: Date;
 }) {
+  // Sized by its own width, not the viewport: it's also used in narrow columns.
   return (
-    <>
+    <div className="@container/rows">
       <div
         aria-hidden
         className={cn(
           COLS,
-          "hidden border-y border-white/[0.06] px-5 py-2 text-[0.65rem] tracking-wider text-muted-foreground uppercase sm:grid",
+          "hidden border-y border-white/[0.06] px-5 py-2 text-[0.65rem] tracking-wider text-muted-foreground uppercase @3xl/rows:grid",
         )}
       >
         <span>Hero</span>
@@ -63,7 +64,7 @@ export function MatchRows({
         <span />
       </div>
 
-      <ul className="divide-y divide-white/[0.04] border-t border-white/[0.06] sm:border-t-0">
+      <ul className="divide-y divide-white/[0.04] border-t border-white/[0.06] @3xl/rows:border-t-0">
         {matches.map((m) => {
           const hero = heroes.get(m.heroId);
           const win = m.result === "win";
@@ -89,10 +90,10 @@ export function MatchRows({
                   <HeroPortrait hero={hero} heroId={m.heroId} size="sm" />
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{name}</span>
-                    <span className="block text-[0.7rem] text-muted-foreground">
+                    <span className="block truncate text-[0.7rem] text-muted-foreground">
                       {m.ranked ? "Ranked" : "Unranked"}
                       {m.patch && ` · ${m.patch}${m.patchCertainty === "boundary" ? "?" : ""}`}
-                      <span className="sm:hidden">
+                      <span className="@3xl/rows:hidden">
                         {" · "}
                         {queueLabel(m.queueClass, m.partySize)} · {formatAgo(m.startedAt, now)}
                       </span>
@@ -101,7 +102,7 @@ export function MatchRows({
                 </span>
 
                 {/* Mobile: result + KDA stacked on the right. */}
-                <span className="text-right sm:hidden">
+                <span className="text-right @3xl/rows:hidden">
                   <span
                     className={cn("block text-xs font-semibold", win ? "text-win" : "text-loss")}
                   >
@@ -112,7 +113,7 @@ export function MatchRows({
                   </span>
                 </span>
 
-                <span className="hidden sm:block">
+                <span className="hidden @3xl/rows:block">
                   <span
                     className={cn(
                       "inline-flex rounded px-1.5 py-0.5 text-xs font-semibold",
@@ -122,7 +123,7 @@ export function MatchRows({
                     {win ? "Win" : "Loss"}
                   </span>
                 </span>
-                <span className="hidden text-sm tabular-nums sm:block">
+                <span className="hidden text-sm tabular-nums @3xl/rows:block">
                   {m.kills}
                   <span className="text-muted-foreground"> / </span>
                   <span className="text-loss">{m.deaths}</span>
@@ -131,27 +132,27 @@ export function MatchRows({
                 </span>
                 <span
                   className={cn(
-                    "hidden text-xs sm:block",
+                    "hidden text-xs @3xl/rows:block",
                     m.queueClass === "unknown" && "text-muted-foreground italic",
                   )}
                 >
                   {queueLabel(m.queueClass, m.partySize)}
                 </span>
-                <span className="hidden text-sm text-muted-foreground tabular-nums sm:block">
+                <span className="hidden text-sm text-muted-foreground tabular-nums @3xl/rows:block">
                   {formatDuration(m.durationSec)}
                 </span>
-                <span className="hidden text-sm text-muted-foreground sm:block">
+                <span className="hidden text-sm text-muted-foreground @3xl/rows:block">
                   <time dateTime={m.startedAt.toISOString()}>{formatAgo(m.startedAt, now)}</time>
                 </span>
                 <ChevronRight
                   aria-hidden
-                  className="hidden size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-gold sm:block"
+                  className="hidden size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-gold @3xl/rows:block"
                 />
               </Link>
             </li>
           );
         })}
       </ul>
-    </>
+    </div>
   );
 }

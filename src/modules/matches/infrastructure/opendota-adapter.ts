@@ -127,7 +127,13 @@ const MatchDetailSchema = z.object({
 const ItemIdsSchema = z.record(z.string(), z.string());
 const ItemsSchema = z.record(
   z.string(),
-  z.object({ id: z.number().int(), img: z.string().optional(), dname: z.string().optional() }),
+  z.object({
+    id: z.number().int(),
+    img: z.string().optional(),
+    dname: z.string().optional(),
+    qual: z.string().nullable().optional().catch(null),
+    cost: z.number().min(0).nullable().optional().catch(null),
+  }),
 );
 
 /** Only image paths under the Dota CDN tree are allowed (matches next.config remotePatterns). */
@@ -402,8 +408,11 @@ export class OpenDotaAdapter
       if (!item) continue;
       out.push({
         id: Number(id),
+        key,
         name: item.dname ?? key.replaceAll("_", " "),
         imageUrl: cdnImage(item.img),
+        qual: item.qual ?? null,
+        cost: item.cost ?? null,
       });
     }
     return ok(out);

@@ -183,8 +183,14 @@ export interface DashboardFacts {
 
 export interface ItemInfo {
   id: number;
+  /** Internal item name ("black_king_bar"), as used in purchase logs. */
+  key: string;
   name: string;
   imageUrl: string | null;
+  /** Upstream item class ("consumable", "component", "epic", …), when given. */
+  qual: string | null;
+  /** Gold cost, when given. */
+  cost: number | null;
 }
 
 export interface MatchDetailProvider {

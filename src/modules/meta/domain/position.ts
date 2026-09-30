@@ -76,6 +76,8 @@ export interface LaneGame {
   /** null when the match wasn't parsed (OpenDota only knows lanes for parsed replays). */
   laneRole: number | null;
   isRoaming: boolean | null;
+  /** The player's result, when the row says which side won. */
+  result?: "win" | "loss" | null;
 }
 
 /**
@@ -136,5 +138,91 @@ export function deriveRole(
     counted,
     skipped: games.length - counted,
     byPosition,
+  };
+}
+
+export interface PositionRecord {
+  position: Position;
+  games: number;
+  /** Games in this position whose result is known (the win rate's denominator). */
+  decided: number;
+  wins: number;
+  /** null when no game in this position has a known result. */
+  winRate: number | null;
+  lowSample: boolean;
+  /** Heroes played in this position, most played first. */
+  heroes: Array<{ heroId: number; games: number; wins: number; decided: number }>;
+}
+
+export interface PositionBreakdown {
+  /** Every game in the sample. */
+  total: number;
+  /** Games whose position could be read. */
+  counted: number;
+  /** Games with no lane data at all (usually unparsed replays). */
+  noLaneData: number;
+  /** Games with lane data we still couldn't place (unknown hero, a core in the jungle). */
+  unplaced: number;
+  /** Positions 1–5 in order, including ones with no games. */
+  positions: PositionRecord[];
+}
+
+/** Below this many games in a position, its win rate is shown but flagged as a low sample. */
+export const MIN_POSITION_GAMES = 10;
+
+/**
+ * Where the player actually plays and how they do there: games and win rate per position,
+ * using the same per-game reading as {@link deriveRole}. Nothing is guessed: games whose
+ * position can't be read are counted separately, by reason.
+ */
+export function positionBreakdown(
+  games: readonly LaneGame[],
+  rolesOf: (heroId: number) => readonly string[] | undefined,
+  minGames = MIN_POSITION_GAMES,
+): PositionBreakdown {
+  type Tally = { games: number; wins: number; decided: number };
+  const acc = new Map<Position, Map<number, Tally>>(POSITIONS.map((p) => [p, new Map()]));
+  let noLaneData = 0;
+  let unplaced = 0;
+  for (const g of games) {
+    if (g.laneRole === null) {
+      noLaneData++;
+      continue;
+    }
+    const pos = positionForGame(g, rolesOf(g.heroId));
+    if (pos === null) {
+      unplaced++;
+      continue;
+    }
+    const heroes = acc.get(pos)!;
+    const h = heroes.get(g.heroId) ?? { games: 0, wins: 0, decided: 0 };
+    h.games++;
+    if (g.result === "win" || g.result === "loss") h.decided++;
+    if (g.result === "win") h.wins++;
+    heroes.set(g.heroId, h);
+  }
+  const positions = POSITIONS.map((position): PositionRecord => {
+    const heroes = [...acc.get(position)!.entries()]
+      .map(([heroId, h]) => ({ heroId, ...h }))
+      .sort((a, b) => b.games - a.games || a.heroId - b.heroId);
+    const count = (k: keyof Tally) => heroes.reduce((n, h) => n + h[k], 0);
+    const decided = count("decided");
+    const wins = count("wins");
+    return {
+      position,
+      games: count("games"),
+      decided,
+      wins,
+      winRate: decided > 0 ? wins / decided : null,
+      lowSample: decided < minGames,
+      heroes,
+    };
+  });
+  return {
+    total: games.length,
+    counted: games.length - noLaneData - unplaced,
+    noLaneData,
+    unplaced,
+    positions,
   };
 }

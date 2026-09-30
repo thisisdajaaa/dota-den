@@ -6,6 +6,7 @@ import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/compositi
 import type { Patch } from "@/modules/patches/domain/patch";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
 import { MetaService } from "./application/meta-service";
+import type { MetaStatsSource, PlayerLaneHistory } from "./application/ports";
 import type { HeroPatchChange, LatestPatch } from "./domain/patch-tips";
 import { OpenDotaMetaSource } from "./infrastructure/opendota-meta-source";
 
@@ -38,6 +39,20 @@ function metaSource(): OpenDotaMetaSource {
     { apiKey: OPENDOTA_API_KEY, baseUrl: OPENDOTA_BASE_URL },
   );
   return globalForMeta.__ddMetaSource;
+}
+
+/**
+ * A player's recent games with lane info (and results), from the same cached upstream call
+ * the Meta page uses to read their position.
+ */
+export function getPlayerLaneHistory(): PlayerLaneHistory {
+  return metaSource();
+}
+
+/** Public high-rank (Ancient–Immortal) hero stats, cached like the Meta page's. */
+export function getHighRankHeroStats(): MetaStatsSource["heroStats"] {
+  const source = metaSource();
+  return () => source.heroStats();
 }
 
 export async function getMetaService(): Promise<MetaService> {
