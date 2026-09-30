@@ -15,7 +15,7 @@ const BodySchema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
   // A full CM draft is 12 AI moves; allow a few drafts a minute per client.
-  if (!rateLimit(`ai-move:${clientKey(req)}`, 40, 60_000)) {
+  if (!(await rateLimit(`ai-move:${clientKey(req)}`, 40, 60_000))) {
     return apiError("rate_limited", "Slow down a little: too many AI moves in the last minute.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

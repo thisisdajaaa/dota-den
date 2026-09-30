@@ -25,7 +25,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 /** Track a player. Idempotent: 201 when newly tracked, 200 when already tracked. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`follows:${clientKey(req)}`, FOLLOW_MUTATIONS_PER_MINUTE, 60_000))
+  if (!(await rateLimit(`follows:${clientKey(req)}`, FOLLOW_MUTATIONS_PER_MINUTE, 60_000)))
     return apiError("rate_limited", "Too many changes. Try again in a minute.");
   const user = await getRouteUser(req);
   if (!user) return apiError("unauthorized", "Not signed in");

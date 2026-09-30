@@ -21,6 +21,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@upstash/qstash": "^2.12.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "geist": "^1.7.2",

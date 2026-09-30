@@ -20,8 +20,9 @@ type Ctx = { params: Promise<{ roomId: string }> };
 export async function GET(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   const roomId = await readRoomParams(ctx);
   if (!roomId) return apiError("not_found", "Draft room not found");
-  // ~1 poll/second per viewer, with headroom for a few tabs.
-  if (!rateLimit(`room-poll:${clientKey(req)}`, 240, 60_000)) {
+  // ~1 poll/second per viewer, with headroom for a few tabs. Per instance on purpose:
+  // sharing it through Redis would spend the command quota on every poll (ADR 0008).
+  if (!(await rateLimit(`room-poll:${clientKey(req)}`, 240, 60_000, { local: true }))) {
     return apiError("rate_limited", "Polling too fast");
   }
   const user = await getRouteUser(req);
