@@ -13,6 +13,13 @@ test("the overview shows where you play, with the sample it's based on", async (
   await signIn(page);
 
   // Fixture: 8 safe-lane Anti-Mage games (6 won), 4 off-lane Pudge games (1 won).
+  // Suggestions for your role, favouring heroes that beat the one you lose to most.
+  const advice = page.getByRole("region", { name: "Heroes to add" });
+  await expect(advice).toContainText("Pos 3");
+  await expect(advice).toContainText("Fixture Hero 110");
+  await expect(advice.getByRole("link")).toHaveCount(3);
+  await expect(advice.getByRole("link").first()).toHaveAttribute("href", /^\/guides\/\d+$/);
+
   const lanes = page.getByRole("region", { name: "Where you play" });
   const positions = lanes.getByRole("list", { name: "Positions" });
   await expect(positions.getByRole("listitem").nth(0)).toContainText("Pos 1");

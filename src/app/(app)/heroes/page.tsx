@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { logger } from "@/lib/logger";
+import { getAdvisorService } from "@/modules/advisor/composition";
+import { PoolAdviceCard } from "@/modules/advisor/ui/pool-advice-card";
 import { getHeroesService } from "@/modules/heroes/composition";
 import { countOf, HeroGrid, unavailableCopy } from "@/modules/heroes/ui/hero-sections";
 import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
@@ -52,7 +54,10 @@ export default async function HeroesPage() {
             <HeroGrid rows={rows} heroes={heroes} now={new Date()} />
           )}
         </div>
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
+          <Suspense fallback={<SectionSkeleton label="Loading hero suggestions" rows={3} />}>
+            <PoolAdvice accountId32={user.accountId32} heroes={heroes} />
+          </Suspense>
           <Suspense fallback={<SectionSkeleton label="Loading where you play" rows={5} />}>
             <Lanes accountId32={user.accountId32} heroes={heroes} />
           </Suspense>
@@ -80,4 +85,18 @@ async function Lanes({
       </MetaSection>
     );
   return <LaneBreakdownCard view={res.value} heroes={heroes} full />;
+}
+
+async function PoolAdvice({
+  accountId32,
+  heroes,
+}: {
+  accountId32: number;
+  heroes: Map<number, HeroInfo>;
+}) {
+  const view = await (await getAdvisorService()).poolAdvice(accountId32).catch((error: unknown) => {
+    logger.warn("pool_advice_failed", { error });
+    return { status: "unavailable" as const };
+  });
+  return <PoolAdviceCard view={view} heroes={heroes} />;
 }

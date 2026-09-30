@@ -306,6 +306,8 @@ function heroStats(id) {
   return [
     { hero_id: 1, last_played: NOW - DAY, games: 8, win: 5 },
     { hero_id: 14, last_played: NOW - 2 * DAY, games: 4, win: 2 },
+    // A hero the fixture player keeps losing to (never played it themselves).
+    { hero_id: 110, last_played: 0, games: 0, win: 0, against_games: 30, against_win: 6 },
   ];
 }
 
