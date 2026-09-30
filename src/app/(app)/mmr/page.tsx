@@ -18,10 +18,12 @@ import {
   type QueueScope,
 } from "@/modules/mmr/domain/calendar";
 import { dayKeyFormatter, type DayKey } from "@/modules/mmr/domain/day-key";
+import { climbByHero } from "@/modules/mmr/domain/hero-climb";
 import { isDayKey, periodFor, type CalendarView } from "@/modules/mmr/domain/periods";
 import { CalendarLegend } from "@/modules/mmr/ui/calendar-legend";
 import { DayDetail } from "@/modules/mmr/ui/day-detail";
 import { DeleteEntryButton } from "@/modules/mmr/ui/delete-entry-button";
+import { HeroClimbSection } from "@/modules/mmr/ui/hero-climb-section";
 import { MmrEntryDialog } from "@/modules/mmr/ui/mmr-entry-dialog";
 import { MmrTrendChart } from "@/modules/mmr/ui/mmr-trend-chart";
 import { MonthGrid } from "@/modules/mmr/ui/month-grid";
@@ -108,6 +110,16 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
     scope,
   });
   const s = calendar.summary;
+  const climbs = climbByHero({
+    observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
+    matches,
+    scope,
+    loaded: view === "all" ? { from: new Date(0), to: now } : { from: rangeFrom, to: rangeTo },
+    inPeriod: (d) => {
+      const k = dayKey(d);
+      return k >= period.from && k <= period.to;
+    },
+  });
 
   const href = (patch: Record<string, string | null>) => {
     const q = new URLSearchParams();
@@ -324,6 +336,10 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
           timeZone={timeZone}
           closeHref={href({ day: null })}
         />
+      )}
+
+      {s.games > 0 && (
+        <HeroClimbSection climbs={climbs} heroes={heroes} periodLabel={periodLabel} />
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
