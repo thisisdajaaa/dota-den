@@ -132,7 +132,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
         </section>
       )}
 
-      <section aria-label="Record" className="grid gap-3 sm:grid-cols-3">
+      <section aria-label="Record" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {record ? (
           <>
             <StatTile
@@ -170,7 +170,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
         />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <PlaysWithCard
             peers={teammates}

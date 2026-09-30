@@ -215,7 +215,7 @@ function OutlookBody({
 
       <ReportCard report={outlook.report} />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <Breakdown sides={outlook.sides} />
         {outlook.notes.length > 0 && (
           <ul className="space-y-1.5 text-sm">
@@ -229,7 +229,7 @@ function OutlookBody({
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Lineups outlook={outlook} heroes={heroes} ctl={ctl} />
         <Lanes lanes={outlook.lanes} heroes={heroes} />
       </div>
@@ -540,7 +540,7 @@ function RoleEditor({ outlook, ctl }: { outlook: DraftOutlook; ctl: OutlookData 
       open={!outlook.report.provisional}
     >
       <summary className="cursor-pointer text-xs font-medium">Change who plays where</summary>
-      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {sides.map((side) => {
           const team = outlook.heroes
             .filter((h) => h.side === side)

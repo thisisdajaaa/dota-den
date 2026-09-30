@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: Ctx): Promise<NextRespon
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
   const user = await getRouteUser(req);
   if (!user) return apiError("unauthorized", "Not signed in");
-  if (!rateLimit(`session-notes:${user.id}`, NOTE_SAVES_PER_MINUTE, 60_000))
+  if (!(await rateLimit(`session-notes:${user.id}`, NOTE_SAVES_PER_MINUTE, 60_000)))
     return apiError("rate_limited", "Too many saves. Try again in a minute.");
 
   const sessionId = sessionIdFromParam((await params).sessionId);

@@ -24,4 +24,42 @@ describe("parseEnv", () => {
       expect.objectContaining({ message: expect.not.stringContaining("hunter2") }),
     );
   });
+
+  it("defaults every operator setting to the previously hard-coded value", () => {
+    const env = parseEnv(base);
+    expect(env).toMatchObject({
+      RATE_LIMIT_DRAFT_AI_MOVE_PER_MIN: 40,
+      RATE_LIMIT_DRAFT_REVIEW_PER_MIN: 6,
+      RATE_LIMIT_ROOM_POLL_PER_MIN: 240,
+      DRAFT_ROOMS_MAX_ACTIVE: 50,
+      DRAFT_ROOM_TTL_HOURS: 24,
+      DRAFT_PRO_WINDOW_DAYS: 21,
+      DRAFT_SYNERGY_WINDOW_DAYS: 60,
+      DRAFT_META_FRESH_HOURS: 12,
+      DRAFT_EXPLORER_BUDGET_MS: 4_000,
+      OPENDOTA_TIMEOUT_MS: 8_000,
+      OPENDOTA_MAX_RETRIES: 2,
+      DRAFT_AI_MODEL: "openai/gpt-oss-120b",
+      DRAFT_AI_REVIEW_ENABLED: true,
+      LEADERBOARD_ROW_LIMIT: 50,
+      SESSION_DEFAULT_GAP_MINUTES: 60,
+    });
+  });
+
+  it("reads operator settings from strings and rejects bad values", () => {
+    const env = parseEnv({
+      ...base,
+      RATE_LIMIT_DRAFT_REVIEW_PER_MIN: "12",
+      OPENDOTA_MAX_RETRIES: "0",
+      DRAFT_AI_REVIEW_ENABLED: "false",
+      SESSION_DEFAULT_GAP_MINUTES: "90",
+    });
+    expect(env.RATE_LIMIT_DRAFT_REVIEW_PER_MIN).toBe(12);
+    expect(env.OPENDOTA_MAX_RETRIES).toBe(0);
+    expect(env.DRAFT_AI_REVIEW_ENABLED).toBe(false);
+    expect(env.SESSION_DEFAULT_GAP_MINUTES).toBe(90);
+    expect(() => parseEnv({ ...base, RATE_LIMIT_DRAFT_REVIEW_PER_MIN: "0" })).toThrow();
+    expect(() => parseEnv({ ...base, SESSION_DEFAULT_GAP_MINUTES: "45" })).toThrow();
+    expect(() => parseEnv({ ...base, DRAFT_AI_REVIEW_ENABLED: "yes" })).toThrow();
+  });
 });

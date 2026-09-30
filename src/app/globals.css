@@ -156,6 +156,11 @@
   html {
     @apply font-sans;
   }
+  /* Nothing should ever scroll sideways on a phone; decorative glows can bleed past the edge. */
+  html,
+  body {
+    overflow-x: clip;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

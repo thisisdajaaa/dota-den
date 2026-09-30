@@ -106,23 +106,34 @@ export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
 /** Tabs that always show on the mobile bar; the rest go under "More". */
 const MOBILE_PRIMARY: readonly NavKey[] = ["overview", "matches", "draft", "meta"];
 
-/** Fixed bottom tab bar for signed-in mobile users. */
-export function MobileTabBar({ enabled }: { enabled: readonly NavKey[] }) {
+/** Fixed bottom tab bar on phones (signed-in: main tabs plus "More"; guests: the public pages). */
+export function MobileTabBar({
+  enabled,
+  signedIn,
+}: {
+  enabled: readonly NavKey[];
+  signedIn: boolean;
+}) {
   const isActive = useActive();
   const pathname = usePathname();
   const [open, setOpen] = useState<string | null>(null);
   // Close the sheet on navigation: it's only open for the path it was opened on.
   const moreOpen = open === pathname;
-  const items = visible(enabled, true);
-  const primary = items.filter((i) => MOBILE_PRIMARY.includes(i.key));
-  const more = items.filter((i) => !MOBILE_PRIMARY.includes(i.key));
+  const items = visible(enabled, signedIn);
+  // Guests only have the public sections, which all fit without a "More" sheet.
+  const primary = signedIn ? items.filter((i) => MOBILE_PRIMARY.includes(i.key)) : items;
+  const more = signedIn ? items.filter((i) => !MOBILE_PRIMARY.includes(i.key)) : [];
   const moreActive = more.some((i) => isActive(i.href));
   const tab = "flex flex-col items-center gap-0.5 px-2 py-2 text-[0.65rem] font-medium";
 
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl",
+        // Guests get the header links from sm up; signed-in users get the sidebar from lg.
+        signedIn ? "lg:hidden" : "sm:hidden",
+      )}
     >
       {moreOpen && (
         <ul

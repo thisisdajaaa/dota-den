@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getDraftRoomService } from "@/modules/drafts/composition";
 import {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   if (!roomId) return apiError("not_found", "Draft room not found");
   const actor = await routeActor(req);
   if (!actor) return apiError("unauthorized", "Sign in to do that");
-  if (!rateLimit(`room-act:${clientKey(req)}`, 120, 60_000)) {
+  if (!(await rateLimit(`room-act:${clientKey(req)}`, ...apiLimitArgs("roomAction")))) {
     return apiError("rate_limited", "Too many actions in the last minute");
   }
   const service = await getDraftRoomService();

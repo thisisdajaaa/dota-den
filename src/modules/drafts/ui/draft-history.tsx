@@ -170,7 +170,7 @@ function HistoryRow({
         </div>
         <ResultBadge entry={entry} />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Lineup
           label={`You (${sideName(entry.yourSide)})`}
           side={entry.yourSide}
@@ -373,7 +373,7 @@ export function HeadToHeadSummary({
         {notes.length > 0 ? `. Not counted: ${notes.join(", ")}.` : "."}
         {summary.truncated && " Based on your newest drafts together."}
       </p>
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <HeroCounts
           title="Your most-picked heroes"
           counts={summary.yourPicks}

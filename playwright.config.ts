@@ -43,6 +43,12 @@ export default defineConfig({
         VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
         // Never call a paid model from tests (overrides any key in .env.local).
         GROQ_API_KEY: "",
+        // Never use shared Redis or the durable job queue from tests (ADR 0008).
+        UPSTASH_REDIS_REST_URL: "",
+        UPSTASH_REDIS_REST_TOKEN: "",
+        QSTASH_TOKEN: "",
+        QSTASH_CURRENT_SIGNING_KEY: "",
+        QSTASH_NEXT_SIGNING_KEY: "",
       },
     },
   ],

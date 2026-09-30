@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getRouteUser } from "@/modules/identity/composition";
 import { getDraftHistoryService } from "@/modules/drafts/composition";
@@ -17,7 +18,9 @@ type Ctx = { params: Promise<{ roomId: string }> };
 export async function GET(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   const roomId = await readRoomParams(ctx);
   if (!roomId) return apiError("not_found", "Draft room not found");
-  if (!rateLimit(`room-poll:${clientKey(req)}`, 240, 60_000)) {
+  if (
+    !(await rateLimit(`room-poll:${clientKey(req)}`, ...apiLimitArgs("roomPoll"), { local: true }))
+  ) {
     return apiError("rate_limited", "Polling too fast");
   }
   const user = await getRouteUser(req);
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   if (!roomId) return apiError("not_found", "Draft room not found");
   const actor = await routeActor(req);
   if (!actor) return apiError("unauthorized", "Sign in to do that");
-  if (!rateLimit(`room-act:${clientKey(req)}`, 120, 60_000)) {
+  if (!(await rateLimit(`room-act:${clientKey(req)}`, ...apiLimitArgs("roomAction")))) {
     return apiError("rate_limited", "Too many actions in the last minute");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

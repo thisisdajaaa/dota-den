@@ -77,7 +77,7 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
   const label = series === "gold" ? "gold" : "experience";
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div
           role="tablist"
@@ -118,13 +118,15 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
         </p>
       </div>
 
-      <div ref={ref} className="w-full">
+      <div ref={ref} className="w-full min-w-0 overflow-hidden">
         <svg
           width={width}
           height={HEIGHT}
           role="img"
           aria-label={`Radiant ${label} advantage by minute. Use arrow keys to inspect.`}
           tabIndex={0}
+          // Never wider than its box, even before the first measurement.
+          style={{ maxWidth: "100%" }}
           className="block touch-none rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
           onPointerMove={(e) =>
             setHover(indexFromEvent(e.clientX, e.currentTarget.getBoundingClientRect()))

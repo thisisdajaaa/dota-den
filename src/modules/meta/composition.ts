@@ -5,6 +5,7 @@ import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
 import type { Patch } from "@/modules/patches/domain/patch";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
 import { MetaService } from "./application/meta-service";
 import type { MetaStatsSource, PlayerLaneHistory } from "./application/ports";
 import type { HeroPatchChange, LatestPatch } from "./domain/patch-tips";
@@ -17,14 +18,20 @@ const globalForMeta = globalThis as typeof globalThis & {
 
 function metaSource(): OpenDotaMetaSource {
   if (globalForMeta.__ddMetaSource) return globalForMeta.__ddMetaSource;
-  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
+  const {
+    OPENDOTA_API_KEY,
+    OPENDOTA_BASE_URL,
+    OPENDOTA_EXPLORER_TIMEOUT_MS,
+    OPENDOTA_EXPLORER_MAX_RETRIES,
+  } = env();
   // The explorer runs SQL on OpenDota's pro database: slow (the duo query takes ~12s) and
   // sometimes down. Its own gateway has a long timeout and a separate circuit, so explorer
   // trouble never trips the circuit for the rest of the OpenDota API.
   const explorer = new ProviderGateway({
     name: "opendota-explorer",
-    timeoutMs: 30_000,
-    maxRetries: 1,
+    ...sharedGatewayOptions("opendota"),
+    timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
+    maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
     onRequest: ({ status, durationMs, attempt }) =>
       logger.info("provider_request", {
         provider: "opendota-explorer",

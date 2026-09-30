@@ -96,7 +96,9 @@ export function SyncControl({
         return;
       }
       if (res.status === 409) {
-        setStatus("idle");
+        // Another sync (e.g. a background import chunk) is running: check again shortly.
+        setStatus(importingRef.current ? "waiting" : "idle");
+        if (importingRef.current) schedule(15_000);
         return;
       }
       const message =
