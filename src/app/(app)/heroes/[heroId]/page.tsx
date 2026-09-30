@@ -144,15 +144,15 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
       </section>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+        <div className="space-y-6 lg:col-span-3">
           <TrendCard trend={trend} heroLabel={name} />
-        </div>
-        <div className="space-y-6 lg:col-span-2">
-          <Suspense fallback={<SectionSkeleton label="Loading public win rate" rows={1} />}>
-            <HighRankSection service={service} heroId={heroId} record={record} name={name} />
-          </Suspense>
           <Suspense fallback={<SectionSkeleton label="Loading items" rows={4} />}>
             <ItemsSection details={details} name={name} />
+          </Suspense>
+        </div>
+        <div className="lg:col-span-2">
+          <Suspense fallback={<SectionSkeleton label="Loading public win rate" rows={1} />}>
+            <HighRankSection service={service} heroId={heroId} record={record} name={name} />
           </Suspense>
         </div>
       </div>
