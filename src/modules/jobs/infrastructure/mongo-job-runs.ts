@@ -72,3 +72,17 @@ export async function ensureJobIndexes(db: Db): Promise<void> {
     runs.createIndex({ name: 1, dedupKey: 1, status: 1 }, { name: "by_dedup" }),
   ]);
 }
+
+/** Admin overview: the latest failed job runs. */
+export async function recentJobFailures(
+  db: Db,
+  limit = 10,
+): Promise<Array<{ name: string; error: string | null; at: Date; dedupKey: string | null }>> {
+  const docs = await db
+    .collection<JobRunDoc>(COLLECTION)
+    .find({ status: "failed" })
+    .sort({ startedAt: -1 })
+    .limit(limit)
+    .toArray();
+  return docs.map((d) => ({ name: d.name, error: d.error, at: d.startedAt, dedupKey: d.dedupKey }));
+}

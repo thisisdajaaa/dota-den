@@ -33,7 +33,10 @@ import type {
   FriendFinder,
   PlayerAccount,
 } from "./application/ports";
-import { MongoActivityRepository } from "./infrastructure/mongo-activity-repository";
+import {
+  MongoActivityRepository,
+  activityCountsByUser,
+} from "./infrastructure/mongo-activity-repository";
 
 /** OpenDota teammates considered as friends (most games on the same team first). */
 const MAX_PEER_FRIENDS = 200;
@@ -170,4 +173,9 @@ export async function getLeaderboardService(): Promise<LeaderboardService> {
     friends,
     rowLimit: env().LEADERBOARD_ROW_LIMIT,
   });
+}
+
+/** Admin overview: finished drafts and challenge answers per user. */
+export async function getActivityCounts(userIds: readonly string[]) {
+  return activityCountsByUser(await getDb(), userIds);
 }
