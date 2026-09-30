@@ -18,6 +18,7 @@ const ENABLED: readonly NavKey[] = [
   "overview",
   "matches",
   "mmr",
+  "sessions",
   "meta",
   "players",
   "patches",
