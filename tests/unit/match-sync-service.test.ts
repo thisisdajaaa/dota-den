@@ -123,6 +123,9 @@ class MemorySyncState implements SyncStateRepository {
   async get() {
     return this.state;
   }
+  async dueForSync() {
+    return this.state ? [this.state.accountId32] : [];
+  }
 }
 
 function setup(historySize: number, opts: { pageSize?: number; maxPages?: number } = {}) {
@@ -288,6 +291,15 @@ describe("MatchSyncService", () => {
     ctx.advance(BACKFILL_COOLDOWN_MS + 1);
     const last = await ctx.service.sync(ACCOUNT);
     expect(last.ok && last.value.backfillComplete).toBe(true);
+    expect(ctx.facts.byKey.size).toBe(45);
+  });
+
+  it("the daily background sync finishes a long history without a visit", async () => {
+    const ctx = setup(45);
+    await ctx.service.sync(ACCOUNT); // an on-visit sync: 30 of 45, then the player leaves
+    ctx.advance(24 * HOUR);
+    const res = await ctx.service.syncDue({ limit: 10, budgetMs: 60_000, maxPages: 20 });
+    expect(res).toEqual([{ accountId32: ACCOUNT, outcome: "synced", inserted: 15 }]);
     expect(ctx.facts.byKey.size).toBe(45);
   });
 

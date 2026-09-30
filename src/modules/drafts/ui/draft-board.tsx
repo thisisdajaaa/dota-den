@@ -118,6 +118,11 @@ export function DraftBoard({
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiRetry, setAiRetry] = useState(0);
   const [suggestions, setSuggestions] = useState<SuggestionSet | null>(null);
+  /** Why the current turn's suggestions haven't arrived (the draft works without them). */
+  const [suggestionIssue, setSuggestionIssue] = useState<{
+    version: number;
+    kind: "retrying" | "unavailable";
+  } | null>(null);
   /** Steps where you chose one of the suggestions (shown in the draft log). */
   const [followed, setFollowed] = useState<ReadonlySet<number>>(new Set());
   const [state, setState] = useState<DraftState>(
@@ -242,20 +247,35 @@ export function DraftBoard({
     if (!humanTurn || !turn) return;
     const version = state.stateVersion;
     const controller = new AbortController();
+    const body = JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), side: turn.side });
+    const current = () => !controller.signal.aborted && stateRef.current.stateVersion === version;
     (async () => {
-      try {
-        const res = await fetch("/api/v1/drafts/suggestions", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), side: turn.side }),
-          signal: controller.signal,
-        });
-        if (!res.ok) return;
-        const body = (await res.json()) as Omit<SuggestionSet, "version">;
-        if (stateRef.current.stateVersion === version) setSuggestions({ ...body, version });
-      } catch {
-        // Suggestions are optional; the draft works without them.
+      // Busy (rate limited, server or network error): back off and retry, then say so.
+      // Anything else (e.g. an invalid draft) won't get better by retrying.
+      for (let attempt = 0; attempt <= SUGGESTION_RETRY_MS.length; attempt++) {
+        let retryable = true;
+        try {
+          const res = await fetch("/api/v1/drafts/suggestions", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body,
+            signal: controller.signal,
+          });
+          if (res.ok) {
+            const set = (await res.json()) as Omit<SuggestionSet, "version">;
+            if (current()) setSuggestions({ ...set, version });
+            return;
+          }
+          retryable = res.status === 429 || res.status >= 500;
+        } catch {
+          if (controller.signal.aborted) return;
+        }
+        if (!retryable || attempt === SUGGESTION_RETRY_MS.length) break;
+        if (current()) setSuggestionIssue({ version, kind: "retrying" });
+        await new Promise((r) => setTimeout(r, SUGGESTION_RETRY_MS[attempt]));
+        if (!current()) return;
       }
+      if (current()) setSuggestionIssue({ version, kind: "unavailable" });
     })();
     return () => controller.abort();
     // Keyed on the accepted event count; state is read at that version.
@@ -608,6 +628,7 @@ export function DraftBoard({
         <SuggestionsPanel
           action={turn.action}
           set={suggestions?.version === state.stateVersion ? suggestions : null}
+          issue={suggestionIssue?.version === state.stateVersion ? suggestionIssue.kind : null}
           heroes={heroMap}
           unavailable={unavailable}
           disabled={state.status !== "in_progress"}
@@ -642,6 +663,9 @@ export function DraftBoard({
     </div>
   );
 }
+
+/** Waits before each retry when suggestions are busy. */
+const SUGGESTION_RETRY_MS = [2_000, 5_000, 10_000];
 
 interface SuggestionSet {
   version: number;
@@ -679,9 +703,11 @@ function SuggestionsPanel({
   unavailable,
   disabled,
   onChoose,
+  issue,
 }: {
   action: "pick" | "ban";
   set: SuggestionSet | null;
+  issue: "retrying" | "unavailable" | null;
   heroes: Map<number, DraftHero>;
   unavailable: ReadonlySet<number>;
   disabled: boolean;
@@ -694,10 +720,21 @@ function SuggestionsPanel({
           Suggested {action === "pick" ? "picks" : "bans"} for you
         </h2>
         <span className="text-xs text-muted-foreground">
-          {set ? set.situation : "Looking at the draft…"}
+          {set
+            ? set.situation
+            : issue === "retrying"
+              ? "Busy right now, trying again…"
+              : issue === "unavailable"
+                ? null
+                : "Looking at the draft…"}
         </span>
       </header>
-      {!set ? (
+      {!set && issue === "unavailable" ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Suggestions are unavailable right now. Pick from the hero list below; they&apos;ll be back
+          on your next turn.
+        </p>
+      ) : !set ? (
         <div className="flex gap-2" aria-busy>
           {Array.from({ length: 5 }, (_, i) => (
             <span key={i} className="h-20 flex-1 animate-pulse rounded-lg bg-white/[0.04]" />

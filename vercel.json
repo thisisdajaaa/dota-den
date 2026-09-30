@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/patches",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/matches",
+      "schedule": "30 6 * * *"
     }
   ],
   "git": {

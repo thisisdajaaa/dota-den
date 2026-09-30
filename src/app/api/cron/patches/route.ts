@@ -1,5 +1,5 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { env } from "@/lib/env";
 import { apiError, requestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
@@ -10,19 +10,11 @@ import { getPatchImportService } from "@/modules/patches/composition";
 
 const DAY_MS = 24 * 3_600_000;
 
-const digest = (s: string): Buffer => createHash("sha256").update(s).digest();
-
-function authorized(req: NextRequest, secret: string): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  // Compare fixed-length digests so the check doesn't leak length or prefix timing.
-  return timingSafeEqual(digest(header), digest(`Bearer ${secret}`));
-}
-
 /** Daily patch and tournament-data refresh, called by Vercel Cron (see vercel.json). */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const secret = env().CRON_SECRET;
   if (!secret) return apiError("upstream_unavailable", "Cron is not configured");
-  if (!authorized(req, secret)) return apiError("unauthorized", "Invalid cron credentials");
+  if (!isCronAuthorized(req, secret)) return apiError("unauthorized", "Invalid cron credentials");
 
   const service = await getPatchImportService();
   const started = Date.now();

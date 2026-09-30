@@ -53,12 +53,13 @@ All routes live under `src/app/api`. Responses are JSON.
 
 ## Patches
 
-| Method & path                        | Auth                                 | Notes                                                             |
-| ------------------------------------ | ------------------------------------ | ----------------------------------------------------------------- |
-| `GET /api/v1/patches`                | none                                 | Imported patches, newest first                                    |
-| `GET /api/v1/patches/{version}`      | none                                 | One patch's notes                                                 |
-| `POST /api/v1/admin/patches/refresh` | admin, same-origin                   | `{version?}` or `{count?}`: import from Valve's feed              |
-| `GET /api/cron/patches`              | `Authorization: Bearer $CRON_SECRET` | Daily: import new patches and warm the draft AI's tournament data |
+| Method & path                        | Auth                                 | Notes                                                                    |
+| ------------------------------------ | ------------------------------------ | ------------------------------------------------------------------------ |
+| `GET /api/v1/patches`                | none                                 | Imported patches, newest first                                           |
+| `GET /api/v1/patches/{version}`      | none                                 | One patch's notes                                                        |
+| `POST /api/v1/admin/patches/refresh` | admin, same-origin                   | `{version?}` or `{count?}`: import from Valve's feed                     |
+| `GET /api/cron/patches`              | `Authorization: Bearer $CRON_SECRET` | Daily: import new patches and warm the draft AI's tournament data        |
+| `GET /api/cron/matches`              | `Authorization: Bearer $CRON_SECRET` | Daily: sync every player's matches, finishing unfinished histories first |
 
 ## Drafts
 
