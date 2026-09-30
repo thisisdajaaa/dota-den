@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { getHeroMap } from "@/modules/matches/composition";
-import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
+import { HeroPicker } from "@/modules/guides/ui/hero-picker";
 
 export const metadata: Metadata = {
   title: "Hero guides",
@@ -38,28 +37,7 @@ export default async function GuidesPage() {
           The hero list is unavailable right now. Try again in a minute.
         </p>
       ) : (
-        groups.map((g) => (
-          <section key={g.label} aria-labelledby={`attr-${g.label}`} className="space-y-3">
-            <h2 id={`attr-${g.label}`} className="text-sm font-semibold text-muted-foreground">
-              {g.label}
-            </h2>
-            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-8">
-              {g.heroes.map((h) => (
-                <li key={h.id}>
-                  <Link
-                    href={`/guides/${h.id}`}
-                    className="group block rounded-lg p-1.5 text-center hover:bg-white/[0.04]"
-                  >
-                    <HeroPortrait hero={h} heroId={h.id} size="md" className="w-full" />
-                    <span className="mt-1 block truncate text-xs group-hover:text-gold">
-                      {h.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
+        <HeroPicker groups={groups} />
       )}
     </div>
   );

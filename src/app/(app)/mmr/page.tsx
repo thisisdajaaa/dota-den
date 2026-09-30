@@ -97,10 +97,16 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
 
   const rangeFrom = new Date(Date.parse(`${period.from}T00:00:00Z`) - TZ_PAD_MS);
   const rangeTo = new Date(Date.parse(`${period.to}T23:59:59Z`) + TZ_PAD_MS);
-  const matches =
+  // Load games out to the entries either side of the period (entries are oldest first), so
+  // a change between two entries is only called exact when every game between them is known.
+  const before = entries.findLast((e) => e.observedAt < rangeFrom);
+  const after = entries.find((e) => e.observedAt > rangeTo);
+  const loaded =
     view === "all"
-      ? earliestMatch
-      : await queries.rankedResults(user.accountId32, { from: rangeFrom, to: rangeTo });
+      ? { from: new Date(0), to: now }
+      : { from: before?.observedAt ?? rangeFrom, to: after?.observedAt ?? rangeTo };
+  const matches =
+    view === "all" ? earliestMatch : await queries.rankedResults(user.accountId32, loaded);
 
   const calendar = buildCalendar({
     observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
@@ -108,13 +114,14 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
     period: { from: period.from, to: period.to },
     dayKey,
     scope,
+    loaded,
   });
   const s = calendar.summary;
   const climbs = climbByHero({
     observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
     matches,
     scope,
-    loaded: view === "all" ? { from: new Date(0), to: now } : { from: rangeFrom, to: rangeTo },
+    loaded,
     inPeriod: (d) => {
       const k = dayKey(d);
       return k >= period.from && k <= period.to;

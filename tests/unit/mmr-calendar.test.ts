@@ -213,4 +213,51 @@ describe("periodFor", () => {
     expect(isDayKey("2026-09-30")).toBe(true);
     expect(isDayKey("../etc")).toBe(false);
   });
+
+  it("doesn't call the period change exact when games came after the last entry", async () => {
+    const cal = buildCalendar({
+      observations: [obs("2026-09-28T10:00:00Z", 4000)],
+      matches: [game("2026-10-02T12:00:00Z", "win"), game("2026-10-03T12:00:00Z", "win")],
+      period: { from: "2026-10-01", to: "2026-10-31" },
+      dayKey: utc,
+      scope: "all",
+    });
+    expect(cal.summary.actualNet).toBeNull();
+    expect(cal.summary.estimatedNet).toBe(50);
+  });
+
+  it("doesn't count games before the period into its exact change", async () => {
+    const cal = buildCalendar({
+      observations: [obs("2026-09-28T10:00:00Z", 4000), obs("2026-10-05T10:00:00Z", 4100)],
+      matches: [game("2026-09-29T12:00:00Z", "win"), game("2026-10-02T12:00:00Z", "win")],
+      period: { from: "2026-10-01", to: "2026-10-31" },
+      dayKey: utc,
+      scope: "all",
+    });
+    expect(cal.summary.actualNet).toBeNull();
+  });
+
+  it("is exact when entries bracket the period's games", async () => {
+    const cal = buildCalendar({
+      observations: [obs("2026-09-30T10:00:00Z", 4000), obs("2026-10-05T10:00:00Z", 4050)],
+      matches: [game("2026-10-02T12:00:00Z", "win"), game("2026-10-03T12:00:00Z", "win")],
+      period: { from: "2026-10-01", to: "2026-10-31" },
+      dayKey: utc,
+      scope: "all",
+    });
+    expect(cal.summary.actualNet).toBe(50);
+  });
+
+  it("never pins a day's exact change on a span reaching outside the loaded games", async () => {
+    const cal = buildCalendar({
+      observations: [obs("2026-10-20T10:00:00Z", 4000), obs("2026-11-03T20:00:00Z", 3950)],
+      // Only November's games were loaded; three October losses are in the span too.
+      matches: [game("2026-11-03T12:00:00Z", "win")],
+      period: { from: "2026-11-01", to: "2026-11-30" },
+      dayKey: utc,
+      scope: "all",
+      loaded: { from: new Date("2026-10-31T09:00:00Z"), to: new Date("2026-12-01T15:00:00Z") },
+    });
+    expect(cal.days.get("2026-11-03")!.actualDelta).toBeNull();
+  });
 });

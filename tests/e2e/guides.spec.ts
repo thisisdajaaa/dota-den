@@ -5,6 +5,12 @@ test("hero guides show pro builds, benchmarks and pro games", async ({ page }) =
   await page.getByRole("link", { name: "Hero guides" }).click();
   await expect(page).toHaveURL(/\/guides$/);
   await expect(page.getByRole("heading", { level: 1, name: "Hero guides" })).toBeVisible();
+  // Search filters as you type, ignoring case and punctuation.
+  await page.getByRole("searchbox", { name: "Find a hero" }).fill("anti mage");
+  await expect(page.getByRole("link", { name: "Pudge" })).toHaveCount(0);
+  await page.getByRole("searchbox", { name: "Find a hero" }).fill("zzz");
+  await expect(page.getByRole("status")).toContainText("No hero matches");
+  await page.getByRole("searchbox", { name: "Find a hero" }).fill("anti");
   await page
     .getByRole("region", { name: "Agility" })
     .getByRole("link", { name: "Anti-Mage" })

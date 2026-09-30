@@ -61,6 +61,7 @@ test("public pages fit a phone screen, and guests get navigation", async ({ page
   }
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link", { name: /Players/ })).toBeVisible();
+  await expect(nav.getByRole("link", { name: /Guides/ })).toBeVisible();
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Sign in through Steam" }),
   ).toBeVisible();

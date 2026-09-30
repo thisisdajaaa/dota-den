@@ -22,6 +22,7 @@ const ENABLED: readonly NavKey[] = [
   "sessions",
   "together",
   "meta",
+  "guides",
   "players",
   "patches",
   "draft",
