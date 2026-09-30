@@ -57,6 +57,8 @@ const TUNING = {
 
   // Language model (Groq) for the AI captain and the AI review.
   DRAFT_AI_MODEL: z.string().trim().min(1).default(DEFAULT_DRAFT_AI_MODEL),
+  /** Vision model (Groq) that reads an MMR from a screenshot in the MMR dialog. */
+  MMR_VISION_MODEL: z.string().trim().min(1).default("qwen/qwen3.8-27b"),
   DRAFT_AI_MOVE_TIMEOUT_MS: positiveInt(15_000, 120_000),
   DRAFT_AI_REVIEW_TIMEOUT_MS: positiveInt(30_000, 300_000),
   DRAFT_AI_REVIEW_ENABLED: flag(true),
