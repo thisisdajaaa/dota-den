@@ -13,6 +13,7 @@ import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { AdvantageChart } from "@/modules/matches/ui/advantage-chart";
 import { formatDuration, gameModeLabel, regionLabel } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
+import { PerformanceCard } from "@/modules/matches/ui/performance-card";
 import { Scoreboard } from "@/modules/matches/ui/scoreboard";
 
 const MATCH_ID = /^\d{1,20}$/;
@@ -24,8 +25,9 @@ export async function generateMetadata({
   return { title: `Match ${matchId}` };
 }
 
-export default async function MatchPage({ params }: PageProps<"/matches/[matchId]">) {
+export default async function MatchPage({ params, searchParams }: PageProps<"/matches/[matchId]">) {
   const { matchId } = await params;
+  const slotParam = (await searchParams).p;
   if (!MATCH_ID.test(matchId)) notFound();
 
   const [result, heroes, items, viewer] = await Promise.all([
@@ -66,6 +68,12 @@ export default async function MatchPage({ params }: PageProps<"/matches/[matchId
       ? match.players.find((p) => p.accountId32 === viewerAccountId)
       : undefined;
   const myWin = me ? (me.side === "radiant") === match.radiantWin : null;
+  // "How did I play?": you by default, or the player picked with ?p=<slot>.
+  const picked =
+    typeof slotParam === "string" && /^\d{1,3}$/.test(slotParam)
+      ? match.players.find((p) => p.playerSlot === Number(slotParam))
+      : undefined;
+  const perfPlayer = picked ?? me ?? null;
   const region = regionLabel(match.region);
   const avgRank = averageRankTier(match.players.map((p) => p.rankTier));
 
@@ -178,6 +186,14 @@ export default async function MatchPage({ params }: PageProps<"/matches/[matchId
           </p>
         </div>
       )}
+
+      <PerformanceCard
+        players={match.players}
+        selected={perfPlayer}
+        isViewer={perfPlayer !== null && perfPlayer === me}
+        heroes={heroes}
+        hrefFor={(slot) => `/matches/${match.matchId}?p=${slot}#performance`}
+      />
 
       {match.goldAdvantage && (
         <section className="panel p-5" aria-labelledby="advantage">

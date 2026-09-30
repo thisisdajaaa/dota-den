@@ -47,11 +47,30 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   await expect(page.getByRole("region", { name: "The Dire" })).toBeVisible();
   await expect(page.locator("tr[aria-current=true]")).toContainText("Fixture Hero");
   await expect(page.getByRole("img", { name: /advantage by minute/ })).toBeVisible();
+
+  // How did I play: your line against everyone on the same hero.
+  const perf = page.getByRole("region", { name: "How you played" });
+  await expect(perf).toContainText("Strongest: last hits per minute, better than 97%");
+  await expect(perf).toContainText("Room to improve: tower damage, better than 12%");
+  await expect(perf).toContainText("70% at this rank");
+  // Pick another player from the match.
+  const others = perf.getByRole("navigation", { name: "Choose a player" }).getByRole("link");
+  await others
+    .filter({ hasNot: page.locator("[aria-current]") })
+    .first()
+    .click();
+  await expect(page.getByRole("region", { name: /^How .* played$/ })).toContainText(
+    "Gold per minute",
+  );
+  await expect(page.getByRole("region", { name: "How you played" })).toHaveCount(0);
 });
 
 test("guests can view a public match page", async ({ page }) => {
   await page.goto("/matches/7000000012");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Victory");
+  await expect(page.getByRole("region", { name: "How did they play?" })).toContainText(
+    "Pick a player",
+  );
   await expect(page.getByRole("link", { name: "Home", exact: true })).toBeVisible();
 });
 

@@ -28,6 +28,7 @@ function player(playerSlot: number, partyId: number | null, partySize: number | 
     partyId,
     partySize,
     rankTier: null,
+    benchmarks: null,
   };
 }
 
