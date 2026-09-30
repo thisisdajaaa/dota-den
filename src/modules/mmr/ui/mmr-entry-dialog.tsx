@@ -46,6 +46,15 @@ export function MmrEntryDialog({ entry }: { entry?: MmrEntryDto }) {
     },
   });
 
+  // "Defaults to now" means when you open the dialog, not when the page loaded: a tab left
+  // open through a session would otherwise log the new MMR at the old time.
+  function onOpenChange(next: boolean) {
+    if (next && !editing && !form.getFieldState("observedAt").isDirty) {
+      form.setValue("observedAt", toLocalInput(new Date()));
+    }
+    setOpen(next);
+  }
+
   async function onSubmit(values: FormOutput) {
     const res = await fetch(editing ? `/api/v1/mmr-entries/${entry.id}` : "/api/v1/mmr-entries", {
       method: editing ? "PATCH" : "POST",
@@ -76,7 +85,7 @@ export function MmrEntryDialog({ entry }: { entry?: MmrEntryDto }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {editing ? (
           <Button variant="ghost" size="icon" className="size-8" aria-label="Edit entry">

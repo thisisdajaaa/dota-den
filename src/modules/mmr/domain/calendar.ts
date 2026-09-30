@@ -84,8 +84,15 @@ export function buildCalendar(input: {
   period: { from: DayKey; to: DayKey };
   dayKey: (d: Date) => DayKey;
   scope: QueueScope;
+  /**
+   * Ranked games are known for this range only (default: all of them). Spans between entries
+   * that reach outside it are never exact, since games we didn't load may fall inside them.
+   */
+  loaded?: { from: Date; to: Date };
 }): Calendar {
   const { period, dayKey, scope } = input;
+  const covered = (from: Date, to: Date) =>
+    !input.loaded || (from >= input.loaded.from && to <= input.loaded.to);
   const obs = [...input.observations].sort(
     (a, b) => a.observedAt.getTime() - b.observedAt.getTime(),
   );
@@ -153,7 +160,7 @@ export function buildCalendar(input: {
     // Only attribute an actual daily delta when the scope can't distort it: with a queue
     // filter, an exact figure would silently include games outside the scope.
     const scopeSafe = scope === "all" || between.every((m) => inScope(m, scope));
-    if (gameDay && scopeSafe && inPeriod(gameDay)) {
+    if (gameDay && scopeSafe && inPeriod(gameDay) && covered(from.observedAt, to.observedAt)) {
       const d = day(gameDay);
       d.actualDelta = (d.actualDelta ?? 0) + interval.delta;
     }
@@ -170,8 +177,22 @@ export function buildCalendar(input: {
     [...obs].reverse().find((o) => dayKey(o.observedAt) <= key) ?? null;
   const startObs = lastAtOrBefore(addDays(period.from, -1));
   const endObs = lastAtOrBefore(period.to);
-  // Net over the period is exact only for the overall scope with entries on both sides.
-  const actualNet = scope === "all" && startObs && endObs ? endObs.mmr - startObs.mmr : null;
+  // Net over the period is exact only for the overall scope, with an entry before it and one
+  // after its last game: no ranked game between the first entry and the period (it would be
+  // counted in), and none in the period after the last entry (it would be left out).
+  const exactNet =
+    scope === "all" &&
+    startObs !== null &&
+    endObs !== null &&
+    covered(startObs.observedAt, endObs.observedAt) &&
+    !matches.some((m) => {
+      const key = dayKey(m.startedAt);
+      return (
+        (m.startedAt > startObs.observedAt && key < period.from) ||
+        (inPeriod(key) && m.startedAt > endObs.observedAt)
+      );
+    });
+  const actualNet = exactNet ? endObs!.mmr - startObs!.mmr : null;
 
   return {
     days,
