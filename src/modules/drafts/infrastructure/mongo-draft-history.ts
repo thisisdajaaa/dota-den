@@ -1,5 +1,9 @@
 import type { Collection, Db, Filter } from "mongodb";
-import type { DraftHistoryRepository, HistoryOpponent } from "../application/draft-history-ports";
+import type {
+  CaptainTotals,
+  DraftHistoryRepository,
+  HistoryOpponent,
+} from "../application/draft-history-ports";
 import type { DraftHistoryRecord, ReportedResult } from "../domain/draft-history";
 
 const SCHEMA_VERSION = 1;
@@ -24,6 +28,8 @@ export async function ensureDraftHistoryIndexes(db: Db): Promise<void> {
   await Promise.all([
     history.createIndex({ roomId: 1 }, { unique: true, name: "uniq_roomId" }),
     history.createIndex({ captainUserIds: 1, completedAt: -1 }, { name: "by_captain_completedAt" }),
+    // Weekly leaderboards across everyone.
+    history.createIndex({ completedAt: -1 }, { name: "by_completedAt" }),
   ]);
 }
 
@@ -126,6 +132,48 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
         { $sort: { last: -1 } },
         { $limit: limit },
         { $project: { _id: 0, accountId32: "$_id", name: 1, avatarUrl: 1, drafts: 1 } },
+      ])
+      .toArray();
+    return rows;
+  }
+
+  async captainTotals(query: {
+    since: Date | null;
+    userIds: readonly string[] | null;
+  }): Promise<CaptainTotals[]> {
+    const match: Filter<HistoryDoc> = {};
+    if (query.since) match.completedAt = { $gte: query.since };
+    if (query.userIds) match.captainUserIds = { $in: [...query.userIds] };
+    const seat = (side: "radiant" | "dire") => ({ userId: `$captains.${side}.userId`, side });
+    const rows = await this.history
+      .aggregate<CaptainTotals>([
+        { $match: match },
+        // One row per captain: the draft from each side.
+        { $project: { result: 1, seat: [seat("radiant"), seat("dire")] } },
+        { $unwind: "$seat" },
+        ...(query.userIds ? [{ $match: { "seat.userId": { $in: [...query.userIds] } } }] : []),
+        {
+          $group: {
+            _id: "$seat.userId",
+            drafts: { $sum: 1 },
+            wins: { $sum: { $cond: [{ $eq: ["$result.winner", "$seat.side"] }, 1, 0] } },
+            losses: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $in: ["$result.winner", ["radiant", "dire"]] },
+                      { $ne: ["$result.winner", "$seat.side"] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        { $project: { _id: 0, userId: "$_id", drafts: 1, wins: 1, losses: 1 } },
       ])
       .toArray();
     return rows;

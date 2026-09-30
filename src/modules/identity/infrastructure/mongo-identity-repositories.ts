@@ -1,7 +1,7 @@
 import "server-only";
 import { ObjectId, type Collection, type Db } from "mongodb";
 import { toAccountId32, type AccountId32, type SteamId64 } from "../domain/steam-id";
-import { DEFAULT_USER_SETTINGS, type User } from "../domain/user";
+import { DEFAULT_USER_SETTINGS, type ProfileVisibility, type User } from "../domain/user";
 import type {
   NonceStore,
   SessionRecord,
@@ -43,6 +43,13 @@ export async function ensureIdentityIndexes(db: Db): Promise<void> {
     db
       .collection(IDENTITY_COLLECTIONS.users)
       .createIndex({ steamId64: 1 }, { unique: true, name: "uniq_steamId64" }),
+    // Which of a player's friends have accounts (leaderboards).
+    db
+      .collection(IDENTITY_COLLECTIONS.users)
+      .createIndex({ accountId32: 1 }, { name: "by_accountId32" }),
+    db
+      .collection(IDENTITY_COLLECTIONS.users)
+      .createIndex({ "settings.profileVisibility": 1 }, { name: "by_profileVisibility" }),
     db
       .collection(IDENTITY_COLLECTIONS.sessions)
       .createIndex({ tokenHash: 1 }, { unique: true, name: "uniq_tokenHash" }),
@@ -108,6 +115,40 @@ export class MongoUserRepository implements UserRepository {
     if (!ObjectId.isValid(id)) return null;
     const doc = await this.col.findOne({ _id: new ObjectId(id) });
     return doc ? toUser(doc) : null;
+  }
+
+  async findByIds(ids: readonly string[]): Promise<User[]> {
+    const valid = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+    if (valid.length === 0) return [];
+    return (await this.col.find({ _id: { $in: valid } }).toArray()).map(toUser);
+  }
+
+  /** Users who chose to be listed publicly (e.g. on the Everyone leaderboards). */
+  async findPublicIds(limit: number): Promise<string[]> {
+    const docs = await this.col
+      .find({ "settings.profileVisibility": "public" }, { projection: { _id: 1 } })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => d._id.toHexString());
+  }
+
+  async setProfileVisibility(
+    id: string,
+    visibility: ProfileVisibility,
+    now: Date,
+  ): Promise<boolean> {
+    if (!ObjectId.isValid(id)) return false;
+    const res = await this.col.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { "settings.profileVisibility": visibility, updatedAt: now } },
+    );
+    return res.matchedCount === 1;
+  }
+
+  /** The users among these Steam accounts (most won't have signed in to Dota Den). */
+  async findByAccountIds(accountIds: readonly number[]): Promise<User[]> {
+    if (accountIds.length === 0) return [];
+    return (await this.col.find({ accountId32: { $in: [...accountIds] } }).toArray()).map(toUser);
   }
 }
 

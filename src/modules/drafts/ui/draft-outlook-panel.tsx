@@ -13,6 +13,7 @@ import type {
 import { POSITIONS, POSITION_NAMES, type Position } from "../domain/draft-positions";
 import type { DraftReport, Grade } from "../domain/draft-report";
 import type { DraftState, Side } from "../domain/draft-state";
+import { DraftReviewPanel } from "./draft-review-panel";
 import type { DraftHero } from "./types";
 
 const pct = (n: number | null) => (n === null ? "—" : `${(n * 100).toFixed(1)}%`);
@@ -163,7 +164,14 @@ export function DraftOutlookPanel({
           The outlook is unavailable right now. The draft works without it.
         </p>
       ) : (
-        <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} />
+        <>
+          <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} />
+          {!outlook.report.provisional && (
+            <div className="mt-4">
+              <DraftReviewPanel state={state} roles={ctl.roles} />
+            </div>
+          )}
+        </>
       )}
     </section>
   );
@@ -233,9 +241,11 @@ function OutlookBody({
 
       <p className="flex gap-1.5 text-xs text-muted-foreground">
         <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-        An estimate from the draft alone: hero win rates at Ancient rank and above, head-to-head
-        records, pro lane results, pro pairings and recent tournament drafts. It&apos;s kept between
-        30% and 70% because players and execution decide most games.
+        An estimate from the draft alone, with weights fitted to {outlook.accuracy.source}. On{" "}
+        {outlook.accuracy.testGames.toLocaleString("en-US")} newer games it hadn&apos;t seen, it
+        picked the winner {Math.round(outlook.accuracy.fitted * 100)}% of the time (always picking
+        Radiant: {Math.round(outlook.accuracy.radiantShare * 100)}%). Players and execution decide
+        most games, so it stays between 30% and 70%.
       </p>
     </div>
   );

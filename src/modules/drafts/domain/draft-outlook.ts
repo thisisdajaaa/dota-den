@@ -28,6 +28,8 @@ import {
   type DraftReport,
   type SideEvidence,
 } from "./draft-report";
+import calibration from "./draft-calibration.json";
+import { sigmoid } from "./draft-calibration";
 import type { Side } from "./draft-state";
 import {
   canSupport,
@@ -122,6 +124,13 @@ export interface DraftOutlook {
   tournaments: string | null;
   /** The rubric: each side graded on lanes, counters, composition, strength, positions, combos. */
   report: DraftReport;
+  /** How well the estimate predicted real games it wasn't fitted on. */
+  accuracy: {
+    fitted: number;
+    radiantShare: number;
+    testGames: number;
+    source: string;
+  };
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -253,10 +262,18 @@ export function draftOutlook(input: {
 
   const coverage = pairs ? covered / pairs : 0;
   const picked = radiant.length + dire.length;
-  const edge = (s: SideBreakdown) => s.meta + s.matchups + s.synergy + s.lanes;
-  const diff = edge(sides.radiant) - edge(sides.dire);
+  // Weights fitted to real games (see draft-calibration.json). The intercept (Radiant's
+  // general side advantage) is left out: this is what the draft itself says.
+  const w = calibration.estimate.weights;
+  const z =
+    w.meta * (sides.radiant.meta - sides.dire.meta) +
+    w.matchups * (sides.radiant.matchups - sides.dire.matchups) +
+    w.lanes * (sides.radiant.lanes - sides.dire.lanes) +
+    w.synergy * (sides.radiant.synergy - sides.dire.synergy);
   const radiantPct =
-    picked === 0 ? null : Math.round(Math.min(OUTLOOK_CEILING, Math.max(OUTLOOK_FLOOR, 50 + diff)));
+    picked === 0
+      ? null
+      : Math.round(Math.min(OUTLOOK_CEILING, Math.max(OUTLOOK_FLOOR, 100 * sigmoid(z))));
   const confidence =
     radiant.length >= 4 && dire.length >= 4 && coverage >= 0.5 && meta.size > 0 ? "medium" : "low";
 
@@ -326,6 +343,12 @@ export function draftOutlook(input: {
     notes: [...outlookNotes(sides, heroes, pro), ...laneNotes(lanes, heroes)],
     tournaments: pro ? proSource(pro) : null,
     report,
+    accuracy: {
+      fitted: calibration.holdout.fitted.accuracy,
+      radiantShare: calibration.holdout.baseline.accuracy,
+      testGames: calibration.testGames,
+      source: calibration.source,
+    },
   };
 }
 

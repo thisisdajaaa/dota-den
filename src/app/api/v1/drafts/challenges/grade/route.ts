@@ -1,9 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
+import { logger } from "@/lib/logger";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
-import { CHALLENGE_TYPES, SEED_PATTERN } from "@/modules/drafts/domain/challenges";
+import { CHALLENGE_TYPES, SEED_PATTERN, type Grade } from "@/modules/drafts/domain/challenges";
 import { getChallengeService } from "@/modules/drafts/composition";
+import { getRouteUser } from "@/modules/identity/composition";
+import type { ChallengeProgressDto } from "@/modules/leaderboards/application/contracts";
+import { getActivityService } from "@/modules/leaderboards/composition";
 
 const BodySchema = z.object({
   type: z.enum(CHALLENGE_TYPES),
@@ -12,8 +16,28 @@ const BodySchema = z.object({
 });
 
 /**
+ * For signed-in players, keep the answer for the leaderboards and the saved streak. A
+ * failure here must never cost the player their grade, so it is logged and skipped.
+ */
+async function recordForUser(
+  req: NextRequest,
+  answer: { type: string; seed: string; grade: Grade },
+): Promise<ChallengeProgressDto | null> {
+  try {
+    const user = await getRouteUser(req);
+    if (!user) return null;
+    const { counted, streak } = await (await getActivityService()).recordChallenge(user.id, answer);
+    return { counted, streak: streak.current, best: streak.best };
+  } catch (error) {
+    logger.error("challenge_attempt_record_failed", { error });
+    return null;
+  }
+}
+
+/**
  * Grade a draft challenge answer. The client only names the puzzle ({type, seed}) and its
  * answer; the server rebuilds the position, checks the answer is legal, then grades it.
+ * Signed in, the first answer to each puzzle is recorded, and `saved` carries the streak.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
@@ -43,5 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return apiError("bad_request", "Invalid puzzle");
     }
   }
-  return NextResponse.json({ type, seed, ...res.value.result });
+  const result = res.value.result;
+  const saved = await recordForUser(req, { type, seed, grade: result.grade });
+  return NextResponse.json({ type, seed, ...result, saved });
 }

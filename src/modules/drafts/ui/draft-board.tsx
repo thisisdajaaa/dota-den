@@ -99,10 +99,13 @@ function newDraft(rulesetId: string, firstSide: Side, timer: boolean): DraftStat
 export function DraftBoard({
   heroes,
   initial,
+  signedIn = false,
 }: {
   heroes: DraftHero[];
   /** Pre-built state (e.g. "practice this shared draft"). */
   initial?: DraftState;
+  /** Signed in: each draft finished here is saved for the leaderboards. */
+  signedIn?: boolean;
 }) {
   const heroMap = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes]);
   const pool = useMemo(() => heroes.map((h) => h.id), [heroes]);
@@ -212,6 +215,23 @@ export function DraftBoard({
     // Re-run per accepted event (stateVersion) or on retry; dispatch reads refs only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiTurn, state.stateVersion, aiRetry]);
+
+  // Signed in: save each draft finished on this board once, for the leaderboards (the server
+  // also counts the same draft only once).
+  const savedDraft = useRef<string | null>(null);
+  useEffect(() => {
+    if (!signedIn || state.status !== "completed" || state === initial) return;
+    const snapshot = encodeSnapshot(snapshotOf(state));
+    if (savedDraft.current === snapshot) return;
+    savedDraft.current = snapshot;
+    fetch("/api/v1/drafts/results", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ snapshot, aiSide }),
+    })
+      .then((res) => res.status === 201 && toast.success("Draft saved to your leaderboards"))
+      .catch(() => {}); // Optional: the draft itself is unaffected.
+  }, [signedIn, state, initial, aiSide]);
 
   const humanTurn =
     state.status === "in_progress" && turn !== null && (!aiSide || turn.side !== aiSide);

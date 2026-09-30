@@ -3,6 +3,7 @@ import { draftOutlook, type DraftOutlook } from "../domain/draft-outlook";
 import {
   assignPositions,
   POSITION_NAMES,
+  positionLabel,
   type Position,
   type PositionTable,
 } from "../domain/draft-positions";
@@ -21,10 +22,77 @@ import {
 import { availableHeroes, currentTurn, type DraftState, type Side } from "../domain/draft-state";
 import { getRuleset } from "../domain/rulesets";
 import type { LaneTable } from "../domain/draft-lanes";
-import type { DraftAdvisor, DraftInsights } from "./ports";
+import { applyAdjustments, validateReview, type DraftReview } from "../domain/draft-review";
+import type { DraftReport } from "../domain/draft-report";
+import type { AbilityCatalog, DraftAdvisor, DraftInsights, DraftReviewer } from "./ports";
 import { replaySnapshot, type DraftSnapshot } from "./snapshot";
 
 export type AiHero = ScoringHero;
+
+export type ReviewError =
+  | { type: "invalid_snapshot" }
+  | { type: "draft_incomplete" }
+  | { type: "not_configured" }
+  | { type: "unavailable" };
+
+export interface ReviewResult {
+  review: DraftReview;
+  model: string;
+  /** The data report card, and the same card with the AI's nudges applied. */
+  report: DraftReport;
+  adjusted: DraftReport;
+}
+
+export interface ReviewCache {
+  get(key: string): Promise<unknown>;
+  put(key: string, value: unknown): Promise<void>;
+}
+
+/** Cache key: the draft, any positions set by hand, and the model. */
+function reviewKey(
+  snapshot: DraftSnapshot,
+  roles: Partial<Record<Side, ReadonlyMap<number, Position>>> | undefined,
+  model: string,
+): string {
+  const r = (side: Side) =>
+    [...(roles?.[side]?.entries() ?? [])].sort((a, b) => a[0] - b[0]).map(([h, p]) => `${h}:${p}`);
+  return `review-v1:${model}:${JSON.stringify(snapshot)}:${r("radiant")}|${r("dire")}`;
+}
+
+/** The evidence we give the reviewer: the numbers behind the report card, in plain lines. */
+function reviewEvidence(o: DraftOutlook): string[] {
+  const lines: string[] = [];
+  if (o.radiantPct !== null) {
+    lines.push(
+      `Estimated win chance from the draft: Radiant ${o.radiantPct}%, Dire ${100 - o.radiantPct}%.`,
+    );
+  }
+  for (const side of ["radiant", "dire"] as const) {
+    const r = o.report[side];
+    const name = side === "radiant" ? "Radiant" : "Dire";
+    lines.push(`${name} report card: ${r.grade ?? "-"} (${r.overall ?? "-"}/100).`);
+    for (const c of r.criteria)
+      lines.push(`${name} ${c.label}: ${c.grade ?? "no data"}. ${c.summary}`);
+  }
+  for (const l of o.lanes) {
+    if (l.edge === null) continue;
+    const src =
+      l.source === "pro_lanes"
+        ? `won ${l.wins} of ${l.games} pro lane meetings`
+        : "whole-game head-to-heads";
+    lines.push(`${l.label}: Radiant edge ${l.edge} points (${src}).`);
+  }
+  for (const h of o.heroes) {
+    const bits = [
+      h.winRate !== null ? `${(h.winRate * 100).toFixed(1)}% win rate at high ranks` : null,
+      h.bestMatchup ? `best vs ${h.bestMatchup.name} +${h.bestMatchup.edge.toFixed(1)}` : null,
+      h.worstMatchup ? `worst vs ${h.worstMatchup.name} ${h.worstMatchup.edge.toFixed(1)}` : null,
+    ].filter(Boolean);
+    if (bits.length) lines.push(`${h.name}: ${bits.join("; ")}.`);
+  }
+  lines.push(...o.notes);
+  return lines;
+}
 
 export type AiMoveError =
   | { type: "invalid_snapshot" }
@@ -128,8 +196,73 @@ export class AiOpponentService {
       advisor: DraftAdvisor | null;
       insights: DraftInsights | null;
       heroes: readonly AiHero[];
+      /** The AI review of finished drafts; null when no model is configured. */
+      reviewer?: DraftReviewer | null;
+      abilities?: AbilityCatalog | null;
+      /** Reviews by draft (and positions): a review costs a model call. */
+      reviewCache?: ReviewCache | null;
     },
   ) {}
+
+  /**
+   * An AI review of a finished draft: combos, win conditions and matchups from the heroes'
+   * current abilities and our evidence, plus small, reasoned nudges to two report-card grades.
+   */
+  async review(
+    snapshot: DraftSnapshot,
+    roles?: Partial<Record<Side, ReadonlyMap<number, Position>>>,
+  ): Promise<Result<ReviewResult, ReviewError>> {
+    const replayed = replaySnapshot(
+      snapshot,
+      this.deps.heroes.map((h) => h.id),
+    );
+    if (!replayed.ok) return err({ type: "invalid_snapshot" });
+    if (replayed.value.status !== "completed") return err({ type: "draft_incomplete" });
+    const reviewer = this.deps.reviewer;
+    if (!reviewer) return err({ type: "not_configured" });
+
+    const outlook = await this.outlook(snapshot, roles);
+    if (!outlook.ok) return err({ type: "invalid_snapshot" });
+    const o = outlook.value;
+    const key = reviewKey(snapshot, roles, reviewer.model);
+    const cached = await this.deps.reviewCache?.get(key).catch(() => null);
+    const names = o.heroes.map((h) => h.name);
+    if (cached) {
+      const review = validateReview(cached, names);
+      if (review) return ok(this.reviewResult(o, review, reviewer.model));
+    }
+
+    const kits =
+      (await this.deps.abilities?.kits(o.heroes.map((h) => h.heroId)).catch(() => null)) ??
+      new Map();
+    const lineup = (side: Side) =>
+      o.heroes
+        .filter((h) => h.side === side)
+        .sort((a, b) => (a.position ?? 9) - (b.position ?? 9))
+        .map((h) => ({
+          name: h.name,
+          position: h.position ? positionLabel(h.position) : "position unknown",
+          abilities: kits.get(h.heroId)?.abilities ?? [],
+        }));
+    const res = await reviewer.review({
+      lineups: { radiant: lineup("radiant"), dire: lineup("dire") },
+      evidence: reviewEvidence(o),
+    });
+    if (!res.ok) return err({ type: "unavailable" });
+    const review = validateReview(res.value, names);
+    if (!review) return err({ type: "unavailable" });
+    await this.deps.reviewCache?.put(key, res.value).catch(() => undefined);
+    return ok(this.reviewResult(o, review, reviewer.model));
+  }
+
+  private reviewResult(o: DraftOutlook, review: DraftReview, model: string): ReviewResult {
+    return {
+      review,
+      model,
+      report: o.report,
+      adjusted: applyAdjustments(o.report, review.adjustments),
+    };
+  }
 
   /**
    * Shared first half of every decision: validate the draft, then rank the legal options for

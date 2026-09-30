@@ -8,6 +8,7 @@ import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/application/sna
 import { getRuleset } from "@/modules/drafts/domain/rulesets";
 import { DraftBoard } from "@/modules/drafts/ui/draft-board";
 import { FeedbackPanel } from "@/modules/drafts/ui/feedback-panel";
+import { getCurrentUser } from "@/modules/identity/composition";
 import { SequenceStrip } from "@/modules/drafts/ui/sequence-strip";
 import { TeamPanel } from "@/modules/drafts/ui/team-panel";
 import type { DraftHero } from "@/modules/drafts/ui/types";
@@ -16,7 +17,11 @@ export const metadata: Metadata = { title: "Draft practice" };
 
 export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
   const { snapshot } = await searchParams;
-  const heroMap = await getHeroMap();
+  const [heroMap, user] = await Promise.all([
+    getHeroMap(),
+    // Only decides whether finished drafts are saved; an outage just skips that.
+    getCurrentUser({ tolerateErrors: true }),
+  ]);
   const heroes: DraftHero[] = [...heroMap.values()]
     .map((h) => ({
       id: h.id,
@@ -158,7 +163,7 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
           </>
         }
       />
-      <DraftBoard heroes={heroes} />
+      <DraftBoard heroes={heroes} signedIn={user !== null} />
     </div>
   );
 }

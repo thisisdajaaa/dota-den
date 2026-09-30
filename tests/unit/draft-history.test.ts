@@ -85,6 +85,9 @@ class MemoryHistory implements DraftHistoryRepository {
   async opponents(): Promise<HistoryOpponent[]> {
     return [];
   }
+  async captainTotals() {
+    return [];
+  }
 }
 
 const actor = (n: number): Actor => ({

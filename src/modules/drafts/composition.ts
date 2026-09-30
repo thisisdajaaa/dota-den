@@ -12,6 +12,7 @@ import { DraftRoomService } from "./application/draft-room-service";
 import { GroqDraftAdvisor } from "./infrastructure/groq-draft-advisor";
 import { MongoDraftHistoryRepository } from "./infrastructure/mongo-draft-history";
 import { MongoDraftMetaCache } from "./infrastructure/mongo-draft-meta-cache";
+import { OpenDotaAbilityCatalog } from "./infrastructure/opendota-ability-catalog";
 import { MongoDraftRoomRepository } from "./infrastructure/mongo-draft-rooms";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
 import type { DraftHero } from "./ui/types";
@@ -68,7 +69,26 @@ export async function getAiOpponent(): Promise<AiOpponentService> {
         model: DRAFT_AI_MODEL ?? DEFAULT_DRAFT_AI_MODEL,
       })
     : null;
-  return new AiOpponentService({ advisor, insights: await draftInsights(), heroes });
+  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
+  const cache = await getDb()
+    .then((db) => new MongoDraftMetaCache(db))
+    .catch(() => null);
+  return new AiOpponentService({
+    advisor,
+    insights: await draftInsights(),
+    heroes,
+    reviewer: advisor,
+    abilities: new OpenDotaAbilityCatalog(openDotaGateway(), {
+      baseUrl: OPENDOTA_BASE_URL ?? "https://api.opendota.com/api",
+      apiKey: OPENDOTA_API_KEY,
+    }),
+    reviewCache: cache
+      ? {
+          get: async (key) => (await cache.get(key))?.body ?? null,
+          put: (key, value) => cache.put(key, value, new Date()),
+        }
+      : null,
+  });
 }
 
 /** Draft challenges: puzzles from the hero catalog, graded with the AI captain's data. */

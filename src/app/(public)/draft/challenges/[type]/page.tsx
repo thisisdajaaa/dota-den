@@ -15,6 +15,7 @@ import {
 } from "@/modules/drafts/domain/challenges";
 import { ChallengeBoard } from "@/modules/drafts/ui/challenge-board";
 import type { DraftHero } from "@/modules/drafts/ui/types";
+import { getViewerChallengeStreak } from "@/modules/leaderboards/composition";
 
 export async function generateMetadata({
   params,
@@ -69,7 +70,11 @@ export default async function DraftChallengePage({
     );
   }
 
-  const [heroMap, service] = await Promise.all([getHeroMap(), getChallengeService()]);
+  const [heroMap, service, saved] = await Promise.all([
+    getHeroMap(),
+    getChallengeService(),
+    getViewerChallengeStreak(),
+  ]);
   const heroes: DraftHero[] = [...heroMap.values()]
     .map((h) => ({
       id: h.id,
@@ -110,6 +115,7 @@ export default async function DraftChallengePage({
         info={info}
         situation={describePosition(puzzle.value, heroes)}
         heroes={heroes}
+        saved={saved}
       />
     </div>
   );

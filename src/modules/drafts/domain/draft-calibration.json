@@ -1,0 +1,37 @@
+{
+  "fittedAt": "2026-09-30T09:34:37.745Z",
+  "source": "15,000 ranked Divine+ games from the last 14 days",
+  "trainGames": 12000,
+  "testGames": 3000,
+  "estimate": {
+    "intercept": 0.1205,
+    "weights": {
+      "meta": 0.0904,
+      "matchups": 0.0111,
+      "lanes": 0.0085,
+      "synergy": -0.0049
+    }
+  },
+  "criteriaWeights": {
+    "lanes": 0.046,
+    "counters": 0.045,
+    "composition": 0.045,
+    "strength": 0.693,
+    "positions": 0.089,
+    "combos": 0.081
+  },
+  "holdout": {
+    "fitted": {
+      "accuracy": 0.5703,
+      "logLoss": 0.6775
+    },
+    "handTuned": {
+      "accuracy": 0.548,
+      "logLoss": 0.6906
+    },
+    "baseline": {
+      "accuracy": 0.5463,
+      "logLoss": 0.6895
+    }
+  }
+}

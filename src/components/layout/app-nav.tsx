@@ -13,6 +13,7 @@ import {
   Shield,
   Swords,
   TrendingUp,
+  Trophy,
   Users,
   UsersRound,
   type LucideIcon,
@@ -29,7 +30,8 @@ export type NavKey =
   | "meta"
   | "players"
   | "patches"
-  | "draft";
+  | "draft"
+  | "leaderboards";
 
 const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
   [
@@ -43,6 +45,13 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },
+    {
+      key: "leaderboards",
+      href: "/leaderboards",
+      label: "Leaderboards",
+      icon: Trophy,
+      auth: true,
+    },
   ];
 
 function useActive(): (href: string) => boolean {

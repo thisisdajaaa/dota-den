@@ -1,7 +1,8 @@
 /**
  * Draft report card (pure): the rubric a draft is judged by, per side.
  *
- * Six criteria, each scored 0-100 where 50 is an average draft, then weighted into an
+ * Six criteria, each scored 0-100 where 50 is an average draft, then weighted (partly
+ * fitted to real games, see blendedWeights) into an
  * overall grade. Every score comes from the same public data as the rest of the outlook;
  * a criterion with no data is marked unavailable and left out of the overall grade.
  *
@@ -12,6 +13,8 @@
  *   Positions     15%  how naturally the heroes fill positions 1-5
  *   Combos        10%  how hero pairs do together in pro games
  */
+
+import calibration from "./draft-calibration.json";
 
 export type CriterionKey =
   "lanes" | "counters" | "composition" | "strength" | "positions" | "combos";
@@ -45,13 +48,39 @@ export interface DraftReport {
   provisional: boolean;
 }
 
+/** The weights we started from, before fitting to real games. */
+const PRIOR_WEIGHTS: Record<CriterionKey, number> = {
+  lanes: 0.2,
+  counters: 0.2,
+  composition: 0.2,
+  strength: 0.15,
+  positions: 0.15,
+  combos: 0.1,
+};
+
+/**
+ * Half the prior weights, half the weights fitted to real games (see draft-calibration.json):
+ * the fit says hero strength matters most in public games, but a report card that is only
+ * hero strength wouldn't teach much, so the fit moves the weights rather than replacing them.
+ */
+function blendedWeights(): Record<CriterionKey, number> {
+  const fitted = calibration.criteriaWeights as Record<CriterionKey, number>;
+  const keys = Object.keys(PRIOR_WEIGHTS) as CriterionKey[];
+  const mixed = keys.map((k) => 0.5 * PRIOR_WEIGHTS[k] + 0.5 * (fitted[k] ?? PRIOR_WEIGHTS[k]));
+  const total = mixed.reduce((a, b) => a + b, 0);
+  return Object.fromEntries(
+    keys.map((k, i) => [k, Math.round((mixed[i] / total) * 100) / 100]),
+  ) as Record<CriterionKey, number>;
+}
+const WEIGHTS = blendedWeights();
+
 export const CRITERIA: readonly { key: CriterionKey; label: string; weight: number }[] = [
-  { key: "lanes", label: "Lanes", weight: 0.2 },
-  { key: "counters", label: "Counters", weight: 0.2 },
-  { key: "composition", label: "Composition", weight: 0.2 },
-  { key: "strength", label: "Hero strength", weight: 0.15 },
-  { key: "positions", label: "Positions", weight: 0.15 },
-  { key: "combos", label: "Combos", weight: 0.1 },
+  { key: "lanes", label: "Lanes", weight: WEIGHTS.lanes },
+  { key: "counters", label: "Counters", weight: WEIGHTS.counters },
+  { key: "composition", label: "Composition", weight: WEIGHTS.composition },
+  { key: "strength", label: "Hero strength", weight: WEIGHTS.strength },
+  { key: "positions", label: "Positions", weight: WEIGHTS.positions },
+  { key: "combos", label: "Combos", weight: WEIGHTS.combos },
 ];
 
 export function gradeOf(score: number): Grade {
