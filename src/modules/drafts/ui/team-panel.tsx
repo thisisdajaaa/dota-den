@@ -30,9 +30,9 @@ function Slot({
         <Image
           src={hero.imageUrl}
           alt=""
-          fill
-          sizes={pick ? "160px" : "80px"}
-          className={cn("object-cover", !pick && "grayscale")}
+          width={pick ? 160 : 80}
+          height={pick ? 90 : 45}
+          className={cn("absolute inset-0 size-full object-cover", !pick && "grayscale")}
         />
       )}
       {hero && !pick && (

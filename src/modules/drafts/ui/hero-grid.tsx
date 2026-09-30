@@ -110,9 +110,9 @@ export function HeroGrid({
                           <Image
                             src={h.imageUrl}
                             alt=""
-                            fill
-                            sizes="64px"
-                            className="object-cover"
+                            width={64}
+                            height={36}
+                            className="absolute inset-0 size-full object-cover"
                           />
                         ) : (
                           <span className="grid h-full place-items-center p-0.5 text-[0.5rem] leading-tight">

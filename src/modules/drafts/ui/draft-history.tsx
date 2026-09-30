@@ -37,7 +37,13 @@ function Avatar({ captain, size = 40 }: { captain: PublicCaptain; size?: number 
       style={{ width: size, height: size }}
     >
       {captain.avatarUrl ? (
-        <Image src={captain.avatarUrl} alt="" fill sizes={`${size}px`} className="object-cover" />
+        <Image
+          src={captain.avatarUrl}
+          alt=""
+          width={size}
+          height={size}
+          className="absolute inset-0 size-full object-cover"
+        />
       ) : (
         <UserRound aria-hidden className="size-1/2 text-muted-foreground" />
       )}
@@ -64,7 +70,13 @@ function HeroThumb({
       )}
     >
       {hero?.imageUrl ? (
-        <Image src={hero.imageUrl} alt={name} fill sizes="56px" className="object-cover" />
+        <Image
+          src={hero.imageUrl}
+          alt={name}
+          width={56}
+          height={32}
+          className="absolute inset-0 size-full object-cover"
+        />
       ) : (
         <span className="grid h-full place-items-center px-0.5 text-center text-[0.5rem] leading-tight text-muted-foreground">
           {name}
