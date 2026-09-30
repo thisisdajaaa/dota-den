@@ -81,11 +81,20 @@ test("signed-in pages fit a phone screen, and the footer isn't hidden by the tab
   ]) {
     await expectFits(page, path);
   }
-  await page.goto("/dashboard");
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  const footer = await page.locator("footer").boundingBox();
-  const bar = await page.getByRole("navigation", { name: "Main" }).boundingBox();
-  expect(footer && bar && footer.y + footer.height <= bar.y + 1).toBe(true);
+  // A page that doesn't grow while we measure (the dashboard keeps importing matches).
+  // Scroll to the very bottom and measure in the same tick: the footer must end above the bar.
+  await page.goto("/mmr");
+  await page.waitForLoadState("networkidle");
+  const gap = await page.evaluate(() => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+    const footer = document.querySelector("footer")!.getBoundingClientRect();
+    // The visible "Main" nav on a phone is the bottom bar (the sidebar's is hidden).
+    const bar = [...document.querySelectorAll('nav[aria-label="Main"]')]
+      .map((n) => n.getBoundingClientRect())
+      .find((r) => r.height > 0)!;
+    return bar.top - footer.bottom;
+  });
+  expect(gap).toBeGreaterThanOrEqual(-1);
 });
 
 test("a whole practice draft works and fits on a phone", async ({ page }) => {
