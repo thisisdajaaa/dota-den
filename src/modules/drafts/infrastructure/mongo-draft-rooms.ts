@@ -3,8 +3,8 @@ import type { CommitResult, DraftRoomRepository } from "../application/draft-roo
 import type { DraftRoom, RoomEvent } from "../domain/draft-room";
 
 const SCHEMA_VERSION = 1;
-/** Rooms expire a day after their last activity (TTL index). */
-const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+/** Rooms expire a day after their last activity (TTL index). Overridable: DRAFT_ROOM_TTL_HOURS. */
+export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
 
 export const DRAFT_ROOM_COLLECTIONS = { rooms: "draft_rooms", events: "draft_events" } as const;
 
@@ -38,13 +38,13 @@ export async function ensureDraftRoomIndexes(db: Db): Promise<void> {
   ]);
 }
 
-function toDoc(room: DraftRoom): RoomDoc {
+function toDoc(room: DraftRoom, ttlMs: number): RoomDoc {
   const { id, ...rest } = room;
   return {
     _id: id,
     ...rest,
     schemaVersion: SCHEMA_VERSION,
-    expiresAt: new Date(room.lastActivityAt.getTime() + ROOM_TTL_MS),
+    expiresAt: new Date(room.lastActivityAt.getTime() + ttlMs),
   };
 }
 
@@ -52,8 +52,8 @@ function toRoom({ _id, schemaVersion: _v, expiresAt: _e, ...rest }: RoomDoc): Dr
   return { id: _id, ...rest };
 }
 
-function toEventDoc(e: RoomEvent): EventDoc {
-  return { ...e, schemaVersion: SCHEMA_VERSION, expiresAt: new Date(e.at.getTime() + ROOM_TTL_MS) };
+function toEventDoc(e: RoomEvent, ttlMs: number): EventDoc {
+  return { ...e, schemaVersion: SCHEMA_VERSION, expiresAt: new Date(e.at.getTime() + ttlMs) };
 }
 
 function toEvent({
@@ -69,15 +69,18 @@ function toEvent({
 export class MongoDraftRoomRepository implements DraftRoomRepository {
   private readonly rooms: Collection<RoomDoc>;
   private readonly events: Collection<EventDoc>;
+  private readonly ttlMs: number;
 
-  constructor(db: Db) {
+  /** `ttlMs`: how long a room and its events are kept after the last activity. */
+  constructor(db: Db, opts: { ttlMs?: number } = {}) {
+    this.ttlMs = opts.ttlMs ?? ROOM_TTL_MS;
     this.rooms = db.collection<RoomDoc>(DRAFT_ROOM_COLLECTIONS.rooms);
     this.events = db.collection<EventDoc>(DRAFT_ROOM_COLLECTIONS.events);
   }
 
   async insert(room: DraftRoom, created: RoomEvent): Promise<void> {
-    await this.rooms.insertOne(toDoc(room));
-    await this.events.insertOne(toEventDoc(created));
+    await this.rooms.insertOne(toDoc(room, this.ttlMs));
+    await this.events.insertOne(toEventDoc(created, this.ttlMs));
   }
 
   async get(roomId: string): Promise<DraftRoom | null> {
@@ -87,10 +90,13 @@ export class MongoDraftRoomRepository implements DraftRoomRepository {
 
   async commit(expectedRev: number, next: DraftRoom, event: RoomEvent): Promise<CommitResult> {
     // Optimistic concurrency: only the writer that still sees `expectedRev` wins.
-    const res = await this.rooms.replaceOne({ _id: next.id, rev: expectedRev }, toDoc(next));
+    const res = await this.rooms.replaceOne(
+      { _id: next.id, rev: expectedRev },
+      toDoc(next, this.ttlMs),
+    );
     if (res.matchedCount !== 1) return "conflict";
     try {
-      await this.events.insertOne(toEventDoc(event));
+      await this.events.insertOne(toEventDoc(event, this.ttlMs));
     } catch (e) {
       // The room already moved on; a duplicate event can only be a replayed idempotency key.
       if (!(typeof e === "object" && e !== null && "code" in e && e.code === 11000)) throw e;

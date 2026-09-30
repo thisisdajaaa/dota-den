@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
@@ -19,7 +20,7 @@ const toMap = (r: Record<string, 1 | 2 | 3 | 4 | 5> | undefined) =>
 /** Which side the draft favours so far: an estimate from public and tournament data. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`draft-outlook:${clientKey(req)}`, 60, 60_000)) {
+  if (!rateLimit(`draft-outlook:${clientKey(req)}`, ...apiLimitArgs("draftOutlook"))) {
     return apiError("rate_limited", "Too many requests in the last minute.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

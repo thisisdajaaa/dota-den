@@ -64,11 +64,17 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
       observations: MmrObservationSource;
       notes: SessionNoteRepository;
       settings: SessionSettingsRepository;
+      /** The gap for users who haven't chosen one (SESSION_DEFAULT_GAP_MINUTES). */
+      defaultGapMinutes?: GapMinutes;
     },
   ) {}
 
   async gap(owner: SessionOwner): Promise<GapMinutes> {
-    return (await this.deps.settings.getGap(owner.userId)) ?? DEFAULT_GAP_MINUTES;
+    return (
+      (await this.deps.settings.getGap(owner.userId)) ??
+      this.deps.defaultGapMinutes ??
+      DEFAULT_GAP_MINUTES
+    );
   }
 
   setGap(owner: SessionOwner, gapMinutes: GapMinutes, now = new Date()): Promise<void> {

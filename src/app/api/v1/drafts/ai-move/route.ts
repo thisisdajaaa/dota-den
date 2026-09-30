@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin, requestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
@@ -15,7 +16,7 @@ const BodySchema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
   // A full CM draft is 12 AI moves; allow a few drafts a minute per client.
-  if (!rateLimit(`ai-move:${clientKey(req)}`, 40, 60_000)) {
+  if (!rateLimit(`ai-move:${clientKey(req)}`, ...apiLimitArgs("draftAiMove"))) {
     return apiError("rate_limited", "Slow down a little: too many AI moves in the last minute.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

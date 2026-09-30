@@ -6,6 +6,73 @@ const booleanFlag = z
   .optional()
   .transform((v) => v === "true");
 
+// ---------------------------------------------------------------------------
+// Operator tuning. Every value is optional, and each default is the value that was
+// hard-coded before, so an unset variable changes nothing. Pure domain code never reads
+// these: composition roots and infrastructure pass them in. See docs/configuration.md.
+// ---------------------------------------------------------------------------
+
+/** A positive integer read from a string, with a default and an upper bound. */
+const positiveInt = (fallback: number, max: number) =>
+  z.coerce.number().int().min(1).max(max).default(fallback);
+/** A non-negative integer (e.g. retry counts, where 0 means "no retries"). */
+const nonNegativeInt = (fallback: number, max: number) =>
+  z.coerce.number().int().min(0).max(max).default(fallback);
+/** "true"/"false", with a default when unset. */
+const flag = (fallback: boolean) =>
+  z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => (v === undefined ? fallback : v === "true"));
+
+export const DEFAULT_DRAFT_AI_MODEL = "openai/gpt-oss-120b";
+
+const TUNING = {
+  // Rate limits per client (IP) for the public draft API. Per minute unless noted.
+  RATE_LIMIT_DRAFT_AI_MOVE_PER_MIN: positiveInt(40, 10_000),
+  RATE_LIMIT_DRAFT_SUGGESTIONS_PER_MIN: positiveInt(60, 10_000),
+  RATE_LIMIT_DRAFT_OUTLOOK_PER_MIN: positiveInt(60, 10_000),
+  RATE_LIMIT_DRAFT_REVIEW_PER_MIN: positiveInt(6, 10_000),
+  RATE_LIMIT_DRAFT_CHALLENGE_PER_MIN: positiveInt(30, 10_000),
+  RATE_LIMIT_ROOM_CREATE_PER_HOUR: positiveInt(10, 10_000),
+  RATE_LIMIT_ROOM_POLL_PER_MIN: positiveInt(240, 10_000),
+  RATE_LIMIT_ROOM_ACTION_PER_MIN: positiveInt(120, 10_000),
+
+  // Multiplayer draft rooms (ADR 0003 abuse caps).
+  DRAFT_ROOMS_MAX_ACTIVE: positiveInt(50, 10_000),
+  DRAFT_ROOMS_ACTIVE_WINDOW_MINUTES: positiveInt(120, 7 * 24 * 60),
+  DRAFT_ROOM_TTL_HOURS: positiveInt(24, 24 * 90),
+
+  // Tournament data for the draft AI (OpenDota explorer).
+  DRAFT_PRO_WINDOW_DAYS: positiveInt(21, 365),
+  DRAFT_SYNERGY_WINDOW_DAYS: positiveInt(60, 365),
+  DRAFT_META_FRESH_HOURS: positiveInt(12, 24 * 7),
+  DRAFT_EXPLORER_BUDGET_MS: positiveInt(4_000, 120_000),
+
+  // OpenDota gateways.
+  OPENDOTA_TIMEOUT_MS: positiveInt(8_000, 120_000),
+  OPENDOTA_MAX_RETRIES: nonNegativeInt(2, 10),
+  OPENDOTA_EXPLORER_TIMEOUT_MS: positiveInt(30_000, 300_000),
+  OPENDOTA_EXPLORER_MAX_RETRIES: nonNegativeInt(1, 10),
+
+  // Language model (Groq) for the AI captain and the AI review.
+  DRAFT_AI_MODEL: z.string().trim().min(1).default(DEFAULT_DRAFT_AI_MODEL),
+  DRAFT_AI_MOVE_TIMEOUT_MS: positiveInt(15_000, 120_000),
+  DRAFT_AI_REVIEW_TIMEOUT_MS: positiveInt(30_000, 300_000),
+  DRAFT_AI_REVIEW_ENABLED: flag(true),
+
+  // Leaderboards.
+  LEADERBOARD_ROW_LIMIT: positiveInt(50, 500),
+  LEADERBOARD_EVERYONE_MAX_PLAYERS: positiveInt(5_000, 100_000),
+
+  // Sessions: the break that splits two sessions, for users who haven't picked one.
+  SESSION_DEFAULT_GAP_MINUTES: z
+    .enum(["30", "60", "90", "120"])
+    .default("60")
+    .transform((v) => Number(v) as 30 | 60 | 90 | 120),
+};
+// --------------------------- end operator tuning ---------------------------
+
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -26,7 +93,6 @@ const EnvSchema = z
       .enum(["true", "false"])
       .optional()
       .transform((v) => v !== "false"),
-    DRAFT_AI_MODEL: z.string().min(1).optional(),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
     ADMIN_STEAM_IDS: z
       .string()
@@ -40,6 +106,7 @@ const EnvSchema = z
     AUTH_TEST_MODE: booleanFlag,
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
+    ...TUNING,
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production" && env.AUTH_TEST_MODE) {

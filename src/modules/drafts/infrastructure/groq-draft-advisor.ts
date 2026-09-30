@@ -29,7 +29,10 @@ export class GroqDraftAdvisor implements DraftAdvisor, DraftReviewer {
       apiKey: string;
       model: string;
       fetch?: (url: string, init: RequestInit) => Promise<Response>;
-      timeoutMs?: number;
+      /** Timeout for one AI captain move (default 15s). */
+      moveTimeoutMs?: number;
+      /** Timeout for one draft review, a longer answer (default 30s). */
+      reviewTimeoutMs?: number;
     },
   ) {}
 
@@ -85,7 +88,7 @@ export class GroqDraftAdvisor implements DraftAdvisor, DraftReviewer {
             { role: "user", content: user },
           ],
         }),
-        signal: AbortSignal.timeout(this.opts.timeoutMs ?? 15_000),
+        signal: AbortSignal.timeout(this.opts.moveTimeoutMs ?? 15_000),
       });
       if (!res.ok) return err({ type: "unavailable", cause: `status ${res.status}` });
       const parsed = CompletionSchema.safeParse(await res.json());
@@ -152,7 +155,7 @@ export class GroqDraftAdvisor implements DraftAdvisor, DraftReviewer {
             { role: "user", content: user },
           ],
         }),
-        signal: AbortSignal.timeout(this.opts.timeoutMs ?? 30_000),
+        signal: AbortSignal.timeout(this.opts.reviewTimeoutMs ?? 30_000),
       });
       if (!res.ok) return err({ type: "unavailable", cause: `status ${res.status}` });
       const parsed = CompletionSchema.safeParse(await res.json());
