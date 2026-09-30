@@ -112,6 +112,14 @@ export class MongoDraftRoomRepository implements DraftRoomRepository {
     return docs.map(toEvent);
   }
 
+  /** Which of these rooms still exist (the rest have expired). */
+  async existingIds(roomIds: string[]): Promise<Set<string>> {
+    const docs = await this.rooms
+      .find({ _id: { $in: roomIds } }, { projection: { _id: 1 } })
+      .toArray();
+    return new Set(docs.map((d) => d._id));
+  }
+
   async countActive(since: Date): Promise<number> {
     return this.rooms.countDocuments({
       status: { $in: ["lobby", "in_progress"] },

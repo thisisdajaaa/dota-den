@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { History } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { env } from "@/lib/env";
@@ -18,9 +19,18 @@ export default async function NewDraftRoomPage() {
         title="Draft against a friend"
         description="Create a room, send the link, and draft live: one captain on each side, with the real Captain's Mode order and timer. Anyone with the link can watch."
         actions={
-          <Button asChild variant="outline">
-            <Link href="/draft">Back to drafting</Link>
-          </Button>
+          <>
+            {user && (
+              <Button asChild variant="outline">
+                <Link href="/draft/rooms/history">
+                  <History aria-hidden className="size-4" /> Your draft history
+                </Link>
+              </Button>
+            )}
+            <Button asChild variant="outline">
+              <Link href="/draft">Back to drafting</Link>
+            </Button>
+          </>
         }
       />
       {!enabled ? (

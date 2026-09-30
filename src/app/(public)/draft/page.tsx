@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Eye, Puzzle, Users } from "lucide-react";
+import { AlertTriangle, Eye, History, Puzzle, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { getHeroMap } from "@/modules/matches/composition";
@@ -143,6 +143,11 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
             <Button asChild variant="outline">
               <Link href="/draft/rooms/new">
                 <Users aria-hidden className="size-4" /> Draft with a friend
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/draft/rooms/history">
+                <History aria-hidden className="size-4" /> Your draft history
               </Link>
             </Button>
             <Button asChild variant="outline">

@@ -15,6 +15,7 @@ import { getRuleset } from "../domain/rulesets";
 import { DraftOutlookPanel } from "./draft-outlook-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { HeroGrid } from "./hero-grid";
+import { RoomResultPanel } from "./room-result-panel";
 import { SequenceStrip } from "./sequence-strip";
 import { TeamPanel } from "./team-panel";
 import type { DraftHero } from "./types";
@@ -362,6 +363,7 @@ export function RoomClient({
                   />
                 ))}
               </div>
+              <RoomResultPanel room={room} />
               <div className="panel flex flex-wrap items-center gap-2 p-4">
                 <Button
                   size="sm"
