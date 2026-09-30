@@ -20,6 +20,7 @@ import {
 } from "../domain/draft-scoring";
 import { availableHeroes, currentTurn, type DraftState, type Side } from "../domain/draft-state";
 import { getRuleset } from "../domain/rulesets";
+import type { LaneTable } from "../domain/draft-lanes";
 import type { DraftAdvisor, DraftInsights } from "./ports";
 import { replaySnapshot, type DraftSnapshot } from "./snapshot";
 
@@ -64,6 +65,7 @@ interface DraftData {
   pro: ProMeta | undefined;
   synergy: SynergyTable | undefined;
   positions: PositionTable | undefined;
+  lanes: LaneTable | undefined;
 }
 
 /** What the tournaments are fighting over right now, in a few lines for the model. */
@@ -170,7 +172,7 @@ export class AiOpponentService {
     // Ground the choice in public data: meta, tournaments, and head-to-heads vs the heroes
     // that matter.
     const relevant = turn.action === "pick" ? enemy : own;
-    const { meta, matchups, pro, synergy, positions } = await this.data(relevant);
+    const { meta, matchups, pro, synergy, positions, lanes } = await this.data(relevant);
 
     const candidates = rankCandidates({
       action: turn.action,
@@ -184,6 +186,7 @@ export class AiOpponentService {
       pro,
       synergy,
       positions,
+      lanes,
       limit,
     });
     if (candidates.length === 0) return err({ type: "no_heroes" });
@@ -214,12 +217,13 @@ export class AiOpponentService {
   /** Public stats, tournament data, and matchup tables for `picked`. Failures mean "no data". */
   private async data(picked: readonly AiHero[]): Promise<DraftData> {
     const insights = this.deps.insights;
-    const [meta, tables, pro, synergy, positions] = await Promise.all([
+    const [meta, tables, pro, synergy, positions, lanes] = await Promise.all([
       insights?.heroMeta() ?? Promise.resolve(new Map<number, HeroMeta>()),
       Promise.all(picked.map(async (h) => [h.id, await insights?.matchups(h.id)] as const)),
       insights?.proMeta?.().catch(() => null) ?? Promise.resolve(null),
       insights?.synergy?.().catch(() => null) ?? Promise.resolve(null),
       insights?.positions?.().catch(() => null) ?? Promise.resolve(null),
+      insights?.lanes?.().catch(() => null) ?? Promise.resolve(null),
     ]);
     const matchups = new Map<number, MatchupTable>();
     for (const [id, table] of tables) if (table) matchups.set(id, table);
@@ -229,11 +233,16 @@ export class AiOpponentService {
       pro: pro ?? undefined,
       synergy: synergy ?? undefined,
       positions: positions ?? undefined,
+      lanes: lanes ?? undefined,
     };
   }
 
   /** Which side the draft favours so far, with the evidence. Works on partial drafts. */
-  async outlook(snapshot: DraftSnapshot): Promise<Result<DraftOutlook, AiMoveError>> {
+  async outlook(
+    snapshot: DraftSnapshot,
+    /** Positions set by hand, per side (hero id -> position). */
+    roles?: Partial<Record<Side, ReadonlyMap<number, Position>>>,
+  ): Promise<Result<DraftOutlook, AiMoveError>> {
     const replayed = replaySnapshot(
       snapshot,
       this.deps.heroes.map((h) => h.id),
@@ -246,7 +255,11 @@ export class AiOpponentService {
     const radiant = team("radiant");
     const dire = team("dire");
     const data = await this.data([...radiant, ...dire]);
-    return ok(draftOutlook({ radiant, dire, ...data }));
+    const ruleset = getRuleset(state.rulesetId, state.rulesetVersion);
+    const picksPerSide = ruleset.ok
+      ? ruleset.value.sequence.filter((s) => s.action === "pick").length / 2
+      : 5;
+    return ok(draftOutlook({ radiant, dire, ...data, fixed: roles, picksPerSide }));
   }
 
   /** Data-only suggestions for a human's turn (no language model: instant and free). */

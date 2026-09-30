@@ -21,6 +21,13 @@ import {
   type Position,
   type PositionTable,
 } from "./draft-positions";
+import { laneRecord, type LaneTable } from "./draft-lanes";
+import {
+  compositionChecks,
+  draftReport,
+  type DraftReport,
+  type SideEvidence,
+} from "./draft-report";
 import type { Side } from "./draft-state";
 import {
   canSupport,
@@ -29,6 +36,7 @@ import {
   matchupAdvantage,
   metaEdge,
   proSource,
+  proWinEdge,
   synergyAdvantage,
   type HeroMeta,
   type MatchupTable,
@@ -70,6 +78,8 @@ export interface SideBreakdown {
   matchups: number;
   /** Same-team pro synergy (points). */
   synergy: number;
+  /** Lane results, weighted (points). */
+  lanes: number;
   cores: number;
   supports: number;
   /** Positions nobody on this side fills yet. */
@@ -84,8 +94,13 @@ export interface LaneMatchup {
   label: string;
   radiant: number[];
   dire: number[];
-  /** Radiant's average head-to-head advantage in this lane (points); null without data. */
+  /** Radiant's edge in this lane (points); null without data. */
   edge: number | null;
+  /** "pro_lanes": pro lane results (gold at 10 minutes); "matchups": whole-game head-to-heads. */
+  source: "pro_lanes" | "matchups" | null;
+  /** Pro lanes behind a "pro_lanes" edge, and how many Radiant's heroes won. */
+  games: number;
+  wins: number;
 }
 
 export interface DraftOutlook {
@@ -105,6 +120,8 @@ export interface DraftOutlook {
   notes: string[];
   /** Where the tournament numbers come from, e.g. "PGL Wallachia and 6 more tournaments, last 21 days". */
   tournaments: string | null;
+  /** The rubric: each side graded on lanes, counters, composition, strength, positions, combos. */
+  report: DraftReport;
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -131,12 +148,17 @@ export function draftOutlook(input: {
   pro?: ProMeta;
   synergy?: SynergyTable;
   positions?: PositionTable;
+  lanes?: LaneTable;
+  /** Positions set by hand, per side (hero id -> position). */
+  fixed?: Partial<Record<Side, ReadonlyMap<number, Position>>>;
+  /** Picks per side in a complete draft (the report is provisional until then). */
+  picksPerSide?: number;
 }): DraftOutlook {
-  const { radiant, dire, meta, matchups, pro, synergy, positions } = input;
+  const { radiant, dire, meta, matchups, pro, synergy, positions, fixed } = input;
   const teams: Record<Side, readonly ScoringHero[]> = { radiant, dire };
   const assigned = {
-    radiant: assignPositions(radiant, positions),
-    dire: assignPositions(dire, positions),
+    radiant: assignPositions(radiant, positions, fixed?.radiant),
+    dire: assignPositions(dire, positions, fixed?.dire),
   };
   const positionOf = new Map(
     [...assigned.radiant.heroes, ...assigned.dire.heroes].map((h) => [h.heroId, h.position]),
@@ -161,6 +183,10 @@ export function draftOutlook(input: {
     }
   }
 
+  const lanes = laneMatchups(teams, positionOf, matchups, meta, input.lanes);
+  // Lanes count for about a third of their edge: laning is only the first ten minutes.
+  const laneTotal = sum(lanes.map((l) => (l.source === "pro_lanes" ? (l.edge ?? 0) : 0))) * 0.3;
+
   const breakdown = (side: Side): SideBreakdown => {
     const team = teams[side];
     const matchupSum = sum(
@@ -182,6 +208,7 @@ export function draftOutlook(input: {
       meta: round1(sum(team.map((h) => metaEdge(meta.get(h.id)))) / 2),
       matchups: round1(matchupSum / 4),
       synergy: round1(Math.max(-SYNERGY_CAP, Math.min(SYNERGY_CAP, synergySum))),
+      lanes: round1(side === "radiant" ? laneTotal / 2 : -laneTotal / 2),
       cores: team.length - supports,
       supports,
       open: assigned[side].open,
@@ -226,14 +253,68 @@ export function draftOutlook(input: {
 
   const coverage = pairs ? covered / pairs : 0;
   const picked = radiant.length + dire.length;
-  const edge = (s: SideBreakdown) => s.meta + s.matchups + s.synergy;
+  const edge = (s: SideBreakdown) => s.meta + s.matchups + s.synergy + s.lanes;
   const diff = edge(sides.radiant) - edge(sides.dire);
   const radiantPct =
     picked === 0 ? null : Math.round(Math.min(OUTLOOK_CEILING, Math.max(OUTLOOK_FLOOR, 50 + diff)));
   const confidence =
     radiant.length >= 4 && dire.length >= 4 && coverage >= 0.5 && meta.size > 0 ? "medium" : "low";
 
-  const lanes = laneMatchups(teams, positionOf, matchups, meta);
+  const evidence = (side: Side): SideEvidence => {
+    const team = teams[side];
+    const sign = side === "radiant" ? 1 : -1;
+    const withData = lanes.filter((l) => l.edge !== null);
+    const counterRows = team
+      .map((h) => h2h.get(h.id) ?? [])
+      .filter((rows) => rows.length > 0)
+      .map((rows) => sum(rows.map((r) => r.edge)) / rows.length);
+    const strength = team
+      .filter((h) => meta.get(h.id)?.games)
+      .map((h) => metaEdge(meta.get(h.id)) + proWinEdge(pro?.heroes.get(h.id)) * 0.3);
+    const combos: number[] = [];
+    for (let i = 0; i < team.length; i++) {
+      for (let j = i + 1; j < team.length; j++) {
+        const a = synergyAdvantage(team[i].id, team[j].id, synergy, meta, pro);
+        if (a) combos.push(a.edge);
+      }
+    }
+    const shares = assigned[side].heroes.map((slot) => {
+      const hero = team.find((h) => h.id === slot.heroId)!;
+      const odds = positionOdds(hero, positions);
+      return {
+        hero,
+        slot,
+        share: odds.source === "pro" && odds.proShare ? odds.proShare[slot.position - 1] : null,
+      };
+    });
+    const known = shares.filter((x) => x.share !== null);
+    const carry = shares.find((x) => x.slot.position === 1)?.hero ?? null;
+    return {
+      heroes: team.length,
+      laneEdge: withData.length
+        ? (sum(withData.map((l) => l.edge!)) / withData.length) * sign
+        : null,
+      lanesWithData: withData.length,
+      proLanes: withData.filter((l) => l.source === "pro_lanes").length,
+      counterEdge: counterRows.length ? sum(counterRows) / counterRows.length : null,
+      strengthEdge: strength.length ? sum(strength) / strength.length : null,
+      positionFit: known.length
+        ? Math.exp(sum(known.map((x) => Math.log(Math.max(x.share!, 0.01)))) / known.length)
+        : null,
+      offRole: known
+        .filter((x) => x.share! < 0.1)
+        .map((x) => `${x.hero.name} at ${POSITION_NAMES[x.slot.position]}`),
+      comboEdge: combos.length ? sum(combos) / combos.length : null,
+      comboPairs: combos.length,
+      composition: compositionChecks(team, carry),
+    };
+  };
+  const full = input.picksPerSide ?? 5;
+  const report = draftReport(
+    evidence("radiant"),
+    evidence("dire"),
+    radiant.length >= full && dire.length >= full,
+  );
   return {
     radiantPct,
     confidence,
@@ -244,6 +325,7 @@ export function draftOutlook(input: {
     positionsFrom: positions ? "pro" : "tags",
     notes: [...outlookNotes(sides, heroes, pro), ...laneNotes(lanes, heroes)],
     tournaments: pro ? proSource(pro) : null,
+    report,
   };
 }
 
@@ -293,13 +375,33 @@ function laneMatchups(
   positionOf: ReadonlyMap<number, Position>,
   matchups: ReadonlyMap<number, MatchupTable>,
   meta: ReadonlyMap<number, HeroMeta>,
+  laneTable: LaneTable | undefined,
 ): LaneMatchup[] {
   const at = (side: Side, ps: Position[]) =>
     teams[side].filter((h) => ps.includes(positionOf.get(h.id)!)).map((h) => h.id);
-  return LANES.flatMap(({ lane, label, radiant, dire }) => {
+  return LANES.flatMap(({ lane, label, radiant, dire }): LaneMatchup[] => {
     const r = at("radiant", radiant);
     const d = at("dire", dire);
     if (!r.length || !d.length) return [];
+    // Pro lane results first (gold at 10 minutes), pooled over every pairing in the lane.
+    let games = 0;
+    let wins = 0;
+    for (const a of r) {
+      for (const b of d) {
+        const rec = laneRecord(a, b, laneTable);
+        if (rec) {
+          games += rec.games;
+          wins += rec.wins;
+        }
+      }
+    }
+    if (games >= 6) {
+      const edge = round1(((wins - games / 2) / (games + 10)) * 100);
+      return [
+        { lane, label, radiant: r, dire: d, edge, source: "pro_lanes" as const, games, wins },
+      ];
+    }
+    // Otherwise fall back to whole-game head-to-heads of the heroes in that lane.
     const edges: number[] = [];
     for (const a of r) {
       for (const b of d) {
@@ -314,6 +416,9 @@ function laneMatchups(
         radiant: r,
         dire: d,
         edge: edges.length ? round1(sum(edges) / edges.length) : null,
+        source: edges.length ? ("matchups" as const) : null,
+        games: 0,
+        wins: 0,
       },
     ];
   });

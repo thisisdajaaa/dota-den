@@ -1,4 +1,5 @@
 import type { Result } from "@/modules/shared/domain/result";
+import type { LaneTable } from "../domain/draft-lanes";
 import type { PositionTable } from "../domain/draft-positions";
 import type { HeroMeta, MatchupTable, ProMeta, SynergyTable } from "../domain/draft-scoring";
 
@@ -56,4 +57,6 @@ export interface DraftInsights {
   synergy?(): Promise<SynergyTable | null>;
   /** Where heroes are played (positions 1-5) in pro matches. */
   positions?(): Promise<PositionTable | null>;
+  /** Pro laning records: how heroes do against each other in the lane. */
+  lanes?(): Promise<LaneTable | null>;
 }

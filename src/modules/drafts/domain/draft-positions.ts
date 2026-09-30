@@ -140,8 +140,20 @@ export interface Assignment {
 export function assignPositions(
   team: readonly { id: number; roles: readonly string[] }[],
   table: PositionTable | undefined,
+  /** Positions the user has set by hand (hero id -> position); the rest are worked out. */
+  fixed?: ReadonlyMap<number, Position>,
 ): Assignment {
   const odds = team.slice(0, 5).map((h) => positionOdds(h, table).odds);
+  // Only honour a consistent set of choices: one hero per position.
+  const pinned = new Map<number, Position>();
+  const taken = new Set<Position>();
+  for (const h of team.slice(0, 5)) {
+    const p = fixed?.get(h.id);
+    if (p && !taken.has(p)) {
+      pinned.set(h.id, p);
+      taken.add(p);
+    }
+  }
   let best: { order: Position[]; score: number } = { order: [], score: -Infinity };
   const used = new Set<Position>();
   const order: Position[] = [];
@@ -150,8 +162,9 @@ export function assignPositions(
       if (score > best.score) best = { order: [...order], score };
       return;
     }
-    for (const p of POSITIONS) {
-      if (used.has(p)) continue;
+    const pin = pinned.get(team[i].id);
+    for (const p of pin ? [pin] : POSITIONS) {
+      if (used.has(p) || (!pin && taken.has(p))) continue;
       used.add(p);
       order.push(p);
       walk(i + 1, score + Math.log(Math.max(odds[i][p - 1], 1e-6)));
