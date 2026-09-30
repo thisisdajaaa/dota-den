@@ -39,14 +39,14 @@ lane results; otherwise it falls back to whole-game head-to-heads and says so.
 
 `domain/draft-scoring.ts` → `rankCandidates`. For every legal hero:
 
-| Signal | How |
-| --- | --- |
-| Hero strength | Public win rate at Ancient+ this patch, as points above 50%, shrunk on small samples (500 pseudo-games) |
-| Matchups | Head-to-head vs the heroes that matter, measured against what the two win rates predict (so a strong hero isn't counted twice); 40+ games needed; damped (130 pseudo-games) |
-| Tournaments | Share of recent pro drafts (21 days) that picked or banned the hero, and its pro win rate; weighs more for bans |
-| Pairings | Pro results together with heroes on the same side, measured against each hero's own pro win rate; 6+ games; heavily damped |
-| Position fit | Picks must fill an open position naturally (with pro data); bans prefer heroes that fill the opponent's open positions |
-| Lane | Pro lane results against the heroes it would actually lane against |
+| Signal        | How                                                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hero strength | Public win rate at Ancient+ this patch, as points above 50%, shrunk on small samples (500 pseudo-games)                                                                     |
+| Matchups      | Head-to-head vs the heroes that matter, measured against what the two win rates predict (so a strong hero isn't counted twice); 40+ games needed; damped (130 pseudo-games) |
+| Tournaments   | Share of recent pro drafts (21 days) that picked or banned the hero, and its pro win rate; weighs more for bans                                                             |
+| Pairings      | Pro results together with heroes on the same side, measured against each hero's own pro win rate; 6+ games; heavily damped                                                  |
+| Position fit  | Picks must fill an open position naturally (with pro data); bans prefer heroes that fill the opponent's open positions                                                      |
+| Lane          | Pro lane results against the heroes it would actually lane against                                                                                                          |
 
 Picks score against the enemy and for our lineup; bans score against our heroes and for the enemy's lineup. Every
 candidate carries plain-language facts (the evidence the AI cites).
@@ -66,14 +66,14 @@ accuracy shown.
 
 `domain/draft-report.ts`. Six criteria per side, each 0-100 where 50 is an average draft:
 
-| Criterion | Scored from |
-| --- | --- |
-| Lanes | Average lane edge (pro lane results, else head-to-heads) |
-| Counters | Average head-to-head advantage per hero vs the enemy lineup |
-| Composition | Role-tag checks: initiation, control (2+ disablers), frontline, late game (a Carry at pos 1), burst (2+ nukers), tower pressure |
-| Hero strength | Average win rate edge this patch, with pro results folded in |
-| Positions | How often pros play each hero at its position (geometric mean), minus penalties for off-role heroes |
-| Combos | Average pro pairing edge |
+| Criterion     | Scored from                                                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Lanes         | Average lane edge (pro lane results, else head-to-heads)                                                                        |
+| Counters      | Average head-to-head advantage per hero vs the enemy lineup                                                                     |
+| Composition   | Role-tag checks: initiation, control (2+ disablers), frontline, late game (a Carry at pos 1), burst (2+ nukers), tower pressure |
+| Hero strength | Average win rate edge this patch, with pro results folded in                                                                    |
+| Positions     | How often pros play each hero at its position (geometric mean), minus penalties for off-role heroes                             |
+| Combos        | Average pro pairing edge                                                                                                        |
 
 Grades: A 75+, B 62+, C 50+, D 38+, F below. Criteria without data are left out of the overall grade. The report is
 provisional until both lineups are complete, and names the criteria that decide the draft.
@@ -92,11 +92,11 @@ provisional until both lineups are complete, and names the criteria that decide 
 
 Current fit (15,000 games from 14 days, 3,000 held out):
 
-| Model | Held-out accuracy | Log loss |
-| --- | --- | --- |
-| Fitted estimate | 57.0% | 0.678 |
-| Previous hand-tuned formula | 54.8% | 0.691 |
-| Always picking Radiant | 54.6% | 0.690 |
+| Model                       | Held-out accuracy | Log loss |
+| --------------------------- | ----------------- | -------- |
+| Fitted estimate             | 57.0%             | 0.678    |
+| Previous hand-tuned formula | 54.8%             | 0.691    |
+| Always picking Radiant      | 54.6%             | 0.690    |
 
 In public games, current hero strength is by far the strongest signal; lanes, counters and pairings (whose data comes
 from pro games) add little. Hero stats and matchups come from recent public games that overlap the test games, so the

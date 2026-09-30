@@ -70,7 +70,7 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
 
 - **Meta by role.** For each position, the heroes doing well right now at high ranks, lane win rates, tournament picks
   and bans, rising and falling heroes, and the strongest lane duos in pro games.
-- **Patch notes in-app**, from Valve's own feed, plus what the latest patch changed for *your* heroes.
+- **Patch notes in-app**, from Valve's own feed, plus what the latest patch changed for _your_ heroes.
 
 ### Drafting
 
@@ -135,16 +135,16 @@ See [docs/architecture.md](docs/architecture.md) for the data flows (match sync,
 
 ## Tech stack
 
-| Area | Choice |
-| --- | --- |
-| Framework | Next.js 16 (App Router, Turbopack), React 19 |
-| Language | TypeScript (strict) |
-| UI | Tailwind CSS 4, shadcn/ui (Radix), lucide icons |
-| Forms | React Hook Form + Zod |
-| Data | MongoDB (official driver) |
+| Area      | Choice                                                                                  |
+| --------- | --------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router, Turbopack), React 19                                            |
+| Language  | TypeScript (strict)                                                                     |
+| UI        | Tailwind CSS 4, shadcn/ui (Radix), lucide icons                                         |
+| Forms     | React Hook Form + Zod                                                                   |
+| Data      | MongoDB (official driver)                                                               |
 | Upstreams | OpenDota API and explorer, Valve patch datafeed, Steam OpenID, Groq (OpenAI-compatible) |
-| Tests | Vitest (unit, component, integration), Playwright (E2E) |
-| Delivery | GitHub Actions → Vercel (staging and production) |
+| Tests     | Vitest (unit, component, integration), Playwright (E2E)                                 |
+| Delivery  | GitHub Actions → Vercel (staging and production)                                        |
 
 ## Getting started
 
@@ -167,16 +167,16 @@ AI review). See [docs/data-sources.md](docs/data-sources.md) for how to get them
 
 ## Scripts
 
-| Script | What it does |
-| --- | --- |
-| `npm run dev` | Start the dev server |
-| `npm run build` / `npm start` | Production build and server |
-| `npm run check` | Format check, lint, typecheck, unit + component tests, integration tests |
-| `npm test` | Unit and component tests |
-| `npm run test:integration` | Integration tests against MongoDB (`MONGODB_TEST_URI`) |
-| `npm run test:e2e` | Playwright end-to-end tests |
-| `npm run db:indexes` | Create or update all MongoDB indexes (idempotent) |
-| `npm run draft:calibrate` | Refit the draft outlook's weights on recent games ([details](docs/draft-engine.md#calibration)) |
+| Script                        | What it does                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `npm run dev`                 | Start the dev server                                                                            |
+| `npm run build` / `npm start` | Production build and server                                                                     |
+| `npm run check`               | Format check, lint, typecheck, unit + component tests, integration tests                        |
+| `npm test`                    | Unit and component tests                                                                        |
+| `npm run test:integration`    | Integration tests against MongoDB (`MONGODB_TEST_URI`)                                          |
+| `npm run test:e2e`            | Playwright end-to-end tests                                                                     |
+| `npm run db:indexes`          | Create or update all MongoDB indexes (idempotent)                                               |
+| `npm run draft:calibrate`     | Refit the draft outlook's weights on recent games ([details](docs/draft-engine.md#calibration)) |
 
 ## Testing
 
@@ -190,10 +190,10 @@ AI review). See [docs/data-sources.md](docs/data-sources.md) for how to get them
 
 ## Deployment
 
-| Branch | Environment | URL |
-| --- | --- | --- |
-| `develop` | Staging | https://dota-den-develop.vercel.app |
-| `main` | Production | https://dota-den.vercel.app |
+| Branch    | Environment | URL                                 |
+| --------- | ----------- | ----------------------------------- |
+| `develop` | Staging     | https://dota-den-develop.vercel.app |
+| `main`    | Production  | https://dota-den.vercel.app         |
 
 Feature branches merge into `develop`; releases merge `develop` into `main`. GitHub Actions
 (`.github/workflows/ci-cd.yml`) runs lint, typecheck, tests and build, then the E2E suite, then deploys a prebuilt

@@ -6,13 +6,13 @@ Dota Den is a modular monolith on Next.js 16 (App Router), deployed to Vercel, w
 
 Each bounded context lives in `src/modules/<context>/`:
 
-| Layer | Holds | May import |
-| --- | --- | --- |
-| `domain/` | Pure rules and types (no I/O, no env) | `domain` only |
-| `application/` | Use cases (services) and ports (interfaces) | `domain`, own `application` |
-| `infrastructure/` | Adapters: MongoDB repositories, OpenDota/Valve/Groq clients | everything in its own module |
-| `ui/` | React components | `domain`, `application` types; client components never import server-only code, composition or infrastructure |
-| `composition.ts` | Wiring: builds services with their adapters and settings from the env | its own module; other modules' composition |
+| Layer             | Holds                                                                 | May import                                                                                                    |
+| ----------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `domain/`         | Pure rules and types (no I/O, no env)                                 | `domain` only                                                                                                 |
+| `application/`    | Use cases (services) and ports (interfaces)                           | `domain`, own `application`                                                                                   |
+| `infrastructure/` | Adapters: MongoDB repositories, OpenDota/Valve/Groq clients           | everything in its own module                                                                                  |
+| `ui/`             | React components                                                      | `domain`, `application` types; client components never import server-only code, composition or infrastructure |
+| `composition.ts`  | Wiring: builds services with their adapters and settings from the env | its own module; other modules' composition                                                                    |
 
 A module never imports another module's infrastructure. Cross-context reuse goes through that module's
 `composition.ts` or `index.ts`. These rules are enforced by `tests/unit/architecture.test.ts`
@@ -62,12 +62,12 @@ drafts are recorded once in `draft_history`.
 
 ## Caching
 
-| Layer | What | Lifetime |
-| --- | --- | --- |
-| `ProviderGateway` (in memory, per instance) | OpenDota and Valve GET responses; also retries, timeouts, a circuit breaker and in-flight dedup | per call site (minutes to a day) |
-| `draft_meta_cache` (MongoDB) | OpenDota explorer results (tournament data, pairings, positions, lanes) | fresh 12 h, served stale up to 7 days while it refreshes |
-| Vercel Cron | Refreshes patches and warms the explorer cache daily | `0 6 * * *` |
-| Draft reviews | Cached per draft, positions and model in `draft_meta_cache` | 7 days |
+| Layer                                       | What                                                                                            | Lifetime                                                 |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `ProviderGateway` (in memory, per instance) | OpenDota and Valve GET responses; also retries, timeouts, a circuit breaker and in-flight dedup | per call site (minutes to a day)                         |
+| `draft_meta_cache` (MongoDB)                | OpenDota explorer results (tournament data, pairings, positions, lanes)                         | fresh 12 h, served stale up to 7 days while it refreshes |
+| Vercel Cron                                 | Refreshes patches and warms the explorer cache daily                                            | `0 6 * * *`                                              |
+| Draft reviews                               | Cached per draft, positions and model in `draft_meta_cache`                                     | 7 days                                                   |
 
 Optional shared Redis caching, rate limiting and background jobs are described in
 [configuration.md](configuration.md#redis-and-background-jobs-optional).

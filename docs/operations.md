@@ -2,10 +2,10 @@
 
 ## Environments
 
-| Branch | Environment | URL | Database |
-| --- | --- | --- | --- |
+| Branch    | Environment                             | URL                                 | Database   |
+| --------- | --------------------------------------- | ----------------------------------- | ---------- |
 | `develop` | Staging (Vercel preview, branch-scoped) | https://dota-den-develop.vercel.app | `dota_den` |
-| `main` | Production | https://dota-den.vercel.app | `dota_den` |
+| `main`    | Production                              | https://dota-den.vercel.app         | `dota_den` |
 
 Staging and production currently share configuration ("for now, the same") and the Atlas database `dota_den`.
 Vercel's Git auto-deploys are off (`vercel.json`); all deploys go through GitHub Actions.
@@ -50,11 +50,11 @@ commit the updated `draft-calibration.json` through the normal flow. Worth doing
 
 ## Troubleshooting
 
-| Symptom | Likely cause | What to do |
-| --- | --- | --- |
-| Pages show "unavailable right now" for OpenDota sections | Rate limited (429) or OpenDota down; the circuit breaker opened | Wait a minute; set `OPENDOTA_API_KEY` for higher limits |
-| Draft AI works but without tournament facts | Explorer query timed out on a cold cache | It's warmed by cron and refreshed in the background; retry shortly |
-| AI captain moves marked "rule-based" | No `GROQ_API_KEY`, or the model timed out or answered off the shortlist | Check the key and `DRAFT_AI_MOVE_TIMEOUT_MS` |
-| A friend's matches are missing | Their OpenDota profile is private or not yet refreshed | They enable "Expose public match data" in Dota; the app asks OpenDota to refresh |
-| Playwright runs time out or the machine runs out of memory | Two E2E suites (dev servers) at once | Run one suite at a time, with `--workers=2` |
-| `Type '"/route"' does not satisfy the constraint 'AppRoutes'` | Route types are stale | `npx next typegen` |
+| Symptom                                                       | Likely cause                                                            | What to do                                                                       |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Pages show "unavailable right now" for OpenDota sections      | Rate limited (429) or OpenDota down; the circuit breaker opened         | Wait a minute; set `OPENDOTA_API_KEY` for higher limits                          |
+| Draft AI works but without tournament facts                   | Explorer query timed out on a cold cache                                | It's warmed by cron and refreshed in the background; retry shortly               |
+| AI captain moves marked "rule-based"                          | No `GROQ_API_KEY`, or the model timed out or answered off the shortlist | Check the key and `DRAFT_AI_MOVE_TIMEOUT_MS`                                     |
+| A friend's matches are missing                                | Their OpenDota profile is private or not yet refreshed                  | They enable "Expose public match data" in Dota; the app asks OpenDota to refresh |
+| Playwright runs time out or the machine runs out of memory    | Two E2E suites (dev servers) at once                                    | Run one suite at a time, with `--workers=2`                                      |
+| `Type '"/route"' does not satisfy the constraint 'AppRoutes'` | Route types are stale                                                   | `npx next typegen`                                                               |
