@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, EyeOff, LayoutDashboard, LogIn } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowLeftRight,
+  EyeOff,
+  LayoutDashboard,
+  LogIn,
+} from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap, getPlayerProfile } from "@/modules/matches/composition";
@@ -103,6 +110,19 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
             <LogIn aria-hidden className="size-4" />
             Sign in to track
           </a>
+        )}
+        {!isSelf && (
+          <Link
+            href={
+              viewer
+                ? `/players/compare?a=${viewer.accountId32}&b=${accountId32}`
+                : `/players/compare?b=${accountId32}`
+            }
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-sm font-medium text-muted-foreground ring-1 ring-white/10 hover:text-foreground"
+          >
+            <ArrowLeftRight aria-hidden className="size-4" />
+            {viewer ? "Compare with you" : "Compare"}
+          </Link>
         )}
       </PlayerBanner>
 
