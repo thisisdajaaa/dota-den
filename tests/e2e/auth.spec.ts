@@ -28,8 +28,16 @@ test("sign in with the test identity provider, survive reload, then sign out", a
   expect(await me.json()).toMatchObject({ steamId64: "76561197960287930", accountId32: 22202 });
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/\?bye=1$/);
   expect((await page.request.get("/api/v1/me")).status()).toBe(401);
+  // Steam keeps its own sign-in, so say how to switch accounts.
+  await expect(page.getByRole("alert").filter({ hasText: "signed out of Dota Den" })).toContainText(
+    "sign out of Steam first",
+  );
+  await expect(page.getByRole("link", { name: "open Steam Community" })).toHaveAttribute(
+    "href",
+    "https://steamcommunity.com/",
+  );
 });
 
 test("callback without a matching state cookie is rejected", async ({ page }) => {
