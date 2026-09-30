@@ -42,14 +42,20 @@ export function RankMedal({
       className={cn("relative inline-block shrink-0", className)}
       style={{ width: size, height: size }}
     >
-      <Image src={medalImage(rank)} alt="" fill sizes={`${size}px`} className="object-contain" />
+      <Image
+        src={medalImage(rank)}
+        alt=""
+        width={size}
+        height={size}
+        className="absolute inset-0 size-full object-contain"
+      />
       {rank.stars > 0 && (
         <Image
           src={`${BASE}/rank_star_${rank.stars}.png`}
           alt=""
-          fill
-          sizes={`${size}px`}
-          className="object-contain"
+          width={size}
+          height={size}
+          className="absolute inset-0 size-full object-contain"
         />
       )}
       {showNumber && (

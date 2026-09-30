@@ -25,7 +25,13 @@ export function PlayerAvatar({
       )}
     >
       {url ? (
-        <Image src={url} alt="" fill sizes={`${PX[size]}px`} className="object-cover" />
+        <Image
+          src={url}
+          alt=""
+          width={PX[size]}
+          height={PX[size]}
+          className="absolute inset-0 size-full object-cover"
+        />
       ) : (
         <span
           aria-hidden

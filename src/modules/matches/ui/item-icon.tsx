@@ -24,7 +24,14 @@ export function ItemIcon({
   return (
     <span className={box} title={item?.name ?? `Item #${itemId}`}>
       {item?.imageUrl ? (
-        <Image src={item.imageUrl} alt={item.name} fill sizes="40px" className="object-cover" />
+        <Image
+          src={item.imageUrl}
+          alt={item.name}
+          // Match the box (sm 28×20, md 35×26, round 26×26) so the browser picks 1x/2x.
+          width={round ? 26 : size === "sm" ? 28 : 35}
+          height={round ? 26 : size === "sm" ? 20 : 26}
+          className="absolute inset-0 size-full object-cover"
+        />
       ) : (
         <span className="grid size-full place-items-center text-[0.5rem] text-muted-foreground">
           #{itemId}

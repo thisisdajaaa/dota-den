@@ -56,7 +56,13 @@ export function HeroPicker({ groups }: { groups: Array<{ label: string; heroes: 
                     href={`/guides/${h.id}`}
                     className="group block rounded-lg p-1.5 text-center hover:bg-white/[0.04]"
                   >
-                    <HeroPortrait hero={h} heroId={h.id} size="md" className="w-full" />
+                    <HeroPortrait
+                      hero={h}
+                      heroId={h.id}
+                      size="md"
+                      className="w-full"
+                      displayWidth={140}
+                    />
                     <span className="mt-1 block truncate text-xs group-hover:text-gold">
                       {h.name}
                     </span>
