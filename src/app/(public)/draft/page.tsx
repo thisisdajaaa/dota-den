@@ -13,7 +13,18 @@ import { SequenceStrip } from "@/modules/drafts/ui/sequence-strip";
 import { TeamPanel } from "@/modules/drafts/ui/team-panel";
 import type { DraftHero } from "@/modules/drafts/ui/types";
 
-export const metadata: Metadata = { title: "Draft practice" };
+export async function generateMetadata({ searchParams }: PageProps<"/draft">): Promise<Metadata> {
+  const { snapshot } = await searchParams;
+  if (typeof snapshot !== "string" || snapshot.length > 2_000) return { title: "Draft practice" };
+  // Shared drafts get a preview image with both lineups and the report card.
+  const image = `/api/og/draft?snapshot=${encodeURIComponent(snapshot)}`;
+  return {
+    title: "Shared draft",
+    description: "A Captain's Mode draft on Dota Den, with its report card and outlook.",
+    openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", images: [image] },
+  };
+}
 
 export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
   const { snapshot } = await searchParams;

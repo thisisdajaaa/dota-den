@@ -91,10 +91,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         <MmrPromptSection user={user} />
       </Suspense>
 
-      <Suspense fallback={<PatchDigestSkeleton />}>
-        <PatchDigestSection user={user} />
-      </Suspense>
-
       {!hasAnyMatches ? (
         <EmptyState
           stage={
@@ -181,6 +177,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       )}
 
       {/* From OpenDota's lane data (last 60 days), not the filters above. */}
+      <Suspense fallback={<PatchDigestSkeleton />}>
+        <PatchDigestSection user={user} />
+      </Suspense>
+
       <Suspense fallback={<LanesSkeleton />}>
         <LanesSection accountId32={user.accountId32} />
       </Suspense>
