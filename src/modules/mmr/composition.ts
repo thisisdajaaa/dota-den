@@ -1,8 +1,10 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/db/mongo";
+import { logger } from "@/lib/logger";
 import { MmrJournalService } from "./application/mmr-journal-service";
 import { isValidTimeZone } from "./domain/day-key";
+import { medalHistory, recordMedalSighting } from "./infrastructure/mongo-medal-history";
 import {
   MongoMmrEntryRepository,
   mmrEntryCountsByUser,
@@ -25,4 +27,21 @@ export async function getViewerTimeZone(): Promise<{ timeZone: string; known: bo
 /** Admin overview: MMR entries per user. */
 export async function getMmrEntryCounts(userIds: readonly string[]) {
   return mmrEntryCountsByUser(await getDb(), userIds);
+}
+
+/** Note the player's current medal (a change adds to their medal history). Never throws. */
+export async function recordMedal(accountId32: number, rankTier: number | null): Promise<void> {
+  try {
+    await recordMedalSighting(await getDb(), accountId32, rankTier, new Date());
+  } catch (e) {
+    logger.warn("medal_record_failed", {
+      accountId32,
+      reason: e instanceof Error ? e.message : "unknown",
+    });
+  }
+}
+
+/** Medal sightings, oldest first. */
+export async function getMedalHistory(accountId32: number) {
+  return medalHistory(await getDb(), accountId32);
 }

@@ -11,6 +11,7 @@ import { ensureJobIndexes } from "@/modules/jobs/infrastructure/mongo-job-runs";
 import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
 import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
+import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-medal-history";
 import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
 import { ensurePatchIndexes } from "@/modules/patches/infrastructure/mongo-patch-repositories";
 import { ensurePlayerIndexes } from "@/modules/players/infrastructure/mongo-follow-repository";
@@ -28,6 +29,7 @@ async function main(): Promise<void> {
   await ensureLeaderboardIndexes(db);
   await ensureMatchIndexes(db);
   await ensureMmrIndexes(db);
+  await ensureMedalHistoryIndexes(db);
   await ensurePatchIndexes(db);
   await ensurePlayerIndexes(db);
   await ensureSessionIndexes(db);
