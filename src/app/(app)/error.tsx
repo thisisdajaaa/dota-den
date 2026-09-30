@@ -2,14 +2,12 @@
 
 import { ErrorPanel } from "@/components/error-panel";
 
-export default function SessionsError({
+export default function AppError({
   error,
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
-  return (
-    <ErrorPanel error={error} retry={retry} title="Something went wrong loading your sessions" />
-  );
+  return <ErrorPanel error={error} retry={retry} />;
 }

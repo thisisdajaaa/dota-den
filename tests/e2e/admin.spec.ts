@@ -28,3 +28,23 @@ test("non-admins don't see the admin page or its link", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Users and activity" })).toHaveCount(0);
 });
+
+test("errors users hit show up for admins, without query strings", async ({
+  page,
+  request,
+  baseURL,
+}) => {
+  const origin = new URL(baseURL!).origin;
+  const report = { message: "Fixture crash 42", path: "/draft?snapshot=secret", stack: null };
+  // Cross-origin reports are rejected; same-origin ones are recorded.
+  expect((await request.post("/api/v1/errors", { data: report })).status()).toBe(403);
+  const ok = await request.post("/api/v1/errors", { data: report, headers: { origin } });
+  expect(ok.status()).toBe(204);
+
+  await page.goto("/api/v1/auth/steam/login");
+  await page.goto("/admin");
+  const errors = page.getByRole("region", { name: "Recent errors" });
+  await expect(errors).toContainText("Fixture crash 42");
+  await expect(errors).toContainText("/draft");
+  await expect(errors).not.toContainText("secret");
+});

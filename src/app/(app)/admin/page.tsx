@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { StatTile } from "@/components/stat-tile";
 import { adminTotals } from "@/modules/admin/domain/overview";
 import { getRoomDraftCounts } from "@/modules/drafts/composition";
 import { getAdminUserRows, getCurrentUser } from "@/modules/identity/composition";
+import { getErrorGroups } from "@/modules/errors/composition";
 import { getRecentJobFailures } from "@/modules/jobs/composition";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
@@ -28,12 +30,13 @@ export default async function AdminPage() {
   const users = await getAdminUserRows();
   const userIds = users.map((u) => u.userId);
   const accountIds = users.map((u) => u.accountId32);
-  const [matches, mmr, activity, rooms, failures, profiles] = await Promise.all([
+  const [matches, mmr, activity, rooms, failures, errors, profiles] = await Promise.all([
     getMatchStatsByAccount(accountIds),
     getMmrEntryCounts(userIds),
     getActivityCounts(userIds),
     getRoomDraftCounts(userIds),
     getRecentJobFailures().catch(() => []),
+    getErrorGroups(7).catch(() => null),
     Promise.all(accountIds.map((id) => getPublicProfile(id).catch(() => null))),
   ]);
   const now = new Date();
@@ -155,6 +158,50 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section aria-labelledby="admin-errors" className="panel overflow-hidden">
+        <div className="p-5 pb-3">
+          <h2 id="admin-errors" className="text-lg font-semibold">
+            Recent errors
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Errors users hit in the last 7 days, grouped. Server errors come from page renders and
+            API routes; browser errors from the app&apos;s error pages. Kept for 30 days.
+          </p>
+        </div>
+        {errors === null ? (
+          <p className="px-5 pb-5 text-sm text-muted-foreground">Unavailable right now.</p>
+        ) : errors.length === 0 ? (
+          <p className="px-5 pb-5 text-sm text-muted-foreground">None.</p>
+        ) : (
+          <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
+            {errors.map((e) => (
+              <li key={e.fingerprint} className="px-5 py-3 text-sm">
+                <p className="flex flex-wrap items-baseline gap-x-2">
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase",
+                      e.source === "server" ? "bg-loss/15 text-loss" : "bg-gold/15 text-gold",
+                    )}
+                  >
+                    {e.source}
+                  </span>
+                  <span className="font-medium break-all">
+                    {e.route ?? e.path ?? "unknown page"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {e.count}× · last {formatAgo(e.lastAt, now)}
+                    {e.count > 1 ? ` · first ${formatAgo(e.firstAt, now)}` : ""}
+                  </span>
+                </p>
+                <p className="mt-1 font-mono text-xs break-words text-muted-foreground">
+                  {e.message}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="admin-jobs" className="panel p-5">
