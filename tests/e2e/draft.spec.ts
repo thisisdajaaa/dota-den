@@ -141,3 +141,31 @@ test("the draft outlook estimates who the draft favours, with its evidence", asy
     page.getByRole("region", { name: "Radiant draft" }).getByText(/^Position \d, /),
   ).toHaveCount(1);
 });
+
+test("a finished draft gets a full report card and offers the AI review", async ({ page }) => {
+  await page.goto("/draft");
+  await page.getByRole("combobox", { name: "Opponent" }).click();
+  await page.getByRole("option", { name: "Practice both sides" }).click();
+  await page.getByRole("combobox", { name: "Ruleset" }).click();
+  await page.getByRole("option", { name: "Simple practice" }).click();
+  await page.getByRole("button", { name: "Start draft" }).click();
+
+  // Simple practice: 8 bans and 10 picks. Take the top suggestion each time.
+  const suggestions = page.getByRole("region", { name: "Suggestions" });
+  const log = page.getByRole("region", { name: "Draft log" });
+  for (let step = 1; step <= 18; step++) {
+    await suggestions.getByRole("button").first().click();
+    await expect(log.getByRole("listitem")).toHaveCount(step);
+  }
+  await expect(page.getByText("Both lineups are locked in")).toBeVisible();
+
+  const outlook = page.getByRole("region", { name: "Draft outlook" });
+  const card = outlook.getByRole("region", { name: "Draft report card" });
+  await expect(card).toBeVisible();
+  await expect(card).not.toContainText("provisional");
+
+  // No language model is configured in tests: the review says so instead of failing silently.
+  const review = outlook.getByRole("region", { name: "AI review" });
+  await review.getByRole("button", { name: "Get the AI review" }).click();
+  await expect(review.getByRole("alert")).toContainText("isn't set up");
+});
