@@ -111,6 +111,14 @@ function resultOf(
   return slot < 128 === radiantWin ? "win" : "loss";
 }
 
+/** A usable explorer answer: rows and no error (a failed query must not be cached). */
+export function explorerOk(body: unknown): boolean {
+  const parsed = explorerSchema(z.unknown()).safeParse(body);
+  if (!parsed.success || !parsed.data.rows) return false;
+  const e = parsed.data.err;
+  return !e || (typeof e === "string" && e.trim() === "");
+}
+
 /** Parse an explorer body; `err` or a malformed row fails the whole result. */
 export function parseExplorer<T extends z.ZodType>(
   body: unknown,
@@ -175,7 +183,8 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   private async cached<T>(
     key: string,
     ttlMs: number,
-    load: () => Promise<Result<T, SourceError>>,
+    /** `stamp` reports when cached upstream data was really fetched (else: now). */
+    load: (stamp: (at: Date | null) => void) => Promise<Result<T, SourceError>>,
   ): SourceResult<T> {
     const now = this.now();
     const hit = this.memo.get(key);
@@ -186,9 +195,10 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
     if (pending) return pending as SourceResult<T>;
 
     const run = (async (): Promise<Result<Fetched<unknown>, SourceError>> => {
-      const res = await load();
+      let upstreamAt: Date | null = null;
+      const res = await load((at) => (upstreamAt = at));
       if (res.ok) {
-        const fetchedAt = this.now();
+        const fetchedAt = upstreamAt ?? this.now();
         this.prune(fetchedAt.getTime());
         this.memo.set(key, { value: res.value, fetchedAt, expiresAt: fetchedAt.getTime() + ttlMs });
         return ok({ value: res.value, fetchedAt });
@@ -213,8 +223,17 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   private async getJson(
     gateway: ProviderGateway,
     url: string,
+    shared?: {
+      ttlMs: number;
+      cacheIf: (body: unknown) => boolean;
+      stamp: (at: Date | null) => void;
+    },
   ): Promise<Result<unknown, SourceError>> {
-    const res = await gateway.getJson(url);
+    const res = await gateway.getJson(
+      url,
+      shared ? { cacheTtlMs: shared.ttlMs, cacheIf: shared.cacheIf } : {},
+    );
+    if (res.ok && shared) shared.stamp(res.fetchedAt ? new Date(res.fetchedAt) : null);
     return res.ok ? ok(res.body) : err(toSourceError(res));
   }
 
@@ -257,10 +276,12 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   }
 
   proDrafts(): SourceResult<ProDrafts> {
-    return this.cached("proDrafts", TTL.proDrafts, async () => {
+    return this.cached("proDrafts", TTL.proDrafts, async (stamp) => {
       const res = await this.getJson(
         this.gateways.explorer,
         this.url("/explorer", { sql: PRO_DRAFTS_SQL }),
+        // Slow queries: share good results across servers (Redis) for twice the TTL.
+        { ttlMs: 2 * TTL.proDrafts, cacheIf: explorerOk, stamp },
       );
       if (!res.ok) return res;
       const rows = parseExplorer(res.value, ProDraftRowSchema);
@@ -279,10 +300,12 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   }
 
   proLaneDuos(): SourceResult<{ windowDays: number; rows: DuoRow[] }> {
-    return this.cached("proLaneDuos", TTL.proLaneDuos, async () => {
+    return this.cached("proLaneDuos", TTL.proLaneDuos, async (stamp) => {
       const res = await this.getJson(
         this.gateways.explorer,
         this.url("/explorer", { sql: PRO_DUOS_SQL }),
+        // Slow queries: share good results across servers (Redis) for twice the TTL.
+        { ttlMs: 2 * TTL.proLaneDuos, cacheIf: explorerOk, stamp },
       );
       if (!res.ok) return res;
       const rows = parseExplorer(res.value, DuoRowSchema);

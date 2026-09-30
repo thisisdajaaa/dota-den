@@ -62,7 +62,15 @@ function sourceWith(handler: (url: URL) => { status?: number; body: unknown }) {
     const r = handler(new URL(url));
     return new Response(JSON.stringify(r.body), { status: r.status ?? 200 });
   });
-  const gw = () => new ProviderGateway({ name: "t", fetch, sleep: async () => {}, maxRetries: 0 });
+  // One clock for the source and its gateways (the gateway stamps cached responses).
+  const gw = () =>
+    new ProviderGateway({
+      name: "t",
+      fetch,
+      sleep: async () => {},
+      maxRetries: 0,
+      now: () => now.getTime(),
+    });
   const source = new OpenDotaMetaSource(
     { api: gw(), explorer: gw() },
     { baseUrl: "http://od/api", apiKey: "k", now: () => now },
@@ -145,6 +153,32 @@ describe("OpenDotaMetaSource", () => {
 
     advance(48 * 3_600_000);
     expect((await source.proLaneDuos()).ok).toBe(false);
+  });
+
+  it("keeps the real fetch time when a result comes back from the shared cache", async () => {
+    const { source, fetch, advance } = sourceWith(() => ({
+      body: { rows: [{ h1: 1, h2: 2, lane_role: 1, games: 10, wins: 6 }], err: null },
+    }));
+    await source.proLaneDuos();
+    // Past the source's own TTL but inside the gateway's (shared) cache: no new query,
+    // and the data is still dated when it was really fetched.
+    advance(13 * 3_600_000);
+    const later = await source.proLaneDuos();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(later.ok && later.value.fetchedAt).toEqual(new Date("2026-09-30T12:00:00Z"));
+  });
+
+  it("doesn't cache an explorer error", async () => {
+    let fail = true;
+    const { source, fetch } = sourceWith(() =>
+      fail
+        ? { body: { rows: null, err: "statement timeout" } }
+        : { body: { rows: [{ h1: 1, h2: 2, lane_role: 1, games: 10, wins: 6 }], err: null } },
+    );
+    expect((await source.proLaneDuos()).ok).toBe(false);
+    fail = false;
+    expect((await source.proLaneDuos()).ok).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it("reads a player's recent lanes", async () => {
