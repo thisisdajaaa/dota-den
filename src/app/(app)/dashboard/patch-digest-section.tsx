@@ -5,12 +5,15 @@ import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
-import { MIN_COHORT_GAMES, type PatchDigest, type Record } from "@/modules/patches/domain/digest";
+import { type PatchDigest, type Record } from "@/modules/patches/domain/digest";
 import { getLatestPatchDigest } from "@/modules/patches/patch-digest";
 
 export function PatchDigestSkeleton() {
   return <SectionSkeleton label="Loading what the latest patch changed for you" rows={3} />;
 }
+
+/** Heroes shown on the overview; the rest are one click away. */
+const SHOWN = 6;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const rate = (r: Record) => (r.games ? r.wins / r.games : null);
@@ -44,54 +47,52 @@ export async function PatchDigestSection({ user }: { user: User }) {
       description="Heroes you play: 3+ ranked games in the last 90 days, or starred on a patch page."
       footer={
         <Link href={`/patches/${version}`} className="text-gold hover:underline">
-          All of {version}
+          {changed.length > SHOWN ? `See all ${changed.length} in ${version}` : `All of ${version}`}
         </Link>
       }
     >
       {changed.length > 0 && (
-        <ul className="divide-y divide-white/[0.05]">
-          {changed.slice(0, 5).map((h) => {
+        <ul className="grid grid-cols-1 gap-3 px-5 pb-5 lg:grid-cols-2">
+          {changed.slice(0, SHOWN).map((h) => {
             const hero = heroes.get(h.heroId);
             const name = heroName(hero, h.heroId);
             const { before, after } = h.cohort;
+            const more = h.noteCount - 1;
             return (
-              <li key={h.heroId} className="flex gap-3 py-3">
-                <HeroPortrait hero={hero} heroId={h.heroId} size="sm" />
-                <div className="min-w-0 flex-1 space-y-1">
+              <li
+                key={h.heroId}
+                className="flex min-w-0 gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3"
+              >
+                <HeroPortrait hero={hero} heroId={h.heroId} size="md" />
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <Link
                     href={`/patches/${version}#hero-${h.heroId}`}
                     aria-label={`What changed for ${name} in ${version}`}
-                    className="font-medium hover:text-gold"
+                    className="block truncate font-medium hover:text-gold"
                   >
                     {name}
                   </Link>
-                  <ul className="space-y-0.5 text-xs text-muted-foreground">
-                    {h.highlights.map((line) => (
-                      <li key={line} className="line-clamp-2">
-                        {line}
-                      </li>
-                    ))}
-                    {h.noteCount > h.highlights.length && (
-                      <li>+{plural(h.noteCount - h.highlights.length, "more change")}</li>
-                    )}
-                  </ul>
-                  <p className="text-xs tabular-nums">
+                  {h.highlights[0] && (
+                    <p
+                      className="truncate text-xs text-muted-foreground"
+                      title={h.highlights.join("\n")}
+                    >
+                      {h.highlights[0]}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {more > 0 && <span>+{plural(more, "more change")} · </span>}
                     {after.games === 0 ? (
-                      <span className="text-muted-foreground">
-                        No ranked games on it since the patch yet.
-                      </span>
+                      "no ranked games since"
                     ) : h.delta === null ? (
-                      <span className="text-muted-foreground">
-                        {plural(before.games, "game")} before, {plural(after.games, "game")} since:
-                        too few to compare ({MIN_COHORT_GAMES}+ each needed).
-                      </span>
+                      `${before.games} before, ${after.games} since (too few to compare)`
                     ) : (
                       <>
-                        {formatPercent(rate(before))} before ({plural(before.games, "game")}) →{" "}
+                        {formatPercent(rate(before))} →{" "}
                         <span className={h.delta >= 0 ? "text-win" : "text-loss"}>
                           {formatPercent(rate(after))}
                         </span>{" "}
-                        since ({plural(after.games, "game")})
+                        ({before.games} before, {after.games} since)
                       </>
                     )}
                   </p>

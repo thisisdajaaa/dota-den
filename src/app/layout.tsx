@@ -21,6 +21,8 @@ const cinzel = localFont({
 });
 
 export const metadata: Metadata = {
+  // Absolute URLs for link-preview images (Discord and others need them).
+  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
   title: { default: "Dota Den", template: "%s · Dota Den" },
   description:
     "An unofficial Dota 2 companion for solo and party progression, patch notes and draft practice.",
