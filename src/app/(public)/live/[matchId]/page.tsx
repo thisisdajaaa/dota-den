@@ -15,6 +15,7 @@ import {
 } from "@/modules/live/domain/live-game";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { LineupRow } from "@/modules/live/ui/live-game-card";
+import { WatchSection } from "@/modules/live/ui/watch-section";
 import { getHeroMap } from "@/modules/matches/composition";
 
 export const metadata: Metadata = { title: "Live game" };
@@ -52,13 +53,14 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
   }
 
   const name = (s: "radiant" | "dire") => game.teams[s] ?? (s === "radiant" ? "Radiant" : "Dire");
-  const outlook = draftComplete(game)
-    ? await (
-        await getAiOpponent()
-      )
-        .outlookForHeroes(sideHeroes(game, "radiant"), sideHeroes(game, "dire"))
-        .catch(() => null)
-    : null;
+  const [outlook, watch] = await Promise.all([
+    draftComplete(game)
+      ? getAiOpponent()
+          .then((ai) => ai.outlookForHeroes(sideHeroes(game, "radiant"), sideHeroes(game, "dire")))
+          .catch(() => null)
+      : null,
+    getLiveService().watch(game),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -99,6 +101,8 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
           <p className="text-3xl font-bold tabular-nums">{game.score.dire}</p>
         </div>
       </section>
+
+      <WatchSection streams={watch.streams} links={watch.links} />
 
       <section aria-label="Lineups" className="panel space-y-4 p-5">
         <div>
