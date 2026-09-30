@@ -43,6 +43,13 @@ test("signed-in users see their changed heroes and can star one", async ({ page 
   // The watchlist persisted server-side.
   const saved = await page.request.get("/api/v1/me/patch-watchlist");
   expect((await saved.json()).heroIds).toContain(14);
+
+  // The overview sums up how the latest patch touched your heroes.
+  await page.goto("/dashboard");
+  const digest = page.getByRole("region", { name: /changed in 7\.41/ });
+  await expect(digest).toBeVisible({ timeout: 20_000 });
+  await expect(digest.getByRole("link", { name: "Pudge" })).toBeVisible();
+  await expect(digest).toContainText("Base Armor increased by 1");
 });
 
 test("unknown and malformed versions show not found", async ({ page }) => {
