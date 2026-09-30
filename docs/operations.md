@@ -36,6 +36,23 @@ visiting. With QStash configured, long imports also continue in the background r
 
 ## Database
 
+### Backups
+
+`.github/workflows/backup.yml` dumps the production database every night at 18:00 UTC (and on demand from the
+Actions tab), encrypts it with AES-256 using the `BACKUP_PASSPHRASE` secret of the `production` environment, and keeps
+it as a workflow artifact for 30 days. Sessions, sign-in nonces and cached tournament data are left out; they rebuild on
+their own. The repo is public, so never upload an unencrypted dump.
+
+To restore:
+
+```sh
+gh run download <run-id> -R thisisdajaaa/dota-den        # or download the artifact from the run page
+gpg --decrypt dota-den-<date>.archive.gz.gpg > dump.archive.gz   # asks for the passphrase
+mongorestore --uri="$MONGODB_URI" --gzip --archive=dump.archive.gz --nsInclude='dota_den.*' --drop
+```
+
+`--drop` replaces each restored collection; leave it out to merge. Run `npm run db:indexes` afterwards.
+
 - `npm run db:indexes` creates or updates every index (idempotent; CI runs it on each deploy).
 - TTL indexes expire sessions, nonces, draft rooms (24 h after the last move), and cached explorer data (7 days).
 - No transactions: correctness relies on unique indexes and optimistic concurrency

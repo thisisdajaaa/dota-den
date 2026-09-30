@@ -1,0 +1,53 @@
+name: Database backup
+
+# Nightly encrypted backup of the production database, kept as a workflow artifact for 30
+# days. The repo is public, so the dump is encrypted (AES-256) with BACKUP_PASSPHRASE before
+# upload; artifacts are useless without it. Restore steps: docs/operations.md.
+on:
+  schedule:
+    - cron: "0 18 * * *" # 02:00 in the Philippines
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - name: Install MongoDB Database Tools
+        run: |
+          curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-100.12.2.tgz | tar xz
+          echo "$PWD/mongodb-database-tools-ubuntu2404-x86_64-100.12.2/bin" >> "$GITHUB_PATH"
+
+      - name: Dump and encrypt
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_PASSPHRASE" || { echo "BACKUP_PASSPHRASE is not set"; exit 1; }
+          name="dota-den-$(date -u +%Y-%m-%dT%H%MZ).archive.gz.gpg"
+          # Sessions, sign-in nonces and cached tournament data are rebuilt on their own.
+          mongodump --uri="$MONGODB_URI" --db=dota_den --gzip --archive \
+            --excludeCollection=auth_sessions \
+            --excludeCollection=auth_nonces \
+            --excludeCollection=draft_meta_cache \
+            | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
+                --symmetric --cipher-algo AES256 -o "$name" 3<<<"$BACKUP_PASSPHRASE"
+          ls -lh "$name"
+          echo "BACKUP_FILE=$name" >> "$GITHUB_ENV"
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+          if-no-files-found: error
