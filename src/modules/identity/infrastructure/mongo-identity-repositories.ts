@@ -43,6 +43,10 @@ export async function ensureIdentityIndexes(db: Db): Promise<void> {
     db
       .collection(IDENTITY_COLLECTIONS.users)
       .createIndex({ steamId64: 1 }, { unique: true, name: "uniq_steamId64" }),
+    // Which of a player's friends have accounts (leaderboards).
+    db
+      .collection(IDENTITY_COLLECTIONS.users)
+      .createIndex({ accountId32: 1 }, { name: "by_accountId32" }),
     db
       .collection(IDENTITY_COLLECTIONS.sessions)
       .createIndex({ tokenHash: 1 }, { unique: true, name: "uniq_tokenHash" }),
@@ -108,6 +112,18 @@ export class MongoUserRepository implements UserRepository {
     if (!ObjectId.isValid(id)) return null;
     const doc = await this.col.findOne({ _id: new ObjectId(id) });
     return doc ? toUser(doc) : null;
+  }
+
+  async findByIds(ids: readonly string[]): Promise<User[]> {
+    const valid = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+    if (valid.length === 0) return [];
+    return (await this.col.find({ _id: { $in: valid } }).toArray()).map(toUser);
+  }
+
+  /** The users among these Steam accounts (most won't have signed in to Dota Den). */
+  async findByAccountIds(accountIds: readonly number[]): Promise<User[]> {
+    if (accountIds.length === 0) return [];
+    return (await this.col.find({ accountId32: { $in: [...accountIds] } }).toArray()).map(toUser);
   }
 }
 

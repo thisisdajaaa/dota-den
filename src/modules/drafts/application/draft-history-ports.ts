@@ -7,6 +7,15 @@ export interface HistoryOpponent {
   drafts: number;
 }
 
+/** Room drafts one captain finished, with the self-reported results from their side. */
+export interface CaptainTotals {
+  userId: string;
+  drafts: number;
+  /** Only drafts where a captain reported the winner count as wins or losses. */
+  wins: number;
+  losses: number;
+}
+
 export interface DraftHistoryRepository {
   /**
    * Store the record unless one already exists for this room (unique on roomId).
@@ -23,4 +32,12 @@ export interface DraftHistoryRepository {
   ): Promise<{ items: DraftHistoryRecord[]; total: number }>;
   /** People this captain has drafted against, most recent first (latest name/avatar). */
   opponents(userId: string, limit: number): Promise<HistoryOpponent[]>;
+  /**
+   * Per-captain totals of finished drafts since a date (null = all time), optionally only
+   * for some captains (null = everyone).
+   */
+  captainTotals(query: {
+    since: Date | null;
+    userIds: readonly string[] | null;
+  }): Promise<CaptainTotals[]>;
 }

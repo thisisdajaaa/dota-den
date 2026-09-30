@@ -77,3 +77,13 @@ export async function getRouteUser(req: {
   const resolved = await auth.resolveSession(req.cookies.get(SESSION_COOKIE)?.value);
   return resolved?.user ?? null;
 }
+
+/** Users by id, for views that list other players (e.g. leaderboards). Missing ids are skipped. */
+export async function findUsersByIds(ids: readonly string[]): Promise<User[]> {
+  return new MongoUserRepository(await getDb()).findByIds(ids);
+}
+
+/** The Dota Den users among these Steam accounts. */
+export async function findUsersByAccountIds(accountIds: readonly number[]): Promise<User[]> {
+  return new MongoUserRepository(await getDb()).findByAccountIds(accountIds);
+}
