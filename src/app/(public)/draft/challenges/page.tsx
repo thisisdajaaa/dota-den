@@ -36,7 +36,7 @@ export default async function DraftChallengesPage() {
         }
       />
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {CHALLENGE_TYPES.map((type) => {
           const info = CHALLENGE_INFO[type];
           const Icon = ICONS[type];

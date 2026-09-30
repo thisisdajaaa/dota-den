@@ -143,7 +143,7 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
         </Suspense>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <TrendCard trend={trend} heroLabel={name} />
           <Suspense fallback={<SectionSkeleton label="Loading items" rows={4} />}>

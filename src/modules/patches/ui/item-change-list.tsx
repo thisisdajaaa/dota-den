@@ -6,7 +6,7 @@ import { NoteList } from "./note-list";
 /** Items and neutral items, with Valve's section headings ("Basic Items", …) kept in order. */
 export function ItemChangeList({ items }: { items: ItemPatchNotes[] }) {
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {items.map((item, i) => {
         if (item.isGeneralNote) {
           return (

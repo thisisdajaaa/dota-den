@@ -52,7 +52,7 @@ export function DayDetail({
         </Link>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
           <div className="text-xs text-muted-foreground">MMR change</div>
           <div

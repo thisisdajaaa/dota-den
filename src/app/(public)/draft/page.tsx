@@ -97,7 +97,7 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
           {state.status !== "completed" &&
             ` · stopped after step ${state.turns.length} of ${sequence.length}`}
         </p>
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {(["radiant", "dire"] as const).map((side) => (
             <TeamPanel
               key={side}
@@ -122,7 +122,7 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
             heroes={map}
           />
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {(["radiant", "dire"] as const).map((side) => (
             <FeedbackPanel
               key={side}

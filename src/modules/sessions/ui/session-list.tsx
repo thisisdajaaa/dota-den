@@ -74,7 +74,7 @@ export function SessionList({
             <Link
               href={`/sessions/${session.id}`}
               aria-label={`Session on ${labels.date}, ${labels.timeRange}: ${s.wins} wins, ${s.losses} losses`}
-              className="group relative grid gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] sm:items-center"
+              className="group relative grid grid-cols-1 gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] sm:items-center"
             >
               <span
                 aria-hidden

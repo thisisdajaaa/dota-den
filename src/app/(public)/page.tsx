@@ -133,7 +133,7 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
         </Alert>
       )}
 
-      <section className="relative grid items-center gap-12 pt-6 lg:grid-cols-[1.2fr_1fr]">
+      <section className="relative grid grid-cols-1 items-center gap-12 pt-6 lg:grid-cols-[1.2fr_1fr]">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 left-1/4 -z-10 size-[36rem] rounded-full bg-gold/10 blur-[120px]"
@@ -181,7 +181,7 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
             From patch day to your next session
           </h2>
         </div>
-        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {LOOP.map((step, i) => (
             <li key={step.title} className="panel p-5">
               <div className="mb-4 flex items-center justify-between">
@@ -197,7 +197,7 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
         </ol>
       </section>
 
-      <section aria-labelledby="features" className="grid gap-3 sm:grid-cols-3">
+      <section aria-labelledby="features" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <h2 id="features" className="sr-only">
           Features
         </h2>

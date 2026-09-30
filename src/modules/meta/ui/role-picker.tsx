@@ -22,7 +22,10 @@ export function RoleTabs({ active, yours }: { active: Position; yours: Position 
 /** Big role picker for when we don't know the position yet. */
 export function RolePicker() {
   return (
-    <nav aria-label="Choose your role" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <nav
+      aria-label="Choose your role"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
+    >
       {POSITIONS.map((p) => {
         const info = POSITION_INFO[p];
         return (

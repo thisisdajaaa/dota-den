@@ -86,7 +86,7 @@ function ReviewBody({ data }: { data: ReviewResult }) {
   return (
     <div className="mt-2 space-y-3 text-sm">
       <p>{review.summary}</p>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {(["radiant", "dire"] as const).map((side) => {
           const plan = review.sides[side];
           return (
