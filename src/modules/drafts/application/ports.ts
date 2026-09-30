@@ -1,5 +1,6 @@
 import type { Result } from "@/modules/shared/domain/result";
 import type { LaneTable } from "../domain/draft-lanes";
+import type { AbilityBrief, HeroKit } from "../domain/draft-review";
 import type { PositionTable } from "../domain/draft-positions";
 import type { HeroMeta, MatchupTable, ProMeta, SynergyTable } from "../domain/draft-scoring";
 
@@ -59,4 +60,25 @@ export interface DraftInsights {
   positions?(): Promise<PositionTable | null>;
   /** Pro laning records: how heroes do against each other in the lane. */
   lanes?(): Promise<LaneTable | null>;
+}
+
+/** Current-patch abilities per hero (for the AI review's context). Missing heroes are skipped. */
+export interface AbilityCatalog {
+  kits(heroIds: readonly number[]): Promise<Map<number, HeroKit>>;
+}
+
+/** What the reviewer is given: the finished draft and all the evidence we computed. */
+export interface ReviewRequest {
+  lineups: Record<
+    "radiant" | "dire",
+    { name: string; position: string; abilities: AbilityBrief[] }[]
+  >;
+  /** Plain-language evidence lines (report card, lanes, matchups, notes). */
+  evidence: string[];
+}
+
+/** A model that reviews a finished draft. Its answer is always validated against the draft. */
+export interface DraftReviewer {
+  readonly model: string;
+  review(req: ReviewRequest): Promise<Result<unknown, AdvisorError>>;
 }

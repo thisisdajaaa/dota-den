@@ -13,6 +13,7 @@ import type {
 import { POSITIONS, POSITION_NAMES, type Position } from "../domain/draft-positions";
 import type { DraftReport, Grade } from "../domain/draft-report";
 import type { DraftState, Side } from "../domain/draft-state";
+import { DraftReviewPanel } from "./draft-review-panel";
 import type { DraftHero } from "./types";
 
 const pct = (n: number | null) => (n === null ? "—" : `${(n * 100).toFixed(1)}%`);
@@ -163,7 +164,14 @@ export function DraftOutlookPanel({
           The outlook is unavailable right now. The draft works without it.
         </p>
       ) : (
-        <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} />
+        <>
+          <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} />
+          {!outlook.report.provisional && (
+            <div className="mt-4">
+              <DraftReviewPanel state={state} roles={ctl.roles} />
+            </div>
+          )}
+        </>
       )}
     </section>
   );
