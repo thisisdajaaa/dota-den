@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
@@ -17,7 +18,7 @@ const toMap = (r: Record<string, 1 | 2 | 3 | 4 | 5> | undefined) =>
 /** An AI review of a finished draft (a language model call, so it's rate limited). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!rateLimit(`draft-review:${clientKey(req)}`, 6, 60_000)) {
+  if (!rateLimit(`draft-review:${clientKey(req)}`, ...apiLimitArgs("draftReview"))) {
     return apiError("rate_limited", "Too many reviews in the last minute. Try again shortly.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

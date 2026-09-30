@@ -25,8 +25,11 @@ const globalForGateway = globalThis as typeof globalThis & { __ddOpenDota?: Prov
 
 /** Shared OpenDota gateway (one per instance: shared cache, dedup and circuit state). */
 export function openDotaGateway(): ProviderGateway {
+  const { OPENDOTA_TIMEOUT_MS, OPENDOTA_MAX_RETRIES } = env();
   globalForGateway.__ddOpenDota ??= new ProviderGateway({
     name: "opendota",
+    timeoutMs: OPENDOTA_TIMEOUT_MS,
+    maxRetries: OPENDOTA_MAX_RETRIES,
     onRequest: ({ url, status, durationMs, attempt }) =>
       logger.info("provider_request", {
         provider: "opendota",

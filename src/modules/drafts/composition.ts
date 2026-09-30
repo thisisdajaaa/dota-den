@@ -1,5 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
+import type { Db } from "mongodb";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -17,8 +18,6 @@ import { MongoDraftRoomRepository } from "./infrastructure/mongo-draft-rooms";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
 import type { DraftHero } from "./ui/types";
 
-export const DEFAULT_DRAFT_AI_MODEL = "openai/gpt-oss-120b";
-
 async function scoringHeroes(): Promise<AiHero[]> {
   return [...(await getHeroMap()).values()].map((h) => ({
     id: h.id,
@@ -31,10 +30,11 @@ const globalForExplorer = globalThis as typeof globalThis & { __ddExplorer?: Pro
 
 /** OpenDota's SQL explorer is slow: its own timeout and circuit breaker. */
 function explorerGateway(): ProviderGateway {
+  const { OPENDOTA_EXPLORER_TIMEOUT_MS, OPENDOTA_EXPLORER_MAX_RETRIES } = env();
   globalForExplorer.__ddExplorer ??= new ProviderGateway({
     name: "opendota-explorer",
-    timeoutMs: 30_000,
-    maxRetries: 1,
+    timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
+    maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
     onRequest: ({ status, durationMs, attempt }) =>
       logger.info("provider_request", {
         provider: "opendota-explorer",
@@ -47,7 +47,8 @@ function explorerGateway(): ProviderGateway {
 }
 
 export async function draftInsights(): Promise<OpenDotaDraftInsights> {
-  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL: baseUrl } = env();
+  const config = env();
+  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL: baseUrl } = config;
   // Without the database the tournament data still works, just uncached across instances.
   const cache = await getDb()
     .then((db) => new MongoDraftMetaCache(db))
@@ -57,19 +58,32 @@ export async function draftInsights(): Promise<OpenDotaDraftInsights> {
     apiKey: OPENDOTA_API_KEY,
     explorer: explorerGateway(),
     cache,
+    budgetMs: config.DRAFT_EXPLORER_BUDGET_MS,
+    proDays: config.DRAFT_PRO_WINDOW_DAYS,
+    synergyDays: config.DRAFT_SYNERGY_WINDOW_DAYS,
+    freshMs: config.DRAFT_META_FRESH_HOURS * 3_600_000,
   });
 }
 
 export async function getAiOpponent(): Promise<AiOpponentService> {
-  const { GROQ_API_KEY, DRAFT_AI_MODEL } = env();
+  const {
+    GROQ_API_KEY,
+    DRAFT_AI_MODEL,
+    DRAFT_AI_MOVE_TIMEOUT_MS,
+    DRAFT_AI_REVIEW_TIMEOUT_MS,
+    DRAFT_AI_REVIEW_ENABLED,
+    OPENDOTA_API_KEY,
+    OPENDOTA_BASE_URL,
+  } = env();
   const heroes = await scoringHeroes();
   const advisor = GROQ_API_KEY
     ? new GroqDraftAdvisor({
         apiKey: GROQ_API_KEY,
-        model: DRAFT_AI_MODEL ?? DEFAULT_DRAFT_AI_MODEL,
+        model: DRAFT_AI_MODEL,
+        moveTimeoutMs: DRAFT_AI_MOVE_TIMEOUT_MS,
+        reviewTimeoutMs: DRAFT_AI_REVIEW_TIMEOUT_MS,
       })
     : null;
-  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
   const cache = await getDb()
     .then((db) => new MongoDraftMetaCache(db))
     .catch(() => null);
@@ -77,7 +91,8 @@ export async function getAiOpponent(): Promise<AiOpponentService> {
     advisor,
     insights: await draftInsights(),
     heroes,
-    reviewer: advisor,
+    // The review answers "not configured" when it's switched off or there's no model key.
+    reviewer: DRAFT_AI_REVIEW_ENABLED ? advisor : null,
     abilities: new OpenDotaAbilityCatalog(openDotaGateway(), {
       baseUrl: OPENDOTA_BASE_URL ?? "https://api.opendota.com/api",
       apiKey: OPENDOTA_API_KEY,
@@ -108,9 +123,14 @@ function newRoomId(): string {
   return id;
 }
 
+/** Draft rooms repository with the configured retention (DRAFT_ROOM_TTL_HOURS). */
+function roomRepository(db: Db): MongoDraftRoomRepository {
+  return new MongoDraftRoomRepository(db, { ttlMs: env().DRAFT_ROOM_TTL_HOURS * 3_600_000 });
+}
+
 export async function getDraftHistoryService(): Promise<DraftHistoryService> {
   const db = await getDb();
-  const rooms = new MongoDraftRoomRepository(db);
+  const rooms = roomRepository(db);
   return new DraftHistoryService({
     history: new MongoDraftHistoryRepository(db),
     getRoom: (roomId) => rooms.get(roomId),
@@ -121,11 +141,16 @@ export async function getDraftHistoryService(): Promise<DraftHistoryService> {
 export async function getDraftRoomService(): Promise<DraftRoomService> {
   const db = await getDb();
   const history = await getDraftHistoryService();
+  const config = env();
   return new DraftRoomService({
-    rooms: new MongoDraftRoomRepository(db),
+    rooms: roomRepository(db),
     heroPool: async () => [...(await getHeroMap()).keys()],
     newId: newRoomId,
-    enabled: env().FEATURE_DRAFT_ROOMS,
+    enabled: config.FEATURE_DRAFT_ROOMS,
+    limits: {
+      maxActiveRooms: config.DRAFT_ROOMS_MAX_ACTIVE,
+      activeWindowMs: config.DRAFT_ROOMS_ACTIVE_WINDOW_MINUTES * 60_000,
+    },
     // A failed history write must not fail the final pick; the room page and the result
     // endpoints save a finished room that is missing from history.
     onCompleted: async (room) => {
@@ -139,7 +164,7 @@ export async function getDraftRoomService(): Promise<DraftRoomService> {
 }
 
 export async function getDraftRoomEvents(roomId: string, after: number) {
-  return new MongoDraftRoomRepository(await getDb()).eventsSince(roomId, after, 100);
+  return roomRepository(await getDb()).eventsSince(roomId, after, 100);
 }
 
 /** The hero catalog as the draft screens need it, sorted by name. Empty if unavailable. */

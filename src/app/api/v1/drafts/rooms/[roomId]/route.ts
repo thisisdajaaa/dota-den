@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/lib/http";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getRouteUser } from "@/modules/identity/composition";
 import { getDraftRoomEvents, getDraftRoomService } from "@/modules/drafts/composition";
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest, ctx: Ctx): Promise<NextResponse> {
   const roomId = await readRoomParams(ctx);
   if (!roomId) return apiError("not_found", "Draft room not found");
   // ~1 poll/second per viewer, with headroom for a few tabs.
-  if (!rateLimit(`room-poll:${clientKey(req)}`, 240, 60_000)) {
+  if (!rateLimit(`room-poll:${clientKey(req)}`, ...apiLimitArgs("roomPoll"))) {
     return apiError("rate_limited", "Polling too fast");
   }
   const user = await getRouteUser(req);

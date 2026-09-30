@@ -1,17 +1,21 @@
 /**
  * Draft report card (pure): the rubric a draft is judged by, per side.
  *
- * Six criteria, each scored 0-100 where 50 is an average draft, then weighted (partly
- * fitted to real games, see blendedWeights) into an
+ * Six criteria, each scored 0-100 where 50 is an average draft, then weighted into an
  * overall grade. Every score comes from the same public data as the rest of the outlook;
  * a criterion with no data is marked unavailable and left out of the overall grade.
  *
- *   Lanes         20%  pro lane results of the heroes meeting in each lane
- *   Counters      20%  head-to-head records against the enemy heroes
- *   Composition   20%  initiation, control, frontline, late game, pushing (role tags)
- *   Hero strength 15%  win rates this patch at high ranks, and in pro games
- *   Positions     15%  how naturally the heroes fill positions 1-5
- *   Combos        10%  how hero pairs do together in pro games
+ *   Lanes          pro lane results of the heroes meeting in each lane
+ *   Counters       head-to-head records against the enemy heroes
+ *   Composition    initiation, control, frontline, late game, pushing (role tags)
+ *   Hero strength  win rates this patch at high ranks, and in pro games
+ *   Positions      how naturally the heroes fill positions 1-5
+ *   Combos         how hero pairs do together in pro games
+ *
+ * Weights are half the prior (PRIOR_WEIGHTS: 20/20/20/15/15/10%) and half the weights fitted
+ * to real games in draft-calibration.json (see blendedWeights). With the current fit that is
+ * roughly Hero strength 42%, Lanes, Counters, Composition and Positions 12% each, Combos 9%;
+ * CRITERIA holds the exact values in use.
  */
 
 import calibration from "./draft-calibration.json";

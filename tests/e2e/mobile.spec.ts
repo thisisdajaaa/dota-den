@@ -98,8 +98,9 @@ test("a whole practice draft works and fits on a phone", async ({ page }) => {
   const suggestions = page.getByRole("region", { name: "Suggestions" });
   const log = page.getByRole("region", { name: "Draft log" });
   for (let step = 1; step <= 18; step++) {
-    await suggestions.getByRole("button").first().click();
-    await expect(log.getByRole("listitem")).toHaveCount(step);
+    // Under a busy full-suite run each suggestion can take a few seconds to load.
+    await suggestions.getByRole("button").first().click({ timeout: 20_000 });
+    await expect(log.getByRole("listitem")).toHaveCount(step, { timeout: 20_000 });
   }
   await expect(page.getByRole("region", { name: "Draft report card" })).toBeVisible();
   expect(await overflowing(page)).toEqual([]);
