@@ -436,6 +436,24 @@ function heroMatchups(id) {
 // Synthetic OpenDota explorer (pro match SQL). Answers by the shape of the query.
 function draftExplorer(sql) {
   const q = sql ?? "";
+  if (q.includes("AS pos1")) {
+    // Where heroes are played, from their role mix: [pos1, pos2, pos3, pos4, pos5] shares.
+    const SHARES = [
+      [0.8, 0.15, 0.05, 0, 0], // Carry, Escape
+      [0, 0, 0.02, 0.28, 0.7], // Support, Disabler
+      [0.05, 0.05, 0.8, 0.1, 0], // Initiator, Durable, Disabler
+      [0.1, 0.8, 0.05, 0.05, 0], // Nuker, Pusher
+      [0.6, 0, 0.4, 0, 0], // Carry, Durable
+      [0, 0.05, 0, 0.7, 0.25], // Support, Nuker
+    ];
+    const rows = HERO_IDS.map((id) => {
+      const shares = id === 1 ? SHARES[0] : id === 14 ? [0, 0.05, 0.15, 0.6, 0.2] : SHARES[id % 6];
+      const games = 100 + (id % 7) * 10;
+      const [pos1, pos2, pos3, pos4, pos5] = shares.map((x) => Math.round(x * games));
+      return { hero_id: id, pos1, pos2, pos3, pos4, pos5 };
+    });
+    return { rows, err: null };
+  }
   if (q.includes("player_matches a")) {
     const rows = [];
     for (let a = 100; a < 140; a += 3) {

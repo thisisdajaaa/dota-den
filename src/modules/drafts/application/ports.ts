@@ -1,4 +1,5 @@
 import type { Result } from "@/modules/shared/domain/result";
+import type { PositionTable } from "../domain/draft-positions";
 import type { HeroMeta, MatchupTable, ProMeta, SynergyTable } from "../domain/draft-scoring";
 
 export interface AdvisorHero {
@@ -53,4 +54,6 @@ export interface DraftInsights {
   proMeta?(): Promise<ProMeta | null>;
   /** Same-team pro records of hero pairs. */
   synergy?(): Promise<SynergyTable | null>;
+  /** Where heroes are played (positions 1-5) in pro matches. */
+  positions?(): Promise<PositionTable | null>;
 }

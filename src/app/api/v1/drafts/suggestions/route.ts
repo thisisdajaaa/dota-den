@@ -33,6 +33,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       heroId: c.heroId,
       name: c.name,
       role: c.role,
+      position: c.position,
       facts: c.facts,
     })),
   });

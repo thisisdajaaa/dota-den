@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { cn } from "cn";
+import { POSITION_NAMES, type Position } from "../domain/draft-positions";
 import type { DraftSelection, Side } from "../domain/draft-state";
 import type { DraftHero } from "./types";
 
@@ -7,10 +8,13 @@ function Slot({
   hero,
   active,
   kind,
+  position,
 }: {
   hero: DraftHero | undefined;
   active: boolean;
   kind: "pick" | "ban";
+  /** Where this pick plays in the lineup, when known. */
+  position?: Position;
 }) {
   const pick = kind === "pick";
   return (
@@ -36,6 +40,17 @@ function Slot({
           <span className="h-0.5 w-[120%] rotate-[-20deg] bg-loss/80" />
         </span>
       )}
+      {hero && pick && position && (
+        <span
+          className="absolute top-1 left-1 rounded bg-black/75 px-1 text-[0.6rem] font-semibold text-gold ring-1 ring-gold/30"
+          title={`Position ${position}: ${POSITION_NAMES[position]}`}
+        >
+          <span aria-hidden>P{position}</span>
+          <span className="sr-only">
+            Position {position}, {POSITION_NAMES[position]}
+          </span>
+        </span>
+      )}
       {hero && pick && (
         <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/90 to-transparent px-1.5 pt-3 pb-0.5 text-[0.65rem] font-semibold">
           {hero.name}
@@ -57,6 +72,7 @@ export function TeamPanel({
   reserveLabel,
   controller,
   captainName,
+  positions,
 }: {
   side: Side;
   picks: readonly DraftSelection[];
@@ -71,6 +87,8 @@ export function TeamPanel({
   controller?: "you" | "ai";
   /** Multiplayer: the captain drafting this side. */
   captainName?: string | null;
+  /** Where each picked hero plays (from the draft outlook), by hero id. */
+  positions?: ReadonlyMap<number, Position>;
 }) {
   const radiant = side === "radiant";
   return (
@@ -128,6 +146,7 @@ export function TeamPanel({
               kind="pick"
               hero={picks[i] ? heroes.get(picks[i].heroId) : undefined}
               active={activeAction === "pick" && i === picks.length}
+              position={picks[i]?.heroId != null ? positions?.get(picks[i].heroId) : undefined}
             />
           ))}
         </div>

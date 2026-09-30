@@ -4,7 +4,13 @@ import { Gauge, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "cn";
 import { encodeSnapshot, snapshotOf } from "../application/snapshot";
-import type { DraftOutlook, OutlookHero, SideBreakdown } from "../domain/draft-outlook";
+import type {
+  DraftOutlook,
+  LaneMatchup,
+  OutlookHero,
+  SideBreakdown,
+} from "../domain/draft-outlook";
+import { POSITIONS, POSITION_NAMES, type Position } from "../domain/draft-positions";
 import type { DraftState, Side } from "../domain/draft-state";
 import type { DraftHero } from "./types";
 
@@ -12,24 +18,25 @@ const pct = (n: number | null) => (n === null ? "—" : `${(n * 100).toFixed(1)}
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n).toFixed(1)}`;
 const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
 
+export interface OutlookData {
+  /** The picks the outlook is for ("" before any pick). */
+  picks: string;
+  /** Null while loading; `outlook` null when it failed. */
+  current: { key: string; outlook: DraftOutlook | null } | null;
+}
+
 /**
- * Which side the draft favours so far, with its evidence. Refetched whenever a pick lands
- * (bans don't change the lineups). Always labelled as an estimate.
+ * Fetch the outlook whenever a pick lands (bans don't change the lineups). Pass null to
+ * skip fetching (when a parent already fetches it).
  */
-export function DraftOutlookPanel({
-  state,
-  heroes,
-}: {
-  state: DraftState;
-  heroes: Map<number, DraftHero>;
-}) {
-  const picks = [...state.sides.radiant.picks, ...state.sides.dire.picks]
-    .map((p) => p.heroId)
-    .join(",");
+export function useDraftOutlook(state: DraftState | null): OutlookData {
+  const picks = state
+    ? [...state.sides.radiant.picks, ...state.sides.dire.picks].map((p) => p.heroId).join(",")
+    : "";
   const [result, setResult] = useState<{ key: string; outlook: DraftOutlook | null } | null>(null);
 
   useEffect(() => {
-    if (!picks) return;
+    if (!picks || !state) return;
     const controller = new AbortController();
     (async () => {
       try {
@@ -50,7 +57,33 @@ export function DraftOutlookPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [picks]);
 
-  const current = result?.key === picks ? result : null;
+  return { picks, current: result?.key === picks ? result : null };
+}
+
+/** Where each picked hero plays, from an outlook (for the team panels). */
+export function positionsFrom(data: OutlookData): Map<number, Position> {
+  return new Map(
+    (data.current?.outlook?.heroes ?? [])
+      .filter((h) => h.position !== null)
+      .map((h) => [h.heroId, h.position!]),
+  );
+}
+
+/**
+ * Which side the draft favours so far, with its evidence. Always labelled as an estimate.
+ * Pass `data` when the parent already fetches the outlook; otherwise it fetches its own.
+ */
+export function DraftOutlookPanel({
+  state,
+  heroes,
+  data,
+}: {
+  state: DraftState;
+  heroes: Map<number, DraftHero>;
+  data?: OutlookData;
+}) {
+  const own = useDraftOutlook(data ? null : state);
+  const { picks, current } = data ?? own;
   const outlook = current?.outlook ?? null;
 
   return (
@@ -136,6 +169,11 @@ function OutlookBody({
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Lineups outlook={outlook} heroes={heroes} />
+        <Lanes lanes={outlook.lanes} heroes={heroes} />
       </div>
 
       <HeroTable rows={outlook.heroes} heroes={heroes} />
@@ -226,7 +264,7 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                     )}
                     <span className="font-medium">{h.name}</span>
                     <span className="text-[0.6rem] tracking-wider text-muted-foreground uppercase">
-                      {h.role}
+                      {h.position ? `Pos ${h.position}` : h.role}
                     </span>
                   </span>
                 </td>
@@ -276,6 +314,139 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** Both lineups by position, with open slots, so it's clear who plays where. */
+function Lineups({ outlook, heroes }: { outlook: DraftOutlook; heroes: Map<number, DraftHero> }) {
+  const at = (side: Side, p: Position) =>
+    outlook.heroes.find((h) => h.side === side && h.position === p) ?? null;
+  const cell = (h: OutlookHero | null, side: Side) =>
+    h ? (
+      <span className={cn("flex items-center gap-1.5", side === "dire" && "justify-end")}>
+        {side === "dire" && <Share h={h} />}
+        {heroes.get(h.heroId)?.iconUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- tiny icon
+          <img src={heroes.get(h.heroId)!.iconUrl!} alt="" className="size-5" />
+        )}
+        <span className="truncate font-medium">{h.name}</span>
+        {side === "radiant" && <Share h={h} />}
+      </span>
+    ) : (
+      <span
+        className={cn("block text-muted-foreground/70 italic", side === "dire" && "text-right")}
+      >
+        Open
+      </span>
+    );
+  return (
+    <div>
+      <h3 className="mb-1.5 text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+        Lineups by position
+      </h3>
+      <table className="w-full table-fixed text-sm">
+        <caption className="sr-only">Which hero plays each position on each side</caption>
+        <thead className="sr-only">
+          <tr>
+            <th>Radiant</th>
+            <th>Position</th>
+            <th>Dire</th>
+          </tr>
+        </thead>
+        <tbody>
+          {POSITIONS.map((p) => (
+            <tr key={p} className="border-t border-white/[0.05]">
+              <td className="py-1.5 pr-2">{cell(at("radiant", p), "radiant")}</td>
+              <th
+                scope="row"
+                className="w-28 py-1.5 text-center text-[0.7rem] font-medium whitespace-nowrap text-muted-foreground"
+              >
+                {p} · {POSITION_NAMES[p]}
+              </th>
+              <td className="py-1.5 pl-2">{cell(at("dire", p), "dire")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        {outlook.positionsFrom === "pro"
+          ? "Positions from where the pros play each hero (last 60 days); the % is how often."
+          : "Pro position data is unavailable right now, so positions are estimated from hero role tags."}
+      </p>
+    </div>
+  );
+}
+
+function Share({ h }: { h: OutlookHero }) {
+  if (h.positionShare === null) return null;
+  const odd = h.positionShare < 0.1;
+  return (
+    <span
+      className={cn(
+        "shrink-0 text-[0.65rem] tabular-nums",
+        odd ? "text-loss" : "text-muted-foreground",
+      )}
+      title={`Pros play ${h.name} here in ${Math.round(h.positionShare * 100)}% of games`}
+    >
+      {Math.round(h.positionShare * 100)}%
+    </span>
+  );
+}
+
+/** Who meets whom in each lane, with Radiant's head-to-head edge there. */
+function Lanes({ lanes, heroes }: { lanes: LaneMatchup[]; heroes: Map<number, DraftHero> }) {
+  const names = (ids: number[]) =>
+    ids.map((id) => heroes.get(id)?.name ?? `Hero ${id}`).join(" + ");
+  return (
+    <div>
+      <h3 className="mb-1.5 text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
+        Lanes
+      </h3>
+      {lanes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Lane matchups appear once both sides have heroes in the same lane.
+        </p>
+      ) : (
+        <ul className="space-y-2 text-sm">
+          {lanes.map((l) => (
+            <li
+              key={l.lane}
+              className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs text-muted-foreground">{l.label}</span>
+                <span
+                  className={cn(
+                    "text-xs font-semibold tabular-nums",
+                    l.edge === null
+                      ? "text-muted-foreground"
+                      : l.edge > 0
+                        ? "text-win"
+                        : l.edge < 0
+                          ? "text-loss"
+                          : "",
+                  )}
+                >
+                  {l.edge === null
+                    ? "Not enough games"
+                    : l.edge === 0
+                      ? "Even"
+                      : `${l.edge > 0 ? "Radiant" : "Dire"} ${signed(Math.abs(l.edge))}`}
+                </span>
+              </div>
+              <p className="mt-0.5">
+                <span className="text-win">{names(l.radiant)}</span>
+                <span className="text-muted-foreground"> vs </span>
+                <span className="text-loss">{names(l.dire)}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        Head-to-head records of the heroes meeting in each lane, in win-rate points.
+      </p>
     </div>
   );
 }

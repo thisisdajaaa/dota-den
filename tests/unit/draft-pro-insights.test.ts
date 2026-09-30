@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { DraftMetaCache } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import {
   OpenDotaDraftInsights,
+  toPositions,
   toProMeta,
   toSynergy,
 } from "@/modules/drafts/infrastructure/opendota-draft-insights";
@@ -11,6 +12,7 @@ const HOUR = 3_600_000;
 const heroRows = { rows: [{ hero_id: 5, picks: "10", bans: 4, wins: 6 }], err: null };
 const leagueRows = { rows: [{ league: " Fixture Major ", matches: 30 }] };
 const pairRows = { rows: [{ h1: 7, h2: 3, games: 12, wins: 8 }] };
+const positionRows = { rows: [{ hero_id: 9, pos1: 1, pos2: "2", pos3: 3, pos4: 104, pos5: 210 }] };
 
 function gatewayFor(bodies: (sql: string) => unknown) {
   const getJson = vi.fn(async (url: string) => {
@@ -24,13 +26,15 @@ function gatewayFor(bodies: (sql: string) => unknown) {
 }
 
 const byQuery = (sql: string) =>
-  sql.includes("player_matches a")
-    ? pairRows
-    : sql.includes("leagues")
-      ? leagueRows
-      : sql.includes("picks_bans")
-        ? heroRows
-        : undefined;
+  sql.includes("lane_role")
+    ? positionRows
+    : sql.includes("player_matches a")
+      ? pairRows
+      : sql.includes("leagues")
+        ? leagueRows
+        : sql.includes("picks_bans")
+          ? heroRows
+          : undefined;
 
 function memoryCache(seed: Record<string, { body: unknown; ageMs: number }> = {}, now = 0) {
   const store = new Map(
@@ -55,6 +59,11 @@ describe("explorer parsing", () => {
     expect(toProMeta({ rows: null, err: "timeout" }, leagueRows)).toBeNull();
     expect(toProMeta(heroRows, { rows: [] })).toBeNull();
     expect(toSynergy({ err: "boom" })).toBeNull();
+  });
+
+  it("reads position counts per hero", () => {
+    expect(toPositions(positionRows)!.get(9)).toEqual({ counts: [1, 2, 3, 104, 210], games: 320 });
+    expect(toPositions({ rows: [] })).toBeNull();
   });
 
   it("keys pairs in ascending order", () => {
@@ -104,6 +113,11 @@ describe("tournament data caching", () => {
     const insights = new OpenDotaDraftInsights(gateway, { ...base, cache, now: () => 0 });
     const res = await insights.warm();
     expect(res.every((r) => r.ok)).toBe(true);
-    expect([...store.keys()].sort()).toEqual(["pro-heroes-v1", "pro-leagues-v1", "pro-pairs-v1"]);
+    expect([...store.keys()].sort()).toEqual([
+      "pro-heroes-v1",
+      "pro-leagues-v1",
+      "pro-pairs-v1",
+      "pro-positions-v1",
+    ]);
   });
 });

@@ -24,8 +24,9 @@ import {
   type DraftState,
   type Side,
 } from "../domain/draft-state";
+import { POSITION_NAMES, type Position } from "../domain/draft-positions";
 import { getRuleset, listRulesets } from "../domain/rulesets";
-import { DraftOutlookPanel } from "./draft-outlook-panel";
+import { DraftOutlookPanel, positionsFrom, useDraftOutlook } from "./draft-outlook-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { HeroGrid } from "./hero-grid";
 import { SequenceStrip } from "./sequence-strip";
@@ -133,6 +134,9 @@ export function DraftBoard({
   const started = state.status !== "not_started";
   const aiSide: Side | null = opponent === "none" ? null : opponent;
   const aiTurn = aiSide !== null && state.status === "in_progress" && turn?.side === aiSide;
+  // One outlook fetch per pick, shared by the outlook panel and the team panels' positions.
+  const outlook = useDraftOutlook(started ? state : null);
+  const positions = useMemo(() => positionsFrom(outlook), [outlook]);
 
   function dispatch(input: EventInput): boolean {
     const s = stateRef.current;
@@ -547,11 +551,12 @@ export function DraftBoard({
             isFirst={state.firstSide === side}
             reserveLabel={reserve(side)}
             controller={aiSide ? (side === aiSide ? "ai" : "you") : undefined}
+            positions={positions}
           />
         ))}
       </div>
 
-      {started && <DraftOutlookPanel state={state} heroes={heroMap} />}
+      {started && <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />}
 
       {started && (
         <DraftLogPanel
@@ -622,7 +627,13 @@ interface SuggestionSet {
   version: number;
   action: "pick" | "ban";
   situation: string;
-  candidates: Array<{ heroId: number; name: string; role: "core" | "support"; facts: string[] }>;
+  candidates: Array<{
+    heroId: number;
+    name: string;
+    role: "core" | "support";
+    position: Position | null;
+    facts: string[];
+  }>;
 }
 
 function HeroThumb({ hero, dim }: { hero: DraftHero | undefined; dim?: boolean }) {
@@ -691,7 +702,7 @@ function SuggestionsPanel({
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium">{c.name}</span>
                       <span className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-                        {c.role}
+                        {c.position ? `Pos ${c.position} · ${POSITION_NAMES[c.position]}` : c.role}
                       </span>
                     </span>
                   </span>
