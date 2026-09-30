@@ -24,6 +24,7 @@ import {
   SCOPE_LABEL,
 } from "@/modules/leaderboards/ui/copy";
 import { LeaderboardBoard } from "@/modules/leaderboards/ui/leaderboard-board";
+import { VisibilityToggle } from "@/modules/leaderboards/ui/visibility-toggle";
 
 export const metadata: Metadata = { title: "Leaderboards" };
 
@@ -85,6 +86,15 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
           href={(value) => leaderboardHref({ board, scope, period: value })}
         />
       </div>
+      {scope === "everyone" && (
+        <div className="panel flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="max-w-xl text-sm text-muted-foreground">
+            Only players who chose to be listed appear on the Everyone boards (you always see your
+            own row).
+          </p>
+          <VisibilityToggle listed={user.settings.profileVisibility === "public"} />
+        </div>
+      )}
 
       {view ? (
         <LeaderboardBoard view={view} />

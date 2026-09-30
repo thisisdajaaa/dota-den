@@ -75,10 +75,18 @@ export class LeaderboardService {
     },
   ) {}
 
-  /** Everyone, or the viewer plus friends who have Dota Den accounts. */
+  /**
+   * Everyone who chose to be listed publicly (plus the viewer, who always sees themself),
+   * or the viewer plus friends who have Dota Den accounts. Profiles are private by default.
+   */
   private async members(viewer: Viewer, scope: Scope): Promise<Members> {
     if (scope === "everyone") {
-      return { userIds: null, friendsWithAccounts: null, friendsIncomplete: false };
+      const listed = await this.deps.accounts.publicUserIds();
+      return {
+        userIds: new Set([viewer.userId, ...listed]),
+        friendsWithAccounts: null,
+        friendsIncomplete: false,
+      };
     }
     const found = await this.deps.friends.friendAccountIds(viewer);
     const ids = [...new Set(found.accountIds)].filter((id) => id !== viewer.accountId32);

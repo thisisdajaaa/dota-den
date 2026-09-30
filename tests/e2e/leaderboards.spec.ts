@@ -131,6 +131,20 @@ test("a friend sees your challenge answers and finished drafts on the leaderboar
   });
   await expect(own).toContainText("You");
 
+  // Profiles are private by default: the friend doesn't see Fixture Hero on Everyone until
+  // Fixture Hero opts in.
+  await friendPage.goto("/leaderboards?board=drafts&scope=everyone&period=all");
+  const heroOnEveryone = board(friendPage, "Draft games").getByRole("listitem", {
+    name: /^Rank \d+: Fixture Hero$/,
+  });
+  await expect(heroOnEveryone).toHaveCount(0);
+  const toggle = heroPage.getByRole("checkbox", { name: /Show me on the Everyone boards/ });
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await expect(heroPage.getByText("You're listed on the Everyone boards.")).toBeVisible();
+  await friendPage.reload();
+  await expect(heroOnEveryone).toBeVisible();
+
   // Friend rooms: results are labelled as self-reported.
   await heroPage.goto("/leaderboards?board=rooms");
   await expect(board(heroPage, "Friend rooms")).toContainText("self-reported");

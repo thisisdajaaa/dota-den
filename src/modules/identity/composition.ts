@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getDb } from "@/lib/db/mongo";
 import { AuthService } from "./application/auth-service";
-import type { User } from "./domain/user";
+import type { ProfileVisibility, User } from "./domain/user";
 import type { IdentityProvider } from "./application/ports";
 import { FakeIdentityProvider } from "./infrastructure/fake-identity-provider";
 import { SteamOpenIdProvider } from "./infrastructure/steam-openid-provider";
@@ -86,4 +86,21 @@ export async function findUsersByIds(ids: readonly string[]): Promise<User[]> {
 /** The Dota Den users among these Steam accounts. */
 export async function findUsersByAccountIds(accountIds: readonly number[]): Promise<User[]> {
   return new MongoUserRepository(await getDb()).findByAccountIds(accountIds);
+}
+
+/** Users who chose to be listed publicly (capped: the Everyone leaderboards read this). */
+export async function findPublicUserIds(limit = 5_000): Promise<string[]> {
+  return new MongoUserRepository(await getDb()).findPublicIds(limit);
+}
+
+/** Change who can see a user's profile and activity. "public" lists them on Everyone boards. */
+export async function setProfileVisibility(
+  userId: string,
+  visibility: ProfileVisibility,
+): Promise<boolean> {
+  return new MongoUserRepository(await getDb()).setProfileVisibility(
+    userId,
+    visibility,
+    new Date(),
+  );
 }

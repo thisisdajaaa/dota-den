@@ -252,6 +252,8 @@ function setup(
     rooms?: RoomTotals[];
     incomplete?: boolean;
     rowLimit?: number;
+    /** Users listed publicly (default: everyone). */
+    listed?: string[];
   } = {},
 ) {
   const activity = new MemoryActivity();
@@ -269,6 +271,7 @@ function setup(
     accounts: {
       byUserIds: async (ids) => users.filter((u) => ids.includes(u.userId)),
       byAccountIds: async (ids) => users.filter((u) => ids.includes(u.accountId32)),
+      publicUserIds: async () => opts.listed ?? users.map((u) => u.userId),
     },
     profiles: {
       profile: async (id) =>
@@ -325,8 +328,8 @@ describe("LeaderboardService", () => {
     expect([...(activity.queries[0].userIds ?? [])].sort()).toEqual(["u1", "u2", "u3"]);
   });
 
-  it("shows everyone on the everyone board", async () => {
-    const { service, draft, activity } = setup();
+  it("shows publicly listed players on the everyone board", async () => {
+    const { service, draft } = setup();
     draft("u1", "a", NOW);
     draft("u4", "d", NOW);
     const view = await service.board({
@@ -338,7 +341,22 @@ describe("LeaderboardService", () => {
     });
     expect(view.rows).toHaveLength(2);
     expect(view.friendsWithAccounts).toBeNull();
-    expect(activity.queries[0].userIds).toBeNull();
+  });
+
+  it("keeps unlisted players off the everyone board, but always shows you", async () => {
+    const { service, draft, activity } = setup({ listed: ["u2"] });
+    draft("u1", "a", NOW);
+    draft("u2", "b", NOW);
+    draft("u4", "d", NOW);
+    const view = await service.board({
+      viewer,
+      kind: "drafts",
+      scope: "everyone",
+      period: "all",
+      now: NOW,
+    });
+    expect(view.rows.map((r) => r.player.accountId32).sort()).toEqual([1, 2]);
+    expect(activity.queries[0].userIds?.sort()).toEqual(["u1", "u2"]);
   });
 
   it("counts only this week on the weekly board", async () => {

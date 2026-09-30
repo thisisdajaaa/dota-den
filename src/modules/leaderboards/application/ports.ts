@@ -40,6 +40,8 @@ export interface AccountDirectory {
   byUserIds(userIds: readonly string[]): Promise<PlayerAccount[]>;
   /** Only the accounts that exist: most friends won't have a Dota Den account. */
   byAccountIds(accountIds: readonly number[]): Promise<PlayerAccount[]>;
+  /** Users who chose to be listed publicly: the only ones on the Everyone boards. */
+  publicUserIds(): Promise<string[]>;
 }
 
 /** A player's public profile (OpenDota via the players context); null when unavailable. */

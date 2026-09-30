@@ -11,6 +11,7 @@ import {
 import { getAiOpponent, getDraftHistoryService } from "@/modules/drafts/composition";
 import {
   findUsersByAccountIds,
+  findPublicUserIds,
   findUsersByIds,
   getCurrentUser,
 } from "@/modules/identity/composition";
@@ -82,6 +83,7 @@ const toAccount = (u: User): PlayerAccount => ({
 const accounts: AccountDirectory = {
   byUserIds: async (ids) => (await findUsersByIds(ids)).map(toAccount),
   byAccountIds: async (ids) => (await findUsersByAccountIds(ids)).map(toAccount),
+  publicUserIds: () => findPublicUserIds(),
 };
 
 /**
