@@ -47,6 +47,7 @@ test("public pages fit a phone screen, and guests get navigation", async ({ page
     "/meta?pos=1",
     "/players",
     "/players/22202",
+    "/players/compare?a=22202&b=40001",
     "/patches",
     "/patches/7.41",
     "/draft",
