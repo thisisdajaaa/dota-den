@@ -215,6 +215,8 @@ describe("OpenDotaAdapter.getItems", () => {
                     id: 36,
                     img: "/apps/dota2/images/dota_react/items/magic_wand.png?t=1",
                     dname: "Magic Wand",
+                    qual: "common",
+                    cost: 450,
                   },
                 },
           ),
@@ -232,9 +234,12 @@ describe("OpenDotaAdapter.getItems", () => {
       value: [
         {
           id: 36,
+          key: "magic_wand",
           name: "Magic Wand",
           imageUrl:
             "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/magic_wand.png",
+          qual: "common",
+          cost: 450,
         },
       ],
     });

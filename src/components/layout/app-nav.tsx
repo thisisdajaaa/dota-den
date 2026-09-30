@@ -10,6 +10,7 @@ import {
   History,
   LayoutDashboard,
   ScrollText,
+  Shield,
   Swords,
   TrendingUp,
   Users,
@@ -21,6 +22,7 @@ import { cn } from "cn";
 export type NavKey =
   | "overview"
   | "matches"
+  | "heroes"
   | "mmr"
   | "sessions"
   | "together"
@@ -33,6 +35,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
   [
     { key: "overview", href: "/dashboard", label: "Overview", icon: LayoutDashboard, auth: true },
     { key: "matches", href: "/matches", label: "Matches", icon: ScrollText, auth: true },
+    { key: "heroes", href: "/heroes", label: "Heroes", icon: Shield, auth: true },
     { key: "mmr", href: "/mmr", label: "MMR journal", icon: CalendarRange, auth: true },
     { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
     { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
