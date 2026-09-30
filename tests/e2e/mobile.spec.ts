@@ -54,6 +54,8 @@ test("public pages fit a phone screen, and guests get navigation", async ({ page
     "/draft/challenges",
     "/live",
     "/live/8000000001",
+    "/guides",
+    "/guides/1",
   ]) {
     await expectFits(page, path);
   }

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
-import { Compass } from "lucide-react";
+import { BookOpen, Compass } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/modules/identity/composition";
@@ -49,6 +51,13 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
         kicker="Meta"
         title="What's strong right now"
         description="The heroes and lane partners doing best for each role in recent high-rank games and tournaments, with this patch's changes."
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/guides">
+              <BookOpen aria-hidden className="size-4" /> Hero guides
+            </Link>
+          </Button>
+        }
       />
       <Suspense fallback={<Skeleton className="h-4 w-72" />}>
         <PatchLine patch={patch} />

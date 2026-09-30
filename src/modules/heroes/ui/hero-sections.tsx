@@ -70,14 +70,16 @@ export function HeroBanner({
           {[hero?.attackType, ...(hero?.roles ?? []).slice(0, 3)].filter(Boolean).join(" · ") ||
             "Hero details unavailable"}
         </p>
-        {games > 0 && (
-          <Link
-            href={`/matches?hero=${heroId}`}
-            className="inline-block text-xs text-gold hover:underline"
-          >
-            All {countOf(games, "match", "matches")} on {name}
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          {games > 0 && (
+            <Link href={`/matches?hero=${heroId}`} className="text-gold hover:underline">
+              All {countOf(games, "match", "matches")} on {name}
+            </Link>
+          )}
+          <Link href={`/guides/${heroId}`} className="text-gold hover:underline">
+            Pro guide for {name}
           </Link>
-        )}
+        </p>
       </div>
     </section>
   );

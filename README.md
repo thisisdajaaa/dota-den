@@ -96,6 +96,8 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   score, clock, gold lead and lineups. Once both drafts are complete, the same outlook and report card as the draft
   tool grade the live draft. A Watch section finds Twitch streams whose titles mention the game and plays them in
   the page (with a Twitch app configured), plus Twitch and YouTube searches.
+- **Hero guides.** For every hero: the items pros buy in each phase, what typical, top 10% and top 1% games reach
+  (GPM, XPM, last hits, damage), and recent pro games to open and learn from.
 - **Link previews.** Shared matches, players and drafts unfurl with a generated image (heroes, score, grades).
 
 ### Drafting

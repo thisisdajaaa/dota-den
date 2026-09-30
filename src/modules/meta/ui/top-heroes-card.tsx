@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
@@ -86,7 +87,12 @@ export function TopHeroesCard({
                 <HeroPortrait hero={hero} heroId={h.heroId} size="md" />
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{heroName(hero, h.heroId)}</p>
+                    <Link
+                      href={`/guides/${h.heroId}`}
+                      className="font-medium hover:text-gold hover:underline"
+                    >
+                      {heroName(hero, h.heroId)}
+                    </Link>
                     <TrendBadge hero={h} />
                   </div>
                   {h.highRank && (
