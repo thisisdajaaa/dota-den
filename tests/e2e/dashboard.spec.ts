@@ -118,3 +118,30 @@ test("match list filters and totals reconcile", async ({ page }) => {
   await page.goto("/matches?queue=%24ne&result=drop&hero=abc&cursor=../../x");
   await expect(totals).toContainText("12");
 });
+
+test("sync waits out a busy OpenDota and tries again by itself", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/api/v1/me/matches/sync", async (route) => {
+    calls++;
+    if (calls === 1) {
+      await route.fulfill({
+        status: 429,
+        json: {
+          error: {
+            code: "rate_limited",
+            message: "OpenDota is busy right now.",
+            details: { reason: "upstream_rate_limited", retryAt: new Date().toISOString() },
+          },
+        },
+      });
+    } else {
+      await route.continue();
+    }
+  });
+  // A player with no imported matches yet, so the dashboard syncs on load.
+  await page.goto("/api/v1/auth/steam/login?as=76561197960305729");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("status").filter({ hasText: "OpenDota is busy" })).toBeVisible();
+  await expect.poll(() => calls, { timeout: 20_000 }).toBeGreaterThanOrEqual(2);
+  await expect(page.getByText("Sync paused")).toHaveCount(0);
+});

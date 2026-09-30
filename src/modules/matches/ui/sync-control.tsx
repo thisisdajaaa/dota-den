@@ -14,7 +14,11 @@ interface SyncSummary {
   backfillComplete: boolean;
 }
 
-type Status = "idle" | "syncing" | "waiting" | "error";
+type Status = "idle" | "syncing" | "waiting" | "busy" | "error";
+
+/** Automatic retries when OpenDota is busy or down, before showing "paused". */
+const MAX_AUTO_RETRIES = 4;
+const UNAVAILABLE_RETRY_MS = 90_000;
 
 /**
  * Keeps the signed-in player's matches fresh without a button press:
@@ -45,6 +49,7 @@ export function SyncControl({
   const [awaiting, setAwaiting] = useState(awaitingHistory);
   const awaitingRef = useRef(awaitingHistory);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retries = useRef(0);
   const started = useRef(false);
   // Timers call through this ref so a scheduled retry always runs the latest `sync`.
   const syncRef = useRef<(manual: boolean) => Promise<void>>(async () => {});
@@ -56,11 +61,14 @@ export function SyncControl({
 
   async function sync(manual: boolean) {
     if (timer.current) clearTimeout(timer.current);
+    // Pressing "Sync now" starts the automatic retries over.
+    if (manual) retries.current = 0;
     setStatus("syncing");
     try {
       const res = await fetch("/api/v1/me/matches/sync", { method: "POST" });
       const body: unknown = await res.json().catch(() => null);
       if (res.ok) {
+        retries.current = 0;
         const s = body as SyncSummary;
         const stillEmpty = awaitingRef.current && s.fetched === 0;
         awaitingRef.current = stillEmpty;
@@ -84,9 +92,24 @@ export function SyncControl({
         }
         return;
       }
-      const retryAt = (body as { error?: { details?: { retryAt?: string } } } | null)?.error
-        ?.details?.retryAt;
-      if (res.status === 429 && retryAt) {
+      const details = (
+        body as { error?: { details?: { retryAt?: string; reason?: string } } } | null
+      )?.error?.details;
+      const retryAt = details?.retryAt;
+      // OpenDota busy (rate limited) or down: wait and try again a few times before giving up.
+      const upstreamBusy = res.status === 429 && details?.reason === "upstream_rate_limited";
+      if ((upstreamBusy || res.status >= 500) && retries.current < MAX_AUTO_RETRIES) {
+        retries.current++;
+        setStatus("busy");
+        if (manual) toast("OpenDota is busy. We'll keep trying.");
+        schedule(
+          upstreamBusy && retryAt
+            ? Math.max(5_000, new Date(retryAt).getTime() - Date.now() + 1_000)
+            : UNAVAILABLE_RETRY_MS,
+        );
+        return;
+      }
+      if (res.status === 429 && retryAt && !upstreamBusy) {
         // Cooldown: quietly try again once it passes if history is still importing.
         if (manual) toast("Synced recently. Try again in a few minutes.");
         setStatus(importingRef.current ? "waiting" : "idle");
@@ -137,20 +160,23 @@ export function SyncControl({
         ? awaiting
           ? "Waiting for OpenDota to fetch your history…"
           : "Importing older matches…"
-        : status === "error"
-          ? "Sync paused. OpenDota may be unavailable."
-          : lastSyncedLabel
-            ? `Synced ${lastSyncedLabel}`
-            : "Not synced yet";
+        : status === "busy"
+          ? "OpenDota is busy. Retrying shortly…"
+          : status === "error"
+            ? "Sync paused. OpenDota may be unavailable."
+            : lastSyncedLabel
+              ? `Synced ${lastSyncedLabel}`
+              : "Not synced yet";
 
   return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    // A soft backdrop keeps the status readable over the banner's hero art.
+    <div className="flex items-center gap-1 rounded-full bg-background/75 py-0.5 pr-0.5 pl-3 text-xs text-muted-foreground ring-1 ring-white/[0.06] backdrop-blur">
       <span className="flex items-center gap-2" role="status" aria-live="polite">
         <span
           aria-hidden
           className={cn(
             "size-1.5 rounded-full",
-            status === "syncing" || status === "waiting"
+            status === "syncing" || status === "waiting" || status === "busy"
               ? "animate-pulse bg-gold"
               : status === "error"
                 ? "bg-loss"
