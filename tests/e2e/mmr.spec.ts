@@ -77,3 +77,18 @@ test("calendar views and bad params degrade gracefully", async ({ page }) => {
     await expect(page.getByRole("heading", { level: 1, name: "MMR journal" })).toBeVisible();
   }
 });
+
+test("the climb by hero estimates each hero's MMR change, labelled as an estimate", async ({
+  page,
+}) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/mmr?view=all");
+  const climb = page.getByRole("region", { name: "Climb by hero" });
+  await expect(climb).toContainText("Dota doesn't report MMR per hero");
+  const rows = climb.getByRole("link", { name: /wins?, \d+ loss(es)?, about .* MMR \(estimate\)/ });
+  await expect(rows.first()).toBeVisible();
+  await expect(
+    climb.getByRole("img", { name: /estimated climb, game by game/ }).first(),
+  ).toBeVisible();
+});
