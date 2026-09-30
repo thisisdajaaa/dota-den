@@ -7,8 +7,10 @@ import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
 import { AiOpponentService, type AiHero } from "./application/ai-opponent-service";
 import { ChallengeService } from "./application/challenge-service";
+import { DraftHistoryService } from "./application/draft-history-service";
 import { DraftRoomService } from "./application/draft-room-service";
 import { GroqDraftAdvisor } from "./infrastructure/groq-draft-advisor";
+import { MongoDraftHistoryRepository } from "./infrastructure/mongo-draft-history";
 import { MongoDraftMetaCache } from "./infrastructure/mongo-draft-meta-cache";
 import { MongoDraftRoomRepository } from "./infrastructure/mongo-draft-rooms";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
@@ -86,13 +88,33 @@ function newRoomId(): string {
   return id;
 }
 
+export async function getDraftHistoryService(): Promise<DraftHistoryService> {
+  const db = await getDb();
+  const rooms = new MongoDraftRoomRepository(db);
+  return new DraftHistoryService({
+    history: new MongoDraftHistoryRepository(db),
+    getRoom: (roomId) => rooms.get(roomId),
+    existingRoomIds: (roomIds) => rooms.existingIds(roomIds),
+  });
+}
+
 export async function getDraftRoomService(): Promise<DraftRoomService> {
   const db = await getDb();
+  const history = await getDraftHistoryService();
   return new DraftRoomService({
     rooms: new MongoDraftRoomRepository(db),
     heroPool: async () => [...(await getHeroMap()).keys()],
     newId: newRoomId,
     enabled: env().FEATURE_DRAFT_ROOMS,
+    // A failed history write must not fail the final pick; the room page and the result
+    // endpoints save a finished room that is missing from history.
+    onCompleted: async (room) => {
+      try {
+        await history.recordCompleted(room);
+      } catch (error) {
+        logger.error("draft_history_record_failed", { roomId: room.id, error });
+      }
+    },
   });
 }
 

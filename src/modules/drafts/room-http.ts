@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/lib/http";
 import { getRouteUser } from "@/modules/identity/composition";
 import { getPlayerProfile } from "@/modules/matches/composition";
+import type { HistoryError } from "./application/draft-history-service";
 import type { Actor, RoomError } from "./application/draft-room-service";
 import type { EventView, RoomView } from "./application/room-views";
 import { seatOf, type DraftRoom, type RoomEvent } from "./domain/draft-room";
@@ -93,6 +94,17 @@ export function roomErrorResponse(error: RoomError, viewerUserId: string | null)
         "bad_request",
         `That move isn't allowed (${error.reason.replaceAll("_", " ")}).`,
       );
+  }
+}
+
+export function historyErrorResponse(error: HistoryError): NextResponse {
+  switch (error.type) {
+    case "not_found":
+      return apiError("not_found", "This draft doesn't exist or has expired.");
+    case "not_completed":
+      return apiError("conflict", "The draft isn't finished yet.");
+    case "not_captain":
+      return apiError("forbidden", "Only the two captains can report the result.");
   }
 }
 

@@ -69,6 +69,11 @@ export class DraftRoomService {
       newId: () => string;
       enabled: boolean;
       now?: () => number;
+      /**
+       * Called once by the writer whose commit finished the draft (saves it to history).
+       * Must be idempotent: a lost response can make a retried read call it again.
+       */
+      onCompleted?: (room: DraftRoom) => Promise<void>;
     },
   ) {
     this.now = deps.now ?? (() => Date.now());
@@ -254,7 +259,16 @@ export class DraftRoomService {
       state,
       status: isComplete(state) ? "completed" : "in_progress",
     });
-    return this.commit(room, next, this.event(next, "draft", actor, event, side, idempotencyKey));
+    const res = await this.commit(
+      room,
+      next,
+      this.event(next, "draft", actor, event, side, idempotencyKey),
+    );
+    // Only the commit that moved the room to "completed" gets here with that transition.
+    if (res.ok && room.status !== "completed" && res.value.status === "completed") {
+      await this.deps.onCompleted?.(res.value);
+    }
+    return res;
   }
 
   private async settleTimeout(room: DraftRoom): Promise<DraftRoom> {
