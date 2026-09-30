@@ -29,5 +29,6 @@ test("the compare page asks for two players when one is missing", async ({ page 
   await expect(page.getByRole("region", { name: "Side by side" })).toBeVisible();
 
   await page.goto("/players/compare?a=22202&b=22202");
-  await expect(page.getByRole("alert")).toContainText("two different players");
+  // Next's route announcer is also an (empty) alert, so pick ours by its text.
+  await expect(page.getByRole("alert").filter({ hasText: "two different players" })).toBeVisible();
 });

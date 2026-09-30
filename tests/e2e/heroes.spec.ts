@@ -98,6 +98,13 @@ test("the heroes index lists your heroes and positions", async ({ page }) => {
   await expect(grid.getByRole("link").first()).toHaveAttribute("href", "/heroes/1");
   await expect(grid.getByRole("link").nth(1)).toContainText("Pudge");
 
+  // Suggestions for your role, favouring heroes that beat the one you lose to most.
+  const advice = page.getByRole("region", { name: "Heroes to add" });
+  await expect(advice).toContainText("Pos 1");
+  await expect(advice).toContainText("Fixture Hero 110");
+  await expect(advice.getByRole("link")).toHaveCount(3);
+  await expect(advice.getByRole("link").first()).toHaveAttribute("href", /^\/guides\/\d+$/);
+
   const lanes = page.getByRole("region", { name: "Where you play" });
   await expect(lanes.getByRole("list", { name: "Heroes as Pos 3" })).toContainText("Pudge");
   await lanes.getByRole("list", { name: "Heroes as Pos 3" }).getByRole("link").click();
