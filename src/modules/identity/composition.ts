@@ -12,6 +12,7 @@ import {
   MongoNonceStore,
   MongoSessionRepository,
   MongoUserRepository,
+  adminUserRows,
 } from "./infrastructure/mongo-identity-repositories";
 
 export const SESSION_COOKIE = "dd_session";
@@ -103,4 +104,9 @@ export async function setProfileVisibility(
     visibility,
     new Date(),
   );
+}
+
+/** Admin overview: every user with session counts and last activity. */
+export async function getAdminUserRows() {
+  return adminUserRows(await getDb());
 }

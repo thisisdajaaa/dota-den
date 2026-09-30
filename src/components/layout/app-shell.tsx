@@ -28,6 +28,10 @@ const ENABLED: readonly NavKey[] = [
   "leaderboards",
 ];
 
+/** Admins also get the Admin page in their navigation. */
+const navFor = (user: { roles: readonly string[] }): readonly NavKey[] =>
+  user.roles.includes("admin") ? [...ENABLED, "admin"] : ENABLED;
+
 function Brand() {
   return (
     <Link href="/" className="flex items-center gap-2.5" aria-label="Dota Den home">
@@ -121,7 +125,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <p className="px-3 pb-2 text-[0.65rem] font-semibold tracking-[0.18em] text-muted-foreground/70 uppercase">
             Menu
           </p>
-          <SidebarNav enabled={ENABLED} />
+          <SidebarNav enabled={navFor(user)} />
         </div>
         <div className="space-y-3 border-t border-white/[0.06] p-4">
           <div className="flex items-center gap-3">
@@ -159,7 +163,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         {/* Room for the bottom tab bar, below the footer so it never covers it. */}
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
       </div>
-      <MobileTabBar enabled={ENABLED} signedIn />
+      <MobileTabBar enabled={navFor(user)} signedIn />
       <TimeZoneSync current={tz.known ? tz.timeZone : null} />
     </>
   );

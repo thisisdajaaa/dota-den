@@ -408,3 +408,41 @@ export class MongoMatchQueries implements MatchQueries {
     return { facts: docs.map(toDashboardFact), latestPatch };
   }
 }
+
+/** Admin overview: imported matches and sync state per account. */
+export async function matchStatsByAccount(
+  db: Db,
+  accountIds: readonly number[],
+): Promise<Map<number, { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }>> {
+  const ids = [...accountIds];
+  const [counts, states] = await Promise.all([
+    db
+      .collection(MATCH_COLLECTIONS.facts)
+      .aggregate<{ _id: number; n: number }>([
+        { $match: { accountId32: { $in: ids } } },
+        { $group: { _id: "$accountId32", n: { $sum: 1 } } },
+      ])
+      .toArray(),
+    db
+      .collection(MATCH_COLLECTIONS.syncState)
+      .find(
+        { accountId32: { $in: ids } },
+        { projection: { accountId32: 1, lastSyncAt: 1, backfillComplete: 1 } },
+      )
+      .toArray(),
+  ]);
+  const n = new Map(counts.map((c) => [c._id, c.n]));
+  const out = new Map<
+    number,
+    { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }
+  >();
+  for (const id of ids) {
+    const s = states.find((x) => x.accountId32 === id);
+    out.set(id, {
+      matches: n.get(id) ?? 0,
+      lastSyncAt: (s?.lastSyncAt as Date | null | undefined) ?? null,
+      backfillComplete: Boolean(s?.backfillComplete),
+    });
+  }
+  return out;
+}

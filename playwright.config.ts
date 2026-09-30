@@ -36,6 +36,8 @@ export default defineConfig({
         MONGODB_URI: process.env.MONGODB_TEST_URI ?? "mongodb://127.0.0.1:27017",
         MONGODB_DB_NAME: DB_NAME,
         AUTH_TEST_MODE: "true",
+        // The default test identity (Fixture Hero) is an admin, to cover /admin.
+        ADMIN_STEAM_IDS: "76561197960287930",
         // Keep the E2E build separate from a developer's `next dev`.
         NEXT_DIST_DIR: ".next-e2e",
         // Never call the real OpenDota API from tests.

@@ -195,3 +195,39 @@ export class MongoNonceStore implements NonceStore {
     }
   }
 }
+
+/** Admin overview: every user with their session count and last activity. */
+export async function adminUserRows(db: Db): Promise<
+  Array<{
+    userId: string;
+    accountId32: number;
+    createdAt: Date;
+    isAdmin: boolean;
+    profileVisibility: string;
+    sessions: number;
+    lastSeenAt: Date | null;
+  }>
+> {
+  const [users, sessions] = await Promise.all([
+    db.collection(IDENTITY_COLLECTIONS.users).find({}).sort({ createdAt: -1 }).toArray(),
+    db
+      .collection(IDENTITY_COLLECTIONS.sessions)
+      .aggregate<{ _id: string; n: number; last: Date | null }>([
+        { $group: { _id: "$userId", n: { $sum: 1 }, last: { $max: "$rotatedAt" } } },
+      ])
+      .toArray(),
+  ]);
+  const byUser = new Map(sessions.map((s) => [String(s._id), s]));
+  return users.map((u) => {
+    const s = byUser.get(u._id.toHexString());
+    return {
+      userId: u._id.toHexString(),
+      accountId32: u.accountId32 as number,
+      createdAt: u.createdAt as Date,
+      isAdmin: ((u.roles as string[] | undefined) ?? []).includes("admin"),
+      profileVisibility: (u.settings?.profileVisibility as string | undefined) ?? "private",
+      sessions: s?.n ?? 0,
+      lastSeenAt: s?.last ?? null,
+    };
+  });
+}

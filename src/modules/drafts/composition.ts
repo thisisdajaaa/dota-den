@@ -12,7 +12,10 @@ import { ChallengeService } from "./application/challenge-service";
 import { DraftHistoryService } from "./application/draft-history-service";
 import { DraftRoomService } from "./application/draft-room-service";
 import { GroqDraftAdvisor } from "./infrastructure/groq-draft-advisor";
-import { MongoDraftHistoryRepository } from "./infrastructure/mongo-draft-history";
+import {
+  MongoDraftHistoryRepository,
+  roomDraftCountsByUser,
+} from "./infrastructure/mongo-draft-history";
 import { MongoDraftMetaCache } from "./infrastructure/mongo-draft-meta-cache";
 import { OpenDotaAbilityCatalog } from "./infrastructure/opendota-ability-catalog";
 import { MongoDraftRoomRepository } from "./infrastructure/mongo-draft-rooms";
@@ -182,4 +185,9 @@ export async function getDraftHeroes(): Promise<DraftHero[]> {
       attackType: h.attackType,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Admin overview: finished room drafts per captain. */
+export async function getRoomDraftCounts(userIds: readonly string[]) {
+  return roomDraftCountsByUser(await getDb(), userIds);
 }

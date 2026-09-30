@@ -179,3 +179,20 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
     return rows;
   }
 }
+
+/** Admin overview: finished room drafts per captain. */
+export async function roomDraftCountsByUser(
+  db: Db,
+  userIds: readonly string[],
+): Promise<Map<string, number>> {
+  const rows = await db
+    .collection(DRAFT_HISTORY_COLLECTION)
+    .aggregate<{ _id: string; n: number }>([
+      { $match: { captainUserIds: { $in: [...userIds] } } },
+      { $unwind: "$captainUserIds" },
+      { $match: { captainUserIds: { $in: [...userIds] } } },
+      { $group: { _id: "$captainUserIds", n: { $sum: 1 } } },
+    ])
+    .toArray();
+  return new Map(rows.map((r) => [String(r._id), r.n]));
+}

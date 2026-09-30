@@ -230,3 +230,27 @@ export class MongoActivityRepository implements ActivityRepository {
       .toArray();
   }
 }
+
+/** Admin overview: finished drafts and challenge answers per user. */
+export async function activityCountsByUser(
+  db: Db,
+  userIds: readonly string[],
+): Promise<Map<string, { drafts: number; challenges: number }>> {
+  const count = (name: string) =>
+    db
+      .collection(name)
+      .aggregate<{ _id: string; n: number }>([
+        { $match: { userId: { $in: [...userIds] } } },
+        { $group: { _id: "$userId", n: { $sum: 1 } } },
+      ])
+      .toArray();
+  const [drafts, challenges] = await Promise.all([
+    count(LEADERBOARD_COLLECTIONS.drafts),
+    count(LEADERBOARD_COLLECTIONS.attempts),
+  ]);
+  const out = new Map<string, { drafts: number; challenges: number }>();
+  for (const id of userIds) out.set(id, { drafts: 0, challenges: 0 });
+  for (const d of drafts) out.get(String(d._id))!.drafts = d.n;
+  for (const c of challenges) out.get(String(c._id))!.challenges = c.n;
+  return out;
+}

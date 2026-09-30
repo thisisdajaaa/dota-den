@@ -11,7 +11,7 @@ import { JobRunner } from "./application/job-runner";
 import type { JobHandler, JobQueue } from "./application/ports";
 import { bucketedKey, type JobName } from "./domain/job";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
-import { MongoJobRunRepository } from "./infrastructure/mongo-job-runs";
+import { MongoJobRunRepository, recentJobFailures } from "./infrastructure/mongo-job-runs";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
 
 /** A long history is imported in chunks; stop chaining after this many (a safety net). */
@@ -101,4 +101,9 @@ export async function enqueueMatchBackfill(
       delaySec: Math.ceil(delayMs / 1000),
     },
   );
+}
+
+/** Admin overview: the latest failed background jobs. */
+export async function getRecentJobFailures() {
+  return recentJobFailures(await getDb());
 }
