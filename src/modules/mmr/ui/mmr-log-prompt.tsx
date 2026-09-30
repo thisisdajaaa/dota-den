@@ -71,12 +71,11 @@ export function MmrLogPrompt({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as {
-          error?: { message?: string; details?: { fieldErrors?: { mmr?: string[] } } };
+          // The route sends the field errors themselves as details.
+          error?: { message?: string; details?: { mmr?: string[] } };
         } | null;
         throw new Error(
-          body?.error?.details?.fieldErrors?.mmr?.[0] ??
-            body?.error?.message ??
-            "Couldn't save that.",
+          body?.error?.details?.mmr?.[0] ?? body?.error?.message ?? "Couldn't save that.",
         );
       }
       toast.success("MMR logged.");

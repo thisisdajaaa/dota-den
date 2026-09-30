@@ -48,8 +48,9 @@ describe("MmrLogPrompt", () => {
           new Response(
             JSON.stringify({
               error: {
-                message: "Invalid",
-                details: { fieldErrors: { mmr: ["MMR can't be above 15,000"] } },
+                // Same shape as the route: details are the flattened field errors.
+                message: "Check the highlighted fields",
+                details: { mmr: ["MMR can't be above 15,000"] },
               },
             }),
             { status: 400 },

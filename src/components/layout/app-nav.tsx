@@ -7,6 +7,7 @@ import {
   BookOpenText,
   CalendarRange,
   Ellipsis,
+  GraduationCap,
   History,
   LayoutDashboard,
   Radio,
@@ -30,6 +31,7 @@ export type NavKey =
   | "sessions"
   | "together"
   | "meta"
+  | "guides"
   | "players"
   | "patches"
   | "draft"
@@ -46,6 +48,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
     { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
     { key: "meta", href: "/meta", label: "Meta", icon: TrendingUp, auth: false },
+    { key: "guides", href: "/guides", label: "Guides", icon: GraduationCap, auth: false },
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },

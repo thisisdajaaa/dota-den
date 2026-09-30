@@ -78,7 +78,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           backfillComplete={sync?.backfillComplete ?? false}
           backfillCooldownMs={BACKFILL_COOLDOWN_MS}
           recheckMs={SYNC_COOLDOWN_MS}
-          awaitingHistory={!hasAnyMatches && sync?.lastSyncAt != null}
+          awaitingHistory={!hasAnyMatches}
           lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}
         />
       </PlayerBanner>
