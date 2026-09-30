@@ -6,7 +6,10 @@ import { logger } from "@/lib/logger";
 import { draftInsights } from "@/modules/drafts/composition";
 import { bucketedKey } from "@/modules/jobs/domain/job";
 import { getJobQueue } from "@/modules/jobs/composition";
+import { warmMetaCaches } from "@/modules/meta/composition";
 import { getPatchImportService } from "@/modules/patches/composition";
+
+export const maxDuration = 60;
 
 const DAY_MS = 24 * 3_600_000;
 
@@ -36,7 +39,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           .then((i) => i.warm())
           .catch(() => [{ key: "tournaments", ok: false }]),
   ]);
-  logger.info("draft_meta_refresh", { requestId: requestId(req), tournaments });
+  // The Meta page's slow tournament queries (lane duos take ~13s): cache them for every server.
+  const meta = await warmMetaCaches();
+  logger.info("draft_meta_refresh", { requestId: requestId(req), tournaments, meta });
   const log = { requestId: requestId(req), trigger: "cron", durationMs: Date.now() - started };
 
   if (!result.ok) {

@@ -110,3 +110,19 @@ export async function getLatestPatchForMeta(): Promise<LatestPatchResult> {
     return { status: "unavailable" };
   }
 }
+
+/**
+ * Run the Meta page's slow tournament queries so their results are cached (in Redis, for
+ * every server) before anyone asks. Called by the daily cron. Never throws.
+ */
+export async function warmMetaCaches(): Promise<Array<{ key: string; ok: boolean }>> {
+  const source = metaSource();
+  const [drafts, duos] = await Promise.all([
+    source.proDrafts().catch(() => null),
+    source.proLaneDuos().catch(() => null),
+  ]);
+  return [
+    { key: "proDrafts", ok: drafts?.ok ?? false },
+    { key: "proLaneDuos", ok: duos?.ok ?? false },
+  ];
+}

@@ -16,7 +16,13 @@ export interface UpstreamBudget {
   take(): Promise<{ allowed: boolean; retryAfterMs: number | null }>;
 }
 export type GatewayResponse =
-  | { ok: true; status: number; body: unknown }
+  | {
+      ok: true;
+      status: number;
+      body: unknown;
+      /** When the body was fetched upstream (ms epoch); set when it came from a cache. */
+      fetchedAt?: number;
+    }
   | { ok: false; kind: "not_found"; status: 404 }
   | { ok: false; kind: "rate_limited"; status: 429; retryAfterMs: number | null }
   | { ok: false; kind: "circuit_open" }
@@ -67,7 +73,12 @@ export class ProviderGateway {
 
   async getJson(
     url: string,
-    opts: { cacheTtlMs?: number; headers?: HeadersInit } = {},
+    opts: {
+      cacheTtlMs?: number;
+      headers?: HeadersInit;
+      /** Cache a successful response only if this accepts its body (e.g. no error inside). */
+      cacheIf?: (body: unknown) => boolean;
+    } = {},
   ): Promise<GatewayResponse> {
     const cached = this.cache.get(url);
     if (cached && cached.expiresAt > this.now) return cached.value;
@@ -82,7 +93,7 @@ export class ProviderGateway {
 
   private async fetchThroughShared(
     url: string,
-    opts: { cacheTtlMs?: number; headers?: HeadersInit },
+    opts: { cacheTtlMs?: number; headers?: HeadersInit; cacheIf?: (body: unknown) => boolean },
   ): Promise<GatewayResponse> {
     const shared = opts.cacheTtlMs ? this.opts.sharedCache : undefined;
     if (shared) {
@@ -96,9 +107,12 @@ export class ProviderGateway {
       }
     }
     const res = await this.execute(url, opts.headers);
-    if (opts.cacheTtlMs && (res.ok || res.kind === "not_found")) {
-      this.cache.set(url, { expiresAt: this.now + opts.cacheTtlMs, value: res });
-      await shared?.set(url, res, opts.cacheTtlMs).catch((error: unknown) => {
+    const cacheable = res.ok ? (opts.cacheIf?.(res.body) ?? true) : res.kind === "not_found";
+    if (opts.cacheTtlMs && cacheable) {
+      // Remember when it was fetched, so readers of the cache can show its real age.
+      const value = res.ok ? { ...res, fetchedAt: this.now } : res;
+      this.cache.set(url, { expiresAt: this.now + opts.cacheTtlMs, value });
+      await shared?.set(url, value, opts.cacheTtlMs).catch((error: unknown) => {
         this.opts.onSharedError?.({ op: "cache_set", error });
       });
     }

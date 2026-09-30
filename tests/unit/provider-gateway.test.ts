@@ -30,6 +30,20 @@ const json = (body: unknown, status = 200, headers: HeadersInit = {}) =>
   new Response(JSON.stringify(body), { status, headers });
 
 describe("ProviderGateway", () => {
+  it("caches a success only when cacheIf accepts the body", async () => {
+    const { gw, fetch } = gateway([
+      json({ rows: null, err: "timeout" }),
+      json({ rows: [1], err: null }),
+      json({ rows: [2], err: null }),
+    ]);
+    const cacheIf = (b: unknown) => Array.isArray((b as { rows?: unknown }).rows);
+    const opts = { cacheTtlMs: 60_000, cacheIf };
+    expect((await gw.getJson("https://x/q", opts)).ok).toBe(true); // error inside: not cached
+    expect(await gw.getJson("https://x/q", opts)).toMatchObject({ body: { rows: [1] } });
+    expect(await gw.getJson("https://x/q", opts)).toMatchObject({ body: { rows: [1] } }); // cached
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("returns parsed JSON on success", async () => {
     const { gw } = gateway([json({ a: 1 })]);
     expect(await gw.getJson("https://x/a")).toEqual({ ok: true, status: 200, body: { a: 1 } });
