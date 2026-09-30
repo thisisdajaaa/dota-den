@@ -11,6 +11,19 @@
  * - lineup rules: teams need cores and supports, so a 4th core or a 3rd support is excluded.
  */
 
+import { laneRecord, opposingPositions, type LaneTable } from "./draft-lanes";
+import {
+  assignPositions,
+  candidatePosition,
+  isSupportPosition,
+  MIN_POSITION_FIT,
+  POSITION_NAMES,
+  positionFact,
+  positionOdds,
+  type Position,
+  type PositionTable,
+} from "./draft-positions";
+
 export interface ScoringHero {
   id: number;
   name: string;
@@ -185,6 +198,12 @@ export interface Candidate {
   contest: number;
   /** Average pro synergy edge with the relevant side's heroes; null without data. */
   synergyEdge: number | null;
+  /** The position this hero would take in the lineup it joins (ours for picks, theirs for bans). */
+  position: Position | null;
+  /** How naturally it fills that slot, 0..1 (1 = nobody has to move off their usual role). */
+  positionFit: number | null;
+  /** Average pro lane edge against the heroes it would lane against (points); null without data. */
+  laneEdge: number | null;
   /** Human-readable evidence the model sees and cites. */
   facts: string[];
 }
@@ -204,9 +223,13 @@ export function rankCandidates(input: {
   matchups: ReadonlyMap<number, MatchupTable>;
   pro?: ProMeta;
   synergy?: SynergyTable;
+  /** Where heroes are played in pro games; without it, role tags estimate positions. */
+  positions?: PositionTable;
+  /** Pro laning records: who wins the lane against whom. */
+  lanes?: LaneTable;
   limit?: number;
 }): Candidate[] {
-  const { action, available, own, enemy, meta, matchups, pro, synergy } = input;
+  const { action, available, own, enemy, meta, matchups, pro, synergy, positions, lanes } = input;
   const ownNeeds = lineupNeeds(own, input.ownPicksLeft);
   const enemyNeeds = lineupNeeds(enemy, input.enemyPicksLeft);
 
@@ -216,7 +239,24 @@ export function rankCandidates(input: {
   // Synergy: picks pair with our heroes; bans deny heroes that pair with theirs.
   const partners = action === "pick" ? own : enemy;
   const needs = action === "pick" ? ownNeeds : enemyNeeds;
-  const pool = action === "pick" ? available.filter((h) => fits(h, ownNeeds)) : available;
+  // The lineup the hero would join: ours for picks, theirs for bans.
+  const lineup = action === "pick" ? own : enemy;
+  const slotOf = new Map(available.map((h) => [h.id, candidatePosition(h, lineup, positions)]));
+  const fitsPosition = (h: ScoringHero) => {
+    const slot = slotOf.get(h.id);
+    if (!slot) return false;
+    // With pro position data, trust it; with only role tags (a guess), use the simpler
+    // core/support rule instead.
+    const known = positionOdds(h, positions).source === "pro";
+    return known ? slot.lineupFit >= MIN_POSITION_FIT : fits(h, ownNeeds);
+  };
+  const pool = action === "pick" ? available.filter(fitsPosition) : available;
+  // Who the candidate would lane against: the other lineup's heroes in the opposing lane.
+  const rivals = action === "pick" ? enemy : own;
+  const rivalAt = new Map(
+    assignPositions(rivals, positions).heroes.map((h) => [h.position, h.heroId] as const),
+  );
+  const rivalById = new Map(rivals.map((h) => [h.id, h]));
 
   const scored = pool.map((hero): Candidate => {
     const m = metaEdge(meta.get(hero.id));
@@ -235,7 +275,27 @@ export function rankCandidates(input: {
     // Heroes the pros fight over are strong this patch; they matter most as bans.
     const proScore = contest * (action === "ban" ? 5 : 2.5) + proWinEdge(proStat) * 0.3;
     const needBonus = fits(hero, needs) && (needs.mustPickSupport || needs.mustPickCore) ? 1.5 : 0;
-    const score = m + (matchupEdge ?? 0) * 1.5 + (synergyEdge ?? 0) * 0.8 + proScore + needBonus;
+    const slot = slotOf.get(hero.id) ?? null;
+    const laneRows = slot
+      ? opposingPositions(slot.position)
+          .map((p) => rivalById.get(rivalAt.get(p) ?? -1))
+          .filter((f): f is ScoringHero => !!f)
+          .map((f) => ({ f, r: laneRecord(hero.id, f.id, lanes) }))
+          .filter((x): x is { f: ScoringHero; r: NonNullable<typeof x.r> } => x.r !== null)
+      : [];
+    const laneEdge = laneRows.length
+      ? laneRows.reduce((a, x) => a + x.r.edge, 0) / laneRows.length
+      : null;
+    // Picks: fill an open position naturally. Bans: deny what fits their open positions.
+    const positionScore = slot ? slot.lineupFit * (action === "pick" ? 2 : 1.5) : 0;
+    const score =
+      m +
+      (matchupEdge ?? 0) * 1.5 +
+      (synergyEdge ?? 0) * 0.8 +
+      proScore +
+      needBonus +
+      positionScore +
+      (laneEdge ?? 0) * 1.2;
 
     const facts: string[] = [];
     const rec = meta.get(hero.id);
@@ -260,13 +320,30 @@ export function rankCandidates(input: {
         `${whose} ${bestPair.p.name}: ${Math.round(bestPair.s.winRate * 100)}% win rate together in ${bestPair.s.games} pro games`,
       );
     }
-    facts.push(
-      `plays as ${lineupRole(hero)}${canSupport(hero) && lineupRole(hero) === "core" ? " (can support)" : ""}`,
-    );
+    const lane = [...laneRows].sort((a, b) => Math.abs(b.r.edge) - Math.abs(a.r.edge))[0];
+    if (lane && Math.abs(lane.r.edge) >= 2) {
+      const whose = action === "pick" ? "their" : "our";
+      facts.push(
+        `in lane vs ${whose} ${lane.f.name}: won ${lane.r.wins} of ${lane.r.games} pro lanes`,
+      );
+    }
+    if (slot) {
+      const fact = positionFact(slot.position, positionOdds(hero, positions));
+      facts.push(
+        action === "pick" ? fact : `would fill their ${POSITION_NAMES[slot.position]} (${fact})`,
+      );
+    } else {
+      facts.push(
+        `plays as ${lineupRole(hero)}${canSupport(hero) && lineupRole(hero) === "core" ? " (can support)" : ""}`,
+      );
+    }
     return {
       heroId: hero.id,
       name: hero.name,
-      role: lineupRole(hero),
+      role: slot ? (isSupportPosition(slot.position) ? "support" : "core") : lineupRole(hero),
+      position: slot?.position ?? null,
+      positionFit: slot?.lineupFit ?? null,
+      laneEdge,
       score,
       metaEdge: m,
       matchupEdge,

@@ -109,4 +109,35 @@ test("the draft outlook estimates who the draft favours, with its evidence", asy
   // Tournament numbers come from the (fixture) pro drafts.
   await expect(outlook).toContainText("% of drafts");
   await expect(outlook).toContainText("between 30% and 70%");
+
+  // Five positions: each pick gets one, and the outlook lays out both lineups by position.
+  await expect(outlook).toContainText("Lineups by position");
+  await expect(outlook).toContainText("1 · Carry");
+  await expect(outlook).toContainText("5 · Hard support");
+  await expect(outlook).toContainText("Positions from where the pros play each hero");
+
+  // The rubric: each side graded per criterion, provisional until the lineups are complete.
+  const card = outlook.getByRole("region", { name: "Draft report card" });
+  await expect(card).toContainText("provisional");
+  for (const criterion of [
+    "Lanes",
+    "Counters",
+    "Composition",
+    "Hero strength",
+    "Positions",
+    "Combos",
+  ]) {
+    await expect(card.getByRole("rowheader", { name: new RegExp(criterion) })).toBeVisible();
+  }
+
+  // Change who plays where: the analysis reloads with the new position.
+  await outlook.getByText("Change who plays where").click();
+  const select = outlook.getByRole("combobox", { name: /^Position for / }).first();
+  await select.selectOption("3");
+  await expect(select).toHaveValue("3");
+  await expect(outlook.getByRole("button", { name: "Use the suggested positions" })).toBeVisible();
+
+  await expect(
+    page.getByRole("region", { name: "Radiant draft" }).getByText(/^Position \d, /),
+  ).toHaveCount(1);
 });

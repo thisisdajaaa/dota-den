@@ -436,6 +436,38 @@ function heroMatchups(id) {
 // Synthetic OpenDota explorer (pro match SQL). Answers by the shape of the query.
 function draftExplorer(sql) {
   const q = sql ?? "";
+  if (q.includes("lane_wins")) {
+    // Pro lane meetings: lower id wins the lane more often (both directions returned).
+    const rows = [];
+    for (let a = 100; a < 140; a++) {
+      for (const b of [a + 1, a + 2, a + 3]) {
+        if (b >= 140) continue;
+        const games = 6 + ((a + b) % 7);
+        const wins = Math.round(games * 0.65);
+        rows.push({ h1: a, h2: b, games, lane_wins: wins });
+        rows.push({ h1: b, h2: a, games, lane_wins: games - wins });
+      }
+    }
+    return { rows, err: null };
+  }
+  if (q.includes("AS pos1")) {
+    // Where heroes are played, from their role mix: [pos1, pos2, pos3, pos4, pos5] shares.
+    const SHARES = [
+      [0.8, 0.15, 0.05, 0, 0], // Carry, Escape
+      [0, 0, 0.02, 0.28, 0.7], // Support, Disabler
+      [0.05, 0.05, 0.8, 0.1, 0], // Initiator, Durable, Disabler
+      [0.1, 0.8, 0.05, 0.05, 0], // Nuker, Pusher
+      [0.6, 0, 0.4, 0, 0], // Carry, Durable
+      [0, 0.05, 0, 0.7, 0.25], // Support, Nuker
+    ];
+    const rows = HERO_IDS.map((id) => {
+      const shares = id === 1 ? SHARES[0] : id === 14 ? [0, 0.05, 0.15, 0.6, 0.2] : SHARES[id % 6];
+      const games = 100 + (id % 7) * 10;
+      const [pos1, pos2, pos3, pos4, pos5] = shares.map((x) => Math.round(x * games));
+      return { hero_id: id, pos1, pos2, pos3, pos4, pos5 };
+    });
+    return { rows, err: null };
+  }
   if (q.includes("player_matches a")) {
     const rows = [];
     for (let a = 100; a < 140; a += 3) {
@@ -469,7 +501,7 @@ function draftExplorer(sql) {
 /** Route explorer SQL to the Meta page's fixture or the draft AI's, by what each query reads. */
 function explorer(sql) {
   const q = sql ?? "";
-  const meta = q.includes("AS drafts") || q.includes("a.lane");
+  const meta = q.includes("AS drafts") || q.includes("a.lane=b.lane");
   return meta ? metaExplorer(q) : draftExplorer(q);
 }
 

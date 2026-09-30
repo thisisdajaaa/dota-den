@@ -12,9 +12,10 @@ import type { EventView, RoomView } from "../application/room-views";
 import { encodeSnapshot, snapshotOf } from "../application/snapshot";
 import { availableHeroes, currentTurn, resolveTime, type Side } from "../domain/draft-state";
 import { getRuleset } from "../domain/rulesets";
-import { DraftOutlookPanel } from "./draft-outlook-panel";
+import { DraftOutlookPanel, positionsFrom, useDraftOutlook } from "./draft-outlook-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { HeroGrid } from "./hero-grid";
+import { RoomResultPanel } from "./room-result-panel";
 import { SequenceStrip } from "./sequence-strip";
 import { TeamPanel } from "./team-panel";
 import type { DraftHero } from "./types";
@@ -148,6 +149,9 @@ export function RoomClient({
   }
 
   const state = room.state;
+  // One outlook fetch per pick, shared by the outlook panel and the team panels' positions.
+  const outlook = useDraftOutlook(room.status === "lobby" ? null : state);
+  const positions = useMemo(() => positionsFrom(outlook), [outlook]);
   const rulesetRes = getRuleset(state.rulesetId, state.rulesetVersion);
   const sequence = rulesetRes.ok ? rulesetRes.value.sequence : [];
   const turn = currentTurn(state);
@@ -318,6 +322,7 @@ export function RoomClient({
                 }
                 controller={mySeat ? (side === mySeat ? "you" : undefined) : undefined}
                 captainName={room.captains[side]?.name}
+                positions={positions}
               />
             ))}
           </div>
@@ -332,7 +337,7 @@ export function RoomClient({
             />
           </div>
 
-          <DraftOutlookPanel state={state} heroes={heroMap} />
+          <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />
 
           {room.status === "in_progress" &&
             (mySeat ? (
@@ -362,6 +367,7 @@ export function RoomClient({
                   />
                 ))}
               </div>
+              <RoomResultPanel room={room} />
               <div className="panel flex flex-wrap items-center gap-2 p-4">
                 <Button
                   size="sm"

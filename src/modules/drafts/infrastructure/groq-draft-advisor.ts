@@ -39,8 +39,10 @@ export class GroqDraftAdvisor implements DraftAdvisor {
       "Think like a pro captain in the current patch: early bans remove the heroes tournaments fight over (most contested) or that counter your picks; early picks favour contested, flexible heroes; last picks counter what the opponent has shown.",
       "Choose exactly ONE hero id from the CANDIDATES list. Never choose anything else.",
       "Keep the two teams straight: YOUR TEAM are your heroes; OPPONENT heroes are the enemy. Never call an opponent hero a teammate or 'synergy'.",
-      "Follow the SITUATION line: a lineup needs about 3 cores and 2 supports; if it says you must pick a support, pick a support.",
+      "A lineup has five positions: Carry (pos 1), Mid (pos 2), Offlane (pos 3), Soft support (pos 4) and Hard support (pos 5). Each candidate's facts say which position it would play and how often pros play it there.",
+      "Follow the SITUATION line: pick a hero for one of YOUR open positions, never a second hero for a filled one. When banning, prefer heroes that fill the OPPONENT's open positions.",
       "Prefer higher-listed candidates unless there's a clear draft reason (lane pairing, a counter, a combo with YOUR heroes).",
+      "Weigh the lane: facts saying 'in lane vs ...: won X of Y pro lanes' show who the candidate would lane against; avoid picks that lose their lane badly unless they win the game later.",
       "When you cite a percentage from a small sample (under 50 games), include the game count.",
       'Reply with JSON only: {"heroId": <number>, "reason": "<one sentence, max 30 words, plain language, citing the data or your heroes>"}.',
     ].join(" ");

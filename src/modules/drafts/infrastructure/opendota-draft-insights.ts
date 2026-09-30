@@ -8,6 +8,8 @@ import {
   type ProMeta,
   type SynergyTable,
 } from "../domain/draft-scoring";
+import { laneKey, type LaneTable } from "../domain/draft-lanes";
+import type { PositionTable } from "../domain/draft-positions";
 import type { DraftMetaCache } from "./mongo-draft-meta-cache";
 
 const HeroStatsSchema = z.array(
@@ -36,6 +38,15 @@ const count = z.coerce.number().int().nonnegative();
 const ProHeroRowSchema = z.object({ hero_id: count, picks: count, bans: count, wins: count });
 const LeagueRowSchema = z.object({ league: z.string().min(1), matches: count });
 const PairRowSchema = z.object({ h1: count, h2: count, games: count, wins: count });
+const LaneRowSchema = z.object({ h1: count, h2: count, games: count, lane_wins: count });
+const PositionRowSchema = z.object({
+  hero_id: count,
+  pos1: count,
+  pos2: count,
+  pos3: count,
+  pos4: count,
+  pos5: count,
+});
 
 export const PRO_DAYS = 21;
 export const SYNERGY_DAYS = 60;
@@ -46,6 +57,19 @@ export const PRO_HEROES_SQL = `SELECT pb.hero_id, count(*) FILTER (WHERE pb.is_p
 export const PRO_LEAGUES_SQL = `SELECT l.name AS league, count(DISTINCT m.match_id) AS matches FROM matches m JOIN leagues l USING(leagueid) WHERE m.start_time > ${since(PRO_DAYS)} AND EXISTS (SELECT 1 FROM picks_bans pb WHERE pb.match_id = m.match_id) GROUP BY l.name ORDER BY matches DESC`;
 /** Same-team hero pairs in pro matches. */
 export const PRO_PAIRS_SQL = `SELECT a.hero_id AS h1, b.hero_id AS h2, count(*) AS games, sum(CASE WHEN (a.player_slot < 128) = m.radiant_win THEN 1 ELSE 0 END) AS wins FROM player_matches a JOIN player_matches b ON a.match_id = b.match_id AND (a.player_slot < 128) = (b.player_slot < 128) AND a.hero_id < b.hero_id JOIN matches m ON m.match_id = a.match_id WHERE m.start_time > ${since(SYNERGY_DAYS)} GROUP BY 1, 2 HAVING count(*) >= 6`;
+
+/**
+ * Where heroes are played in pro matches: within each team and lane, the most gold per
+ * minute is the core (safe lane pos 1, mid pos 2, off lane pos 3) and the rest support it
+ * (off lane pos 4, safe lane pos 5). Jungle and unknown lanes are left out.
+ */
+export const PRO_POSITIONS_SQL = `WITH p AS (SELECT pm.hero_id, pm.lane_role, ROW_NUMBER() OVER (PARTITION BY pm.match_id, (pm.player_slot < 128), pm.lane_role ORDER BY pm.gold_per_min DESC) AS rk FROM player_matches pm JOIN matches m USING(match_id) WHERE m.start_time > ${since(SYNERGY_DAYS)} AND pm.lane_role IN (1, 2, 3)) SELECT hero_id, count(*) FILTER (WHERE lane_role = 1 AND rk = 1) AS pos1, count(*) FILTER (WHERE lane_role = 2 AND rk = 1) AS pos2, count(*) FILTER (WHERE lane_role = 3 AND rk = 1) AS pos3, count(*) FILTER (WHERE lane_role = 3 AND rk > 1) AS pos4, count(*) FILTER (WHERE lane_role = 1 AND rk > 1) AS pos5 FROM p GROUP BY hero_id`;
+
+/**
+ * Pro laning: heroes on opposite teams in opposing lanes (safe vs off, mid vs mid), and how
+ * often h1's lane had more gold at 10 minutes than h2's. Both directions are returned.
+ */
+export const PRO_LANES_SQL = `WITH mm AS (SELECT match_id FROM matches WHERE start_time > ${since(SYNERGY_DAYS)}), p AS (SELECT pm.match_id, pm.hero_id, (pm.player_slot < 128) AS radiant, pm.lane_role, pm.gold_t[11] AS g10 FROM player_matches pm JOIN mm USING(match_id) WHERE pm.lane_role IN (1, 2, 3)), l AS (SELECT match_id, radiant, lane_role, sum(g10) AS lg FROM p GROUP BY 1, 2, 3) SELECT a.hero_id AS h1, b.hero_id AS h2, count(*) AS games, sum(CASE WHEN la.lg > lb.lg THEN 1 ELSE 0 END) AS lane_wins FROM p a JOIN p b ON a.match_id = b.match_id AND a.radiant <> b.radiant AND ((a.lane_role = 2 AND b.lane_role = 2) OR (a.lane_role = 1 AND b.lane_role = 3) OR (a.lane_role = 3 AND b.lane_role = 1)) JOIN l la ON la.match_id = a.match_id AND la.radiant = a.radiant AND la.lane_role = a.lane_role JOIN l lb ON lb.match_id = b.match_id AND lb.radiant = b.radiant AND lb.lane_role = b.lane_role WHERE a.g10 IS NOT NULL AND b.g10 IS NOT NULL GROUP BY 1, 2 HAVING count(*) >= 3`;
 
 const FRESH_MS = 12 * 3_600_000;
 
@@ -72,6 +96,23 @@ export function toProMeta(heroRows: unknown, leagueRows: unknown): ProMeta | nul
     leagues: leagues.map((l) => ({ name: l.league.trim(), matches: l.matches })),
     heroes: new Map(heroes.map((h) => [h.hero_id, { picks: h.picks, bans: h.bans, wins: h.wins }])),
   };
+}
+
+export function toPositions(body: unknown): PositionTable | null {
+  const rows = rowsOf(body, PositionRowSchema);
+  if (!rows || rows.length === 0) return null;
+  return new Map(
+    rows.map((r) => {
+      const counts = [r.pos1, r.pos2, r.pos3, r.pos4, r.pos5] as const;
+      return [r.hero_id, { counts, games: counts.reduce((a, b) => a + b, 0) }];
+    }),
+  );
+}
+
+export function toLanes(body: unknown): LaneTable | null {
+  const rows = rowsOf(body, LaneRowSchema);
+  if (!rows || rows.length === 0) return null;
+  return new Map(rows.map((r) => [laneKey(r.h1, r.h2), { games: r.games, wins: r.lane_wins }]));
 }
 
 export function toSynergy(body: unknown): SynergyTable | null {
@@ -133,12 +174,24 @@ export class OpenDotaDraftInsights implements DraftInsights {
     return body ? toSynergy(body) : null;
   }
 
+  async positions(): Promise<PositionTable | null> {
+    const body = await this.explore("pro-positions-v1", PRO_POSITIONS_SQL);
+    return body ? toPositions(body) : null;
+  }
+
+  async lanes(): Promise<LaneTable | null> {
+    const body = await this.explore("pro-lanes-v1", PRO_LANES_SQL);
+    return body ? toLanes(body) : null;
+  }
+
   /** Refresh every cached tournament query now (used by the daily cron). */
   async warm(): Promise<{ key: string; ok: boolean }[]> {
     const jobs: [string, string][] = [
       ["pro-heroes-v1", PRO_HEROES_SQL],
       ["pro-leagues-v1", PRO_LEAGUES_SQL],
       ["pro-pairs-v1", PRO_PAIRS_SQL],
+      ["pro-positions-v1", PRO_POSITIONS_SQL],
+      ["pro-lanes-v1", PRO_LANES_SQL],
     ];
     return Promise.all(
       jobs.map(async ([key, sql]) => ({ key, ok: (await this.fetchAndStore(key, sql)) !== null })),
