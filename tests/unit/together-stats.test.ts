@@ -131,8 +131,9 @@ describe("baseline comparison", () => {
   });
 
   it("refuses to compare below the minimum sample", () => {
-    expect(compareWithBaseline({ games: MIN_TOGETHER_GAMES - 1, wins: 9 }, { games: 100, wins: 50 }))
-      .toEqual({ kind: "too_few_together", games: 9, needed: MIN_TOGETHER_GAMES });
+    expect(
+      compareWithBaseline({ games: MIN_TOGETHER_GAMES - 1, wins: 9 }, { games: 100, wins: 50 }),
+    ).toEqual({ kind: "too_few_together", games: 9, needed: MIN_TOGETHER_GAMES });
     expect(compareWithBaseline({ games: 20, wins: 12 }, null)).toMatchObject({
       kind: "no_baseline",
       games: 0,
@@ -156,9 +157,9 @@ describe("baseline comparison", () => {
     expect(formatDelta(0.062)).toBe("+6.2%");
     expect(formatDelta(-0.03)).toBe("−3.0%");
     expect(formatDelta(0.0001)).toBe("±0.0%");
-    expect(
-      comparisonCopy({ kind: "too_few_together", games: 4, needed: 10 }, null).value,
-    ).toBe("Too few games together to judge");
+    expect(comparisonCopy({ kind: "too_few_together", games: 4, needed: 10 }, null).value).toBe(
+      "Too few games together to judge",
+    );
   });
 });
 

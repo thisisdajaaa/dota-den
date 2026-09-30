@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { partyGroups, type MatchPlayer } from "@/modules/matches/domain/match-detail";
-import { otherOf, pairOf, resultFor, type PairClassification } from "@/modules/together/domain/pair";
+import {
+  otherOf,
+  pairOf,
+  resultFor,
+  type PairClassification,
+} from "@/modules/together/domain/pair";
 import { classifyRelation, type Seat } from "@/modules/together/domain/relation";
 
 const seat = (over: Partial<Seat> = {}): Seat => ({
@@ -32,14 +37,11 @@ describe("classifyRelation", () => {
       ),
     ).toBe("same_team_unknown");
     // Both ids null is not "equal ids".
-    expect(
-      classifyRelation(seat({ partyId: null }), seat({ partyId: null }))).not.toBe("party");
+    expect(classifyRelation(seat({ partyId: null }), seat({ partyId: null }))).not.toBe("party");
   });
 
   it("different party ids, or a party size of 1, means queued separately", () => {
-    expect(classifyRelation(seat({ partyId: 1 }), seat({ partyId: 2 }))).toBe(
-      "same_team_separate",
-    );
+    expect(classifyRelation(seat({ partyId: 1 }), seat({ partyId: 2 }))).toBe("same_team_separate");
     // Same id but a reported size of 1: queued alone (matches partyGroups).
     expect(classifyRelation(seat({ partySize: 1 }), seat({ partySize: 1 }))).toBe(
       "same_team_separate",
@@ -66,10 +68,22 @@ describe("classifyRelation", () => {
         ...over,
       }) as MatchPlayer;
     const cases: Array<[Partial<MatchPlayer>, Partial<MatchPlayer>]> = [
-      [{ partyId: 3, partySize: 2 }, { partyId: 3, partySize: 2 }],
-      [{ partyId: 3, partySize: 1 }, { partyId: 3, partySize: 1 }],
-      [{ partyId: 3, partySize: 2 }, { partyId: 4, partySize: 2 }],
-      [{ partyId: 3, partySize: null }, { partyId: 3, partySize: null }],
+      [
+        { partyId: 3, partySize: 2 },
+        { partyId: 3, partySize: 2 },
+      ],
+      [
+        { partyId: 3, partySize: 1 },
+        { partyId: 3, partySize: 1 },
+      ],
+      [
+        { partyId: 3, partySize: 2 },
+        { partyId: 4, partySize: 2 },
+      ],
+      [
+        { partyId: 3, partySize: null },
+        { partyId: 3, partySize: null },
+      ],
     ];
     for (const [a, b] of cases) {
       const players = [p(0, a), p(1, b)];

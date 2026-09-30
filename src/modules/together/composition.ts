@@ -12,12 +12,15 @@ import {
   getPlayerDirectory,
   getPublicProfile,
 } from "@/modules/players/composition";
-import type { Result } from "@/modules/shared/domain/result";
+import { ok, type Result } from "@/modules/shared/domain/result";
 import {
+  MAX_OVERVIEW_TEAMMATES,
   MAX_PEER_CANDIDATES,
   MAX_TRACKED_CANDIDATES,
   sortCandidates,
   type FriendCandidate,
+  type TeammatesOverview,
+  type TeammateView,
 } from "./application/contracts";
 import type { ProviderError } from "./application/ports";
 import {
@@ -27,6 +30,16 @@ import {
 } from "./application/together-service";
 import { MatchDetailSeatReader } from "./infrastructure/match-seat-reader";
 import { MongoTogetherRepository } from "./infrastructure/mongo-together-repository";
+import {
+  bestTeammate,
+  MIN_TEAMMATE_GAMES,
+  mostPlayedWith,
+  recentQueueMix,
+  rivals,
+  sortTeammates,
+  teammateStats,
+  type TeammateStat,
+} from "./domain/teammates";
 
 /** Shared matches considered per friend (OpenDota's most recent, one upstream call). */
 export const SHARED_MATCH_LIMIT = 100;
@@ -121,4 +134,97 @@ export async function getTogetherCandidates(user: {
     overview,
     peersError: peers.ok ? null : peers.error,
   };
+}
+
+/** Run `fn` over `items` with at most `limit` in flight (be gentle with the upstream). */
+async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => Promise<R>) {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+/**
+ * The overview's Teammates section. Upstream: peers and win/loss (one cached call each) plus
+ * one cached profile per listed teammate or rival (for the rank), capped. Our database: your
+ * imported games (queue split) and confirmed parties analysed on /together.
+ */
+export async function getTeammatesOverview(user: {
+  id: string;
+  accountId32: number;
+}): Promise<Result<TeammatesOverview, ProviderError>> {
+  const me = user.accountId32;
+  const directory = getPlayerDirectory();
+  const queries = await getMatchQueries();
+  const [peers, wl, own, together] = await Promise.all([
+    directory.peers(me),
+    directory.winLoss(me),
+    queries.dashboardFacts(me, { range: "all", mode: "all" }, new Date()),
+    getTogetherService().then((s) => s.overview(me)),
+  ]);
+  if (!peers.ok) {
+    logger.warn("teammates_peers_failed", { reason: peers.error.type });
+    return peers;
+  }
+  if (!wl.ok) logger.warn("teammates_wl_failed", { reason: wl.error.type });
+  const overall = wl.ok ? { games: wl.value.wins + wl.value.losses, wins: wl.value.wins } : null;
+
+  const records = peers.value.filter((p) => p.accountId32 !== me);
+  const byId = new Map(records.map((p) => [p.accountId32, p]));
+  const stats = sortTeammates(teammateStats(records, overall), "games").slice(
+    0,
+    MAX_OVERVIEW_TEAMMATES,
+  );
+  // Rivals may have no games together: same view shape, no win rate comparison.
+  const rivalStats: TeammateStat[] = rivals(records).map((r) => ({
+    ...r,
+    winRate: r.withGames > 0 ? r.withWins / r.withGames : null,
+    usualRate: null,
+    delta: null,
+    lowSample: r.withGames < MIN_TEAMMATE_GAMES,
+  }));
+
+  const listed = [
+    ...stats,
+    ...rivalStats.filter((r) => !stats.some((s) => s.accountId32 === r.accountId32)),
+  ];
+  const profiles = new Map(
+    await mapLimit(
+      listed,
+      4,
+      async (t) => [t.accountId32, await getPublicProfile(t.accountId32)] as const,
+    ),
+  );
+  const view = (t: TeammateStat): TeammateView => {
+    const profile = profiles.get(t.accountId32) ?? null;
+    const peer = byId.get(t.accountId32);
+    return {
+      ...t,
+      personaName: profile?.personaName ?? peer?.personaName ?? null,
+      avatarUrl: profile?.avatarUrl ?? peer?.avatarUrl ?? null,
+      rankTier: profile?.rankTier ?? null,
+      leaderboardRank: profile?.leaderboardRank ?? null,
+      confirmedParties: together.partyGames.get(t.accountId32) ?? 0,
+    };
+  };
+
+  const teammates = stats.map(view);
+  const find = (id: number) => teammates.find((t) => t.accountId32 === id) ?? null;
+  const best = bestTeammate(stats, overall);
+  const bestView = best ? find(best.teammate.accountId32) : null;
+  const mostPlayed = mostPlayedWith(stats);
+  return ok({
+    teammates,
+    best: best && bestView ? { ...best, teammate: bestView } : null,
+    mostPlayed: mostPlayed ? find(mostPlayed.accountId32) : null,
+    rivals: rivalStats.map(view),
+    queueMix: recentQueueMix(own.facts),
+    overall,
+  });
 }

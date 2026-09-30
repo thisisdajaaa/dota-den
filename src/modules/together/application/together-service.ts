@@ -109,41 +109,45 @@ export class TogetherService {
       .slice(0, this.deps.maxNewDetails ?? MAX_NEW_DETAILS);
 
     let interrupted = false;
-    const fetched = await mapLimit(missing, DETAIL_CONCURRENCY, async (m): Promise<PairClassification | null> => {
-      if (interrupted) return null;
-      const res = await this.deps.seats.seats(m.matchId, [me, friend]);
-      const fetchedAt = this.now();
-      if (!res.ok) {
-        // Busy or down: stop and retry on a later visit. Anything else won't get better,
-        // so remember it as undetermined rather than refetching forever.
-        if (res.error.type === "rate_limited" || res.error.type === "unavailable") {
-          interrupted = true;
-          return null;
+    const fetched = await mapLimit(
+      missing,
+      DETAIL_CONCURRENCY,
+      async (m): Promise<PairClassification | null> => {
+        if (interrupted) return null;
+        const res = await this.deps.seats.seats(m.matchId, [me, friend]);
+        const fetchedAt = this.now();
+        if (!res.ok) {
+          // Busy or down: stop and retry on a later visit. Anything else won't get better,
+          // so remember it as undetermined rather than refetching forever.
+          if (res.error.type === "rate_limited" || res.error.type === "unavailable") {
+            interrupted = true;
+            return null;
+          }
+          return {
+            ...pair,
+            matchId: m.matchId,
+            relation: "undetermined",
+            startedAt: m.startedAt,
+            radiantWin: null,
+            seatA: null,
+            seatB: null,
+            fetchedAt,
+          };
         }
+        const seatA = res.value.seats.get(pair.accountIdA) ?? null;
+        const seatB = res.value.seats.get(pair.accountIdB) ?? null;
         return {
           ...pair,
           matchId: m.matchId,
-          relation: "undetermined",
-          startedAt: m.startedAt,
-          radiantWin: null,
-          seatA: null,
-          seatB: null,
+          relation: classifyRelation(seatA, seatB),
+          startedAt: res.value.startedAt,
+          radiantWin: res.value.radiantWin,
+          seatA,
+          seatB,
           fetchedAt,
         };
-      }
-      const seatA = res.value.seats.get(pair.accountIdA) ?? null;
-      const seatB = res.value.seats.get(pair.accountIdB) ?? null;
-      return {
-        ...pair,
-        matchId: m.matchId,
-        relation: classifyRelation(seatA, seatB),
-        startedAt: res.value.startedAt,
-        radiantWin: res.value.radiantWin,
-        seatA,
-        seatB,
-        fetchedAt,
-      };
-    });
+      },
+    );
     const fresh = fetched.filter((c): c is PairClassification => c !== null);
     await this.deps.repo.saveMany(fresh);
     for (const c of fresh) cached.set(c.matchId, c);
