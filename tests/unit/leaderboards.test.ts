@@ -356,7 +356,7 @@ describe("LeaderboardService", () => {
       now: NOW,
     });
     expect(view.rows.map((r) => r.player.accountId32).sort()).toEqual([1, 2]);
-    expect(activity.queries[0].userIds?.sort()).toEqual(["u1", "u2"]);
+    expect([...(activity.queries[0].userIds ?? [])].sort()).toEqual(["u1", "u2"]);
   });
 
   it("counts only this week on the weekly board", async () => {
