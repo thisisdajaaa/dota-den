@@ -89,37 +89,37 @@ export function MmrLogPrompt({
   }
 
   return (
-    <section
-      aria-label="Log your MMR"
-      className="panel relative flex flex-wrap items-center gap-4 p-4"
-    >
-      <TrendingUp aria-hidden className="size-5 shrink-0 text-gold" />
-      <p className="min-w-0 flex-1 text-sm">{message}</p>
-      <form onSubmit={save} className="flex items-start gap-2">
-        <div>
-          <input
-            inputMode="numeric"
-            aria-label="Your MMR now"
-            placeholder="MMR now"
-            value={mmr}
-            onChange={(e) => setMmr(e.target.value)}
-            className="h-9 w-28 rounded-lg border border-white/10 bg-background px-3 text-sm tabular-nums"
-          />
-          {error && (
-            <p role="alert" className="mt-1 max-w-48 text-xs text-loss">
-              {error}
-            </p>
-          )}
-        </div>
-        <Button type="submit" size="sm" disabled={busy || !mmr.trim()} className="h-9">
-          {busy ? "Saving…" : "Log it"}
-        </Button>
-      </form>
+    <section aria-label="Log your MMR" className="panel flex items-start gap-3 p-4">
+      <TrendingUp aria-hidden className="mt-2 size-5 shrink-0 text-gold" />
+      {/* Message and form wrap on narrow screens; the close button keeps its own column. */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-3">
+        <p className="min-w-[12rem] flex-1 text-sm">{message}</p>
+        <form onSubmit={save} className="flex items-start gap-2">
+          <div>
+            <input
+              inputMode="numeric"
+              aria-label="Your MMR now"
+              placeholder="MMR now"
+              value={mmr}
+              onChange={(e) => setMmr(e.target.value)}
+              className="h-9 w-28 rounded-lg border border-white/10 bg-background px-3 text-sm tabular-nums"
+            />
+            {error && (
+              <p role="alert" className="mt-1 max-w-48 text-xs text-loss">
+                {error}
+              </p>
+            )}
+          </div>
+          <Button type="submit" size="sm" disabled={busy || !mmr.trim()} className="h-9">
+            {busy ? "Saving…" : "Log it"}
+          </Button>
+        </form>
+      </div>
       <button
         type="button"
         onClick={dismiss}
         aria-label="Not now"
-        className="absolute top-2 right-2 rounded p-1 text-muted-foreground hover:text-foreground"
+        className="grid size-9 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
       >
         <X aria-hidden className="size-4" />
       </button>
