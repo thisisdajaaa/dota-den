@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus } from "lucide-react";
+import { ImageUp, Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -32,10 +32,20 @@ function toLocalInput(d: Date): string {
 }
 
 /** Log a new MMR observation, or edit an existing one. Validates with the server's schema. */
-export function MmrEntryDialog({ entry }: { entry?: MmrEntryDto }) {
+export function MmrEntryDialog({
+  entry,
+  canReadScreenshots = false,
+}: {
+  entry?: MmrEntryDto;
+  /** Offer "Read from screenshot" (needs the AI provider). */
+  canReadScreenshots?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const editing = entry !== undefined;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [reading, setReading] = useState(false);
+  const [readNote, setReadNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(MmrEntryInputSchema),
@@ -53,6 +63,49 @@ export function MmrEntryDialog({ entry }: { entry?: MmrEntryDto }) {
       form.setValue("observedAt", toLocalInput(new Date()));
     }
     setOpen(next);
+  }
+
+  /** Suggest the MMR from a screenshot; the player checks it before saving. */
+  async function readScreenshot(file: File) {
+    setReading(true);
+    setReadNote(null);
+    try {
+      const body = new FormData();
+      body.append("image", file);
+      const res = await fetch("/api/v1/mmr-entries/read-screenshot", { method: "POST", body });
+      const data = (await res.json().catch(() => null)) as {
+        mmr?: number | null;
+        seen?: string | null;
+        error?: { message?: string };
+      } | null;
+      if (!res.ok) {
+        setReadNote({ ok: false, text: data?.error?.message ?? "Couldn't read that screenshot." });
+      } else if (typeof data?.mmr === "number") {
+        form.setValue("mmr", String(data.mmr), { shouldDirty: true, shouldValidate: true });
+        setReadNote({
+          ok: true,
+          text: `Read ${data.mmr.toLocaleString("en-US")}${data.seen ? ` (${data.seen})` : ""}. Check it before saving.`,
+        });
+      } else {
+        setReadNote({
+          ok: false,
+          text: "Couldn't find your MMR in that screenshot. Type it instead.",
+        });
+      }
+    } catch {
+      setReadNote({ ok: false, text: "Couldn't read that screenshot. Check your connection." });
+    } finally {
+      setReading(false);
+    }
+  }
+
+  function onPaste(e: React.ClipboardEvent) {
+    if (editing || !canReadScreenshots) return;
+    const image = [...e.clipboardData.files].find((f) => f.type.startsWith("image/"));
+    if (image) {
+      e.preventDefault();
+      void readScreenshot(image);
+    }
   }
 
   async function onSubmit(values: FormOutput) {
@@ -98,7 +151,7 @@ export function MmrEntryDialog({ entry }: { entry?: MmrEntryDto }) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onPaste={onPaste}>
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <DialogHeader>
             <DialogTitle>{editing ? "Edit MMR entry" : "Log your MMR"}</DialogTitle>
@@ -126,6 +179,45 @@ export function MmrEntryDialog({ entry }: { entry?: MmrEntryDto }) {
                     autoFocus
                   />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {!editing && canReadScreenshots && (
+                    <div className="space-y-1.5">
+                      <input
+                        ref={fileInput}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="sr-only"
+                        tabIndex={-1}
+                        aria-label="Screenshot of your MMR"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = "";
+                          if (f) void readScreenshot(f);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        disabled={reading}
+                        onClick={() => fileInput.current?.click()}
+                      >
+                        <ImageUp aria-hidden className="size-4" />
+                        {reading ? "Reading…" : "Read from screenshot"}
+                      </Button>
+                      <FieldDescription>
+                        Or paste one. The image is only used to read the number, never stored.
+                      </FieldDescription>
+                      {readNote && (
+                        <p
+                          role="status"
+                          className={readNote.ok ? "text-xs text-win" : "text-xs text-loss"}
+                        >
+                          {readNote.text}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </Field>
               )}
             />

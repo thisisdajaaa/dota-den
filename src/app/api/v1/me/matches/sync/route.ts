@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, isSameOrigin, requestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { recordError } from "@/modules/errors/composition";
 import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
 import { enqueueMatchBackfill } from "@/modules/jobs/composition";
 import { getMatchSyncService } from "@/modules/matches/composition";
@@ -44,11 +45,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     case "sync_in_progress":
       return apiError("conflict", "A sync is already running for this account.");
-    case "provider":
-      return error.error.type === "rate_limited"
-        ? apiError("rate_limited", "OpenDota is rate limiting requests. Try again shortly.")
-        : apiError("upstream_unavailable", "OpenDota is unavailable right now.", {
-            reason: error.error.type,
-          });
+    case "provider": {
+      // Not a bug, but worth seeing on the admin page (logs are short-lived on Vercel).
+      await recordError({
+        source: "server",
+        kind: "sync",
+        message: `Match sync failed: ${error.error.type}`,
+        path: "/api/v1/me/matches/sync",
+      });
+      if (error.error.type === "rate_limited") {
+        // Tell the page when to try again, so it can wait it out instead of giving up.
+        const waitMs = Math.min(Math.max(error.error.retryAfterMs ?? 60_000, 5_000), 5 * 60_000);
+        return apiError("rate_limited", "OpenDota is busy right now. Try again shortly.", {
+          reason: "upstream_rate_limited",
+          retryAt: new Date(Date.now() + waitMs).toISOString(),
+        });
+      }
+      return apiError("upstream_unavailable", "OpenDota is unavailable right now.", {
+        reason: error.error.type,
+      });
+    }
   }
 }

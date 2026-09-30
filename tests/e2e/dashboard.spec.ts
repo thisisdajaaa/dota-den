@@ -118,3 +118,38 @@ test("match list filters and totals reconcile", async ({ page }) => {
   await page.goto("/matches?queue=%24ne&result=drop&hero=abc&cursor=../../x");
   await expect(totals).toContainText("12");
 });
+
+test("sync waits out a busy OpenDota and tries again by itself", async ({ page }) => {
+  let calls = 0;
+  let busyNext = false;
+  await page.route("**/api/v1/me/matches/sync", async (route) => {
+    calls++;
+    if (busyNext) {
+      busyNext = false;
+      await route.fulfill({
+        status: 429,
+        json: {
+          error: {
+            code: "rate_limited",
+            message: "OpenDota is busy right now.",
+            details: { reason: "upstream_rate_limited", retryAt: new Date().toISOString() },
+          },
+        },
+      });
+    } else {
+      await route.continue();
+    }
+  });
+  // Another test may have synced this account already, so don't rely on the sync on load:
+  // press "Sync now" once it's free.
+  await page.goto("/api/v1/auth/steam/login?as=76561197960305729");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const syncNow = page.getByRole("button", { name: "Sync now" });
+  await expect(syncNow).toBeEnabled({ timeout: 20_000 });
+  const before = calls;
+  busyNext = true;
+  await syncNow.click();
+  await expect(page.getByRole("status").filter({ hasText: "OpenDota is busy" })).toBeVisible();
+  await expect.poll(() => calls, { timeout: 20_000 }).toBeGreaterThanOrEqual(before + 2);
+  await expect(page.getByText("Sync paused")).toHaveCount(0);
+});

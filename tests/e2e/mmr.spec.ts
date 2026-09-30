@@ -83,6 +83,10 @@ test("the climb by hero estimates each hero's MMR change, labelled as an estimat
 }) => {
   await page.goto("/api/v1/auth/steam/login");
   await expect(page).toHaveURL(/\/dashboard$/);
+  // Don't depend on other tests: wait for the dashboard to import the fixture matches.
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
   await page.goto("/mmr?view=all");
   const climb = page.getByRole("region", { name: "Climb by hero" });
   await expect(climb).toContainText("Dota doesn't report MMR per hero");
@@ -91,4 +95,22 @@ test("the climb by hero estimates each hero's MMR change, labelled as an estimat
   await expect(
     climb.getByRole("img", { name: /estimated climb, game by game/ }).first(),
   ).toBeVisible();
+});
+
+test("medal history starts itself from the medal on your overview", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  // The overview notes the medal after the page is sent; the MMR page then shows it.
+  await expect
+    .poll(
+      async () => {
+        await page.goto("/mmr");
+        return page.getByRole("region", { name: /Immortal/ }).count();
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(0);
+  const medals = page.getByRole("region", { name: /Immortal/ });
+  await expect(medals).toContainText("Tracked automatically since");
+  await expect(medals).toContainText("No medal changes yet.");
 });
