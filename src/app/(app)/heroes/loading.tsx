@@ -7,8 +7,8 @@ export default function HeroesLoading() {
         <Skeleton className="h-3 w-20" />
         <Skeleton className="h-9 w-56" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
           {Array.from({ length: 9 }, (_, i) => (
             <Skeleton key={i} className="h-20 rounded-2xl" />
           ))}

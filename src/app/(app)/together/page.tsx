@@ -32,7 +32,7 @@ export default async function TogetherPage() {
         description="How you do with the friends you queue with. Only games where you were in the same party count as together; sharing a team by chance doesn't."
       />
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <FriendList friends={friends} now={now} error={peersErrorCopy} />
         </div>

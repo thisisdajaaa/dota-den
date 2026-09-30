@@ -303,7 +303,7 @@ export function RoomClient({
             )}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {(["radiant", "dire"] as const).map((side) => (
               <TeamPanel
                 key={side}
@@ -356,7 +356,7 @@ export function RoomClient({
 
           {room.status === "completed" && (
             <div className="space-y-4">
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {(["radiant", "dire"] as const).map((side) => (
                   <FeedbackPanel
                     key={side}
@@ -469,7 +469,7 @@ function Lobby({
   const bothSeated = room.captains.radiant && room.captains.dire;
   return (
     <section className="space-y-4" aria-label="Lobby">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Seat side="radiant" room={room} busy={busy} post={post} />
         <Seat side="dire" room={room} busy={busy} post={post} />
       </div>

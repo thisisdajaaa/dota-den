@@ -326,7 +326,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         />
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <section className="panel p-5 lg:col-span-3" aria-labelledby="trend-title">
           <p className="kicker">Trend</p>
           <h2 id="trend-title" className="mb-3 text-lg font-semibold">

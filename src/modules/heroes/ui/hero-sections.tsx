@@ -230,7 +230,7 @@ export function MatchupsCard({
       title={`Who you beat and lose to on ${heroLabel}`}
       footer={`From your ${plural(view.games, "game")} on ${heroLabel} on OpenDota. Heroes you met in fewer than ${m.minGames} games are left out (${countOf(m.enemiesBelowMin, "enemy hero", "enemy heroes")}, ${countOf(m.alliesBelowMin, "allied hero", "allied heroes")}).`}
     >
-      <div className="grid gap-6 px-5 pb-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 px-5 pb-5 md:grid-cols-3">
         <MatchupList
           title="You beat"
           entries={m.beats}
@@ -322,7 +322,10 @@ export function HeroGrid({
   now: Date;
 }) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Heroes you've played">
+    <ul
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      aria-label="Heroes you've played"
+    >
       {rows.map((r) => {
         const hero = heroes.get(r.heroId);
         const name = heroName(hero, r.heroId);

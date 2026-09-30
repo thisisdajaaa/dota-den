@@ -140,7 +140,7 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
         />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <section className="panel space-y-4 p-5" aria-labelledby="highlights-title">
             <div>
@@ -163,7 +163,7 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
                 </dd>
               </div>
             </dl>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <StandoutGame kind="best" pick={s.best} heroes={heroes} />
               <StandoutGame kind="worst" pick={s.worst} heroes={heroes} />
             </div>

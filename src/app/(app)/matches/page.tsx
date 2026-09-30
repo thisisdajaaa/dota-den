@@ -119,7 +119,7 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
       </div>
 
       <section
-        className="panel grid gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center"
+        className="panel grid grid-cols-1 gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center"
         aria-label="Filtered totals"
       >
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">

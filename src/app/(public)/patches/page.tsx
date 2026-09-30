@@ -134,7 +134,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
           <h2 id="all-patches" className="text-lg font-semibold">
             {cursor ? "Older patches" : "All patches"}
           </h2>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {page.items.map((p) => (
               <li key={p.version}>
                 <Link
