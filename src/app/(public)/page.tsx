@@ -112,12 +112,34 @@ async function LatestPatchCard() {
 
 export default async function LandingPage({ searchParams }: PageProps<"/">) {
   if (await getCurrentUser({ tolerateErrors: true })) redirect("/dashboard");
-  const { auth_error } = await searchParams;
+  const { auth_error, bye } = await searchParams;
+  const signedOut = bye === "1";
   const authError = typeof auth_error === "string" ? auth_error : null;
   const signInRequired = authError === "signed_out";
 
   return (
     <div className="space-y-20">
+      {signedOut && (
+        <Alert>
+          <AlertTitle>You&apos;re signed out of Dota Den</AlertTitle>
+          <AlertDescription>
+            <p>
+              Steam keeps you signed in on its own site, so signing in here again uses the same
+              Steam account. To switch accounts, sign out of Steam first:{" "}
+              <a
+                href="https://steamcommunity.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-gold underline-offset-2 hover:underline"
+              >
+                open Steam Community
+              </a>
+              , click your account name at the top right and choose <strong>Sign out</strong>. Then
+              come back and sign in with the other account.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
       {signInRequired && (
         <Alert>
           <AlertTitle>Sign in required</AlertTitle>
