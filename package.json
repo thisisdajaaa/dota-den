@@ -16,7 +16,8 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "db:indexes": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ensure-indexes.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:integration"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:integration",
+    "draft:calibrate": "node --env-file-if-exists=.env.local --import tsx scripts/calibrate-draft.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

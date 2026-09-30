@@ -241,9 +241,11 @@ function OutlookBody({
 
       <p className="flex gap-1.5 text-xs text-muted-foreground">
         <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-        An estimate from the draft alone: hero win rates at Ancient rank and above, head-to-head
-        records, pro lane results, pro pairings and recent tournament drafts. It&apos;s kept between
-        30% and 70% because players and execution decide most games.
+        An estimate from the draft alone, with weights fitted to {outlook.accuracy.source}. On{" "}
+        {outlook.accuracy.testGames.toLocaleString("en-US")} newer games it hadn&apos;t seen, it
+        picked the winner {Math.round(outlook.accuracy.fitted * 100)}% of the time (always picking
+        Radiant: {Math.round(outlook.accuracy.radiantShare * 100)}%). Players and execution decide
+        most games, so it stays between 30% and 70%.
       </p>
     </div>
   );
