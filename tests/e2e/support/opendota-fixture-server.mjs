@@ -516,7 +516,61 @@ const ITEMS = [
   { id: 116, key: "black_king_bar", dname: "Black King Bar", qual: "epic", cost: 4050 },
 ];
 
+// Synthetic live games: one league game with a finished draft, one public high-MMR game.
+function liveGames() {
+  const lineup = (team, heroIds, names) =>
+    heroIds.map((hero_id, i) => ({
+      account_id: 50_000 + team * 10 + i,
+      name: names[i],
+      hero_id,
+      team,
+      is_pro: true,
+    }));
+  return [
+    {
+      match_id: "8000000001",
+      league_id: 777,
+      team_name_radiant: "Fixture Falcons",
+      team_name_dire: "Fixture Titans",
+      radiant_score: 21,
+      dire_score: 14,
+      radiant_lead: 8_400,
+      game_time: 1_800,
+      delay: 900,
+      average_mmr: 0,
+      spectators: 12_345,
+      last_update_time: Math.floor(Date.now() / 1000),
+      players: [
+        ...lineup(0, [100, 101, 102, 103, 104], ["Ace", "Blaze", "Cobra", "Dune", "Echo"]),
+        ...lineup(1, [105, 106, 107, 108, 109], ["Fang", "Ghost", "Hawk", "Iris", "Jolt"]),
+      ],
+    },
+    {
+      match_id: "8000000002",
+      league_id: 0,
+      radiant_score: 5,
+      dire_score: 7,
+      radiant_lead: -1_200,
+      game_time: 600,
+      delay: 120,
+      average_mmr: 8_150,
+      spectators: 40,
+      last_update_time: Math.floor(Date.now() / 1000),
+      players: [
+        ...lineup(0, [110, 111, 112, 113, 114], ["a", "b", "c", "d", "e"]),
+        ...lineup(1, [115, 116, 117, 118, 0], ["f", "g", "h", "i", "j"]),
+      ],
+    },
+  ];
+}
+
 const routes = [
+  [/^\/api\/live$/, () => liveGames()],
+  [
+    /^\/api\/leagues\/(\d+)$/,
+    (m) =>
+      m[1] === "777" ? { leagueid: 777, name: "Fixture Invitational", tier: "professional" } : null,
+  ],
   [/^\/api\/heroStats$/, () => publicHeroStats()],
   [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
   [/^\/api\/scenarios\/laneRoles$/, (_m, url) => laneRoles(url.searchParams.get("hero_id"))],
