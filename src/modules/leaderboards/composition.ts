@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { getDb } from "@/lib/db/mongo";
+import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
   decodeSnapshot,
@@ -83,7 +84,7 @@ const toAccount = (u: User): PlayerAccount => ({
 const accounts: AccountDirectory = {
   byUserIds: async (ids) => (await findUsersByIds(ids)).map(toAccount),
   byAccountIds: async (ids) => (await findUsersByAccountIds(ids)).map(toAccount),
-  publicUserIds: () => findPublicUserIds(),
+  publicUserIds: () => findPublicUserIds(env().LEADERBOARD_EVERYONE_MAX_PLAYERS),
 };
 
 /**
@@ -167,5 +168,6 @@ export async function getLeaderboardService(): Promise<LeaderboardService> {
       },
     },
     friends,
+    rowLimit: env().LEADERBOARD_ROW_LIMIT,
   });
 }

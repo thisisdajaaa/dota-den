@@ -24,7 +24,10 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 /** An engine event before the room stamps its version and time. */
 type DraftInput = DistributiveOmit<DraftEvent, "expectedVersion" | "at">;
 
-/** Abuse caps for the polling prototype (ADR 0003). */
+/**
+ * Abuse caps for the polling prototype (ADR 0003). These are the defaults; composition
+ * passes the configured values (DRAFT_ROOMS_MAX_ACTIVE, DRAFT_ROOMS_ACTIVE_WINDOW_MINUTES).
+ */
 export const MAX_ACTIVE_ROOMS = 50;
 export const ACTIVE_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -68,6 +71,8 @@ export class DraftRoomService {
       heroPool: () => Promise<number[]>;
       newId: () => string;
       enabled: boolean;
+      /** Rooms active (lobby or in progress) within `activeWindowMs` count toward the cap. */
+      limits?: { maxActiveRooms?: number; activeWindowMs?: number };
       now?: () => number;
       /**
        * Called once by the writer whose commit finished the draft (saves it to history).
@@ -84,8 +89,10 @@ export class DraftRoomService {
     const ruleset = listRulesets().find((r) => r.id === opts.rulesetId);
     if (!ruleset) return err({ type: "invalid_options" });
     const nowMs = this.now();
-    const active = await this.deps.rooms.countActive(new Date(nowMs - ACTIVE_WINDOW_MS));
-    if (active >= MAX_ACTIVE_ROOMS) return err({ type: "too_many_rooms" });
+    const windowMs = this.deps.limits?.activeWindowMs ?? ACTIVE_WINDOW_MS;
+    const cap = this.deps.limits?.maxActiveRooms ?? MAX_ACTIVE_ROOMS;
+    const active = await this.deps.rooms.countActive(new Date(nowMs - windowMs));
+    if (active >= cap) return err({ type: "too_many_rooms" });
 
     const draft = createDraft({
       rulesetId: ruleset.id,

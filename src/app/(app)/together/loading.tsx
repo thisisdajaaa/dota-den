@@ -8,7 +8,7 @@ export default function TogetherLoading() {
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Skeleton className="h-96 rounded-2xl lg:col-span-3" />
         <Skeleton className="h-64 rounded-2xl lg:col-span-2" />
       </div>

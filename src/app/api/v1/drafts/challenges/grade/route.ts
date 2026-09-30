@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { CHALLENGE_TYPES, SEED_PATTERN, type Grade } from "@/modules/drafts/domain/challenges";
 import { getChallengeService } from "@/modules/drafts/composition";
@@ -41,7 +42,7 @@ async function recordForUser(
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!(await rateLimit(`draft-challenge:${clientKey(req)}`, 30, 60_000))) {
+  if (!(await rateLimit(`draft-challenge:${clientKey(req)}`, ...apiLimitArgs("draftChallenge")))) {
     return apiError("rate_limited", "Too many answers in the last minute. Take a breath.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

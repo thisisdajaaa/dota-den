@@ -76,7 +76,7 @@ export function HeroGrid({
         </span>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         {ATTRS.map((attr) => {
           const group = matches.filter((h) => (h.primaryAttr ?? "all") === attr.key);
           if (group.length === 0) return null;

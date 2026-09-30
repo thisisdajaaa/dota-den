@@ -1,5 +1,6 @@
 import "server-only";
 import { getDb } from "@/lib/db/mongo";
+import { env } from "@/lib/env";
 import type { DashboardFact } from "@/modules/matches/application/ports";
 import { getMatchQueries } from "@/modules/matches/composition";
 import { getMmrJournal } from "@/modules/mmr/composition";
@@ -39,5 +40,6 @@ export async function getSessionService(): Promise<SessionService<DashboardFact>
     observations,
     notes: new MongoSessionNoteRepository(db),
     settings: new MongoSessionSettingsRepository(db),
+    defaultGapMinutes: env().SESSION_DEFAULT_GAP_MINUTES,
   });
 }

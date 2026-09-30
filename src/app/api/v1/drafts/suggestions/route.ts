@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
+import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
@@ -13,7 +14,7 @@ const BodySchema = z.object({
 /** Data-backed pick/ban suggestions for the side whose turn it is (no language model). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  if (!(await rateLimit(`draft-suggest:${clientKey(req)}`, 60, 60_000))) {
+  if (!(await rateLimit(`draft-suggest:${clientKey(req)}`, ...apiLimitArgs("draftSuggestions")))) {
     return apiError("rate_limited", "Too many suggestion requests in the last minute.");
   }
   const body = BodySchema.safeParse(await req.json().catch(() => null));

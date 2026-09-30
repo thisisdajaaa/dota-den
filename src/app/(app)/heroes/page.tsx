@@ -34,7 +34,7 @@ export default async function HeroesPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           {rows.length === 0 ? (
             <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">

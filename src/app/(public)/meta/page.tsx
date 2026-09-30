@@ -96,7 +96,7 @@ function RoleSections({
   return (
     <>
       <RoleTabs active={position} yours={yours} />
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <Suspense fallback={<SectionSkeleton label="Loading top heroes" rows={6} />}>
             <TopHeroesSection heroes={heroes} catalog={catalog} />
