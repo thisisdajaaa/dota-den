@@ -25,6 +25,7 @@ import {
   type Side,
 } from "../domain/draft-state";
 import { getRuleset, listRulesets } from "../domain/rulesets";
+import { DraftOutlookPanel } from "./draft-outlook-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { HeroGrid } from "./hero-grid";
 import { SequenceStrip } from "./sequence-strip";
@@ -550,6 +551,8 @@ export function DraftBoard({
         ))}
       </div>
 
+      {started && <DraftOutlookPanel state={state} heroes={heroMap} />}
+
       {started && (
         <DraftLogPanel
           turns={state.turns}
@@ -609,8 +612,7 @@ export function DraftBoard({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Feedback is rule-based from hero role tags, with the reasons shown. It doesn&apos;t predict
-        who wins.
+        Lineup feedback is rule-based from hero role tags, with the reasons shown.
       </p>
     </div>
   );

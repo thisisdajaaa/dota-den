@@ -17,12 +17,16 @@ import {
 export const SESSION_COOKIE = "dd_session";
 export const STATE_COOKIE = "dd_oid_state";
 
-export async function getAuthService(): Promise<AuthService> {
+/**
+ * `testSteamId` only matters in AUTH_TEST_MODE (never production): lets E2E tests sign in as
+ * a second person, e.g. the other captain of a draft room.
+ */
+export async function getAuthService(opts: { testSteamId?: string } = {}): Promise<AuthService> {
   const config = env();
   const db = await getDb();
   const provider: IdentityProvider =
     config.AUTH_TEST_MODE && config.NODE_ENV !== "production"
-      ? new FakeIdentityProvider()
+      ? new FakeIdentityProvider(opts.testSteamId)
       : new SteamOpenIdProvider({ nonces: new MongoNonceStore(db) });
   return new AuthService({
     provider,

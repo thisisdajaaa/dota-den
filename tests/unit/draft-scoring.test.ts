@@ -86,8 +86,10 @@ describe("rankCandidates", () => {
       meta: new Map(),
       matchups: new Map([[1, enemyTable]]),
     });
-    expect(ranked[0]).toMatchObject({ heroId: 10, matchupEdge: 20 });
-    expect(ranked[0].facts.join(" ")).toContain("vs opponent's Core 1 +20.0%");
+    // +20 points raw, damped for a 200-game sample.
+    expect(ranked[0].heroId).toBe(10);
+    expect(ranked[0].matchupEdge).toBeCloseTo((20 * 200) / 330, 5);
+    expect(ranked[0].facts.join(" ")).toContain("vs opponent's Core 1 +12.1%");
   });
 
   it("bans the hero that beats our picks, ignoring tiny matchup samples", () => {

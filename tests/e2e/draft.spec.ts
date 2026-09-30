@@ -83,3 +83,30 @@ test("the AI move endpoint validates input and rejects cross-origin calls", asyn
   });
   expect(cross.status()).toBe(403);
 });
+
+test("the draft outlook estimates who the draft favours, with its evidence", async ({ page }) => {
+  await page.goto("/draft");
+  await page.getByRole("combobox", { name: "Opponent" }).click();
+  await page.getByRole("option", { name: "Practice both sides" }).click();
+  await page.getByRole("button", { name: "Start draft" }).click();
+
+  const outlook = page.getByRole("region", { name: "Draft outlook" });
+  await expect(outlook).toContainText("Once heroes are picked");
+
+  // Take the top suggestion until both sides have picked.
+  const suggestions = page.getByRole("region", { name: "Suggestions" });
+  const log = page.getByRole("region", { name: "Draft log" });
+  for (let step = 1; step <= 10; step++) {
+    await suggestions.getByRole("button").first().click();
+    await expect(log.getByRole("listitem")).toHaveCount(step);
+  }
+
+  await expect(outlook.getByRole("img", { name: /Estimated win chance/ })).toBeVisible();
+  await expect(outlook).toContainText("Estimate");
+  await expect(outlook).toContainText(/Radiant \d+%/);
+  await expect(outlook).toContainText("Hero strength");
+  await expect(outlook.getByRole("table", { name: "Stats for every picked hero" })).toBeVisible();
+  // Tournament numbers come from the (fixture) pro drafts.
+  await expect(outlook).toContainText("% of drafts");
+  await expect(outlook).toContainText("between 30% and 70%");
+});
