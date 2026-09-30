@@ -5,6 +5,7 @@ import type {
   ProviderGateway,
 } from "@/modules/shared/infrastructure/provider-gateway";
 import type { MatchDetail, MatchPlayer } from "../domain/match-detail";
+import { PERF_STATS, type PlayerBenchmarks } from "../domain/match-performance";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import { resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
 import type {
@@ -105,6 +106,18 @@ const MatchPlayerSchema = z.object({
   party_id: nullableInt,
   party_size: nullableInt,
   rank_tier: nullableInt,
+  benchmarks: z
+    .record(
+      z.string(),
+      z.object({
+        raw: z.number().nullable().optional(),
+        pct: z.number().nullable().optional(),
+        pct_bracket: z.number().nullable().optional(),
+      }),
+    )
+    .nullable()
+    .optional()
+    .catch(null),
 });
 
 const MatchDetailSchema = z.object({
@@ -366,6 +379,7 @@ export class OpenDotaAdapter
         partyId: p.party_id ?? null,
         partySize: p.party_size ?? null,
         rankTier: p.rank_tier ?? null,
+        benchmarks: toBenchmarks(p.benchmarks),
       };
     });
 
@@ -417,4 +431,22 @@ export class OpenDotaAdapter
     }
     return ok(out);
   }
+}
+
+/** OpenDota's per-player benchmarks, keeping only complete entries for stats we show. */
+function toBenchmarks(
+  b:
+    | Record<string, { raw?: number | null; pct?: number | null; pct_bracket?: number | null }>
+    | null
+    | undefined,
+): PlayerBenchmarks | null {
+  if (!b) return null;
+  const out: PlayerBenchmarks = {};
+  for (const stat of PERF_STATS) {
+    const v = b[stat];
+    if (v && typeof v.raw === "number" && typeof v.pct === "number") {
+      out[stat] = { raw: v.raw, pct: v.pct, pctBracket: v.pct_bracket ?? null };
+    }
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }

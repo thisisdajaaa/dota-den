@@ -1,3 +1,4 @@
+import type { PlayerBenchmarks } from "./match-performance";
 import type { TeamSide } from "./player-match-fact";
 
 /** One player's line in a full match scoreboard. Parsed-only stats are null when unparsed. */
@@ -29,6 +30,8 @@ export interface MatchPlayer {
   partyId: number | null;
   partySize: number | null;
   rankTier: number | null;
+  /** Percentiles against others on the same hero (OpenDota); null when not given. */
+  benchmarks: PlayerBenchmarks | null;
 }
 
 export interface MatchDetail {
