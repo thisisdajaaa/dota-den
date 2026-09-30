@@ -150,15 +150,24 @@ describe("OpenDotaMetaSource", () => {
   it("reads a player's recent lanes", async () => {
     const { source, fetch } = sourceWith(() => ({
       body: [
-        { match_id: 1, hero_id: 1, lane_role: 1, is_roaming: false },
-        { match_id: 2, hero_id: 2, lane_role: null, is_roaming: null },
+        {
+          match_id: 1,
+          player_slot: 1,
+          radiant_win: true,
+          hero_id: 1,
+          lane_role: 1,
+          is_roaming: false,
+        },
+        { match_id: 2, player_slot: 130, radiant_win: true, hero_id: 2, lane_role: 3 },
+        { match_id: 4, hero_id: 2, lane_role: null, is_roaming: null },
         { match_id: 3, lane_role: 1 },
       ],
     }));
     const res = await source.recentLanes(22202);
     expect(res.ok && res.value.value.games).toEqual([
-      { heroId: 1, laneRole: 1, isRoaming: false },
-      { heroId: 2, laneRole: null, isRoaming: null },
+      { heroId: 1, laneRole: 1, isRoaming: false, result: "win" },
+      { heroId: 2, laneRole: 3, isRoaming: null, result: "loss" },
+      { heroId: 2, laneRole: null, isRoaming: null, result: null },
     ]);
     const url = new URL(fetch.mock.calls[0][0]);
     expect(url.pathname).toBe("/api/players/22202/matches");

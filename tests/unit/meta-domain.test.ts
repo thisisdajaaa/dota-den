@@ -17,6 +17,7 @@ import {
   deriveRole,
   isSupportHero,
   parsePosition,
+  positionBreakdown,
   positionForGame,
   type LaneGame,
 } from "@/modules/meta/domain/position";
@@ -100,6 +101,47 @@ describe("positions", () => {
       roles,
     );
     expect(tie.position).toBe(1);
+  });
+
+  it("breaks games down by position with win rates, counting unreadable games by reason", () => {
+    const roles = new Map([
+      [1, CARRY],
+      [2, SUPPORT],
+      [3, INITIATOR],
+    ]);
+    const games: LaneGame[] = [
+      ...Array.from({ length: 12 }, (_, i) => ({
+        heroId: 1,
+        laneRole: 1,
+        isRoaming: false,
+        result: i < 9 ? ("win" as const) : ("loss" as const),
+      })),
+      { heroId: 2, laneRole: 1, isRoaming: false, result: "loss" },
+      { heroId: 2, laneRole: 3, isRoaming: true, result: "win" },
+      { heroId: 3, laneRole: 3, isRoaming: false, result: null },
+      { heroId: 1, laneRole: null, isRoaming: null, result: "win" },
+      { heroId: 1, laneRole: 4, isRoaming: false, result: "win" },
+      { heroId: 99, laneRole: 1, isRoaming: false, result: "win" },
+    ];
+    const b = positionBreakdown(games, (id) => roles.get(id));
+    expect(b.total).toBe(18);
+    expect(b.counted).toBe(15);
+    expect(b.noLaneData).toBe(1);
+    expect(b.unplaced).toBe(2);
+    const [p1, p2, p3, p4, p5] = b.positions;
+    expect(p1).toMatchObject({ position: 1, games: 12, wins: 9, winRate: 0.75, lowSample: false });
+    expect(p1.heroes).toEqual([{ heroId: 1, games: 12, wins: 9, decided: 12 }]);
+    expect(p2).toMatchObject({ games: 0, winRate: null, lowSample: true });
+    // A game without a known result counts as a game but not toward the win rate.
+    expect(p3).toMatchObject({ games: 1, decided: 0, winRate: null });
+    expect(p4).toMatchObject({ games: 1, wins: 1, winRate: 1, lowSample: true });
+    expect(p5).toMatchObject({ games: 1, wins: 0, winRate: 0 });
+  });
+
+  it("gives an empty breakdown for no games", () => {
+    const b = positionBreakdown([], () => CARRY);
+    expect(b).toMatchObject({ total: 0, counted: 0, noLaneData: 0, unplaced: 0 });
+    expect(b.positions.every((p) => p.games === 0)).toBe(true);
   });
 });
 

@@ -9,6 +9,19 @@ const ACCOUNT = 22202;
 const DAY = 86_400;
 const NOW = Math.floor(Date.now() / 1000);
 
+const AM_PURCHASES = Object.fromEntries(
+  [1, 2, 4, 5, 7, 8].map((i, n) => [
+    i,
+    {
+      tango: 2,
+      boots: 1,
+      power_treads: 1,
+      bfury: 1,
+      ...(n < 4 ? { manta: 1 } : { black_king_bar: 1 }),
+    },
+  ]),
+);
+
 // 12 synthetic matches, newest first: 7 wins, 5 losses; 6 solo, 4 party, 2 unknown.
 const MATCHES = Array.from({ length: 12 }, (_, i) => ({
   match_id: 7_000_000_000 + (12 - i),
@@ -28,6 +41,11 @@ const MATCHES = Array.from({ length: 12 }, (_, i) => ({
   // Parsed-replay lane info (1 safe, 2 mid, 3 off): Anti-Mage in the safe lane, Pudge off.
   lane_role: i % 3 === 0 ? 3 : 1,
   is_roaming: false,
+  gold_per_min: 600 + i * 10,
+  xp_per_min: 700 + i * 10,
+  // Purchase log (parsed replays only): six Anti-Mage games. Battle Fury and Power Treads
+  // every game, Manta in four, BKB in two; consumables and components are filtered out.
+  purchase: AM_PURCHASES[i] ?? null,
 }));
 
 function player(slot, extra = {}) {
@@ -243,6 +261,37 @@ function peers(id) {
   }));
 }
 
+/**
+ * `/players/{id}/heroes?hero_id=X`: counts over the games where the player was on hero X.
+ * Anti-Mage (1): beats 101 (5 of 6), loses to 102 (1 of 5), 103 too few games; wins with 104.
+ */
+const PLAYER_MATCHUPS = {
+  1: [
+    { hero_id: 1, games: 8, win: 6 },
+    { hero_id: 101, against_games: 6, against_win: 5, with_games: 1, with_win: 1 },
+    { hero_id: 102, against_games: 5, against_win: 1 },
+    { hero_id: 103, against_games: 2, against_win: 2 },
+    { hero_id: 104, with_games: 7, with_win: 6 },
+  ],
+  14: [
+    { hero_id: 14, games: 4, win: 1 },
+    { hero_id: 105, against_games: 4, against_win: 1 },
+  ],
+};
+function playerMatchups(id, heroId) {
+  if (Number(id) !== ACCOUNT) return [];
+  return (PLAYER_MATCHUPS[Number(heroId)] ?? []).map((r) => ({
+    games: 0,
+    win: 0,
+    with_games: 0,
+    with_win: 0,
+    against_games: 0,
+    against_win: 0,
+    last_played: r.games ? NOW - DAY : 0,
+    ...r,
+  }));
+}
+
 function heroStats(id) {
   if (Number(id) !== ACCOUNT) return [];
   return [
@@ -424,6 +473,17 @@ function explorer(sql) {
   return meta ? metaExplorer(q) : draftExplorer(q);
 }
 
+// Synthetic item catalog (names and prices made up to match the shape, not the game).
+const ITEMS = [
+  { id: 36, key: "magic_wand", dname: "Magic Wand", qual: "common", cost: 450 },
+  { id: 44, key: "tango", dname: "Tango", qual: "consumable", cost: 90 },
+  { id: 29, key: "boots", dname: "Boots of Speed", qual: "component", cost: 500 },
+  { id: 63, key: "power_treads", dname: "Power Treads", qual: "common", cost: 1400 },
+  { id: 145, key: "bfury", dname: "Battle Fury", qual: "epic", cost: 4100 },
+  { id: 147, key: "manta", dname: "Manta Style", qual: "epic", cost: 4650 },
+  { id: 116, key: "black_king_bar", dname: "Black King Bar", qual: "epic", cost: 4050 },
+];
+
 const routes = [
   [/^\/api\/heroStats$/, () => publicHeroStats()],
   [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
@@ -435,7 +495,13 @@ const routes = [
     /^\/api\/players\/(\d+)\/wl$/,
     (m) => (Number(m[1]) === ACCOUNT ? { win: 7, lose: 5 } : { win: 0, lose: 0 }),
   ],
-  [/^\/api\/players\/(\d+)\/heroes$/, (m) => heroStats(m[1])],
+  [
+    /^\/api\/players\/(\d+)\/heroes$/,
+    (m, url) =>
+      url.searchParams.has("hero_id")
+        ? playerMatchups(m[1], url.searchParams.get("hero_id"))
+        : heroStats(m[1]),
+  ],
   [/^\/api\/players\/(\d+)\/peers$/, (m) => peers(m[1])],
   [/^\/datafeed\/patchnoteslist$/, () => PATCH_LIST],
   [/^\/datafeed\/patchnotes$/, (_m, url) => patchNotes(url.searchParams.get("version"))],
@@ -457,11 +523,14 @@ const routes = [
       const limit = Number(url.searchParams.get("limit") ?? 100);
       // Matches the other account also played in (either team).
       const included = url.searchParams.get("included_account_id");
-      const rows = !included
-        ? MATCHES
-        : Number(included) === FRIEND
-          ? MATCHES.filter((_, i) => sharedIndices.includes(i))
-          : [];
+      const heroId = url.searchParams.get("hero_id");
+      const rows = (
+        !included
+          ? MATCHES
+          : Number(included) === FRIEND
+            ? MATCHES.filter((_, i) => sharedIndices.includes(i))
+            : []
+      ).filter((r) => !heroId || r.hero_id === Number(heroId));
       return rows.slice(offset, offset + limit);
     },
   ],
@@ -469,16 +538,16 @@ const routes = [
   [/^\/api\/matches\/(\d+)$/, (m) => matchDetail(m[1])],
   [/^\/api\/constants\/patch$/, () => [{ name: "7.41", date: "2026-03-24T00:00:00Z", id: 60 }]],
   [/^\/api\/constants\/heroes$/, () => HEROES],
-  [/^\/api\/constants\/item_ids$/, () => ({ 36: "magic_wand" })],
+  [/^\/api\/constants\/item_ids$/, () => Object.fromEntries(ITEMS.map((i) => [i.id, i.key]))],
   [
     /^\/api\/constants\/items$/,
-    () => ({
-      magic_wand: {
-        id: 36,
-        img: "/apps/dota2/images/dota_react/items/magic_wand.png?t=1",
-        dname: "Magic Wand",
-      },
-    }),
+    () =>
+      Object.fromEntries(
+        ITEMS.map(({ key, ...item }) => [
+          key,
+          { ...item, img: `/apps/dota2/images/dota_react/items/${key}.png?t=1` },
+        ]),
+      ),
   ],
 ];
 

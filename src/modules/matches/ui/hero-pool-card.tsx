@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "cn";
 import type { HeroInfo } from "../application/ports";
@@ -102,41 +103,43 @@ export function HeroPoolCard({
           {visible.map((h, i) => {
             const hero = heroMap.get(h.heroId);
             return (
-              <li
-                key={h.heroId}
-                className="grid grid-cols-[1.25rem_auto_1fr_auto] items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.03]"
-              >
-                <span className="text-right text-xs text-muted-foreground tabular-nums">
-                  {i + 1}
-                </span>
-                <HeroPortrait hero={hero} heroId={h.heroId} size="md" />
-                <div className="min-w-0 space-y-1.5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate font-medium">{heroName(hero, h.heroId)}</span>
-                    <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                      {sort === "recent" ? formatAgo(h.lastPlayed, nowDate) : `${h.games} games`}
-                    </span>
+              <li key={h.heroId}>
+                <Link
+                  href={`/heroes/${h.heroId}`}
+                  className="grid grid-cols-[1.25rem_auto_1fr_auto] items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none"
+                >
+                  <span className="text-right text-xs text-muted-foreground tabular-nums">
+                    {i + 1}
+                  </span>
+                  <HeroPortrait hero={hero} heroId={h.heroId} size="md" />
+                  <div className="min-w-0 space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-medium">{heroName(hero, h.heroId)}</span>
+                      <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                        {sort === "recent" ? formatAgo(h.lastPlayed, nowDate) : `${h.games} games`}
+                      </span>
+                    </div>
+                    <WinRateBar rate={h.winRate} muted={h.lowSample} className="h-1.5" />
                   </div>
-                  <WinRateBar rate={h.winRate} muted={h.lowSample} className="h-1.5" />
-                </div>
-                <div className="w-16 text-right">
-                  <div
-                    className={cn(
-                      "text-sm tabular-nums",
-                      sort === "kda" ? "text-muted-foreground" : "font-semibold",
-                    )}
-                  >
-                    {formatPercent(h.winRate)}
+                  <div className="w-16 text-right">
+                    <div
+                      className={cn(
+                        "text-sm tabular-nums",
+                        sort === "kda" ? "text-muted-foreground" : "font-semibold",
+                      )}
+                    >
+                      {formatPercent(h.winRate)}
+                    </div>
+                    <div
+                      className={cn(
+                        "text-[0.7rem] tabular-nums",
+                        sort === "kda" ? "font-semibold text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      KDA {h.kda.toFixed(2)}
+                    </div>
                   </div>
-                  <div
-                    className={cn(
-                      "text-[0.7rem] tabular-nums",
-                      sort === "kda" ? "font-semibold text-foreground" : "text-muted-foreground",
-                    )}
-                  >
-                    KDA {h.kda.toFixed(2)}
-                  </div>
-                </div>
+                </Link>
               </li>
             );
           })}

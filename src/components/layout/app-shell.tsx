@@ -17,6 +17,7 @@ import { SiteFooter } from "./site-footer";
 const ENABLED: readonly NavKey[] = [
   "overview",
   "matches",
+  "heroes",
   "mmr",
   "sessions",
   "together",

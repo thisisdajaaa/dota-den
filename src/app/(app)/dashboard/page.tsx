@@ -23,6 +23,7 @@ import { getViewerTimeZone } from "@/modules/mmr/composition";
 import { getSessionService } from "@/modules/sessions/composition";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
+import { LanesSection, LanesSkeleton } from "./lanes-section";
 import { TeammatesSection } from "./teammates-section";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -166,6 +167,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           )}
         </>
       )}
+
+      {/* From OpenDota's lane data (last 60 days), not the filters above. */}
+      <Suspense fallback={<LanesSkeleton />}>
+        <LanesSection accountId32={user.accountId32} />
+      </Suspense>
 
       {/* From OpenDota, not the filters above: streams in without holding up the page. */}
       <Suspense fallback={<TeammatesSkeleton />}>
