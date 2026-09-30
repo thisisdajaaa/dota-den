@@ -88,6 +88,7 @@ export function HeroClimbSection({
                     heroId={c.heroId}
                     size="xs"
                     className="sm:h-8 sm:w-[3.56rem]"
+                    displayWidth={57}
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium group-hover:text-gold">

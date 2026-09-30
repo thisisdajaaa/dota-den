@@ -70,9 +70,9 @@ export function PlayerBanner({
                   <Image
                     src={profile.avatarUrl}
                     alt=""
-                    fill
-                    sizes="112px"
-                    className="object-cover"
+                    width={112}
+                    height={112}
+                    className="absolute inset-0 size-full object-cover"
                     priority
                   />
                 ) : (

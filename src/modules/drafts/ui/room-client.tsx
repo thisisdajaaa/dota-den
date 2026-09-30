@@ -429,7 +429,13 @@ function Seat({
     >
       <span className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted ring-1 ring-white/10">
         {captain?.avatarUrl ? (
-          <Image src={captain.avatarUrl} alt="" fill sizes="56px" className="object-cover" />
+          <Image
+            src={captain.avatarUrl}
+            alt=""
+            width={56}
+            height={56}
+            className="absolute inset-0 size-full object-cover"
+          />
         ) : (
           <UserRound aria-hidden className="size-6 text-muted-foreground" />
         )}
