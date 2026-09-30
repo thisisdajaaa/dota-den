@@ -501,6 +501,9 @@ function draftExplorer(sql) {
 /** Route explorer SQL to the Meta page's fixture or the draft AI's, by what each query reads. */
 function explorer(sql) {
   const q = sql ?? "";
+  if (q.includes("notable_players")) {
+    return { rows: [{ account_id: 60001, name: "Fixture Pro" }], err: null };
+  }
   const meta = q.includes("AS drafts") || q.includes("a.lane=b.lane");
   return meta ? metaExplorer(q) : draftExplorer(q);
 }
@@ -573,6 +576,63 @@ const routes = [
   ],
   [/^\/api\/heroStats$/, () => publicHeroStats()],
   [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
+  // Hero guides: pro item popularity, public benchmarks and recent pro games.
+  [
+    /^\/api\/heroes\/(\d+)\/itemPopularity$/,
+    () => ({
+      start_game_items: { 44: 120, 36: 40 },
+      early_game_items: { 29: 90, 44: 70, 63: 60 },
+      mid_game_items: { 145: 50, 63: 20 },
+      late_game_items: { 116: 30, 147: 25 },
+    }),
+  ],
+  [
+    /^\/api\/heroes\/(\d+)\/matches$/,
+    () => [
+      {
+        match_id: 7100000001,
+        start_time: 1790400000,
+        duration: 2100,
+        radiant_win: true,
+        radiant: true,
+        league_name: "Fixture Invitational",
+        account_id: 60001,
+        kills: 9,
+        deaths: 2,
+        assists: 7,
+      },
+      {
+        match_id: 7100000002,
+        start_time: 1790300000,
+        duration: 2700,
+        radiant_win: true,
+        radiant: false,
+        league_name: "Fixture Invitational",
+        account_id: 60002,
+        kills: 3,
+        deaths: 8,
+        assists: 4,
+      },
+    ],
+  ],
+  [
+    /^\/api\/benchmarks$/,
+    () => ({
+      hero_id: 1,
+      result: {
+        gold_per_min: [
+          { percentile: 0.5, value: 520 },
+          { percentile: 0.9, value: 700 },
+          { percentile: 0.99, value: 880 },
+        ],
+        last_hits_per_min: [
+          { percentile: 0.5, value: 6.1 },
+          { percentile: 0.9, value: 8.44 },
+          { percentile: 0.99, value: 10.2 },
+        ],
+      },
+    }),
+  ],
   [/^\/api\/scenarios\/laneRoles$/, (_m, url) => laneRoles(url.searchParams.get("hero_id"))],
   [/^\/api\/explorer$/, (_m, url) => explorer(url.searchParams.get("sql"))],
   [/^\/api\/players\/(\d+)\/refresh$/, () => ({})],
