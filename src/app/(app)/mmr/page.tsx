@@ -10,7 +10,7 @@ import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { toMmrEntryDto } from "@/modules/mmr/application/contracts";
-import { getMmrJournal, getViewerTimeZone } from "@/modules/mmr/composition";
+import { getMmrJournal, getScreenshotReader, getViewerTimeZone } from "@/modules/mmr/composition";
 import {
   buildCalendar,
   dayValue,
@@ -170,7 +170,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         kicker="Progression"
         title="MMR journal"
         description="Log the MMR your Dota client shows. We match it against your ranked games to show exactly where you gained and lost it."
-        actions={<MmrEntryDialog />}
+        actions={<MmrEntryDialog canReadScreenshots={getScreenshotReader() !== null} />}
       />
 
       <section aria-label="Summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">

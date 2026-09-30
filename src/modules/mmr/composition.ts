@@ -1,7 +1,9 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/db/mongo";
+import { env } from "@/lib/env";
 import { MmrJournalService } from "./application/mmr-journal-service";
+import { GroqScreenshotReader } from "./infrastructure/groq-screenshot-reader";
 import { isValidTimeZone } from "./domain/day-key";
 import {
   MongoMmrEntryRepository,
@@ -25,4 +27,12 @@ export async function getViewerTimeZone(): Promise<{ timeZone: string; known: bo
 /** Admin overview: MMR entries per user. */
 export async function getMmrEntryCounts(userIds: readonly string[]) {
   return mmrEntryCountsByUser(await getDb(), userIds);
+}
+
+/** Reads MMR from screenshots; null when no AI provider is configured. */
+export function getScreenshotReader(): GroqScreenshotReader | null {
+  const { GROQ_API_KEY, MMR_VISION_MODEL } = env();
+  return GROQ_API_KEY
+    ? new GroqScreenshotReader({ apiKey: GROQ_API_KEY, model: MMR_VISION_MODEL })
+    : null;
 }
