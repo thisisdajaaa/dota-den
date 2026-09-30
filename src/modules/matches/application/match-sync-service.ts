@@ -84,9 +84,12 @@ export class MatchSyncService {
    * Import new matches first (head), then spend any remaining page budget on backfill.
    * Idempotent: facts are upserted by (accountId32, matchId).
    */
-  async sync(accountId32: number): Promise<Result<SyncSummary, SyncError>> {
+  async sync(
+    accountId32: number,
+    opts: { maxPages?: number } = {},
+  ): Promise<Result<SyncSummary, SyncError>> {
     const pageSize = this.deps.pageSize ?? PAGE_SIZE;
-    let budget = this.deps.maxPages ?? MAX_PAGES_PER_SYNC;
+    let budget = opts.maxPages ?? this.deps.maxPages ?? MAX_PAGES_PER_SYNC;
 
     const lock = await this.deps.syncState.acquire(accountId32, {
       now: this.now(),
@@ -193,6 +196,41 @@ export class MatchSyncService {
       await this.deps.syncState.abandon(accountId32);
       throw e;
     }
+  }
+
+  /**
+   * Background sync for everyone (daily cron): keeps histories importing and matches fresh
+   * without the player visiting. Accounts go one at a time, most in need first, until the
+   * time budget runs out; each gets a larger page budget than an on-visit sync.
+   */
+  async syncDue(opts: {
+    limit: number;
+    budgetMs: number;
+    maxPages: number;
+  }): Promise<Array<{ accountId32: number; outcome: string; inserted?: number }>> {
+    const started = this.now().getTime();
+    const out: Array<{ accountId32: number; outcome: string; inserted?: number }> = [];
+    for (const accountId32 of await this.deps.syncState.dueForSync(opts.limit)) {
+      if (this.now().getTime() - started >= opts.budgetMs) {
+        out.push({ accountId32, outcome: "skipped_time" });
+        continue;
+      }
+      try {
+        const res = await this.sync(accountId32, { maxPages: opts.maxPages });
+        out.push(
+          res.ok
+            ? {
+                accountId32,
+                outcome: res.value.backfillComplete ? "synced" : "backfilling",
+                inserted: res.value.inserted,
+              }
+            : { accountId32, outcome: res.error.type },
+        );
+      } catch {
+        out.push({ accountId32, outcome: "error" });
+      }
+    }
+    return out;
   }
 
   private async fetchPage(

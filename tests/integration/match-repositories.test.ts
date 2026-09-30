@@ -132,6 +132,26 @@ describe("MongoSyncStateRepository", () => {
     await repo.abandon(44);
     expect((await repo.acquire(44, opts(new Date(t0.getTime() + 60_002)))).type).toBe("acquired");
   });
+
+  it("lists accounts due a background sync: unfinished history first, then oldest", async () => {
+    const repo = new MongoSyncStateRepository(db);
+    const release = async (id: number, lastSyncAt: Date, backfillComplete: boolean) => {
+      await repo.acquire(id, opts(lastSyncAt));
+      await repo.release(id, {
+        lastSyncAt,
+        newestStartedAt: null,
+        backfillOffset: 0,
+        backfillComplete,
+        historyRefreshRequestedAt: null,
+        rescannedAt: null,
+      });
+    };
+    await release(70, new Date("2026-09-20T00:00:00Z"), true);
+    await release(71, new Date("2026-09-29T00:00:00Z"), false);
+    await release(72, new Date("2026-09-10T00:00:00Z"), true);
+    const mine = (await repo.dueForSync(100)).filter((id) => id >= 70 && id <= 72);
+    expect(mine).toEqual([71, 72, 70]);
+  });
 });
 
 describe("MongoMatchQueries.listMatches", () => {

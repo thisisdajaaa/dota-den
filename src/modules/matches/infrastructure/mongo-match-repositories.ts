@@ -191,6 +191,15 @@ export class MongoSyncStateRepository implements SyncStateRepository {
     await this.col.updateOne({ accountId32 }, { $set: { lockedUntil: null } });
   }
 
+  async dueForSync(limit: number): Promise<number[]> {
+    const docs = await this.col
+      .find({}, { projection: { _id: 0, accountId32: 1 } })
+      .sort({ backfillComplete: 1, lastSyncAt: 1 })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => d.accountId32);
+  }
+
   async get(accountId32: number): Promise<SyncState | null> {
     const doc = await this.col.findOne({ accountId32 });
     return doc ? toState(doc) : null;
