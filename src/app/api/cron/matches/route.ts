@@ -3,7 +3,8 @@ import { isCronAuthorized } from "@/lib/cron-auth";
 import { env } from "@/lib/env";
 import { apiError, requestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
-import { getMatchSyncService } from "@/modules/matches/composition";
+import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
+import { recordMedal } from "@/modules/mmr/composition";
 
 export const maxDuration = 60;
 
@@ -20,8 +21,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const started = Date.now();
   const results = await (
     await getMatchSyncService()
-  ).syncDue({ limit: 200, budgetMs: 45_000, maxPages: 20 });
+  ).syncDue({ limit: 200, budgetMs: 40_000, maxPages: 20 });
+  // Note each player's medal too, within what's left of the time budget.
+  let medals = 0;
+  for (const { accountId32 } of results) {
+    if (Date.now() - started > 55_000) break;
+    const profile = await getPlayerProfile(accountId32);
+    if (profile) {
+      await recordMedal(accountId32, profile.rankTier);
+      medals++;
+    }
+  }
   logger.info("match_cron_completed", {
+    medals,
     requestId: requestId(req),
     durationMs: Date.now() - started,
     results,

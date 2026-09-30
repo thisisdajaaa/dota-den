@@ -10,7 +10,12 @@ import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { toMmrEntryDto } from "@/modules/mmr/application/contracts";
-import { getMmrJournal, getScreenshotReader, getViewerTimeZone } from "@/modules/mmr/composition";
+import {
+  getMedalHistory,
+  getMmrJournal,
+  getScreenshotReader,
+  getViewerTimeZone,
+} from "@/modules/mmr/composition";
 import {
   buildCalendar,
   dayValue,
@@ -24,6 +29,7 @@ import { CalendarLegend } from "@/modules/mmr/ui/calendar-legend";
 import { DayDetail } from "@/modules/mmr/ui/day-detail";
 import { DeleteEntryButton } from "@/modules/mmr/ui/delete-entry-button";
 import { HeroClimbSection } from "@/modules/mmr/ui/hero-climb-section";
+import { MedalHistorySection } from "@/modules/mmr/ui/medal-history-section";
 import { MmrEntryDialog } from "@/modules/mmr/ui/mmr-entry-dialog";
 import { MmrTrendChart } from "@/modules/mmr/ui/mmr-trend-chart";
 import { MonthGrid } from "@/modules/mmr/ui/month-grid";
@@ -82,7 +88,10 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
     getMatchQueries(),
     getHeroMap(),
   ]);
-  const entries = await journal.list(owner);
+  const [entries, medals] = await Promise.all([
+    journal.list(owner),
+    getMedalHistory(user.accountId32).catch(() => []),
+  ]);
 
   // All-time starts at the earliest entry or ranked game we know about.
   const earliestMatch =
@@ -348,6 +357,8 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
       {s.games > 0 && (
         <HeroClimbSection climbs={climbs} heroes={heroes} periodLabel={periodLabel} />
       )}
+
+      <MedalHistorySection history={medals} timeZone={timeZone} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <section className="panel p-5 lg:col-span-3" aria-labelledby="trend-title">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { after } from "next/server";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
@@ -19,7 +20,7 @@ import { QueueSplitCard } from "@/modules/matches/ui/queue-split-card";
 import { RecentMatchesCard } from "@/modules/matches/ui/recent-matches-card";
 import { SyncControl } from "@/modules/matches/ui/sync-control";
 import { HeroPoolCard } from "@/modules/matches/ui/hero-pool-card";
-import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { getViewerTimeZone, recordMedal } from "@/modules/mmr/composition";
 import { getSessionService } from "@/modules/sessions/composition";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
@@ -59,6 +60,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       .catch(() => null),
     getViewerTimeZone(),
   ]);
+  // Medal history needs no typing: note the medal each visit (after the page is sent).
+  if (profile) after(() => recordMedal(user.accountId32, profile.rankTier));
 
   // Every hero in view (the card sorts and expands client-side).
   const summary = summarizeMatches(facts, { topHeroes: Number.POSITIVE_INFINITY });
