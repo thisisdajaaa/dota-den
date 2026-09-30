@@ -25,6 +25,7 @@ import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
+import { PatchDigestSection, PatchDigestSkeleton } from "./patch-digest-section";
 import { StandingSection } from "./standing-section";
 import { TeammatesSection } from "./teammates-section";
 
@@ -84,6 +85,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {latestSession && (
         <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />
       )}
+
+      <Suspense fallback={<PatchDigestSkeleton />}>
+        <PatchDigestSection user={user} />
+      </Suspense>
 
       {!hasAnyMatches ? (
         <EmptyState

@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { getPatchImportService, getPatchQueries } from "@/modules/patches/composition";
+import { COHORT_WINDOW_MS, heroCohort } from "@/modules/patches/domain/digest";
 import { changesAffectingPool, diffSummary } from "@/modules/patches/domain/patch";
 import { parsePatchVersion } from "@/modules/patches/domain/patch-version";
 import { HeroChangeCard, type HeroCohort } from "@/modules/patches/ui/hero-change-card";
@@ -13,8 +14,6 @@ import { ItemChangeList } from "@/modules/patches/ui/item-change-list";
 import { NoteList } from "@/modules/patches/ui/note-list";
 import { getHeroPool } from "@/modules/patches/hero-pool";
 import { WatchButton } from "@/modules/patches/ui/watch-button";
-
-const COHORT_WINDOW_MS = 30 * 86_400_000;
 
 export async function generateMetadata({
   params,
@@ -56,16 +55,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
       from: new Date(released - COHORT_WINDOW_MS),
       to: new Date(Math.min(now.getTime(), released + COHORT_WINDOW_MS)),
     });
-    for (const h of yours) {
-      const c: HeroCohort = { before: { games: 0, wins: 0 }, after: { games: 0, wins: 0 } };
-      for (const m of results) {
-        if (m.heroId !== h.heroId) continue;
-        const side = m.startedAt.getTime() < released ? c.before : c.after;
-        side.games++;
-        if (m.result === "win") side.wins++;
-      }
-      cohorts.set(h.heroId, c);
-    }
+    for (const h of yours) cohorts.set(h.heroId, heroCohort(results, h.heroId, patch.publishedAt));
   }
 
   const s = patch.sections;
