@@ -19,6 +19,7 @@ import {
   MongoMatchQueries,
   MongoPlayerMatchFactRepository,
   MongoSyncStateRepository,
+  matchStatsByAccount,
 } from "./infrastructure/mongo-match-repositories";
 
 // One gateway per server instance so dedup, cache and circuit state are shared.
@@ -132,4 +133,9 @@ export async function getPublicRecentMatches(
       };
     }),
   };
+}
+
+/** Admin overview: imported matches and sync state per account. */
+export async function getMatchStatsByAccount(accountIds: readonly number[]) {
+  return matchStatsByAccount(await getDb(), accountIds);
 }

@@ -75,3 +75,18 @@ export class MongoMmrEntryRepository implements MmrEntryRepository {
     return docs.map(toEntry);
   }
 }
+
+/** Admin overview: MMR entries per user. */
+export async function mmrEntryCountsByUser(
+  db: Db,
+  userIds: readonly string[],
+): Promise<Map<string, number>> {
+  const rows = await db
+    .collection(MMR_COLLECTIONS.entries)
+    .aggregate<{ _id: string; n: number }>([
+      { $match: { userId: { $in: [...userIds] } } },
+      { $group: { _id: "$userId", n: { $sum: 1 } } },
+    ])
+    .toArray();
+  return new Map(rows.map((r) => [String(r._id), r.n]));
+}

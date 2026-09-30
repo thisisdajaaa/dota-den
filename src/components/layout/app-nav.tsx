@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ScrollText,
   Shield,
+  ShieldCheck,
   Swords,
   TrendingUp,
   Trophy,
@@ -31,7 +32,8 @@ export type NavKey =
   | "players"
   | "patches"
   | "draft"
-  | "leaderboards";
+  | "leaderboards"
+  | "admin";
 
 const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
   [
@@ -45,6 +47,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },
+    { key: "admin", href: "/admin", label: "Admin", icon: ShieldCheck, auth: true },
     {
       key: "leaderboards",
       href: "/leaderboards",

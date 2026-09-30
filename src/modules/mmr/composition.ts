@@ -3,7 +3,10 @@ import { cookies } from "next/headers";
 import { getDb } from "@/lib/db/mongo";
 import { MmrJournalService } from "./application/mmr-journal-service";
 import { isValidTimeZone } from "./domain/day-key";
-import { MongoMmrEntryRepository } from "./infrastructure/mongo-mmr-repository";
+import {
+  MongoMmrEntryRepository,
+  mmrEntryCountsByUser,
+} from "./infrastructure/mongo-mmr-repository";
 
 export const TZ_COOKIE = "dd_tz";
 
@@ -17,4 +20,9 @@ export async function getViewerTimeZone(): Promise<{ timeZone: string; known: bo
   return tz && isValidTimeZone(tz)
     ? { timeZone: tz, known: true }
     : { timeZone: "UTC", known: false };
+}
+
+/** Admin overview: MMR entries per user. */
+export async function getMmrEntryCounts(userIds: readonly string[]) {
+  return mmrEntryCountsByUser(await getDb(), userIds);
 }
