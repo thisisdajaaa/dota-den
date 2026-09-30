@@ -153,3 +153,31 @@ test("sync waits out a busy OpenDota and tries again by itself", async ({ page }
   await expect.poll(() => calls, { timeout: 20_000 }).toBeGreaterThanOrEqual(before + 2);
   await expect(page.getByText("Sync paused")).toHaveCount(0);
 });
+
+test("the MMR prompt's close button never covers its form", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
+  type Box = { x: number; y: number; width: number; height: number };
+  const overlap = (a: Box, b: Box) =>
+    !(
+      a.x + a.width <= b.x ||
+      b.x + b.width <= a.x ||
+      a.y + a.height <= b.y ||
+      b.y + b.height <= a.y
+    );
+  for (const width of [1400, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/dashboard");
+    const prompt = page.getByRole("region", { name: "Log your MMR" });
+    await expect(prompt).toBeVisible();
+    const close = (await prompt.getByRole("button", { name: "Not now" }).boundingBox())!;
+    for (const other of [
+      prompt.getByRole("button", { name: "Log it" }),
+      prompt.getByRole("textbox", { name: "Your MMR now" }),
+    ]) {
+      expect(overlap(close, (await other.boundingBox())!), `at ${width}px`).toBe(false);
+    }
+  }
+});
