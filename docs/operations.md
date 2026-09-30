@@ -30,6 +30,10 @@ secrets (Vercel token, org and project ids, MongoDB URI, bypass secret).
 `vercel.json` runs `GET /api/cron/patches` daily at 06:00 UTC with `Authorization: Bearer $CRON_SECRET`. It imports
 new patches and refreshes the draft AI's cached tournament data. Without `CRON_SECRET` the route answers 503.
 
+`GET /api/cron/matches` runs daily at 06:30 UTC with the same secret. It syncs every player's matches, unfinished
+histories first, for up to 45 seconds (20 pages each), so long imports finish and new games arrive without the player
+visiting. With QStash configured, long imports also continue in the background right after a visit.
+
 ## Database
 
 - `npm run db:indexes` creates or updates every index (idempotent; CI runs it on each deploy).

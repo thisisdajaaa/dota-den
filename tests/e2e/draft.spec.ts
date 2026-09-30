@@ -169,3 +169,36 @@ test("a finished draft gets a full report card and offers the AI review", async 
   await review.getByRole("button", { name: "Get the AI review" }).click();
   await expect(review.getByRole("alert")).toContainText("isn't set up");
 });
+
+test("suggestions retry when busy and say so when they can't load", async ({ page }) => {
+  // Busy once (rate limited), then fine: the panel says it's retrying, then shows them.
+  let calls = 0;
+  await page.route("**/api/v1/drafts/suggestions", async (route) => {
+    calls++;
+    if (calls === 1) {
+      await route.fulfill({ status: 429, json: { error: { code: "rate_limited", message: "" } } });
+    } else {
+      await route.continue();
+    }
+  });
+  await page.goto("/draft");
+  await page.getByRole("button", { name: "Start draft" }).click();
+  const panel = page.getByRole("region", { name: "Suggestions" });
+  await expect(panel).toContainText("Busy right now, trying again…");
+  await expect(panel.getByRole("button").first()).toBeVisible({ timeout: 15_000 });
+  expect(calls).toBe(2);
+
+  // A failure retrying won't fix: say so at once, and the draft still works.
+  await page.unroute("**/api/v1/drafts/suggestions");
+  await page.route("**/api/v1/drafts/suggestions", (route) =>
+    route.fulfill({ status: 400, json: { error: { code: "bad_request", message: "" } } }),
+  );
+  await page
+    .getByRole("region", { name: "Heroes" })
+    .getByRole("button", { name: "ban Pudge" })
+    .click();
+  await expect(panel.getByRole("status")).toContainText("Suggestions are unavailable right now");
+  await expect(
+    page.getByRole("region", { name: "Heroes" }).getByRole("button", { name: "ban Anti-Mage" }),
+  ).toBeEnabled();
+});

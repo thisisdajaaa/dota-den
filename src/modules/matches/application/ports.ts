@@ -88,6 +88,8 @@ export interface SyncStateRepository {
   /** Release without recording a completed sync (so the user can retry). */
   abandon(accountId32: number): Promise<void>;
   get(accountId32: number): Promise<SyncState | null>;
+  /** Accounts to sync in the background: unfinished history first, then least recently synced. */
+  dueForSync(limit: number): Promise<number[]>;
 }
 
 export interface ImportStatus {
