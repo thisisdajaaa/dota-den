@@ -109,4 +109,13 @@ test("the draft outlook estimates who the draft favours, with its evidence", asy
   // Tournament numbers come from the (fixture) pro drafts.
   await expect(outlook).toContainText("% of drafts");
   await expect(outlook).toContainText("between 30% and 70%");
+
+  // Five positions: each pick gets one, and the outlook lays out both lineups by position.
+  await expect(outlook).toContainText("Lineups by position");
+  await expect(outlook).toContainText("1 · Carry");
+  await expect(outlook).toContainText("5 · Hard support");
+  await expect(outlook).toContainText("Positions from where the pros play each hero");
+  await expect(
+    page.getByRole("region", { name: "Radiant draft" }).getByText(/^Position \d, /),
+  ).toHaveCount(1);
 });

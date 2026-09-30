@@ -1,6 +1,12 @@
 import { err, ok, type Result } from "@/modules/shared/domain/result";
 import { draftOutlook, type DraftOutlook } from "../domain/draft-outlook";
 import {
+  assignPositions,
+  POSITION_NAMES,
+  type Position,
+  type PositionTable,
+} from "../domain/draft-positions";
+import {
   contestRate,
   lineupNeeds,
   proSource,
@@ -48,6 +54,8 @@ interface RankedTurn {
   situation: string;
   candidates: Candidate[];
   metaContext: string[];
+  /** Whether positions come from pro games (else they're a role-tag guess). */
+  positionsKnown: boolean;
 }
 
 interface DraftData {
@@ -55,6 +63,7 @@ interface DraftData {
   matchups: Map<number, MatchupTable>;
   pro: ProMeta | undefined;
   synergy: SynergyTable | undefined;
+  positions: PositionTable | undefined;
 }
 
 /** What the tournaments are fighting over right now, in a few lines for the model. */
@@ -70,6 +79,29 @@ function metaContext(pro: ProMeta | undefined, byId: ReadonlyMap<number, AiHero>
     `Recent tournaments (${proSource(pro)}, ${pro.matches} drafts).`,
     `Most contested heroes (share of drafts that picked or banned them): ${top.join(", ")}.`,
   ];
+}
+
+/** "Your lineup: Luna (Carry), Lina (Mid). Open: Offlane, Soft support, Hard support." */
+function positionSituation(
+  action: "pick" | "ban",
+  team: readonly AiHero[],
+  positions: PositionTable | undefined,
+  picksLeft: number,
+): string {
+  const forEnemy = action === "ban";
+  const { heroes, open } = assignPositions(team, positions);
+  const byId = new Map(team.map((h) => [h.id, h.name]));
+  const lineup = heroes.length
+    ? [...heroes]
+        .sort((a, b) => a.position - b.position)
+        .map((h) => `${byId.get(h.heroId)} (${POSITION_NAMES[h.position]})`)
+        .join(", ")
+    : "no heroes yet";
+  const left = `${picksLeft} pick${picksLeft === 1 ? "" : "s"} left`;
+  const openText = open.map((p) => POSITION_NAMES[p]).join(", ");
+  return forEnemy
+    ? `The opponent's lineup: ${lineup}. They still need: ${openText} (${left}).`
+    : `Your lineup: ${lineup}. Still open: ${openText} (${left}). Pick a hero for one of the open positions.`;
 }
 
 function situation(
@@ -138,7 +170,7 @@ export class AiOpponentService {
     // Ground the choice in public data: meta, tournaments, and head-to-heads vs the heroes
     // that matter.
     const relevant = turn.action === "pick" ? enemy : own;
-    const { meta, matchups, pro, synergy } = await this.data(relevant);
+    const { meta, matchups, pro, synergy, positions } = await this.data(relevant);
 
     const candidates = rankCandidates({
       action: turn.action,
@@ -151,6 +183,7 @@ export class AiOpponentService {
       matchups,
       pro,
       synergy,
+      positions,
       limit,
     });
     if (candidates.length === 0) return err({ type: "no_heroes" });
@@ -164,24 +197,39 @@ export class AiOpponentService {
       enemy,
       ownBans: lookup(state.sides[side].bans),
       enemyBans: lookup(state.sides[enemySide].bans),
-      situation: situation(turn.action, needs, turn.action === "ban"),
+      situation: positions
+        ? positionSituation(
+            turn.action,
+            turn.action === "pick" ? own : enemy,
+            positions,
+            turn.action === "pick" ? ownPicksLeft : enemyPicksLeft,
+          )
+        : situation(turn.action, needs, turn.action === "ban"),
       candidates,
       metaContext: metaContext(pro, byId),
+      positionsKnown: positions !== undefined,
     });
   }
 
   /** Public stats, tournament data, and matchup tables for `picked`. Failures mean "no data". */
   private async data(picked: readonly AiHero[]): Promise<DraftData> {
     const insights = this.deps.insights;
-    const [meta, tables, pro, synergy] = await Promise.all([
+    const [meta, tables, pro, synergy, positions] = await Promise.all([
       insights?.heroMeta() ?? Promise.resolve(new Map<number, HeroMeta>()),
       Promise.all(picked.map(async (h) => [h.id, await insights?.matchups(h.id)] as const)),
       insights?.proMeta?.().catch(() => null) ?? Promise.resolve(null),
       insights?.synergy?.().catch(() => null) ?? Promise.resolve(null),
+      insights?.positions?.().catch(() => null) ?? Promise.resolve(null),
     ]);
     const matchups = new Map<number, MatchupTable>();
     for (const [id, table] of tables) if (table) matchups.set(id, table);
-    return { meta, matchups, pro: pro ?? undefined, synergy: synergy ?? undefined };
+    return {
+      meta,
+      matchups,
+      pro: pro ?? undefined,
+      synergy: synergy ?? undefined,
+      positions: positions ?? undefined,
+    };
   }
 
   /** Which side the draft favours so far, with the evidence. Works on partial drafts. */
@@ -209,10 +257,29 @@ export class AiOpponentService {
   ): Promise<
     Result<{ action: "pick" | "ban"; situation: string; candidates: Candidate[] }, AiMoveError>
   > {
-    // Rank deeper than we show, so the list can mix roles when both are still open.
-    const ranked = await this.rank(snapshot, side, 30);
+    // Rank deeper than we show, so the list can cover every open position.
+    const ranked = await this.rank(snapshot, side, 60);
     if (!ranked.ok) return ranked;
-    const { action, situation: text, candidates } = ranked.value;
+    const { action, situation: text, candidates, positionsKnown } = ranked.value;
+    if (action === "pick" && positionsKnown) {
+      // The best hero for each open position first, then the strongest of the rest.
+      const open = [...new Set(candidates.map((c) => c.position))].filter(
+        (p): p is Position => p !== null,
+      );
+      const perPosition = open
+        .sort((a, b) => a - b)
+        .map((p) => candidates.find((c) => c.position === p)!)
+        .slice(0, limit);
+      const rest = candidates.filter((c) => !perPosition.includes(c));
+      const picked = [...perPosition, ...rest].slice(0, limit);
+      return ok({
+        action,
+        situation: text,
+        candidates: picked.sort(
+          (a, b) => (a.position ?? 9) - (b.position ?? 9) || b.score - a.score,
+        ),
+      });
+    }
     const roles = new Set(candidates.map((c) => c.role));
     if (action !== "pick" || roles.size < 2) {
       return ok({ action, situation: text, candidates: candidates.slice(0, limit) });
