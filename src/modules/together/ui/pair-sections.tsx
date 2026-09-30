@@ -77,7 +77,7 @@ export function PairStats({ analysis, now }: { analysis: PairAnalysis; now: Date
   const copy = comparisonCopy(comparison, baseline);
   return (
     <section aria-label="Together stats" className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatTile
           label="Games together"
           value={together.games.toLocaleString("en-US")}

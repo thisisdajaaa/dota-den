@@ -179,7 +179,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
               you&apos;ve starred.
             </p>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {yours.map((h) => (
               <HeroChangeCard
                 key={h.heroId}
@@ -198,7 +198,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
           <h2 id="general-title" className="text-2xl font-semibold">
             General changes
           </h2>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {s.general.map((g, i) => (
               <article key={i} className="panel p-5">
                 {g.title && <h3 className="mb-3 font-semibold">{g.title}</h3>}
@@ -228,7 +228,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
               </li>
             ))}
           </ul>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {sortedHeroes.map((h) => (
               <HeroChangeCard
                 key={h.heroId}
@@ -268,7 +268,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
           <h2 id="creeps-title" className="text-2xl font-semibold">
             Neutral creeps
           </h2>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {s.neutralCreeps.map((c) => (
               <article key={c.key} className="rounded-xl border border-white/[0.06] bg-card/60 p-4">
                 <h3 className="text-sm font-semibold">{c.name}</h3>

@@ -77,9 +77,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             <PublicNav enabled={ENABLED} />
             <Button asChild size="sm" className="ml-auto gap-2">
               {/* Full navigation, not client-side: the route redirects to Steam. */}
-              <a href="/api/v1/auth/steam/login">
+              <a href="/api/v1/auth/steam/login" aria-label="Sign in through Steam">
                 <SteamIcon className="size-4" />
-                Sign in through Steam
+                <span className="hidden md:inline">Sign in through Steam</span>
+                <span className="md:hidden">Sign in</span>
               </a>
             </Button>
           </div>
@@ -88,6 +89,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <SiteFooter />
+        {/* Room for the bottom tab bar, below the footer so it never covers it. */}
+        <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] sm:hidden" />
+        <MobileTabBar enabled={ENABLED} signedIn={false} />
       </>
     );
   }
@@ -147,13 +151,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col lg:pl-64">
         <main
           id="main"
-          className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12"
+          className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-10 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12"
         >
           {children}
         </main>
         <SiteFooter />
+        {/* Room for the bottom tab bar, below the footer so it never covers it. */}
+        <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
       </div>
-      <MobileTabBar enabled={ENABLED} />
+      <MobileTabBar enabled={ENABLED} signedIn />
       <TimeZoneSync current={tz.known ? tz.timeZone : null} />
     </>
   );

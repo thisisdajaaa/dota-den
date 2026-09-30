@@ -116,7 +116,7 @@ async function PairAnalysisSection({
         href={`/together/${friendId}`}
       />
       <PairStats analysis={a} now={now} />
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <PartyMatches rows={a.rows} heroes={heroes} now={now} />
         </div>

@@ -23,7 +23,7 @@ export function WeekView({
 }) {
   const scale = periodScale(calendar.days.values());
   return (
-    <ol className="grid gap-2 sm:grid-cols-7">
+    <ol className="grid grid-cols-1 gap-2 sm:grid-cols-7">
       {daysBetween(from, to).map((key, i) => {
         const day = calendar.days.get(key);
         const basis = basisOf(day);

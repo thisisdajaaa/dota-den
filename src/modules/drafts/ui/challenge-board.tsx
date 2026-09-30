@@ -229,7 +229,7 @@ export function ChallengeBoard({
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Lineup title="Your team" ids={puzzle.yourPicks} total={5} heroes={heroMap} tone="you" />
         <Lineup
           title="Enemy team"
@@ -400,7 +400,7 @@ function ResultPanel({
       {result.best.length > 0 && (
         <section aria-label="Best alternatives" className="panel space-y-3 p-4 sm:p-5">
           <h2 className="font-semibold">Strongest options by the numbers</h2>
-          <ol className="grid gap-3 md:grid-cols-3">
+          <ol className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {result.best.map((b, i) => (
               <li key={b.heroId} className="flex gap-3 rounded-lg bg-white/[0.03] p-3">
                 <span className="font-display text-lg text-gold">{i + 1}</span>

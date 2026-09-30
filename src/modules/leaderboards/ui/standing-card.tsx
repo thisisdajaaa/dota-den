@@ -21,7 +21,7 @@ export function StandingCard({ standings }: { standings: StandingView[] }) {
   return (
     <section aria-label="Your standing" className="panel space-y-3 p-5">
       <Heading />
-      <ul className="grid gap-2 sm:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {standings.map((s) => {
           const [one, many] = BOARD_UNIT[s.kind];
           return (

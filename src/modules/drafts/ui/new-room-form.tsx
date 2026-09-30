@@ -64,7 +64,7 @@ export function NewRoomForm() {
           </SelectContent>
         </Select>
       </label>
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <label className={field}>
           <span className="font-medium">Your side</span>
           <Select value={hostSide} onValueChange={(v) => setHostSide(v as Side)}>

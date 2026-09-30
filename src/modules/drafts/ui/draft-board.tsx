@@ -555,7 +555,7 @@ export function DraftBoard({
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {(["radiant", "dire"] as const).map((side) => (
           <TeamPanel
             key={side}
@@ -625,7 +625,7 @@ export function DraftBoard({
         />
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {(["radiant", "dire"] as const).map((side) => (
           <FeedbackPanel
             key={side}
@@ -704,7 +704,7 @@ function SuggestionsPanel({
           ))}
         </div>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {set.candidates.map((c) => {
             const hero = heroes.get(c.heroId);
             const taken = unavailable.has(c.heroId);

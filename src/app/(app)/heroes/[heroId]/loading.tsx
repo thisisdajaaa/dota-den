@@ -16,7 +16,7 @@ export default function HeroLoading() {
           <Skeleton key={i} className="h-28 rounded-2xl" />
         ))}
       </div>
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Skeleton className="h-72 rounded-2xl lg:col-span-3" />
         <Skeleton className="h-72 rounded-2xl lg:col-span-2" />
       </div>

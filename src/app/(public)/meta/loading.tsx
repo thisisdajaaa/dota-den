@@ -10,7 +10,7 @@ export default function MetaLoading() {
         <Skeleton className="h-4 w-96 max-w-full" />
       </div>
       <Skeleton className="h-24 rounded-2xl" />
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <SectionSkeleton label="Loading top heroes" rows={6} />
         </div>
