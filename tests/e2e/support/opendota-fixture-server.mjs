@@ -622,6 +622,30 @@ const routes = [
   ],
   [/^\/api\/players\/(\d+)$/, (m) => profile(m[1])],
   [/^\/api\/matches\/(\d+)$/, (m) => matchDetail(m[1])],
+  // Twitch (Helix) for live game streams.
+  [/^\/twitch\/oauth2\/token$/, () => ({ access_token: "fixture-token", expires_in: 3600 })],
+  [
+    /^\/twitch\/helix\/streams$/,
+    () => ({
+      data: [
+        {
+          user_login: "fixturecasts",
+          user_name: "FixtureCasts",
+          title: "LIVE: Fixture Falcons vs Fixture Titans | Fixture Invitational",
+          viewer_count: 12000,
+          language: "en",
+        },
+        {
+          user_login: "rankedgrinder",
+          user_name: "RankedGrinder",
+          title: "ranked grind to immortal",
+          viewer_count: 30000,
+          language: "en",
+        },
+      ],
+      pagination: {},
+    }),
+  ],
   [/^\/api\/constants\/patch$/, () => [{ name: "7.41", date: "2026-03-24T00:00:00Z", id: 60 }]],
   [/^\/api\/constants\/heroes$/, () => HEROES],
   [/^\/api\/constants\/item_ids$/, () => Object.fromEntries(ITEMS.map((i) => [i.id, i.key]))],

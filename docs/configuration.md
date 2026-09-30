@@ -25,6 +25,8 @@ constructors. `.env.example` lists every variable with its default.
 | `OPENDOTA_BASE_URL`       | URL                     | public API       | Tests point this at the fixture server                                                       |
 | `VALVE_DATAFEED_BASE_URL` | URL                     | Valve's datafeed | Tests point this at the fixture server                                                       |
 | `STEAM_WEB_API_KEY`       | secret                  | unset            | Custom Steam URL (`steamcommunity.com/id/…`) lookups in player search                        |
+| `TWITCH_CLIENT_ID`        | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                           |
+| `TWITCH_CLIENT_SECRET`    | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only               |
 | `GROQ_API_KEY`            | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review |
 | `ADMIN_STEAM_IDS`         | comma list of SteamID64 | empty            | Users granted the admin role (manual patch import)                                           |
 | `CRON_SECRET`             | secret, 16+ chars       | unset            | Bearer secret Vercel Cron sends to `/api/cron/*`. Unset disables cron routes (503)           |

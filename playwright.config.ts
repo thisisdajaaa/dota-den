@@ -43,6 +43,10 @@ export default defineConfig({
         // Never call the real OpenDota API from tests.
         OPENDOTA_BASE_URL: `${fixtureURL}/api`,
         VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
+        TWITCH_CLIENT_ID: "fixture",
+        TWITCH_CLIENT_SECRET: "fixture",
+        TWITCH_API_BASE_URL: `${fixtureURL}/twitch/helix`,
+        TWITCH_AUTH_URL: `${fixtureURL}/twitch/oauth2/token`,
         // Never call a paid model from tests (overrides any key in .env.local).
         GROQ_API_KEY: "",
         // Never use shared Redis or the durable job queue from tests (ADR 0008).

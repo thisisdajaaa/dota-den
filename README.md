@@ -13,11 +13,16 @@
 
 </div>
 
+<p align="center">
+  <img src="docs/screenshots/home.png" alt="Dota Den home page: the latest patch and the path from patch day to your next session" width="100%">
+</p>
+
 ---
 
 ## Contents
 
 - [What it is](#what-it-is)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Honesty principles](#honesty-principles)
 - [Architecture](#architecture)
@@ -41,6 +46,19 @@ latest patch changed for you. Everything is built in-app, with no bouncing out t
 The drafting side is a full Captain's Mode trainer: draft against an AI captain grounded in current high-rank and
 tournament data, draft live against a friend, or solve short drafting puzzles, and get a report card on every draft.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/draft.png" alt="Captain's Mode draft against the AI captain, with the draft outlook and report card"><br><sub><b>Draft vs an AI captain</b>, with a live outlook and report card</sub></td>
+    <td width="50%"><img src="docs/screenshots/meta.png" alt="Meta page: top mid heroes at high ranks with lane and tournament data, and patch tips"><br><sub><b>Meta by role</b>: high-rank win rates, lanes, tournaments and patch tips</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/live.png" alt="Live games: league games in progress with scores, gold leads and heroes"><br><sub><b>Live games</b>: league and top public games in progress</sub></td>
+    <td width="50%"><img src="docs/screenshots/live-game.png" alt="A live pro game with score, lineups and a graded read of the draft"><br><sub><b>A live game</b>: score, lineups and a graded read of the draft</sub></td>
+  </tr>
+</table>
+
 ## Features
 
 ### Your games
@@ -50,7 +68,9 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   in-app match pages: scoreboard, gold and XP graphs, items, and every player's rank where known.
 - **MMR journal.** Log your MMR when you see it. A change is shown as exact only when two entries bracket exactly the
   ranked games in between; otherwise it's labelled an estimate with the reason
-  ([ADR 0007](docs/adr/0007-mmr-attribution.md)).
+  ([ADR 0007](docs/adr/0007-mmr-attribution.md)). **Climb by hero** shows each hero's record and estimated climb game
+  by game, exact only when your entries isolate games on that one hero. The overview reminds you to log MMR after
+  ranked games.
 - **Session recaps and goals.** Back-to-back games are grouped into sessions (your choice of break: 30 to 120 minutes)
   with a recap, streaks, best and worst game, and a note and goal you can mark as met.
 - **Heroes.** A page per hero you've played: record, KDA, GPM/XPM, win-rate trend by patch or month, who you beat and
@@ -60,6 +80,7 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
 ### People
 
 - **Player search and tracking.** Find players by name or ID, open their profiles, track friends.
+- **Compare players.** Two players side by side: rank, record, heroes you both play, and games with and against each other.
 - **Together.** Who you play with, win rate together versus your usual, rivals, and duo and trio pages. A game counts
   as "together" only when OpenDota reports a shared party; same team without party data is shown as unknown, never
   guessed.
@@ -71,6 +92,11 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
 - **Meta by role.** For each position, the heroes doing well right now at high ranks, lane win rates, tournament picks
   and bans, rising and falling heroes, and the strongest lane duos in pro games.
 - **Patch notes in-app**, from Valve's own feed, plus what the latest patch changed for _your_ heroes.
+- **Live games.** League games (most watched first) and the highest-MMR public games from the spectator feed, with
+  score, clock, gold lead and lineups. Once both drafts are complete, the same outlook and report card as the draft
+  tool grade the live draft. A Watch section finds Twitch streams whose titles mention the game and plays them in
+  the page (with a Twitch app configured), plus Twitch and YouTube searches.
+- **Link previews.** Shared matches, players and drafts unfurl with a generated image (heroes, score, grades).
 
 ### Drafting
 
@@ -96,6 +122,12 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   permanent history per friend ([ADR 0003](docs/adr/0003-multiplayer-draft-transport.md)).
 
 More detail: [docs/draft-engine.md](docs/draft-engine.md).
+
+### Running it
+
+- **Admin page.** Users, activity and recent failed jobs, for the Steam accounts in `ADMIN_STEAM_IDS`.
+- **Shared limits and jobs.** Upstash Redis for rate limits, a shared OpenDota cache and request budget; QStash for
+  background jobs, with an inline fallback when it isn't configured ([docs/operations.md](docs/operations.md)).
 
 ## Honesty principles
 

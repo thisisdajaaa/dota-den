@@ -94,6 +94,12 @@ const EnvSchema = z
       .optional()
       .transform((v) => v !== "false"),
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
+    /** Twitch app credentials: embed matching streams on live game pages. Unset: search links only. */
+    TWITCH_CLIENT_ID: z.string().min(1).optional(),
+    TWITCH_CLIENT_SECRET: z.string().min(1).optional(),
+    /** Overrides for tests (fixture server). Default to Twitch's. */
+    TWITCH_API_BASE_URL: z.url().optional(),
+    TWITCH_AUTH_URL: z.url().optional(),
     ADMIN_STEAM_IDS: z
       .string()
       .optional()
