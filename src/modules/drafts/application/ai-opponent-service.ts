@@ -395,6 +395,26 @@ export class AiOpponentService {
     return ok(draftOutlook({ radiant, dire, ...data, fixed: roles, picksPerSide }));
   }
 
+  /**
+   * The outlook for two lineups given as hero ids (e.g. a live game), without a draft
+   * sequence. Unknown hero ids are ignored.
+   */
+  async outlookForHeroes(
+    radiantIds: readonly number[],
+    direIds: readonly number[],
+  ): Promise<DraftOutlook> {
+    const byId = new Map(this.deps.heroes.map((h) => [h.id, h]));
+    const pick = (ids: readonly number[]) =>
+      ids
+        .map((id) => byId.get(id))
+        .filter((h): h is AiHero => !!h)
+        .slice(0, 5);
+    const radiant = pick(radiantIds);
+    const dire = pick(direIds);
+    const data = await this.data([...radiant, ...dire]);
+    return draftOutlook({ radiant, dire, ...data, picksPerSide: 5 });
+  }
+
   /** Data-only suggestions for a human's turn (no language model: instant and free). */
   async suggestions(
     snapshot: DraftSnapshot,

@@ -9,6 +9,7 @@ import {
   Ellipsis,
   History,
   LayoutDashboard,
+  Radio,
   ScrollText,
   Shield,
   ShieldCheck,
@@ -33,6 +34,7 @@ export type NavKey =
   | "patches"
   | "draft"
   | "leaderboards"
+  | "live"
   | "admin";
 
 const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
@@ -47,6 +49,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },
+    { key: "live", href: "/live", label: "Live", icon: Radio, auth: false },
     { key: "admin", href: "/admin", label: "Admin", icon: ShieldCheck, auth: true },
     {
       key: "leaderboards",
