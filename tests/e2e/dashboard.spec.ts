@@ -121,9 +121,11 @@ test("match list filters and totals reconcile", async ({ page }) => {
 
 test("sync waits out a busy OpenDota and tries again by itself", async ({ page }) => {
   let calls = 0;
+  let busyNext = false;
   await page.route("**/api/v1/me/matches/sync", async (route) => {
     calls++;
-    if (calls === 1) {
+    if (busyNext) {
+      busyNext = false;
       await route.fulfill({
         status: 429,
         json: {
@@ -138,10 +140,16 @@ test("sync waits out a busy OpenDota and tries again by itself", async ({ page }
       await route.continue();
     }
   });
-  // A player with no imported matches yet, so the dashboard syncs on load.
+  // Another test may have synced this account already, so don't rely on the sync on load:
+  // press "Sync now" once it's free.
   await page.goto("/api/v1/auth/steam/login?as=76561197960305729");
   await expect(page).toHaveURL(/\/dashboard$/);
+  const syncNow = page.getByRole("button", { name: "Sync now" });
+  await expect(syncNow).toBeEnabled({ timeout: 20_000 });
+  const before = calls;
+  busyNext = true;
+  await syncNow.click();
   await expect(page.getByRole("status").filter({ hasText: "OpenDota is busy" })).toBeVisible();
-  await expect.poll(() => calls, { timeout: 20_000 }).toBeGreaterThanOrEqual(2);
+  await expect.poll(() => calls, { timeout: 20_000 }).toBeGreaterThanOrEqual(before + 2);
   await expect(page.getByText("Sync paused")).toHaveCount(0);
 });
