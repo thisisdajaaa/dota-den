@@ -115,6 +115,7 @@ describe("tournament data caching", () => {
     expect(res.every((r) => r.ok)).toBe(true);
     expect([...store.keys()].sort()).toEqual([
       "pro-heroes-v1",
+      "pro-lanes-v1",
       "pro-leagues-v1",
       "pro-pairs-v1",
       "pro-positions-v1",

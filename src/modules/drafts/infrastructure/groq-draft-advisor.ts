@@ -42,6 +42,7 @@ export class GroqDraftAdvisor implements DraftAdvisor {
       "A lineup has five positions: Carry (pos 1), Mid (pos 2), Offlane (pos 3), Soft support (pos 4) and Hard support (pos 5). Each candidate's facts say which position it would play and how often pros play it there.",
       "Follow the SITUATION line: pick a hero for one of YOUR open positions, never a second hero for a filled one. When banning, prefer heroes that fill the OPPONENT's open positions.",
       "Prefer higher-listed candidates unless there's a clear draft reason (lane pairing, a counter, a combo with YOUR heroes).",
+      "Weigh the lane: facts saying 'in lane vs ...: won X of Y pro lanes' show who the candidate would lane against; avoid picks that lose their lane badly unless they win the game later.",
       "When you cite a percentage from a small sample (under 50 games), include the game count.",
       'Reply with JSON only: {"heroId": <number>, "reason": "<one sentence, max 30 words, plain language, citing the data or your heroes>"}.',
     ].join(" ");

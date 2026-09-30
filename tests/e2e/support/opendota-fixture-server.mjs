@@ -436,6 +436,20 @@ function heroMatchups(id) {
 // Synthetic OpenDota explorer (pro match SQL). Answers by the shape of the query.
 function draftExplorer(sql) {
   const q = sql ?? "";
+  if (q.includes("lane_wins")) {
+    // Pro lane meetings: lower id wins the lane more often (both directions returned).
+    const rows = [];
+    for (let a = 100; a < 140; a++) {
+      for (const b of [a + 1, a + 2, a + 3]) {
+        if (b >= 140) continue;
+        const games = 6 + ((a + b) % 7);
+        const wins = Math.round(games * 0.65);
+        rows.push({ h1: a, h2: b, games, lane_wins: wins });
+        rows.push({ h1: b, h2: a, games, lane_wins: games - wins });
+      }
+    }
+    return { rows, err: null };
+  }
   if (q.includes("AS pos1")) {
     // Where heroes are played, from their role mix: [pos1, pos2, pos3, pos4, pos5] shares.
     const SHARES = [
@@ -487,7 +501,7 @@ function draftExplorer(sql) {
 /** Route explorer SQL to the Meta page's fixture or the draft AI's, by what each query reads. */
 function explorer(sql) {
   const q = sql ?? "";
-  const meta = q.includes("AS drafts") || q.includes("a.lane");
+  const meta = q.includes("AS drafts") || q.includes("a.lane=b.lane");
   return meta ? metaExplorer(q) : draftExplorer(q);
 }
 
