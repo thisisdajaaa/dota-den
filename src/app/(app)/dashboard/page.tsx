@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity/composition";
@@ -21,6 +22,8 @@ import { HeroPoolCard } from "@/modules/matches/ui/hero-pool-card";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
 import { getSessionService } from "@/modules/sessions/composition";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
+import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
+import { TeammatesSection } from "./teammates-section";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -163,6 +166,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           )}
         </>
       )}
+
+      {/* From OpenDota, not the filters above: streams in without holding up the page. */}
+      <Suspense fallback={<TeammatesSkeleton />}>
+        <TeammatesSection user={user} />
+      </Suspense>
     </div>
   );
 }

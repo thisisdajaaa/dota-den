@@ -2,21 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   BookOpenText,
   CalendarRange,
+  Ellipsis,
   History,
   LayoutDashboard,
   ScrollText,
   Swords,
   TrendingUp,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
 
 export type NavKey =
-  "overview" | "matches" | "mmr" | "sessions" | "meta" | "players" | "patches" | "draft";
+  | "overview"
+  | "matches"
+  | "mmr"
+  | "sessions"
+  | "together"
+  | "meta"
+  | "players"
+  | "patches"
+  | "draft";
 
 const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
   [
@@ -24,6 +35,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "matches", href: "/matches", label: "Matches", icon: ScrollText, auth: true },
     { key: "mmr", href: "/mmr", label: "MMR journal", icon: CalendarRange, auth: true },
     { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
+    { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
     { key: "meta", href: "/meta", label: "Meta", icon: TrendingUp, auth: false },
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
@@ -79,26 +91,62 @@ export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
   );
 }
 
+/** Tabs that always show on the mobile bar; the rest go under "More". */
+const MOBILE_PRIMARY: readonly NavKey[] = ["overview", "matches", "draft", "meta"];
+
 /** Fixed bottom tab bar for signed-in mobile users. */
 export function MobileTabBar({ enabled }: { enabled: readonly NavKey[] }) {
   const isActive = useActive();
+  const pathname = usePathname();
+  const [open, setOpen] = useState<string | null>(null);
+  // Close the sheet on navigation: it's only open for the path it was opened on.
+  const moreOpen = open === pathname;
+  const items = visible(enabled, true);
+  const primary = items.filter((i) => MOBILE_PRIMARY.includes(i.key));
+  const more = items.filter((i) => !MOBILE_PRIMARY.includes(i.key));
+  const moreActive = more.some((i) => isActive(i.href));
+  const tab = "flex flex-col items-center gap-0.5 px-2 py-2 text-[0.65rem] font-medium";
+
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
     >
+      {moreOpen && (
+        <ul
+          id="more-nav"
+          className="mx-auto grid max-w-md grid-cols-3 gap-1 border-b border-white/[0.06] p-2"
+        >
+          {more.map(({ href, label, icon: Icon }) => {
+            const active = isActive(href);
+            return (
+              <li key={href}>
+                <Link
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => setOpen(null)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-lg px-2 py-2.5 text-xs font-medium",
+                    active ? "bg-gold/10 text-gold" : "text-muted-foreground hover:bg-white/[0.04]",
+                  )}
+                >
+                  <Icon aria-hidden className="size-5" />
+                  {label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <ul className="mx-auto flex max-w-md justify-around">
-        {visible(enabled, true).map(({ href, label, icon: Icon }) => {
+        {primary.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 px-2 py-2 text-[0.65rem] font-medium",
-                  active ? "text-gold" : "text-muted-foreground",
-                )}
+                className={cn(tab, active ? "text-gold" : "text-muted-foreground")}
               >
                 <Icon aria-hidden className="size-5" />
                 {label.split(" ")[0]}
@@ -106,6 +154,20 @@ export function MobileTabBar({ enabled }: { enabled: readonly NavKey[] }) {
             </li>
           );
         })}
+        {more.length > 0 && (
+          <li>
+            <button
+              type="button"
+              aria-expanded={moreOpen}
+              aria-controls="more-nav"
+              onClick={() => setOpen(moreOpen ? null : pathname)}
+              className={cn(tab, moreActive || moreOpen ? "text-gold" : "text-muted-foreground")}
+            >
+              <Ellipsis aria-hidden className="size-5" />
+              More
+            </button>
+          </li>
+        )}
       </ul>
     </nav>
   );

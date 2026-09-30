@@ -194,7 +194,7 @@ export class OpenDotaAdapter
   async fetchPlayerMatches(
     accountId32: number,
     page: { offset: number; limit: number },
-    opts: { cacheTtlMs?: number } = {},
+    opts: { cacheTtlMs?: number; includedAccountId?: number } = {},
   ): Promise<Result<ImportedPage, ProviderError>> {
     const res = await this.gateway.getJson(
       this.url(`/players/${accountId32}/matches`, {
@@ -203,6 +203,8 @@ export class OpenDotaAdapter
         // Include unbalanced/non-ranked games too; classification handles them.
         significant: 0,
         project: MATCH_FIELDS,
+        // Only matches this other account also played in (either team).
+        ...(opts.includedAccountId ? { included_account_id: opts.includedAccountId } : {}),
       }),
       // Sync never caches (it needs fresh pages); read-only public views may.
       { cacheTtlMs: opts.cacheTtlMs },

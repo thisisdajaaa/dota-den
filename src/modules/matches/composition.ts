@@ -86,14 +86,20 @@ export async function getItemMap(): Promise<Map<number, ItemInfo>> {
 /**
  * Any player's most recent public matches, straight from OpenDota (nothing stored), in the
  * same row shape as the dashboard so match lists can be shared. Cached briefly upstream.
+ * With `includedAccountId`, only matches that account also played in (either team).
  */
 export async function getPublicRecentMatches(
   accountId32: number,
   limit = 20,
+  opts: { includedAccountId?: number } = {},
 ): Promise<Result<DashboardFact[], ProviderError>> {
   const adapter = getOpenDotaAdapter();
   const [page, timeline] = await Promise.all([
-    adapter.fetchPlayerMatches(accountId32, { offset: 0, limit }, { cacheTtlMs: 10 * 60 * 1000 }),
+    adapter.fetchPlayerMatches(
+      accountId32,
+      { offset: 0, limit },
+      { cacheTtlMs: 10 * 60 * 1000, includedAccountId: opts.includedAccountId },
+    ),
     adapter.getTimeline(),
   ]);
   if (!page.ok) return page;

@@ -11,6 +11,7 @@ import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-reposit
 import { ensurePatchIndexes } from "@/modules/patches/infrastructure/mongo-patch-repositories";
 import { ensurePlayerIndexes } from "@/modules/players/infrastructure/mongo-follow-repository";
 import { ensureSessionIndexes } from "@/modules/sessions/infrastructure/mongo-session-repositories";
+import { ensureTogetherIndexes } from "@/modules/together/infrastructure/mongo-together-repository";
 
 async function main(): Promise<void> {
   const db = await getDb();
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
   await ensurePatchIndexes(db);
   await ensurePlayerIndexes(db);
   await ensureSessionIndexes(db);
+  await ensureTogetherIndexes(db);
   console.log(`Indexes ensured on ${db.databaseName}`);
   await (await getMongoClient()).close();
 }
