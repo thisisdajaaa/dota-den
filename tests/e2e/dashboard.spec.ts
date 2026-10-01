@@ -181,3 +181,18 @@ test("the MMR prompt's close button never covers its form", async ({ page }) => 
     }
   }
 });
+
+test("the overview shows this week against last week", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
+  // The fixture has a game a day for 12 days, so this week or last week has ranked games.
+  await page.reload();
+  const week = page.getByRole("region", { name: "This week" });
+  await expect(week).toContainText(/Win rate|No ranked games yet this week/);
+  await expect(week.getByRole("link", { name: /Week in the MMR journal/ })).toHaveAttribute(
+    "href",
+    "/mmr?view=week",
+  );
+});
