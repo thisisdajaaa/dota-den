@@ -44,6 +44,19 @@ describe("ProviderGateway", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  it("lets one call skip retries and stay off the circuit breaker", async () => {
+    const failures = Array.from({ length: 6 }, () => json({}, 503));
+    const { gw, fetch } = gateway([...failures, json({ ok: 1 })], { failureThreshold: 5 });
+    for (let i = 0; i < 6; i++) {
+      expect(
+        await gw.getJson(`https://x/search?q=${i}`, { maxRetries: 0, isolated: true }),
+      ).toMatchObject({ ok: false, kind: "failed" });
+    }
+    expect(fetch).toHaveBeenCalledTimes(6); // one attempt each, no retries
+    // Six isolated failures didn't open the circuit for everyone else.
+    expect((await gw.getJson("https://x/players/1")).ok).toBe(true);
+  });
+
   it("returns parsed JSON on success", async () => {
     const { gw } = gateway([json({ a: 1 })]);
     expect(await gw.getJson("https://x/a")).toEqual({ ok: true, status: 200, body: { a: 1 } });

@@ -13,6 +13,7 @@ export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 /** Profile-ish data changes slowly; cache it per instance for ten minutes. */
 export const PROFILE_TTL_MS = 10 * 60 * 1000;
 export const SEARCH_TTL_MS = 5 * 60 * 1000;
+export const SEARCH_TIMEOUT_MS = 12_000;
 
 const accountId = z.number().int().min(1).max(ACCOUNT_ID_MAX);
 const count = z.number().int().min(0);
@@ -132,7 +133,14 @@ export class OpenDotaPlayerDirectory implements PlayerDirectory {
   }
 
   async search(q: string): Promise<Result<PlayerSearchHit[], ProviderError>> {
-    const res = await this.get("/search", SEARCH_TTL_MS, { q });
+    // OpenDota's name search is slow and uneven (1–10s+). Wait once, a little longer, rather
+    // than retrying a slow query up to three times; and keep it off the shared circuit.
+    const res = await this.gateway.getJson(this.url("/search", { q }), {
+      cacheTtlMs: SEARCH_TTL_MS,
+      timeoutMs: SEARCH_TIMEOUT_MS,
+      maxRetries: 0,
+      isolated: true,
+    });
     if (!res.ok) return err(toProviderError(res));
     return parseRows(res.body, SearchRowSchema, (r) => ({
       accountId32: r.account_id,
