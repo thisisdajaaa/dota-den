@@ -59,6 +59,17 @@ interface CacheEntry {
   value: GatewayResponse;
 }
 
+/** Per-call overrides of the gateway's timeout and retries. */
+export interface CallOptions {
+  timeoutMs?: number;
+  maxRetries?: number;
+  /**
+   * Failures don't count toward the circuit breaker: for slow, user-triggered calls (like
+   * search) that shouldn't take the rest of the provider down with them.
+   */
+  isolated?: boolean;
+}
+
 export class ProviderGateway {
   private readonly cache = new Map<string, CacheEntry>();
   private readonly inFlight = new Map<string, Promise<GatewayResponse>>();
@@ -78,7 +89,7 @@ export class ProviderGateway {
       headers?: HeadersInit;
       /** Cache a successful response only if this accepts its body (e.g. no error inside). */
       cacheIf?: (body: unknown) => boolean;
-    } = {},
+    } & CallOptions = {},
   ): Promise<GatewayResponse> {
     const cached = this.cache.get(url);
     if (cached && cached.expiresAt > this.now) return cached.value;
@@ -93,7 +104,11 @@ export class ProviderGateway {
 
   private async fetchThroughShared(
     url: string,
-    opts: { cacheTtlMs?: number; headers?: HeadersInit; cacheIf?: (body: unknown) => boolean },
+    opts: {
+      cacheTtlMs?: number;
+      headers?: HeadersInit;
+      cacheIf?: (body: unknown) => boolean;
+    } & CallOptions,
   ): Promise<GatewayResponse> {
     const shared = opts.cacheTtlMs ? this.opts.sharedCache : undefined;
     if (shared) {
@@ -106,7 +121,7 @@ export class ProviderGateway {
         return hit.value;
       }
     }
-    const res = await this.execute(url, opts.headers);
+    const res = await this.execute(url, opts.headers, opts);
     const cacheable = res.ok ? (opts.cacheIf?.(res.body) ?? true) : res.kind === "not_found";
     if (opts.cacheTtlMs && cacheable) {
       // Remember when it was fetched, so readers of the cache can show its real age.
@@ -168,12 +183,17 @@ export class ProviderGateway {
     }
   }
 
-  private async execute(url: string, headers?: HeadersInit): Promise<GatewayResponse> {
+  private async execute(
+    url: string,
+    headers?: HeadersInit,
+    call: CallOptions = {},
+  ): Promise<GatewayResponse> {
     if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
 
     const fetchFn = this.opts.fetch ?? ((u, i) => fetch(u, i));
     const sleep = this.opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
-    const maxRetries = this.opts.maxRetries ?? 2;
+    const maxRetries = call.maxRetries ?? this.opts.maxRetries ?? 2;
+    const timeoutMs = call.timeoutMs ?? this.opts.timeoutMs ?? 8_000;
     let last: GatewayResponse = { ok: false, kind: "failed", status: null, cause: "no attempt" };
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -185,7 +205,7 @@ export class ProviderGateway {
       try {
         const res = await fetchFn(url, {
           headers: { accept: "application/json", ...headers },
-          signal: AbortSignal.timeout(this.opts.timeoutMs ?? 8_000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         status = res.status;
         if (res.ok) {
@@ -206,7 +226,7 @@ export class ProviderGateway {
           continue;
         }
         last = { ok: false, kind: "failed", status: res.status, cause: `status ${res.status}` };
-        if (res.status < 500) return this.recordFailure(last);
+        if (res.status < 500) return call.isolated ? last : this.recordFailure(last);
       } catch (e) {
         last = {
           ok: false,
@@ -219,7 +239,7 @@ export class ProviderGateway {
       }
       if (attempt < maxRetries) await sleep(this.backoff(attempt));
     }
-    return this.recordFailure(last);
+    return call.isolated ? last : this.recordFailure(last);
   }
 
   private backoff(attempt: number): number {
