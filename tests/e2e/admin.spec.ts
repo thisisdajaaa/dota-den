@@ -48,3 +48,15 @@ test("errors users hit show up for admins, without query strings", async ({
   await expect(errors).toContainText("/draft");
   await expect(errors).not.toContainText("secret");
 });
+
+test("admins can run the daily match sync now and see it recorded", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await page.goto("/admin");
+  const jobs = page.getByRole("region", { name: "Daily jobs" });
+  await jobs.getByRole("button", { name: "Run match sync now" }).click();
+  await expect(jobs.getByRole("status")).toContainText(/Done in \d+s: \d+ synced/, {
+    timeout: 60_000,
+  });
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Daily jobs" })).toContainText(/matches\s*admin/);
+});
