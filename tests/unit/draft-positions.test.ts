@@ -145,6 +145,16 @@ describe("rankCandidates with positions", () => {
   });
 });
 
+describe("candidatePosition with hand-set positions", () => {
+  it("treats a position you assigned by hand as taken", () => {
+    // Off A is a natural offlaner; with Flex A put at offlane by hand, it must go elsewhere.
+    expect(candidatePosition(H.off, [H.flex], table)?.position).toBe(3);
+    expect(candidatePosition(H.off, [H.flex], table, new Map([[H.flex.id, 3]]))?.position).not.toBe(
+      3,
+    );
+  });
+});
+
 describe("draftOutlook with positions", () => {
   it("lays out lineups by position, lane by lane, and warns about off-role heroes", () => {
     const res = draftOutlook({
@@ -165,6 +175,36 @@ describe("draftOutlook with positions", () => {
     expect(safe.edge).toBeGreaterThan(0);
     expect(res.notes.join(" ")).toContain("favours Radiant");
     expect(res.lanes.map((l) => l.lane)).not.toContain("mid");
+  });
+
+  it("re-scores when you move heroes to other positions", () => {
+    const input = {
+      radiant: [H.carry, H.mid, H.off, H.soft, H.hard],
+      dire: [H.carry2, H.flex, H.rare, H.soft, H.hard].map((h, i) => ({ ...h, id: 20 + i })),
+      meta: new Map(),
+      matchups: new Map(),
+      positions: table,
+      picksPerSide: 5,
+    };
+    const natural = draftOutlook(input);
+    // Swap the carry and the hard support: both now play far from where pros play them.
+    const swapped = draftOutlook({
+      ...input,
+      fixed: {
+        radiant: new Map([
+          [H.carry.id, 5],
+          [H.hard.id, 1],
+        ]),
+      },
+    });
+    const pos = (o: typeof natural, id: number) => o.heroes.find((h) => h.heroId === id)?.position;
+    expect(pos(swapped, H.carry.id)).toBe(5);
+    expect(pos(swapped, H.hard.id)).toBe(1);
+    const grade = (o: typeof natural) =>
+      o.report.radiant.criteria.find((c) => c.key === "positions")?.score ?? null;
+    expect(grade(swapped)).not.toBeNull();
+    expect(grade(swapped)!).toBeLessThan(grade(natural)!);
+    expect(swapped.report.radiant.overall!).toBeLessThan(natural.report.radiant.overall!);
   });
 
   it("uses role tags when pro positions are unavailable", () => {

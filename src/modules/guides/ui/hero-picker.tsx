@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/search-input";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 
@@ -25,20 +24,14 @@ export function HeroPicker({ groups }: { groups: Array<{ label: string; heroes: 
 
   return (
     <div className="space-y-6">
-      <div className="relative max-w-sm">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Find a hero"
-          aria-label="Find a hero"
-          className="pl-9"
-        />
-      </div>
+      <SearchInput
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Find a hero"
+        aria-label="Find a hero"
+        className="max-w-sm"
+        inputClassName="h-10"
+      />
       {shown.length === 0 ? (
         <p role="status" className="text-sm text-muted-foreground">
           No hero matches “{query}”.

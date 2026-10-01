@@ -7,7 +7,7 @@ test("guests search by name, open a profile and see who they play with", async (
   await expect(page.getByRole("region", { name: "Tracked players" })).toHaveCount(0);
 
   await page.getByRole("searchbox", { name: "Find a player" }).fill("Fixture Hero");
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page).toHaveURL(/\/players\?q=Fixture\+Hero$/);
 
   const results = page.getByRole("region", { name: /Players named/ });
