@@ -1,8 +1,9 @@
 "use client";
 
-import { Gauge, Info } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, Gauge, Info } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "cn";
+import { Button } from "@/components/ui/button";
 import { encodeSnapshot, snapshotOf } from "../application/snapshot";
 import type {
   DraftOutlook,
@@ -132,6 +133,17 @@ export function DraftOutlookPanel({
   const ctl = data ?? own;
   const { picks, current } = ctl;
   const outlook = current?.outlook ?? null;
+  // Details stay out of the way while drafting and open once the draft is complete, unless
+  // you've chosen otherwise (remembered in this browser).
+  const complete = outlook !== null && !outlook.report.provisional;
+  // The remembered choice is read after hydration (the server has no storage).
+  const stored = useSyncExternalStore(noSubscribe, readOpenChoice, () => null);
+  const [choice, setChoice] = useState<boolean | null>(null);
+  const expanded = choice ?? stored ?? complete;
+  const toggle = () => {
+    setChoice(!expanded);
+    writeOpenChoice(!expanded);
+  };
 
   return (
     <section className="panel p-4" aria-label="Draft outlook">
@@ -142,12 +154,31 @@ export function DraftOutlookPanel({
             Estimate
           </span>
         </h2>
-        {outlook && (
-          <span className="text-xs text-muted-foreground">
-            {outlook.confidence === "medium" ? "Medium confidence" : "Low confidence"} ·{" "}
-            {Math.round(outlook.coverage * 100)}% of matchups have enough games
-          </span>
-        )}
+        <span className="flex flex-wrap items-center gap-3">
+          {outlook && (
+            <span className="text-xs text-muted-foreground">
+              {outlook.confidence === "medium" ? "Medium confidence" : "Low confidence"} ·{" "}
+              {Math.round(outlook.coverage * 100)}% of matchups have enough games
+            </span>
+          )}
+          {outlook && outlook.radiantPct !== null && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded={expanded}
+              aria-controls="outlook-details"
+              onClick={toggle}
+              className="h-7 gap-1 px-2 text-xs"
+            >
+              <ChevronDown
+                aria-hidden
+                className={cn("size-3.5 transition-transform", expanded && "rotate-180")}
+              />
+              {expanded ? "Hide details" : "Show details"}
+            </Button>
+          )}
+        </span>
       </header>
 
       {!picks ? (
@@ -165,8 +196,8 @@ export function DraftOutlookPanel({
         </p>
       ) : (
         <>
-          <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} />
-          {!outlook.report.provisional && (
+          <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} details={expanded} />
+          {expanded && !outlook.report.provisional && (
             <div className="mt-4">
               <DraftReviewPanel state={state} roles={ctl.roles} />
             </div>
@@ -177,14 +208,37 @@ export function DraftOutlookPanel({
   );
 }
 
+const OPEN_KEY = "dd:outlook-details";
+const noSubscribe = () => () => {};
+
+function readOpenChoice(): boolean | null {
+  try {
+    const v = window.localStorage.getItem(OPEN_KEY);
+    return v === "1" ? true : v === "0" ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeOpenChoice(open: boolean) {
+  try {
+    window.localStorage.setItem(OPEN_KEY, open ? "1" : "0");
+  } catch {
+    // Storage blocked: the choice just isn't remembered.
+  }
+}
+
 function OutlookBody({
   outlook,
   heroes,
   ctl,
+  details,
 }: {
   outlook: DraftOutlook;
   heroes: Map<number, DraftHero>;
   ctl: OutlookData;
+  /** Show the evidence (report card, lanes, lineups) under the win-chance bar. */
+  details: boolean;
 }) {
   const radiant = outlook.radiantPct ?? 50;
   const dire = 100 - radiant;
@@ -213,30 +267,36 @@ function OutlookBody({
         </div>
       </div>
 
-      <ReportCard report={outlook.report} />
+      {details && (
+        <div id="outlook-details" className="space-y-4">
+          <ReportCard report={outlook.report} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <Breakdown sides={outlook.sides} />
-        {outlook.notes.length > 0 && (
-          <ul className="space-y-1.5 text-sm">
-            {outlook.notes.slice(0, 5).map((n) => (
-              <li key={n} className="flex gap-2">
-                <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-gold" />
-                {n}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <Breakdown sides={outlook.sides} />
+            {outlook.notes.length > 0 && (
+              <ul className="space-y-1.5 text-sm">
+                {outlook.notes.slice(0, 5).map((n) => (
+                  <li key={n} className="flex gap-2">
+                    <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-gold" />
+                    {n}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Lineups outlook={outlook} heroes={heroes} ctl={ctl} />
-        <Lanes lanes={outlook.lanes} heroes={heroes} />
-      </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Lineups outlook={outlook} heroes={heroes} ctl={ctl} />
+            <Lanes lanes={outlook.lanes} heroes={heroes} />
+          </div>
 
-      <HeroTable rows={outlook.heroes} heroes={heroes} />
-      {outlook.tournaments && (
-        <p className="text-xs text-muted-foreground">Tournament numbers: {outlook.tournaments}.</p>
+          <HeroTable rows={outlook.heroes} heroes={heroes} />
+          {outlook.tournaments && (
+            <p className="text-xs text-muted-foreground">
+              Tournament numbers: {outlook.tournaments}.
+            </p>
+          )}
+        </div>
       )}
 
       <p className="flex gap-1.5 text-xs text-muted-foreground">

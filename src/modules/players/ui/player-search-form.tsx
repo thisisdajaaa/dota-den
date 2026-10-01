@@ -1,6 +1,5 @@
-import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/search-input";
 
 /** Plain GET form: works without JavaScript and keeps searches shareable (?q=). */
 export function PlayerSearchForm({ defaultValue }: { defaultValue?: string }) {
@@ -10,23 +9,17 @@ export function PlayerSearchForm({ defaultValue }: { defaultValue?: string }) {
         Find a player
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            id="player-q"
-            name="q"
-            type="search"
-            defaultValue={defaultValue}
-            maxLength={200}
-            autoComplete="off"
-            placeholder="Name, account ID or profile link"
-            aria-describedby="player-q-help"
-            className="h-10 pl-9"
-          />
-        </div>
+        <SearchInput
+          id="player-q"
+          name="q"
+          defaultValue={defaultValue}
+          maxLength={200}
+          autoComplete="off"
+          placeholder="Name, account ID or profile link"
+          aria-describedby="player-q-help"
+          className="flex-1"
+          inputClassName="h-10"
+        />
         <Button type="submit" className="h-10 px-5">
           Search
         </Button>

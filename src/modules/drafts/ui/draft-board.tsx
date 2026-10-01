@@ -145,6 +145,7 @@ export function DraftBoard({
   // One outlook fetch per pick, shared by the outlook panel and the team panels' positions.
   const outlook = useDraftOutlook(started ? state : null);
   const positions = useMemo(() => positionsFrom(outlook), [outlook]);
+  const rolesKey = JSON.stringify(outlook.roles);
 
   function dispatch(input: EventInput): boolean {
     const s = stateRef.current;
@@ -247,7 +248,12 @@ export function DraftBoard({
     if (!humanTurn || !turn) return;
     const version = state.stateVersion;
     const controller = new AbortController();
-    const body = JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), side: turn.side });
+    // Positions you set by hand decide which positions are still open.
+    const body = JSON.stringify({
+      snapshot: encodeSnapshot(snapshotOf(state)),
+      side: turn.side,
+      roles: outlook.roles,
+    });
     const current = () => !controller.signal.aborted && stateRef.current.stateVersion === version;
     (async () => {
       // Busy (rate limited, server or network error): back off and retry, then say so.
@@ -280,7 +286,7 @@ export function DraftBoard({
     return () => controller.abort();
     // Keyed on the accepted event count; state is read at that version.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [humanTurn, state.stateVersion]);
+  }, [humanTurn, state.stateVersion, rolesKey]);
 
   function chooseSuggested(heroId: number) {
     const step = stateRef.current.stepIndex;
@@ -596,22 +602,9 @@ export function DraftBoard({
         ))}
       </div>
 
-      {started && <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />}
-
-      {started && (
-        <DraftLogPanel
-          turns={state.turns}
-          aiSide={aiSide}
-          aiLog={aiLog}
-          followed={followed}
-          heroes={heroMap}
-          thinking={aiTurn && !aiError}
-          error={aiError}
-          onRetry={() => {
-            setAiError(null);
-            setAiRetry((n) => n + 1);
-          }}
-        />
+      {/* Finished: the outlook and report card first. Drafting: what you need to pick first. */}
+      {state.status === "completed" && started && (
+        <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />
       )}
 
       <div className="panel p-3">
@@ -643,6 +636,26 @@ export function DraftBoard({
           disabled={!started || state.status === "paused" || aiTurn}
           actionLabel={turn?.action ?? "pick"}
           onChoose={choose}
+        />
+      )}
+
+      {!(state.status === "completed") && started && (
+        <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />
+      )}
+
+      {started && (
+        <DraftLogPanel
+          turns={state.turns}
+          aiSide={aiSide}
+          aiLog={aiLog}
+          followed={followed}
+          heroes={heroMap}
+          thinking={aiTurn && !aiError}
+          error={aiError}
+          onRetry={() => {
+            setAiError(null);
+            setAiRetry((n) => n + 1);
+          }}
         />
       )}
 

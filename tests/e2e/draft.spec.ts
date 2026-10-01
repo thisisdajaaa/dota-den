@@ -102,6 +102,9 @@ test("the draft outlook estimates who the draft favours, with its evidence", asy
   }
 
   await expect(outlook.getByRole("img", { name: /Estimated win chance/ })).toBeVisible();
+  // While drafting, the details are folded away under the win-chance bar.
+  await expect(outlook.getByRole("table", { name: "Stats for every picked hero" })).toHaveCount(0);
+  await outlook.getByRole("button", { name: "Show details" }).click();
   await expect(outlook).toContainText("Estimate");
   await expect(outlook).toContainText(/Radiant \d+%/);
   await expect(outlook).toContainText("Hero strength");
@@ -201,4 +204,21 @@ test("suggestions retry when busy and say so when they can't load", async ({ pag
   await expect(
     page.getByRole("region", { name: "Heroes" }).getByRole("button", { name: "ban Anti-Mage" }),
   ).toBeEnabled();
+});
+
+test("the hero list comes before the outlook, and its search can be cleared", async ({ page }) => {
+  await page.goto("/draft");
+  await page.getByRole("button", { name: "Start draft" }).click();
+  const grid = page.getByRole("region", { name: "Heroes" });
+  const search = grid.getByRole("searchbox", { name: "Search heroes" });
+  await search.fill("pudge");
+  await expect(grid.getByRole("button", { name: "ban Anti-Mage" })).toHaveCount(0);
+  await grid.getByRole("button", { name: "Clear search" }).click();
+  await expect(search).toHaveValue("");
+  await expect(grid.getByRole("button", { name: "ban Anti-Mage" })).toBeVisible();
+
+  // Pick a hero so the outlook shows, then check the order on the page.
+  await grid.getByRole("button", { name: "ban Pudge" }).click();
+  const top = async (name: string) => (await page.getByRole("region", { name }).boundingBox())!.y;
+  expect(await top("Heroes")).toBeLessThan(await top("Draft outlook"));
 });

@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "cn";
+import { SearchInput } from "@/components/search-input";
 import type { DraftHero } from "./types";
 
 const ATTRS = [
@@ -51,26 +51,20 @@ export function HeroGrid({
   return (
     <section className="panel space-y-4 p-4" aria-label="Heroes">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="relative flex-1">
-          <span className="sr-only">Search heroes</span>
-          <Search
-            aria-hidden
-            className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            ref={input}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && choosable.length === 1 && !disabled) {
-                onChoose(choosable[0].id);
-                setQuery("");
-              }
-            }}
-            placeholder="Search heroes (press / )"
-            className="h-9 w-full rounded-lg border border-white/[0.08] bg-background/60 pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
-          />
-        </label>
+        <SearchInput
+          ref={input}
+          aria-label="Search heroes"
+          value={query}
+          onValueChange={setQuery}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && choosable.length === 1 && !disabled) {
+              onChoose(choosable[0].id);
+              setQuery("");
+            }
+          }}
+          placeholder="Search heroes (press / )"
+          className="flex-1"
+        />
         <span className="text-xs text-muted-foreground">
           {disabled ? "Start the draft to choose heroes" : `Click a hero to ${actionLabel}`}
         </span>
