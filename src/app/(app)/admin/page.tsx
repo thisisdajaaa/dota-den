@@ -8,7 +8,7 @@ import { adminTotals } from "@/modules/admin/domain/overview";
 import { getRoomDraftCounts } from "@/modules/drafts/composition";
 import { getAdminUserRows, getCurrentUser } from "@/modules/identity/composition";
 import { getErrorGroups } from "@/modules/errors/composition";
-import { getRecentJobFailures } from "@/modules/jobs/composition";
+import { getCronRuns, getRecentJobFailures } from "@/modules/jobs/composition";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { getMatchStatsByAccount } from "@/modules/matches/composition";
@@ -17,8 +17,11 @@ import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { getMmrEntryCounts } from "@/modules/mmr/composition";
 import { getPublicProfile } from "@/modules/players/composition";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
+import { RunSyncButton } from "./run-sync-button";
 
 export const metadata: Metadata = { title: "Admin" };
+// The "Run match sync now" action runs here and can take most of a minute.
+export const maxDuration = 60;
 
 const date = (d: Date) => d.toISOString().slice(0, 16).replace("T", " ");
 
@@ -30,13 +33,14 @@ export default async function AdminPage() {
   const users = await getAdminUserRows();
   const userIds = users.map((u) => u.userId);
   const accountIds = users.map((u) => u.accountId32);
-  const [matches, mmr, activity, rooms, failures, errors, profiles] = await Promise.all([
+  const [matches, mmr, activity, rooms, failures, errors, cronRuns, profiles] = await Promise.all([
     getMatchStatsByAccount(accountIds),
     getMmrEntryCounts(userIds),
     getActivityCounts(userIds),
     getRoomDraftCounts(userIds),
     getRecentJobFailures().catch(() => []),
     getErrorGroups(7).catch(() => null),
+    getCronRuns(10).catch(() => null),
     Promise.all(accountIds.map((id) => getPublicProfile(id).catch(() => null))),
   ]);
   const now = new Date();
@@ -158,6 +162,53 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section aria-labelledby="admin-cron" className="panel space-y-3 p-5">
+        <div>
+          <h2 id="admin-cron" className="text-lg font-semibold">
+            Daily jobs
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            The match sync runs every day at 14:30 (Philippine time) and the patch import at 14:00.
+            A run that started but never finished was cut off (Vercel stops it at 60s).
+          </p>
+        </div>
+        <RunSyncButton />
+        {cronRuns === null ? (
+          <p className="text-sm text-muted-foreground">Unavailable right now.</p>
+        ) : cronRuns.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No recorded runs yet.</p>
+        ) : (
+          <ul className="divide-y divide-white/[0.05] rounded-lg border border-white/[0.06] text-sm">
+            {cronRuns.map((r) => {
+              const sum = (r.summary ?? {}) as Record<string, unknown>;
+              const failed = Array.isArray(sum.failed) ? sum.failed.length : 0;
+              return (
+                <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
+                  <span className="font-medium">{r.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {r.trigger} · {formatAgo(r.startedAt, now)}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs",
+                      r.ok === true ? "text-win" : r.ok === false ? "text-loss" : "text-gold",
+                    )}
+                  >
+                    {r.ok === true
+                      ? `${sum.synced ?? 0} synced · ${sum.backfilling ?? 0} importing · ${failed} failed · ${Math.round(Number(sum.durationMs ?? 0) / 1000)}s`
+                      : r.ok === false
+                        ? `Failed: ${String(sum.error ?? "unknown")}`
+                        : r.finishedAt === null && now.getTime() - r.startedAt.getTime() > 120_000
+                          ? "Started but never finished (cut off)"
+                          : "Running…"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="admin-errors" className="panel overflow-hidden">

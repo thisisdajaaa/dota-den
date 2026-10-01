@@ -34,10 +34,19 @@ export async function recordMedalSighting(
 }
 
 export async function medalHistory(db: Db, accountId32: number): Promise<MedalDoc[]> {
-  return db
+  const rows = await db
     .collection<MedalDoc>(COLLECTION)
     .find({ accountId32 }, { projection: { _id: 0 } })
     .sort({ observedAt: 1 })
     .limit(500)
     .toArray();
+  // Two page loads at the same moment can both add the same medal; merge such repeats.
+  const out: MedalDoc[] = [];
+  for (const r of rows) {
+    const last = out.at(-1);
+    if (last && last.rankTier === r.rankTier) {
+      if (r.lastSeenAt > last.lastSeenAt) last.lastSeenAt = r.lastSeenAt;
+    } else out.push(r);
+  }
+  return out;
 }

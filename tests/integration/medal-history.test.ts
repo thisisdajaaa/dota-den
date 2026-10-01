@@ -32,4 +32,12 @@ describe("medal history in Mongo", () => {
       [64, at("05"), at("05")],
     ]);
   });
+
+  it("merges repeats written by two page loads at the same moment", async () => {
+    await Promise.all([
+      recordMedalSighting(db, 9, 55, at("06")),
+      recordMedalSighting(db, 9, 55, at("06")),
+    ]);
+    expect((await medalHistory(db, 9)).map((r) => r.rankTier)).toEqual([55]);
+  });
 });
