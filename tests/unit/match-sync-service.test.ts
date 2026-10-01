@@ -303,6 +303,28 @@ describe("MatchSyncService", () => {
     expect(ctx.facts.byKey.size).toBe(45);
   });
 
+  it("keeps what it imported when an older-history page fails", async () => {
+    const ctx = setup(60, { maxPages: 2 });
+    await ctx.service.sync(ACCOUNT); // first sync: 20 of 60
+    ctx.advance(BACKFILL_COOLDOWN_MS + 1);
+    // Second sync: head page, two older pages, then an older page fails.
+    ctx.upstream.failOnCall = ctx.upstream.calls.length + 4;
+    const res = await ctx.service.sync(ACCOUNT, { maxPages: 6 });
+    expect(res.ok && res.value.backfillComplete).toBe(false);
+    expect(ctx.facts.byKey.size).toBe(40);
+    expect((await ctx.syncState.get())?.backfillOffset).toBe(40);
+  });
+
+  it("stops importing older history at the deadline, after new matches", async () => {
+    const ctx = setup(60, { maxPages: 2 });
+    await ctx.service.sync(ACCOUNT);
+    ctx.advance(BACKFILL_COOLDOWN_MS + 1);
+    const before = ctx.upstream.calls.length;
+    const res = await ctx.service.sync(ACCOUNT, { maxPages: 6, deadline: 0 }); // already past
+    expect(res.ok).toBe(true);
+    expect(ctx.upstream.calls.length - before).toBe(1); // the head page only
+  });
+
   it("enforces the cooldown between syncs", async () => {
     const ctx = setup(3);
     await ctx.service.sync(ACCOUNT);

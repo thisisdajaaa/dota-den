@@ -86,7 +86,11 @@ export class MatchSyncService {
    */
   async sync(
     accountId32: number,
-    opts: { maxPages?: number } = {},
+    opts: {
+      maxPages?: number;
+      /** Stop importing older history at this time (ms epoch); new matches still come first. */
+      deadline?: number;
+    } = {},
   ): Promise<Result<SyncSummary, SyncError>> {
     const pageSize = this.deps.pageSize ?? PAGE_SIZE;
     let budget = opts.maxPages ?? this.deps.maxPages ?? MAX_PAGES_PER_SYNC;
@@ -160,9 +164,11 @@ export class MatchSyncService {
 
       // Backfill: continue into older history.
       while (budget > 0 && !summary.backfillComplete) {
+        if (opts.deadline !== undefined && this.now().getTime() >= opts.deadline) break;
         const page = await this.fetchPage(accountId32, backfillOffset, pageSize, entries, summary);
         budget--;
-        if (!page.ok) return this.fail(accountId32, page.error);
+        // Older history can wait: keep what this sync already imported and try again later.
+        if (!page.ok) break;
         backfillOffset += pageSize;
         if (page.value.rawCount < pageSize) summary.backfillComplete = true;
       }
@@ -216,7 +222,10 @@ export class MatchSyncService {
         continue;
       }
       try {
-        const res = await this.sync(accountId32, { maxPages: opts.maxPages });
+        const res = await this.sync(accountId32, {
+          maxPages: opts.maxPages,
+          deadline: started + opts.budgetMs,
+        });
         out.push(
           res.ok
             ? {

@@ -11,6 +11,7 @@ import { JobRunner } from "./application/job-runner";
 import type { JobHandler, JobQueue } from "./application/ports";
 import { bucketedKey, type JobName } from "./domain/job";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
+import { finishCronRun, recentCronRuns, startCronRun } from "./infrastructure/mongo-cron-runs";
 import { MongoJobRunRepository, recentJobFailures } from "./infrastructure/mongo-job-runs";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
 
@@ -106,4 +107,18 @@ export async function enqueueMatchBackfill(
 /** Admin overview: the latest failed background jobs. */
 export async function getRecentJobFailures() {
   return recentJobFailures(await getDb());
+}
+
+/** Record a scheduled job's run: start now, finish with `done`. Never throws. */
+export async function trackCronRun(name: string, trigger: string) {
+  const db = await getDb();
+  const id = await startCronRun(db, name, trigger).catch(() => null);
+  return async (result: { ok: boolean; summary: Record<string, unknown> }) => {
+    if (id) await finishCronRun(db, id, result).catch(() => {});
+  };
+}
+
+/** Admin: the latest scheduled-job runs. */
+export async function getCronRuns(limit = 10) {
+  return recentCronRuns(await getDb(), limit);
 }
