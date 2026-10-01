@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AlertTriangle, Info, SearchX, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { TrackedPlayersPage } from "@/modules/players/application/contracts";
@@ -23,9 +25,11 @@ const LOOKUP_ERRORS: Record<LookupError["type"], string> = {
 };
 
 function searchErrorCopy(error: ProviderError): string {
-  return error.type === "rate_limited"
-    ? "OpenDota is getting a lot of requests right now. Try again in a minute."
-    : "Player search is unavailable right now. Try again shortly, or paste an account ID or profile link instead.";
+  if (error.type === "rate_limited")
+    return "OpenDota is getting a lot of requests right now. Try again in a minute.";
+  if (error.type === "unavailable" && error.cause === "TimeoutError")
+    return "OpenDota's player search is slow right now. Try again (it's often quicker the second time), or paste an account ID or profile link to go straight to the profile.";
+  return "Player search is unavailable right now. Try again shortly, or paste an account ID or profile link instead.";
 }
 
 export default async function PlayersPage({ searchParams }: PageProps<"/players">) {
@@ -41,17 +45,14 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
   const nameLookup = lookup?.ok && lookup.value.kind === "name" ? lookup.value : null;
 
   const viewer = await getCurrentUser({ tolerateErrors: true });
-  const [tracked, search] = await Promise.all([
-    viewer
-      ? getTrackedPlayers(ownerOf(viewer), trackedPage).catch(
-          (e: unknown): TrackedPlayersPage | "error" => {
-            logger.error("tracked_players_failed", { error: e });
-            return "error";
-          },
-        )
-      : null,
-    nameLookup ? searchPlayers(nameLookup.q) : null,
-  ]);
+  const tracked = viewer
+    ? await getTrackedPlayers(ownerOf(viewer), trackedPage).catch(
+        (e: unknown): TrackedPlayersPage | "error" => {
+          logger.error("tracked_players_failed", { error: e });
+          return "error";
+        },
+      )
+    : null;
   const now = new Date();
   const pageHref = (page: number) => {
     const sp = new URLSearchParams();
@@ -100,28 +101,11 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
         </Notice>
       )}
 
-      {nameLookup && search && !search.ok && (
-        <Notice icon="alert" role="alert">
-          {searchErrorCopy(search.error)}
-        </Notice>
-      )}
-
-      {nameLookup && search?.ok && search.value.length === 0 && (
-        <section
-          className="panel grid place-items-center gap-3 px-6 py-12 text-center"
-          role="status"
-        >
-          <SearchX aria-hidden className="size-8 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">No players found for “{nameLookup.q}”</h2>
-          <p className="max-w-md text-sm text-muted-foreground">
-            Check the spelling, or paste their account ID or a Steam, Dotabuff or OpenDota profile
-            link instead. Only players with public match data can be found.
-          </p>
-        </section>
-      )}
-
-      {nameLookup && search?.ok && search.value.length > 0 && (
-        <SearchResults q={nameLookup.q} hits={search.value} now={now} />
+      {nameLookup && (
+        // OpenDota's search can take seconds: show the page now and the results when ready.
+        <Suspense key={nameLookup.q} fallback={<SearchingSkeleton q={nameLookup.q} />}>
+          <SearchSection q={nameLookup.q} now={now} />
+        </Suspense>
       )}
 
       {!q.trim() && !viewer && (
@@ -157,5 +141,51 @@ function Notice({
       />
       <span>{children}</span>
     </p>
+  );
+}
+
+async function SearchSection({ q, now }: { q: string; now: Date }) {
+  const search = await searchPlayers(q);
+  if (!search.ok) {
+    return (
+      <Notice icon="alert" role="alert">
+        {searchErrorCopy(search.error)}{" "}
+        <a href={`/players?q=${encodeURIComponent(q)}`} className="text-gold hover:underline">
+          Try again
+        </a>
+      </Notice>
+    );
+  }
+  if (search.value.length === 0) {
+    return (
+      <section className="panel grid place-items-center gap-3 px-6 py-12 text-center" role="status">
+        <SearchX aria-hidden className="size-8 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">No players found for “{q}”</h2>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Check the spelling, or paste their account ID or a Steam, Dotabuff or OpenDota profile
+          link instead. Only players with public match data can be found.
+        </p>
+      </section>
+    );
+  }
+  return <SearchResults q={q} hits={search.value} now={now} />;
+}
+
+function SearchingSkeleton({ q }: { q: string }) {
+  return (
+    <section className="panel space-y-3 p-5" aria-busy aria-label="Searching">
+      <p role="status" className="text-sm text-muted-foreground">
+        Searching OpenDota for “{q}”… this can take a few seconds.
+      </p>
+      {Array.from({ length: 4 }, (_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <Skeleton className="size-10 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40 max-w-full" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
