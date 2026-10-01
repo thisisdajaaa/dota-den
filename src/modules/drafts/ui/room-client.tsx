@@ -337,8 +337,7 @@ export function RoomClient({
             />
           </div>
 
-          <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />
-
+          {/* The hero list first while drafting, so a pick is never far down the page. */}
           {room.status === "in_progress" &&
             (mySeat ? (
               <HeroGrid
@@ -353,6 +352,8 @@ export function RoomClient({
                 You&apos;re watching this draft. Only the two captains can pick and ban.
               </p>
             ))}
+
+          <DraftOutlookPanel state={state} heroes={heroMap} data={outlook} />
 
           {room.status === "completed" && (
             <div className="space-y-4">

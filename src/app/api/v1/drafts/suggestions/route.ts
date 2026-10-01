@@ -3,12 +3,14 @@ import { z } from "zod";
 import { apiError, isSameOrigin } from "@/lib/http";
 import { apiLimitArgs } from "@/lib/api-limits";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { RolesSchema, toRoleMaps } from "@/modules/drafts/application/roles-contract";
 import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
 
 const BodySchema = z.object({
   snapshot: z.string().min(1).max(2_000),
   side: z.enum(["radiant", "dire"]),
+  roles: RolesSchema,
 });
 
 /** Data-backed pick/ban suggestions for the side whose turn it is (no language model). */
@@ -22,7 +24,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const snapshot = decodeSnapshot(body.data.snapshot);
   if (!snapshot.ok) return apiError("bad_request", "Invalid draft");
 
-  const res = await (await getAiOpponent()).suggestions(snapshot.value, body.data.side);
+  const res = await (
+    await getAiOpponent()
+  ).suggestions(snapshot.value, body.data.side, 5, toRoleMaps(body.data.roles));
   if (!res.ok) {
     const code = res.error.type === "invalid_snapshot" ? "bad_request" : "conflict";
     return apiError(code, `No suggestions: ${res.error.type.replaceAll("_", " ")}`);

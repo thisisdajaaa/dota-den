@@ -227,9 +227,13 @@ export function rankCandidates(input: {
   positions?: PositionTable;
   /** Pro laning records: who wins the lane against whom. */
   lanes?: LaneTable;
+  /** Positions the player set by hand (hero id -> position), per lineup. */
+  fixed?: { own?: ReadonlyMap<number, Position>; enemy?: ReadonlyMap<number, Position> };
   limit?: number;
 }): Candidate[] {
   const { action, available, own, enemy, meta, matchups, pro, synergy, positions, lanes } = input;
+  const fixedOwn = input.fixed?.own;
+  const fixedEnemy = input.fixed?.enemy;
   const ownNeeds = lineupNeeds(own, input.ownPicksLeft);
   const enemyNeeds = lineupNeeds(enemy, input.enemyPicksLeft);
 
@@ -241,7 +245,10 @@ export function rankCandidates(input: {
   const needs = action === "pick" ? ownNeeds : enemyNeeds;
   // The lineup the hero would join: ours for picks, theirs for bans.
   const lineup = action === "pick" ? own : enemy;
-  const slotOf = new Map(available.map((h) => [h.id, candidatePosition(h, lineup, positions)]));
+  const lineupFixed = action === "pick" ? fixedOwn : fixedEnemy;
+  const slotOf = new Map(
+    available.map((h) => [h.id, candidatePosition(h, lineup, positions, lineupFixed)]),
+  );
   const fitsPosition = (h: ScoringHero) => {
     const slot = slotOf.get(h.id);
     if (!slot) return false;
@@ -254,7 +261,9 @@ export function rankCandidates(input: {
   // Who the candidate would lane against: the other lineup's heroes in the opposing lane.
   const rivals = action === "pick" ? enemy : own;
   const rivalAt = new Map(
-    assignPositions(rivals, positions).heroes.map((h) => [h.position, h.heroId] as const),
+    assignPositions(rivals, positions, action === "pick" ? fixedEnemy : fixedOwn).heroes.map(
+      (h) => [h.position, h.heroId] as const,
+    ),
   );
   const rivalById = new Map(rivals.map((h) => [h.id, h]));
 

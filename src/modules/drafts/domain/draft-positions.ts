@@ -193,12 +193,14 @@ export function candidatePosition(
   candidate: { id: number; roles: readonly string[] },
   team: readonly { id: number; roles: readonly string[] }[],
   table: PositionTable | undefined,
+  /** Positions the player set by hand for heroes already in the lineup. */
+  fixed?: ReadonlyMap<number, Position>,
 ): { position: Position; fit: number; lineupFit: number } | null {
   if (team.length >= 5) return null;
-  const after = assignPositions([...team, candidate], table);
+  const after = assignPositions([...team, candidate], table, fixed);
   const mine = after.heroes.find((h) => h.heroId === candidate.id);
   if (!mine) return null;
-  const before = assignPositions(team, table).likelihood;
+  const before = assignPositions(team, table, fixed).likelihood;
   return {
     position: mine.position,
     fit: mine.fit,

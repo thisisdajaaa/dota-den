@@ -1,4 +1,5 @@
 import { err, ok, type Result } from "@/modules/shared/domain/result";
+import type { RoleMaps } from "./roles-contract";
 import { draftOutlook, type DraftOutlook } from "../domain/draft-outlook";
 import {
   assignPositions,
@@ -157,9 +158,10 @@ function positionSituation(
   team: readonly AiHero[],
   positions: PositionTable | undefined,
   picksLeft: number,
+  fixed?: ReadonlyMap<number, Position>,
 ): string {
   const forEnemy = action === "ban";
-  const { heroes, open } = assignPositions(team, positions);
+  const { heroes, open } = assignPositions(team, positions, fixed);
   const byId = new Map(team.map((h) => [h.id, h.name]));
   const lineup = heroes.length
     ? [...heroes]
@@ -272,6 +274,8 @@ export class AiOpponentService {
     snapshot: DraftSnapshot,
     side: Side,
     limit: number,
+    /** Positions set by hand, per side (hero id -> position). */
+    roles: RoleMaps = {},
   ): Promise<Result<RankedTurn, AiMoveError>> {
     const pool = this.deps.heroes.map((h) => h.id);
     // The engine is the referee: a tampered or illegal board never gets further.
@@ -320,6 +324,7 @@ export class AiOpponentService {
       synergy,
       positions,
       lanes,
+      fixed: { own: roles[side], enemy: roles[enemySide] },
       limit,
     });
     if (candidates.length === 0) return err({ type: "no_heroes" });
@@ -339,6 +344,7 @@ export class AiOpponentService {
             turn.action === "pick" ? own : enemy,
             positions,
             turn.action === "pick" ? ownPicksLeft : enemyPicksLeft,
+            turn.action === "pick" ? roles[side] : roles[enemySide],
           )
         : situation(turn.action, needs, turn.action === "ban"),
       candidates,
@@ -420,11 +426,13 @@ export class AiOpponentService {
     snapshot: DraftSnapshot,
     side: Side,
     limit = 5,
+    /** Positions set by hand: open positions and lanes follow them. */
+    handRoles: RoleMaps = {},
   ): Promise<
     Result<{ action: "pick" | "ban"; situation: string; candidates: Candidate[] }, AiMoveError>
   > {
     // Rank deeper than we show, so the list can cover every open position.
-    const ranked = await this.rank(snapshot, side, 60);
+    const ranked = await this.rank(snapshot, side, 60, handRoles);
     if (!ranked.ok) return ranked;
     const { action, situation: text, candidates, positionsKnown } = ranked.value;
     if (action === "pick" && positionsKnown) {
