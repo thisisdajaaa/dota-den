@@ -30,6 +30,24 @@ const json = (body: unknown, status = 200, headers: HeadersInit = {}) =>
   new Response(JSON.stringify(body), { status, headers });
 
 describe("ProviderGateway", () => {
+  it("lets the body decide how long to cache it", async () => {
+    const { gw, fetch, advance } = gateway([
+      json({ version: null }),
+      json({ version: null }),
+      json({ version: 22 }),
+    ]);
+    const opts = {
+      cacheTtlMs: 600_000,
+      cacheTtlFor: (b: unknown) => ((b as { version: unknown }).version ? 600_000 : 90_000),
+    };
+    await gw.getJson("https://x/m", opts);
+    await gw.getJson("https://x/m", opts); // cached (90s)
+    expect(fetch).toHaveBeenCalledTimes(1);
+    advance(91_000);
+    await gw.getJson("https://x/m", opts); // short cache expired
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("caches a success only when cacheIf accepts the body", async () => {
     const { gw, fetch } = gateway([
       json({ rows: null, err: "timeout" }),

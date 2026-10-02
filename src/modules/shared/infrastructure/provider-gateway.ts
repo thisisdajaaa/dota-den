@@ -89,6 +89,8 @@ export class ProviderGateway {
       headers?: HeadersInit;
       /** Cache a successful response only if this accepts its body (e.g. no error inside). */
       cacheIf?: (body: unknown) => boolean;
+      /** Cache time decided by the body (overrides cacheTtlMs; 0 = don't cache it). */
+      cacheTtlFor?: (body: unknown) => number;
     } & CallOptions = {},
   ): Promise<GatewayResponse> {
     const cached = this.cache.get(url);
@@ -108,6 +110,7 @@ export class ProviderGateway {
       cacheTtlMs?: number;
       headers?: HeadersInit;
       cacheIf?: (body: unknown) => boolean;
+      cacheTtlFor?: (body: unknown) => number;
     } & CallOptions,
   ): Promise<GatewayResponse> {
     const shared = opts.cacheTtlMs ? this.opts.sharedCache : undefined;
@@ -123,11 +126,12 @@ export class ProviderGateway {
     }
     const res = await this.execute(url, opts.headers, opts);
     const cacheable = res.ok ? (opts.cacheIf?.(res.body) ?? true) : res.kind === "not_found";
-    if (opts.cacheTtlMs && cacheable) {
+    const ttl = res.ok && opts.cacheTtlFor ? opts.cacheTtlFor(res.body) : opts.cacheTtlMs;
+    if (ttl && cacheable) {
       // Remember when it was fetched, so readers of the cache can show its real age.
       const value = res.ok ? { ...res, fetchedAt: this.now } : res;
-      this.cache.set(url, { expiresAt: this.now + opts.cacheTtlMs, value });
-      await shared?.set(url, value, opts.cacheTtlMs).catch((error: unknown) => {
+      this.cache.set(url, { expiresAt: this.now + ttl, value });
+      await shared?.set(url, value, ttl).catch((error: unknown) => {
         this.opts.onSharedError?.({ op: "cache_set", error });
       });
     }

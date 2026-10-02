@@ -13,7 +13,8 @@ export interface Laning {
   efficiencyPct: number | null;
   lastHitsAt10: number | null;
   deniesAt10: number | null;
-  netWorthAt10: number | null;
+  /** Total gold earned by minute 10 (OpenDota's gold_t), not net worth. */
+  goldAt10: number | null;
   observers: number | null;
   sentries: number | null;
   campsStacked: number | null;

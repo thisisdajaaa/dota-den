@@ -77,7 +77,9 @@ export function WeeklyRecapCard({
             <p className="text-xs text-muted-foreground">
               {l.games === 0
                 ? "No ranked games last week"
-                : `${delta !== null && delta >= 0 ? "Up" : "Down"} from ${formatPercent(l.winRate)} last week`}
+                : delta === 0
+                  ? "Same as last week"
+                  : `${delta !== null && delta > 0 ? "Up" : "Down"} from ${formatPercent(l.winRate)} last week`}
             </p>
           </div>
           <div>
