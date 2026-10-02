@@ -100,7 +100,7 @@ export function LaningCard({
                         Denies
                       </th>
                       <th scope="col" className="py-1 text-right font-medium">
-                        Net worth
+                        Gold earned
                       </th>
                     </tr>
                   </thead>
@@ -129,7 +129,7 @@ export function LaningCard({
                             {fmt(p.laning?.deniesAt10 ?? null)}
                           </td>
                           <td className="py-1.5 text-right tabular-nums">
-                            {fmt(p.laning?.netWorthAt10 ?? null)}
+                            {fmt(p.laning?.goldAt10 ?? null)}
                           </td>
                         </tr>
                       );

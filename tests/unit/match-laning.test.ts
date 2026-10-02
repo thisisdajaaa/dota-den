@@ -14,7 +14,7 @@ const laning = (lane: number, roaming = false): Laning => ({
   efficiencyPct: 70,
   lastHitsAt10: 40,
   deniesAt10: 5,
-  netWorthAt10: 3_500,
+  goldAt10: 3_500,
   observers: 0,
   sentries: 0,
   campsStacked: 0,

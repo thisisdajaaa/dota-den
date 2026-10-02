@@ -186,6 +186,22 @@ export async function getActivityCounts(userIds: readonly string[]) {
 }
 
 /** Ranked wins and losses this week for you and up to 15 friends (public OpenDota data). */
+/** At most `limit` OpenDota calls in flight at once. */
+async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => Promise<R>) {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+const RANKED_WEEK_CONCURRENCY = 4;
+
 export async function getRankedWeek(viewer: {
   userId: string;
   accountId32: number;
@@ -200,20 +216,24 @@ export async function getRankedWeek(viewer: {
     baseUrl: OPENDOTA_BASE_URL ?? "https://api.opendota.com/api",
     apiKey: OPENDOTA_API_KEY,
   };
-  const inputs = await Promise.all(
-    ids.map((id) => rankedWeekFor(openDotaGateway(), opts, id).catch(() => null)),
+  const inputs = await mapLimit(ids, RANKED_WEEK_CONCURRENCY, (id) =>
+    rankedWeekFor(openDotaGateway(), opts, id).catch(() => null),
   );
   const known = inputs.filter((i): i is NonNullable<typeof i> => i !== null);
   const { rows, idle } = rankWeek(known);
+  // OpenDota reports 0–0 for private match data too: only call it "didn't play" when the
+  // profile says the history is fully public.
+  const idleProfiles = await mapLimit(idle, RANKED_WEEK_CONCURRENCY, (id) =>
+    getPublicProfile(id).catch(() => null),
+  );
+  const reallyIdle = idleProfiles.filter((p) => p?.matchHistory === "full").length;
   // Best heroes for the top of the board only: each is one more OpenDota call.
-  const best = await Promise.all(
-    rows
-      .slice(0, BEST_HERO_ROWS)
-      .map((r) => bestHeroThisWeek(openDotaGateway(), opts, r.accountId32).catch(() => null)),
+  const best = await mapLimit(rows.slice(0, BEST_HERO_ROWS), RANKED_WEEK_CONCURRENCY, (r) =>
+    bestHeroThisWeek(openDotaGateway(), opts, r.accountId32).catch(() => null),
   );
   best.forEach((b, i) => (rows[i].bestHero = b));
-  const profiles = await Promise.all(
-    rows.map((r) => getPublicProfile(r.accountId32).catch(() => null)),
+  const profiles = await mapLimit(rows, RANKED_WEEK_CONCURRENCY, (r) =>
+    getPublicProfile(r.accountId32).catch(() => null),
   );
   return {
     rows: rows.map((r, i) => ({
@@ -222,8 +242,8 @@ export async function getRankedWeek(viewer: {
       avatarUrl: profiles[i]?.avatarUrl ?? null,
       you: r.accountId32 === viewer.accountId32,
     })),
-    idle: idle.length,
-    unknown: ids.length - known.length,
+    idle: reallyIdle,
+    unknown: ids.length - known.length + (idle.length - reallyIdle),
     friendsIncomplete: found.incomplete,
   };
 }

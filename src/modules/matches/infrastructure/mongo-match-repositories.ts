@@ -194,7 +194,9 @@ export class MongoSyncStateRepository implements SyncStateRepository {
   async dueForSync(limit: number): Promise<number[]> {
     const docs = await this.col
       .find({}, { projection: { _id: 0, accountId32: 1 } })
-      .sort({ backfillComplete: 1, lastSyncAt: 1 })
+      // Longest wait first (never synced first of all). Unfinished imports don't jump the
+      // queue: each run gives every account a turn, and long imports continue the next day.
+      .sort({ lastSyncAt: 1, accountId32: 1 })
       .limit(limit)
       .toArray();
     return docs.map((d) => d.accountId32);

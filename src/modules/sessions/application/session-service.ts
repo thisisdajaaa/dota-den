@@ -83,15 +83,14 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
   }
 
   /** All sessions, newest first, plus what MMR attribution needs. */
-  /** Ranked games grouped into sessions with the player's gap, oldest first. */
+  /** Sessions with the player's gap (as the Sessions page shows them), ranked games only. */
   async rankedSessions(owner: SessionOwner): Promise<PlaySession<M>[]> {
     const gapMinutes = await this.gap(owner);
     const matches = await this.deps.matches.listMatches(owner.accountId32);
-    return groupSessions(
-      owner.accountId32,
-      matches.filter((m) => m.ranked),
-      gapMinutes,
-    );
+    // Grouped like the Sessions page (all games), then only the ranked games kept.
+    return groupSessions(owner.accountId32, matches, gapMinutes)
+      .map((session) => ({ ...session, matches: session.matches.filter((m) => m.ranked) }))
+      .filter((session) => session.matches.length > 0);
   }
 
   /** Win rates after losing streaks, and whether the current session is on one. */

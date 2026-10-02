@@ -173,7 +173,7 @@ describe("OpenDotaAdapter.fetchMatch", () => {
       efficiencyPct: 74,
       lastHitsAt10: 50,
       deniesAt10: 1,
-      netWorthAt10: 4_000,
+      goldAt10: 4_000,
       observers: 2,
       purchases: [{ time: 600, key: "power_treads" }],
     });
