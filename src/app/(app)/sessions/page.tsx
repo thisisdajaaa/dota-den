@@ -10,6 +10,7 @@ import { getSessionService } from "@/modules/sessions/composition";
 import { EarlierNotes } from "@/modules/sessions/ui/earlier-notes";
 import { GapSelector } from "@/modules/sessions/ui/gap-selector";
 import { SessionList } from "@/modules/sessions/ui/session-list";
+import { AfterLossesPanel } from "@/modules/sessions/ui/tilt-cards";
 
 export const metadata: Metadata = { title: "Sessions" };
 
@@ -32,7 +33,10 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
     getHeroMap(),
     getViewerTimeZone(),
   ]);
-  const page = await service.list(owner, Number.isFinite(requested) ? requested : 1);
+  const [page, tilt] = await Promise.all([
+    service.list(owner, Number.isFinite(requested) ? requested : 1),
+    service.tilt(owner).catch(() => null),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -53,6 +57,10 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
           </p>
         )}
       </div>
+
+      {tilt && tilt.stats.baseline.games >= 20 && page.page === 1 && (
+        <AfterLossesPanel stats={tilt.stats} />
+      )}
 
       {page.items.length === 0 ? (
         <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
