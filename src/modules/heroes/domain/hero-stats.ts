@@ -290,6 +290,8 @@ export interface ItemSummary {
   /** false when `withData` is under the minimum: `items` is then empty. */
   enough: boolean;
   items: ItemShare[];
+  /** Share of games with purchase data in which you bought each notable item (all of them). */
+  shares: Record<string, number>;
 }
 
 /**
@@ -315,6 +317,9 @@ export function itemPurchases(
     sample: games.length,
     withData: withData.length,
     enough,
+    shares: enough
+      ? Object.fromEntries([...counts.entries()].map(([key, n]) => [key, n / withData.length]))
+      : {},
     items: enough
       ? [...counts.entries()]
           .map(([key, n]) => ({ key, games: n, share: n / withData.length }))
