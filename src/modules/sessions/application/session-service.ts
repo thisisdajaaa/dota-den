@@ -83,6 +83,17 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
   }
 
   /** All sessions, newest first, plus what MMR attribution needs. */
+  /** Ranked games grouped into sessions with the player's gap, oldest first. */
+  async rankedSessions(owner: SessionOwner): Promise<PlaySession<M>[]> {
+    const gapMinutes = await this.gap(owner);
+    const matches = await this.deps.matches.listMatches(owner.accountId32);
+    return groupSessions(
+      owner.accountId32,
+      matches.filter((m) => m.ranked),
+      gapMinutes,
+    );
+  }
+
   /** Win rates after losing streaks, and whether the current session is on one. */
   async tilt(owner: SessionOwner, now = new Date()) {
     const gapMinutes = await this.gap(owner);

@@ -220,3 +220,14 @@ test("parsed matches show laning and item timings; others can request a parse", 
   await unparsed.getByRole("button", { name: "Get detailed stats" }).click();
   await expect(unparsed.getByRole("status")).toContainText("Requested");
 });
+
+test("the overview shows achievements from your own games", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.reload();
+  const ach = page.getByRole("region", { name: "Achievements" });
+  await expect(ach.getByRole("listitem", { name: /^Veteran/ })).toContainText("12 / 100");
+  await expect(ach).toContainText(/\d+ of \d+ tiers/);
+});
