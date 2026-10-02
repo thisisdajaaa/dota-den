@@ -147,6 +147,39 @@ describe("OpenDotaAdapter.fetchMatch", () => {
     ...extra,
   });
 
+  it("reads replay laning for parsed players and leaves it null otherwise", async () => {
+    const { adapter } = adapterWith({
+      ...base,
+      players: [
+        p(0, {
+          lane: 1,
+          lane_role: 1,
+          is_roaming: false,
+          lane_efficiency_pct: 74,
+          lh_t: Array.from({ length: 12 }, (_, m) => m * 5),
+          dn_t: Array.from({ length: 12 }, () => 1),
+          gold_t: Array.from({ length: 12 }, (_, m) => m * 400),
+          obs_placed: 2,
+          purchase_log: [{ time: 600, key: "power_treads" }],
+        }),
+        p(128),
+      ],
+    });
+    const res = await adapter.fetchMatch("123");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.players[0].laning).toMatchObject({
+      lane: 1,
+      efficiencyPct: 74,
+      lastHitsAt10: 50,
+      deniesAt10: 1,
+      netWorthAt10: 4_000,
+      observers: 2,
+      purchases: [{ time: 600, key: "power_treads" }],
+    });
+    expect(res.value.players[1].laning).toBeNull();
+  });
+
   it("keeps complete benchmarks for shown stats and tolerates odd ones", async () => {
     const { adapter } = adapterWith({
       ...base,

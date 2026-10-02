@@ -5,6 +5,7 @@ import type {
   ProviderGateway,
 } from "@/modules/shared/infrastructure/provider-gateway";
 import type { MatchDetail, MatchPlayer } from "../domain/match-detail";
+import { atMinute, type Laning } from "../domain/match-laning";
 import { PERF_STATS, type PlayerBenchmarks } from "../domain/match-performance";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import { resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
@@ -115,6 +116,24 @@ const MatchPlayerSchema = z.object({
         pct_bracket: z.number().nullable().optional(),
       }),
     )
+    .nullable()
+    .optional()
+    .catch(null),
+  // Parsed replays only.
+  lane: nullableNum,
+  lane_role: nullableNum,
+  is_roaming: z.boolean().nullable().optional(),
+  lane_efficiency_pct: nullableNum,
+  lh_t: z.array(z.number()).nullable().optional().catch(null),
+  dn_t: z.array(z.number()).nullable().optional().catch(null),
+  gold_t: z.array(z.number()).nullable().optional().catch(null),
+  obs_placed: nullableNum,
+  sen_placed: nullableNum,
+  camps_stacked: nullableNum,
+  stuns: nullableNum,
+  teamfight_participation: nullableNum,
+  purchase_log: z
+    .array(z.object({ time: z.number(), key: z.string() }))
     .nullable()
     .optional()
     .catch(null),
@@ -338,10 +357,21 @@ export class OpenDotaAdapter
     );
   }
 
+  async requestParse(matchId: string): Promise<Result<true, ProviderError>> {
+    if (!/^\d{1,20}$/.test(matchId)) return err({ type: "not_found" });
+    const res = await this.gateway.postJson(this.url(`/request/${matchId}`));
+    return res.ok ? ok(true) : err(toProviderError(res));
+  }
+
   async fetchMatch(matchId: string): Promise<Result<MatchDetail, ProviderError>> {
     if (!/^\d{1,20}$/.test(matchId)) return err({ type: "not_found" });
     const res = await this.gateway.getJson(this.url(`/matches/${matchId}`), {
       cacheTtlMs: 10 * 60 * 1000,
+      // An unparsed match may be parsed any minute (on request): don't hold on to it.
+      cacheIf: (body) => {
+        const v = (body as { version?: unknown } | null)?.version;
+        return v !== null && v !== undefined;
+      },
     });
     if (!res.ok) return err(toProviderError(res));
     const parsed = MatchDetailSchema.safeParse(res.body);
@@ -380,6 +410,7 @@ export class OpenDotaAdapter
         partySize: p.party_size ?? null,
         rankTier: p.rank_tier ?? null,
         benchmarks: toBenchmarks(p.benchmarks),
+        laning: toLaning(p),
       };
     });
 
@@ -449,4 +480,24 @@ function toBenchmarks(
     }
   }
   return Object.keys(out).length > 0 ? out : null;
+}
+
+/** Laning, wards and item timings from a parsed replay; null when the match isn't parsed. */
+function toLaning(p: z.infer<typeof MatchPlayerSchema>): Laning | null {
+  if (!p.lh_t || p.lh_t.length === 0) return null;
+  return {
+    lane: p.lane ?? null,
+    laneRole: p.lane_role ?? null,
+    roaming: p.is_roaming === true,
+    efficiencyPct: p.lane_efficiency_pct ?? null,
+    lastHitsAt10: atMinute(p.lh_t),
+    deniesAt10: atMinute(p.dn_t),
+    netWorthAt10: atMinute(p.gold_t),
+    observers: p.obs_placed ?? null,
+    sentries: p.sen_placed ?? null,
+    campsStacked: p.camps_stacked ?? null,
+    stunsSec: p.stuns ?? null,
+    teamfight: p.teamfight_participation ?? null,
+    purchases: p.purchase_log ?? [],
+  };
 }
