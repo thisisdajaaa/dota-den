@@ -71,11 +71,22 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   ([ADR 0007](docs/adr/0007-mmr-attribution.md)). **Climb by hero** shows each hero's record and estimated climb game
   by game, exact only when your entries isolate games on that one hero. The overview reminds you to log MMR after
   ranked games.
+- **Read MMR from a screenshot.** Pick or paste a screenshot in the Log MMR dialog; a vision model reads the number
+  into the box for you to check (nothing is saved without you, and images aren't stored). Your medal is tracked
+  automatically too, with every rank-up and rank-down dated.
+- **Overview.** This week against last (record, win rate, MMR change), a tilt check that suggests a break during a
+  losing streak when your own history shows a drop, a prompt to log MMR after ranked games, and achievements.
 - **Session recaps and goals.** Back-to-back games are grouped into sessions (your choice of break: 30 to 120 minutes)
   with a recap, streaks, best and worst game, and a note and goal you can mark as met.
+- **After losses.** Your ranked win rate after 2 and 3 straight losses within a session, against your usual rate.
 - **Heroes.** A page per hero you've played: record, KDA, GPM/XPM, win-rate trend by patch or month, who you beat and
   lose to, your most-bought items, and the public high-rank win rate for comparison. Plus a lane and position
   breakdown of where you actually play.
+- **Hero progress and pool advice.** Your latest games on a hero against the ones before (GPM, XPM, last hits, KDA,
+  win rate), and up to three heroes to add for your role: strong at high ranks and good against the heroes you lose to
+  most.
+- **Match pages.** How you played against everyone on the same hero (and at your rank), laning at 10 minutes against
+  your lane opponents, item timings and wards from the parsed replay, and a button that asks OpenDota to parse it.
 
 ### People
 
@@ -86,6 +97,8 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   guessed.
 - **Leaderboards.** Separate boards for draft games, draft challenges and friend rooms, for your friends or everyone,
   this week or all time. The Everyone boards only list players who opt in (profiles are private by default).
+- **Ranked this week.** You and up to 15 friends by ranked wins minus losses over the last 7 days (public OpenDota
+  data; MMR is the labelled estimate).
 
 ### The game
 
@@ -96,6 +109,8 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   score, clock, gold lead and lineups. Once both drafts are complete, the same outlook and report card as the draft
   tool grade the live draft. A Watch section finds Twitch streams whose titles mention the game and plays them in
   the page (with a Twitch app configured), plus Twitch and YouTube searches.
+- **Install as an app.** A web app manifest, icons and an offline page: install it on a phone's home screen or as a
+  desktop app.
 - **Hero guides.** For every hero: the items pros buy in each phase, what typical, top 10% and top 1% games reach
   (GPM, XPM, last hits, damage), and recent pro games to open and learn from.
 - **Link previews.** Shared matches, players and drafts unfurl with a generated image (heroes, score, grades).
@@ -127,7 +142,10 @@ More detail: [docs/draft-engine.md](docs/draft-engine.md).
 
 ### Running it
 
-- **Admin page.** Users, activity and recent failed jobs, for the Steam accounts in `ADMIN_STEAM_IDS`.
+- **Admin page.** Users and activity, errors users hit (server and browser, grouped), the daily jobs' runs with a
+  button to run the match sync now, and failed background jobs, for the Steam accounts in `ADMIN_STEAM_IDS`.
+- **Daily jobs and backups.** Vercel Cron syncs every player's matches (each account gets its turn) and imports
+  patches; a nightly GitHub Action takes an encrypted database backup ([docs/operations.md](docs/operations.md)).
 - **Shared limits and jobs.** Upstash Redis for rate limits, a shared OpenDota cache and request budget; QStash for
   background jobs, with an inline fallback when it isn't configured ([docs/operations.md](docs/operations.md)).
 
