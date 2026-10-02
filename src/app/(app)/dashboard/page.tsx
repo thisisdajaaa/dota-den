@@ -27,6 +27,7 @@ import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
 import { MmrPromptSection } from "./mmr-prompt-section";
+import { TiltSection } from "./tilt-section";
 import { WeeklyRecapSection } from "./weekly-recap-section";
 import { PatchDigestSection, PatchDigestSkeleton } from "./patch-digest-section";
 import { StandingSection } from "./standing-section";
@@ -90,6 +91,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {latestSession && (
         <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />
       )}
+
+      <Suspense fallback={null}>
+        <TiltSection user={user} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <WeeklyRecapSection user={user} heroes={heroes} timeZone={tz.timeZone} />

@@ -15,6 +15,7 @@ import {
   type SessionMmr,
 } from "../domain/session-mmr";
 import { placeEarlierNotes, type EarlierNote, type SessionNote } from "../domain/session-note";
+import { currentLossStreak, tiltStats, tiltWarning } from "../domain/tilt";
 import type { SessionNoteInput } from "./contracts";
 import type {
   MmrObservationSource,
@@ -82,6 +83,15 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
   }
 
   /** All sessions, newest first, plus what MMR attribution needs. */
+  /** Win rates after losing streaks, and whether the current session is on one. */
+  async tilt(owner: SessionOwner, now = new Date()) {
+    const gapMinutes = await this.gap(owner);
+    const matches = await this.deps.matches.listMatches(owner.accountId32);
+    const stats = tiltStats(matches, gapMinutes);
+    const streak = currentLossStreak(matches, gapMinutes, now);
+    return { stats, streak, warning: tiltWarning(stats, streak), gapMinutes };
+  }
+
   private async load(owner: SessionOwner, gapMinutes: GapMinutes) {
     const [matches, observations] = await Promise.all([
       this.deps.matches.listMatches(owner.accountId32),
