@@ -325,6 +325,19 @@ describe("MatchSyncService", () => {
     expect(ctx.upstream.calls.length - before).toBe(1); // the head page only
   });
 
+  it("lets a first import stop at the deadline and carry on next time", async () => {
+    const ctx = setup(45, { maxPages: 5 });
+    const first = await ctx.service.sync(ACCOUNT, { deadline: 0 }); // already past
+    expect(first.ok && first.value).toMatchObject({ fetched: 10, backfillComplete: false });
+    expect(ctx.upstream.calls).toHaveLength(1);
+    expect((await ctx.syncState.get())?.backfillOffset).toBe(10);
+    // Next run continues from there and finishes the history.
+    ctx.advance(BACKFILL_COOLDOWN_MS + 1);
+    const second = await ctx.service.sync(ACCOUNT);
+    expect(second.ok && second.value.backfillComplete).toBe(true);
+    expect(ctx.facts.byKey.size).toBe(45);
+  });
+
   it("enforces the cooldown between syncs", async () => {
     const ctx = setup(3);
     await ctx.service.sync(ACCOUNT);

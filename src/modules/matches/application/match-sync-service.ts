@@ -138,6 +138,15 @@ export class MatchSyncService {
 
       // Head: walk from the newest match until we reach one we already have.
       while (budget > 0) {
+        // A first import is all history: it can stop at the deadline after a page and carry
+        // on next time. (A known history can't: stopping could leave a gap of new games.)
+        if (
+          fresh &&
+          offset > 0 &&
+          opts.deadline !== undefined &&
+          this.now().getTime() >= opts.deadline
+        )
+          break;
         const page = await this.fetchPage(accountId32, offset, pageSize, entries, summary);
         budget--;
         if (!page.ok) return this.fail(accountId32, page.error);
@@ -213,8 +222,11 @@ export class MatchSyncService {
     limit: number;
     budgetMs: number;
     maxPages: number;
+    /** Older history per account per run, so one long import can't starve everyone else. */
+    perAccountMs?: number;
   }): Promise<Array<{ accountId32: number; outcome: string; inserted?: number }>> {
     const started = this.now().getTime();
+    const perAccount = opts.perAccountMs ?? 8_000;
     const out: Array<{ accountId32: number; outcome: string; inserted?: number }> = [];
     for (const accountId32 of await this.deps.syncState.dueForSync(opts.limit)) {
       if (this.now().getTime() - started >= opts.budgetMs) {
@@ -224,7 +236,7 @@ export class MatchSyncService {
       try {
         const res = await this.sync(accountId32, {
           maxPages: opts.maxPages,
-          deadline: started + opts.budgetMs,
+          deadline: Math.min(started + opts.budgetMs, this.now().getTime() + perAccount),
         });
         out.push(
           res.ok
