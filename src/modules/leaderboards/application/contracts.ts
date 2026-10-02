@@ -1,3 +1,4 @@
+import type { RankedWeekRow } from "../domain/ranked-week";
 import { z } from "zod";
 import type { Period } from "../domain/period";
 import type {
@@ -82,4 +83,14 @@ export interface StandingView {
   players: number;
   /** The board's headline number for you (drafts, correct answers or room drafts). */
   value: number;
+}
+
+/** Ranked this week for you and your friends (see domain/ranked-week). */
+export interface RankedWeekView {
+  rows: Array<RankedWeekRow & { name: string | null; avatarUrl: string | null; you: boolean }>;
+  /** Players who didn't play ranked this week. */
+  idle: number;
+  /** Friends we couldn't read (OpenDota failed or their data is private). */
+  unknown: number;
+  friendsIncomplete: boolean;
 }

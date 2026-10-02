@@ -17,7 +17,7 @@ import {
   getCurrentUser,
 } from "@/modules/identity/composition";
 import type { User } from "@/modules/identity/domain/user";
-import { getHeroMap } from "@/modules/matches/composition";
+import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ownerOf } from "@/modules/players/application/follow-service";
 import {
   getFollowService,
@@ -33,13 +33,18 @@ import type {
   FriendFinder,
   PlayerAccount,
 } from "./application/ports";
+import type { RankedWeekView } from "./application/contracts";
+import { MAX_RANKED_WEEK_FRIENDS, rankWeek } from "./domain/ranked-week";
 import {
   MongoActivityRepository,
   activityCountsByUser,
 } from "./infrastructure/mongo-activity-repository";
+import { bestHeroThisWeek, rankedWeekFor } from "./infrastructure/opendota-ranked-week";
 
 /** OpenDota teammates considered as friends (most games on the same team first). */
 const MAX_PEER_FRIENDS = 200;
+/** Best heroes are looked up for this many rows at the top of "Ranked this week". */
+const BEST_HERO_ROWS = 5;
 /** Room captains you've drafted with, considered as friends. */
 const MAX_ROOM_FRIENDS = 100;
 
@@ -178,4 +183,47 @@ export async function getLeaderboardService(): Promise<LeaderboardService> {
 /** Admin overview: finished drafts and challenge answers per user. */
 export async function getActivityCounts(userIds: readonly string[]) {
   return activityCountsByUser(await getDb(), userIds);
+}
+
+/** Ranked wins and losses this week for you and up to 15 friends (public OpenDota data). */
+export async function getRankedWeek(viewer: {
+  userId: string;
+  accountId32: number;
+}): Promise<RankedWeekView> {
+  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
+  const found = await friends.friendAccountIds(viewer);
+  const ids = [
+    viewer.accountId32,
+    ...found.accountIds.filter((id) => id !== viewer.accountId32).slice(0, MAX_RANKED_WEEK_FRIENDS),
+  ];
+  const opts = {
+    baseUrl: OPENDOTA_BASE_URL ?? "https://api.opendota.com/api",
+    apiKey: OPENDOTA_API_KEY,
+  };
+  const inputs = await Promise.all(
+    ids.map((id) => rankedWeekFor(openDotaGateway(), opts, id).catch(() => null)),
+  );
+  const known = inputs.filter((i): i is NonNullable<typeof i> => i !== null);
+  const { rows, idle } = rankWeek(known);
+  // Best heroes for the top of the board only: each is one more OpenDota call.
+  const best = await Promise.all(
+    rows
+      .slice(0, BEST_HERO_ROWS)
+      .map((r) => bestHeroThisWeek(openDotaGateway(), opts, r.accountId32).catch(() => null)),
+  );
+  best.forEach((b, i) => (rows[i].bestHero = b));
+  const profiles = await Promise.all(
+    rows.map((r) => getPublicProfile(r.accountId32).catch(() => null)),
+  );
+  return {
+    rows: rows.map((r, i) => ({
+      ...r,
+      name: profiles[i]?.personaName ?? null,
+      avatarUrl: profiles[i]?.avatarUrl ?? null,
+      you: r.accountId32 === viewer.accountId32,
+    })),
+    idle: idle.length,
+    unknown: ids.length - known.length,
+    friendsIncomplete: found.incomplete,
+  };
 }
