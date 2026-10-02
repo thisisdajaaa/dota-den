@@ -30,6 +30,12 @@ test("hero guides show pro builds, benchmarks and pro games", async ({ page }) =
   await expect(bench.getByRole("row", { name: /Gold per minute/ })).toContainText("880");
   await expect(bench.getByRole("row", { name: /Last hits per minute/ })).toContainText("8.4");
 
+  // Matchups from pro games, each opponent linking to its own guide.
+  const matchups = page.getByRole("region", { name: "Matchups" });
+  await expect(matchups.getByRole("group", { name: "Anti-Mage is strong against" })).toBeVisible();
+  await expect(matchups.getByRole("group", { name: "Anti-Mage struggles against" })).toBeVisible();
+  await expect(matchups.getByRole("link").first()).toHaveAttribute("href", /^\/guides\/\d+$/);
+
   const pro = page.getByRole("region", { name: "Recent pro games on Anti-Mage" });
   await expect(pro).toContainText("1–1 in the last 2");
   await expect(pro.getByRole("link", { name: /Fixture Pro/ })).toHaveAttribute(

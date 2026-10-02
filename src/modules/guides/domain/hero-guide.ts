@@ -95,3 +95,44 @@ export function formatBench(stat: BenchStat, v: number): string {
   if (stat === "last_hits_per_min") return v.toFixed(1);
   return Math.round(v).toLocaleString("en-US");
 }
+
+export interface MatchupRow {
+  heroId: number;
+  games: number;
+  wins: number;
+}
+
+export interface Counter extends MatchupRow {
+  /** Raw win rate against this hero. */
+  rate: number;
+}
+
+/** Opponents need this many games before they count. */
+export const MIN_MATCHUP_GAMES = 25;
+const MATCHUP_PRIOR = 30;
+
+/**
+ * Who the hero beats and who beats it in pro games, ranked by a win rate pulled toward 50%
+ * for small samples (so a 9–1 record can't top the list). Raw rates and game counts are kept
+ * for display.
+ */
+export function counters(
+  rows: readonly MatchupRow[],
+  limit = 6,
+): { strongAgainst: Counter[]; weakAgainst: Counter[] } {
+  const damped = (r: MatchupRow) => (r.wins + MATCHUP_PRIOR / 2) / (r.games + MATCHUP_PRIOR);
+  const usable = rows
+    .filter((r) => r.games >= MIN_MATCHUP_GAMES && r.wins <= r.games)
+    .map((r) => ({ ...r, rate: r.wins / r.games, score: damped(r) }));
+  const strong = usable
+    .filter((r) => r.score > 0.5)
+    .sort((a, b) => b.score - a.score || b.games - a.games);
+  const weak = usable
+    .filter((r) => r.score < 0.5)
+    .sort((a, b) => a.score - b.score || b.games - a.games);
+  const strip = ({ score: _s, ...r }: (typeof usable)[number]): Counter => r;
+  return {
+    strongAgainst: strong.slice(0, limit).map(strip),
+    weakAgainst: weak.slice(0, limit).map(strip),
+  };
+}
