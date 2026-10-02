@@ -196,3 +196,27 @@ test("the overview shows this week against last week", async ({ page }) => {
     "/mmr?view=week",
   );
 });
+
+test("parsed matches show laning and item timings; others can request a parse", async ({
+  page,
+}) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.goto("/matches/7000000012");
+  const laning = page.getByRole("region", { name: "Laning & items" });
+  const table = laning.getByRole("table", { name: /at 10 minutes/ });
+  await expect(table.getByRole("row", { name: /\(you\)/ })).toContainText("50");
+  await expect(table.getByRole("row", { name: /\(you\)/ })).toContainText("3,800");
+  await expect(laning).toContainText("lane efficiency 74%");
+  await expect(laning).toContainText("Power Treads");
+  await expect(laning).toContainText("10:00");
+  await expect(laning).not.toContainText("Tango");
+  await expect(laning).toContainText("2 obs");
+
+  await page.goto("/matches/7000000011");
+  const unparsed = page.getByRole("region", { name: "Laning & items" });
+  await unparsed.getByRole("button", { name: "Get detailed stats" }).click();
+  await expect(unparsed.getByRole("status")).toContainText("Requested");
+});

@@ -197,5 +197,7 @@ export interface ItemInfo {
 
 export interface MatchDetailProvider {
   fetchMatch(matchId: string): Promise<Result<MatchDetail, ProviderError>>;
+  /** Ask the upstream to parse the replay (laning, item timings, wards). */
+  requestParse(matchId: string): Promise<Result<true, ProviderError>>;
   getItems(): Promise<Result<ItemInfo[], ProviderError>>;
 }

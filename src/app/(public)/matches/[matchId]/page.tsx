@@ -13,6 +13,7 @@ import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { AdvantageChart } from "@/modules/matches/ui/advantage-chart";
 import { formatDuration, gameModeLabel, regionLabel } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
+import { LaningCard } from "@/modules/matches/ui/laning-card";
 import { PerformanceCard } from "@/modules/matches/ui/performance-card";
 import { Scoreboard } from "@/modules/matches/ui/scoreboard";
 
@@ -193,6 +194,15 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         isViewer={perfPlayer !== null && perfPlayer === me}
         heroes={heroes}
         hrefFor={(slot) => `/matches/${match.matchId}?p=${slot}#performance`}
+      />
+
+      <LaningCard
+        matchId={match.matchId}
+        players={match.players}
+        selected={perfPlayer}
+        isViewer={perfPlayer !== null && perfPlayer === me}
+        heroes={heroes}
+        items={items}
       />
 
       {match.goldAdvantage && (

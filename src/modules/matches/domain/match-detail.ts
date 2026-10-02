@@ -1,3 +1,4 @@
+import type { Laning } from "./match-laning";
 import type { PlayerBenchmarks } from "./match-performance";
 import type { TeamSide } from "./player-match-fact";
 
@@ -32,6 +33,8 @@ export interface MatchPlayer {
   rankTier: number | null;
   /** Percentiles against others on the same hero (OpenDota); null when not given. */
   benchmarks: PlayerBenchmarks | null;
+  /** Laning, wards and item timings: parsed replays only, else null. */
+  laning: Laning | null;
 }
 
 export interface MatchDetail {

@@ -99,10 +99,38 @@ function sharedSeats(i, mySlot) {
   return null;
 }
 
+// Replay fields for parsed matches: lanes by slot, steady farm, a few purchases.
+const LANES = { 0: 1, 1: 2, 2: 3, 3: 1, 4: 3, 128: 3, 129: 2, 130: 1, 131: 3, 132: 1 };
+function laningFields(slot, me) {
+  const perMin = me ? 5 : 4;
+  return {
+    lane: LANES[slot],
+    lane_role: slot < 128 ? (LANES[slot] === 1 ? 1 : LANES[slot] === 2 ? 2 : 3) : 1,
+    is_roaming: false,
+    lane_efficiency_pct: me ? 74 : 60,
+    lh_t: Array.from({ length: 31 }, (_, m) => m * perMin),
+    dn_t: Array.from({ length: 31 }, (_, m) => Math.floor(m / 2)),
+    gold_t: Array.from({ length: 31 }, (_, m) => m * (me ? 380 : 330)),
+    obs_placed: me ? 2 : 0,
+    sen_placed: 1,
+    camps_stacked: 1,
+    stuns: 12.5,
+    teamfight_participation: 0.6,
+    purchase_log: me
+      ? [
+          { time: -80, key: "tango" },
+          { time: 600, key: "power_treads" },
+          { time: 1100, key: "bfury" },
+        ]
+      : [],
+  };
+}
+
 function matchDetail(id) {
   const index = MATCHES.findIndex((m) => String(m.match_id) === id);
   if (index < 0) return null;
   const row = MATCHES[index];
+  const parsed = row.version !== null;
   const shared = sharedSeats(index, row.player_slot);
   const players = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot) =>
     slot === row.player_slot
@@ -126,6 +154,12 @@ function matchDetail(id) {
             benchmarks: { gold_per_min: { raw: 400, pct: 0.5, pct_bracket: null } },
           },
   );
+  const withReplay = parsed
+    ? players.map((p) => ({
+        ...p,
+        ...laningFields(p.player_slot, p.player_slot === row.player_slot),
+      }))
+    : players;
   return {
     match_id: row.match_id,
     start_time: row.start_time,
@@ -137,12 +171,12 @@ function matchDetail(id) {
     lobby_type: 7,
     region: 3,
     first_blood_time: 90,
-    version: 22,
+    version: row.version,
     radiant_gold_adv: Array.from({ length: 30 }, (_, m) =>
       Math.round(Math.sin(m / 5) * 3000 + m * 200),
     ),
     radiant_xp_adv: Array.from({ length: 30 }, (_, m) => m * 150),
-    players,
+    players: withReplay,
   };
 }
 
@@ -587,6 +621,8 @@ const routes = [
   ],
   [/^\/api\/heroStats$/, () => publicHeroStats()],
   [/^\/api\/heroes\/(\d+)\/matchups$/, (m) => heroMatchups(m[1])],
+  // Replay parse requests (POST /request/:matchId).
+  [/^\/api\/request\/(\d+)$/, () => ({ job: { jobId: 1 } })],
   // Hero guides: pro item popularity, public benchmarks and recent pro games.
   [
     /^\/api\/heroes\/(\d+)\/itemPopularity$/,
