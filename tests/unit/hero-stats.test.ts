@@ -243,7 +243,7 @@ describe("items", () => {
 
   it("lists nothing under the minimum sample", () => {
     const s = itemPurchases([{ purchase: { bkb: 1 } }, { purchase: null }], notable);
-    expect(s).toEqual({ sample: 2, withData: 1, enough: false, items: [] });
+    expect(s).toEqual({ sample: 2, withData: 1, enough: false, items: [], shares: {} });
   });
 });
 

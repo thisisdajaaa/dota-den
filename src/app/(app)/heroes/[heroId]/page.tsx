@@ -7,6 +7,7 @@ import { StatTile } from "@/components/stat-tile";
 import { logger } from "@/lib/logger";
 import type { HeroesService } from "@/modules/heroes/application/heroes-service";
 import { getHeroesService } from "@/modules/heroes/composition";
+import { buildVsPros } from "@/modules/heroes/domain/build-vs-pros";
 import type { HeroRecord } from "@/modules/heroes/domain/hero-stats";
 import {
   HeroBanner,
@@ -18,7 +19,9 @@ import {
   Unavailable,
   unavailableCopy,
 } from "@/modules/heroes/ui/hero-sections";
+import { BuildCard } from "@/modules/heroes/ui/build-card";
 import { ProgressCard } from "@/modules/heroes/ui/progress-card";
+import { getProCoreItems } from "@/modules/guides/composition";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
 import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
@@ -153,6 +156,9 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
           <Suspense fallback={<SectionSkeleton label="Loading items" rows={4} />}>
             <ItemsSection details={details} name={name} />
           </Suspense>
+          <Suspense fallback={null}>
+            <BuildSection details={details} heroId={heroId} name={name} />
+          </Suspense>
         </div>
         <div className="lg:col-span-2">
           <Suspense fallback={<SectionSkeleton label="Loading public win rate" rows={1} />}>
@@ -252,6 +258,31 @@ async function ProgressSection({ details, name }: { details: DetailsResult; name
   const res = await details;
   if (!res.ok || !res.value.progress) return null;
   return <ProgressCard progress={res.value.progress} heroLabel={name} />;
+}
+
+async function BuildSection({
+  details,
+  heroId,
+  name,
+}: {
+  details: DetailsResult;
+  heroId: number;
+  name: string;
+}) {
+  const [res, items] = await Promise.all([
+    details,
+    getItemMap().catch((): Map<number, ItemInfo> => new Map()),
+  ]);
+  if (!res.ok || !res.value.items?.enough || items.size === 0) return null;
+  const pro = await getProCoreItems(heroId, (id) => items.get(id)?.qual === "consumable").catch(
+    () => null,
+  );
+  if (!pro) return null;
+  const rows = buildVsPros(pro, (id) => items.get(id)?.key, res.value.items.shares);
+  if (rows.length === 0) return null;
+  return (
+    <BuildCard rows={rows} items={items} heroLabel={name} yourGames={res.value.items.withData} />
+  );
 }
 
 async function ItemsSection({ details, name }: { details: DetailsResult; name: string }) {

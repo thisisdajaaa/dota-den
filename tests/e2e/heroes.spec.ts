@@ -67,6 +67,19 @@ test("a hero page shows your record, trend, matchups, items and recent games", a
   await expect(matchups).not.toContainText("Fixture Hero 103");
   await expect(matchups).toContainText("From your 8 games on Anti-Mage");
 
+  // Your build against the pros' core items (fixture pros: Battle Fury, Power Treads mid;
+  // BKB, Manta late). The fixture player buys Manta in 4 of 6 games, BKB in 2.
+  const build = page.getByRole("region", { name: "Your build vs the pros" });
+  await expect(build.getByRole("listitem").filter({ hasText: "Battle Fury" })).toContainText(
+    "Pros' #1 mid game item",
+  );
+  await expect(build.getByRole("listitem").filter({ hasText: "Manta Style" })).toContainText(
+    "You: 67%",
+  );
+  await expect(build.getByRole("listitem").filter({ hasText: "Black King Bar" })).toContainText(
+    "Pros' #1 late game itemYou: 33%",
+  );
+
   const items = page.getByRole("region", { name: "Your most-bought items" });
   await expect(items).toContainText("Battle Fury");
   await expect(items).toContainText("Manta Style");
