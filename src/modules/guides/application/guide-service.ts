@@ -1,9 +1,12 @@
 import {
+  counters,
   PHASES,
   pickBenchmarks,
   topItems,
   type Benchmark,
+  type Counter,
   type ItemPick,
+  type MatchupRow,
   type Phase,
   type ProGame,
 } from "../domain/hero-guide";
@@ -20,6 +23,8 @@ export interface GuideSource {
   proGames(heroId: number): Promise<ProGame[] | null>;
   /** Pro players' names for these accounts. */
   proNames(accountIds: readonly number[]): Promise<Map<number, string> | null>;
+  /** How the hero does against each other hero in pro games. */
+  matchups(heroId: number): Promise<MatchupRow[] | null>;
 }
 
 export interface HeroGuide {
@@ -27,6 +32,7 @@ export interface HeroGuide {
   items: Record<Phase, ItemPick[]> | null;
   benchmarks: Benchmark[] | null;
   proGames: ProGame[] | null;
+  counters: { strongAgainst: Counter[]; weakAgainst: Counter[] } | null;
 }
 
 const PRO_GAMES_SHOWN = 12;
@@ -40,10 +46,11 @@ export class GuideService {
    */
   async guide(heroId: number, isConsumable: (itemId: number) => boolean): Promise<HeroGuide> {
     const { source } = this.deps;
-    const [pop, bench, allGames] = await Promise.all([
+    const [pop, bench, allGames, matchups] = await Promise.all([
       source.itemPopularity(heroId).catch(() => null),
       source.benchmarks(heroId).catch(() => null),
       source.proGames(heroId).catch(() => null),
+      source.matchups(heroId).catch(() => null),
     ]);
     const games = allGames?.slice(0, PRO_GAMES_SHOWN) ?? null;
     const ids = (games ?? []).flatMap((g) => (g.accountId32 ? [g.accountId32] : []));
@@ -64,6 +71,7 @@ export class GuideService {
               g.playerName ?? (g.accountId32 ? (names?.get(g.accountId32) ?? null) : null),
           }))
         : null,
+      counters: matchups ? counters(matchups) : null,
     };
   }
 }

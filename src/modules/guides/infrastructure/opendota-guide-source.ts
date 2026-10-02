@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
 import type { GuideSource } from "../application/guide-service";
-import type { Phase, ProGame } from "../domain/hero-guide";
+import type { MatchupRow, Phase, ProGame } from "../domain/hero-guide";
 
 const HOUR = 3_600_000;
 const counts = z.record(z.string(), z.number()).default({});
@@ -27,6 +27,13 @@ const MatchesSchema = z.array(
     kills: z.number().optional().default(0),
     deaths: z.number().optional().default(0),
     assists: z.number().optional().default(0),
+  }),
+);
+const MatchupsSchema = z.array(
+  z.object({
+    hero_id: z.number().int().positive(),
+    games_played: z.number().int().min(0),
+    wins: z.number().int().min(0),
   }),
 );
 const NamesSchema = z.object({
@@ -80,6 +87,12 @@ export class OpenDotaGuideSource implements GuideSource {
       6 * HOUR,
     );
     return d?.result ?? null;
+  }
+
+  /** Same URL and cache as the draft engine's matchup tables. */
+  async matchups(heroId: number): Promise<MatchupRow[] | null> {
+    const d = await this.get(this.url(`/heroes/${heroId}/matchups`), MatchupsSchema, 12 * HOUR);
+    return d ? d.map((r) => ({ heroId: r.hero_id, games: r.games_played, wins: r.wins })) : null;
   }
 
   async proGames(heroId: number): Promise<ProGame[] | null> {

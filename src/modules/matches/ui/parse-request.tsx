@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const POLL_MS = 20_000;
+/** Matches the 90s cache on unparsed matches: checking more often only re-reads the cache. */
+const POLL_MS = 60_000;
 const GIVE_UP_MS = 10 * 60_000;
 
 /** Ask OpenDota to parse this match, then refresh the page until the stats arrive. */

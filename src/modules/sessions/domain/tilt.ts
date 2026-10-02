@@ -38,13 +38,13 @@ const rate = (games: number, wins: number): WinRate => ({
 });
 
 export function tiltStats(matches: readonly SessionMatch[], gapMinutes: number): TiltStats {
-  const ranked = matches.filter((m) => m.ranked);
   let games = 0;
   let wins = 0;
   const after = { 2: { g: 0, w: 0 }, 3: { g: 0, w: 0 } };
-  for (const session of groupSessions(0, ranked, gapMinutes)) {
+  // Sessions as the Sessions page groups them (all games); only ranked games count.
+  for (const session of groupSessions(0, matches, gapMinutes)) {
     let streak = 0;
-    for (const m of session.matches) {
+    for (const m of session.matches.filter((x) => x.ranked)) {
       const won = m.result === "win";
       games++;
       if (won) wins++;
@@ -69,15 +69,12 @@ export function currentLossStreak(
   gapMinutes: number,
   now: Date,
 ): number {
-  const sessions = groupSessions(
-    0,
-    matches.filter((m) => m.ranked),
-    gapMinutes,
-  );
-  const last = sessions.at(-1);
+  // Sessions as the Sessions page groups them (all games); the streak counts ranked games.
+  const last = groupSessions(0, matches, gapMinutes).at(-1);
   if (!last || now.getTime() - last.endedAt.getTime() > gapMinutes * 60_000) return 0;
+  const ranked = last.matches.filter((m) => m.ranked);
   let streak = 0;
-  for (let i = last.matches.length - 1; i >= 0 && last.matches[i].result === "loss"; i--) streak++;
+  for (let i = ranked.length - 1; i >= 0 && ranked[i].result === "loss"; i--) streak++;
   return streak;
 }
 

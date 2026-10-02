@@ -30,9 +30,13 @@ describe("tiltStats", () => {
     expect(s.afterLosses[3]).toEqual({ games: 1, wins: 1, rate: 1 });
   });
 
-  it("ignores unranked games", () => {
+  it("ignores unranked games, but they keep a session going like on the Sessions page", () => {
     const s = tiltStats([g(0, "loss", false), g(35, "win")], 60);
     expect(s.baseline.games).toBe(1);
+    // Ranked loss, two unranked games, ranked loss: one session, two ranked losses in a row.
+    const games = [g(0, "loss"), g(45, "win", false), g(90, "win", false), g(135, "loss")];
+    const end = Date.UTC(2026, 9, 1) + 165 * 60_000;
+    expect(currentLossStreak(games, 60, new Date(end + 10 * 60_000))).toBe(2);
   });
 });
 

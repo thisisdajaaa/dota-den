@@ -367,10 +367,11 @@ export class OpenDotaAdapter
     if (!/^\d{1,20}$/.test(matchId)) return err({ type: "not_found" });
     const res = await this.gateway.getJson(this.url(`/matches/${matchId}`), {
       cacheTtlMs: 10 * 60 * 1000,
-      // An unparsed match may be parsed any minute (on request): don't hold on to it.
-      cacheIf: (body) => {
+      // Parsed matches don't change; an unparsed one may be parsed any minute (on request),
+      // so it's kept briefly: enough to spare OpenDota repeat calls, short enough to update.
+      cacheTtlFor: (body) => {
         const v = (body as { version?: unknown } | null)?.version;
-        return v !== null && v !== undefined;
+        return v !== null && v !== undefined ? 10 * 60 * 1000 : 90 * 1000;
       },
     });
     if (!res.ok) return err(toProviderError(res));
@@ -492,7 +493,7 @@ function toLaning(p: z.infer<typeof MatchPlayerSchema>): Laning | null {
     efficiencyPct: p.lane_efficiency_pct ?? null,
     lastHitsAt10: atMinute(p.lh_t),
     deniesAt10: atMinute(p.dn_t),
-    netWorthAt10: atMinute(p.gold_t),
+    goldAt10: atMinute(p.gold_t),
     observers: p.obs_placed ?? null,
     sentries: p.sen_placed ?? null,
     campsStacked: p.camps_stacked ?? null,
