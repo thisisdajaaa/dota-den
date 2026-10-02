@@ -17,6 +17,7 @@ import {
   type Matchups,
   type WinRateTrend,
 } from "../domain/hero-stats";
+import { heroProgress, type HeroProgress } from "../domain/hero-progress";
 import type {
   HeroCatalogEntry,
   HighRankStats,
@@ -49,6 +50,8 @@ export interface HeroDetailsView {
   xpm: { average: number; games: number } | null;
   /** null when the item catalog is unavailable (we can't tell components from items). */
   items: ItemSummary | null;
+  /** Earlier vs latest of your recent games on the hero; null with too few. */
+  progress: HeroProgress | null;
 }
 
 export interface LaneBreakdownView {
@@ -111,6 +114,25 @@ export class HeroesService {
       gpm: averageOf(games.map((g) => g.goldPerMin)),
       xpm: averageOf(games.map((g) => g.xpPerMin)),
       items: catalog.size === 0 ? null : itemPurchases(games, notable),
+      progress: heroProgress(
+        games.flatMap((g) =>
+          g.startedAt
+            ? [
+                {
+                  startedAt: g.startedAt,
+                  durationSec: g.durationSec ?? 0,
+                  won: g.won ?? null,
+                  goldPerMin: g.goldPerMin,
+                  xpPerMin: g.xpPerMin,
+                  lastHits: g.lastHits ?? null,
+                  kills: g.kills ?? 0,
+                  deaths: g.deaths ?? 0,
+                  assists: g.assists ?? 0,
+                },
+              ]
+            : [],
+        ),
+      ),
     });
   }
 

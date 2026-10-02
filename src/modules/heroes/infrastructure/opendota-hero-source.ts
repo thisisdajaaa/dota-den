@@ -35,6 +35,14 @@ export const HeroMatchRowSchema = z.object({
   gold_per_min: z.number().min(0).nullable().optional(),
   xp_per_min: z.number().min(0).nullable().optional(),
   purchase: z.record(z.string(), z.number()).nullable().optional(),
+  start_time: z.number().int().positive().nullable().optional(),
+  duration: z.number().int().min(0).nullable().optional(),
+  radiant_win: z.boolean().nullable().optional(),
+  player_slot: z.number().int().min(0).max(255).nullable().optional(),
+  last_hits: z.number().min(0).nullable().optional(),
+  kills: z.number().min(0).nullable().optional(),
+  deaths: z.number().min(0).nullable().optional(),
+  assists: z.number().min(0).nullable().optional(),
 });
 
 function toSourceError(res: Exclude<GatewayResponse, { ok: true }>): SourceError {
@@ -107,7 +115,19 @@ export class OpenDotaHeroSource implements PlayerHeroSource {
         hero_id: heroId,
         limit,
         significant: 0,
-        project: ["gold_per_min", "xp_per_min", "purchase"],
+        project: [
+          "gold_per_min",
+          "xp_per_min",
+          "purchase",
+          "start_time",
+          "duration",
+          "radiant_win",
+          "player_slot",
+          "last_hits",
+          "kills",
+          "deaths",
+          "assists",
+        ],
       }),
       { cacheTtlMs: HERO_CACHE_TTL_MS },
     );
@@ -123,6 +143,16 @@ export class OpenDotaHeroSource implements PlayerHeroSource {
         goldPerMin: r.gold_per_min ?? null,
         xpPerMin: r.xp_per_min ?? null,
         purchase: r.purchase ?? null,
+        startedAt: r.start_time ? new Date(r.start_time * 1000) : null,
+        durationSec: r.duration ?? null,
+        won:
+          r.radiant_win === null || r.radiant_win === undefined || r.player_slot == null
+            ? null
+            : r.player_slot < 128 === r.radiant_win,
+        lastHits: r.last_hits ?? null,
+        kills: r.kills ?? null,
+        deaths: r.deaths ?? null,
+        assists: r.assists ?? null,
       });
     }
     return ok(games);
