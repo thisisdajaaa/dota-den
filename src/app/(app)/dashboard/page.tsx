@@ -25,6 +25,7 @@ import { getSessionService } from "@/modules/sessions/composition";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
+import { AchievementsSection } from "./achievements-section";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
 import { MmrPromptSection } from "./mmr-prompt-section";
 import { TiltSection } from "./tilt-section";
@@ -206,6 +207,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {/* Your all-time rank on each friends leaderboard. */}
       <Suspense fallback={<StandingSkeleton />}>
         <StandingSection user={user} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <AchievementsSection user={user} />
       </Suspense>
     </div>
   );
