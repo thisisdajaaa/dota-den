@@ -29,6 +29,7 @@ function player(playerSlot: number, partyId: number | null, partySize: number | 
     partySize,
     rankTier: null,
     benchmarks: null,
+    laning: null,
   };
 }
 
