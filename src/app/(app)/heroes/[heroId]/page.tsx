@@ -18,6 +18,7 @@ import {
   Unavailable,
   unavailableCopy,
 } from "@/modules/heroes/ui/hero-sections";
+import { ProgressCard } from "@/modules/heroes/ui/progress-card";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
 import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
@@ -146,6 +147,9 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <TrendCard trend={trend} heroLabel={name} />
+          <Suspense fallback={<SectionSkeleton label="Loading your progress" rows={4} />}>
+            <ProgressSection details={details} name={name} />
+          </Suspense>
           <Suspense fallback={<SectionSkeleton label="Loading items" rows={4} />}>
             <ItemsSection details={details} name={name} />
           </Suspense>
@@ -242,6 +246,12 @@ async function HighRankSection({
       </MetaSection>
     );
   return <HighRankCard comparison={res.value} heroLabel={name} yourGames={record.games} />;
+}
+
+async function ProgressSection({ details, name }: { details: DetailsResult; name: string }) {
+  const res = await details;
+  if (!res.ok || !res.value.progress) return null;
+  return <ProgressCard progress={res.value.progress} heroLabel={name} />;
 }
 
 async function ItemsSection({ details, name }: { details: DetailsResult; name: string }) {

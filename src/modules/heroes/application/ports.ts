@@ -22,6 +22,13 @@ export interface HeroGameExtras {
   xpPerMin: number | null;
   /** Item key → times bought; null when the replay wasn't parsed. */
   purchase: Record<string, number> | null;
+  startedAt?: Date | null;
+  durationSec?: number | null;
+  won?: boolean | null;
+  lastHits?: number | null;
+  kills?: number | null;
+  deaths?: number | null;
+  assists?: number | null;
 }
 
 /** OpenDota's per-player hero data. */

@@ -59,22 +59,61 @@ describe("OpenDotaHeroSource", () => {
 
   it("reads recent games on the hero with GPM, XPM and purchases", async () => {
     const { source, fetch } = sourceWith([
-      { match_id: 1, gold_per_min: 600, xp_per_min: 700, purchase: { bkb: 1 } },
+      {
+        match_id: 1,
+        gold_per_min: 600,
+        xp_per_min: 700,
+        purchase: { bkb: 1 },
+        start_time: 1_790_000_000,
+        duration: 1_800,
+        radiant_win: true,
+        player_slot: 130,
+        last_hits: 210,
+        kills: 7,
+        deaths: 2,
+        assists: 9,
+      },
       { match_id: 2, gold_per_min: 500, xp_per_min: null, purchase: null },
       { match_id: -1 },
     ]);
     const res = await source.recentGames(22202, 1, 100);
     expect(res).toEqual(
       ok([
-        { matchId: "1", goldPerMin: 600, xpPerMin: 700, purchase: { bkb: 1 } },
-        { matchId: "2", goldPerMin: 500, xpPerMin: null, purchase: null },
+        {
+          matchId: "1",
+          goldPerMin: 600,
+          xpPerMin: 700,
+          purchase: { bkb: 1 },
+          startedAt: new Date(1_790_000_000 * 1000),
+          durationSec: 1_800,
+          won: false, // dire slot, radiant won
+          lastHits: 210,
+          kills: 7,
+          deaths: 2,
+          assists: 9,
+        },
+        {
+          matchId: "2",
+          goldPerMin: 500,
+          xpPerMin: null,
+          purchase: null,
+          startedAt: null,
+          durationSec: null,
+          won: null,
+          lastHits: null,
+          kills: null,
+          deaths: null,
+          assists: null,
+        },
       ]),
     );
     const url = new URL(fetch.mock.calls[0][0]);
     expect(url.pathname).toBe("/api/players/22202/matches");
     expect(url.searchParams.get("hero_id")).toBe("1");
     expect(url.searchParams.get("limit")).toBe("100");
-    expect(url.searchParams.getAll("project")).toEqual(["gold_per_min", "xp_per_min", "purchase"]);
+    expect(url.searchParams.getAll("project")).toEqual(
+      expect.arrayContaining(["gold_per_min", "xp_per_min", "purchase", "last_hits", "start_time"]),
+    );
   });
 
   it("reports upstream failures instead of empty data", async () => {
