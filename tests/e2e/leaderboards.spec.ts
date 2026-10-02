@@ -190,3 +190,14 @@ test("leaderboards are for signed-in players", async ({ page }) => {
   await page.goto("/leaderboards");
   await expect(page).toHaveURL(/auth_error=signed_out/);
 });
+
+test("ranked this week lists you and your friends by wins minus losses", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await page.goto("/leaderboards");
+  const week = page.getByRole("region", { name: "Ranked this week" });
+  // Fixture: the signed-in player is 7–5 in ranked.
+  const me = week.getByRole("listitem").filter({ hasText: "(you)" });
+  await expect(me).toContainText("7–5");
+  await expect(me).toContainText("≈ +50");
+  await expect(week).toContainText("±25-per-game estimate");
+});

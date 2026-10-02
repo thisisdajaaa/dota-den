@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AlertTriangle, UserPlus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { logger } from "@/lib/logger";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { BoardView } from "@/modules/leaderboards/application/contracts";
-import { getLeaderboardService } from "@/modules/leaderboards/composition";
+import { getLeaderboardService, getRankedWeek } from "@/modules/leaderboards/composition";
 import { isPeriod, PERIODS, type Period } from "@/modules/leaderboards/domain/period";
 import {
   BOARDS,
@@ -24,7 +25,10 @@ import {
   SCOPE_LABEL,
 } from "@/modules/leaderboards/ui/copy";
 import { LeaderboardBoard } from "@/modules/leaderboards/ui/leaderboard-board";
+import { RankedWeekCard } from "@/modules/leaderboards/ui/ranked-week-card";
 import { VisibilityToggle } from "@/modules/leaderboards/ui/visibility-toggle";
+import { getHeroMap } from "@/modules/matches/composition";
+import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 
 export const metadata: Metadata = { title: "Leaderboards" };
 
@@ -65,6 +69,10 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
           </Button>
         }
       />
+
+      <Suspense fallback={<SectionSkeleton label="Loading ranked this week" rows={4} />}>
+        <RankedWeekSection viewer={{ userId: user.id, accountId32: user.accountId32 }} />
+      </Suspense>
 
       <SegmentedLinks
         label="Leaderboard"
@@ -112,4 +120,16 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
       )}
     </div>
   );
+}
+
+async function RankedWeekSection({ viewer }: { viewer: { userId: string; accountId32: number } }) {
+  const [view, heroes] = await Promise.all([
+    getRankedWeek(viewer).catch((error: unknown) => {
+      logger.warn("ranked_week_failed", { error });
+      return null;
+    }),
+    getHeroMap(),
+  ]);
+  if (!view) return null;
+  return <RankedWeekCard view={view} heroes={heroes} />;
 }
