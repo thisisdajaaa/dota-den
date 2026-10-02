@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getGuideService } from "@/modules/guides/composition";
-import { Benchmarks, ItemBuilds, ProGames } from "@/modules/guides/ui/guide-sections";
+import { Benchmarks, Counters, ItemBuilds, ProGames } from "@/modules/guides/ui/guide-sections";
 import { getHeroMap, getItemMap } from "@/modules/matches/composition";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 
@@ -53,6 +53,7 @@ export default async function HeroGuidePage({ params }: PageProps<"/guides/[hero
       </div>
 
       <ItemBuilds items={guide.items} itemMap={items} />
+      <Counters counters={guide.counters} heroes={heroes} heroLabel={name} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Benchmarks benchmarks={guide.benchmarks} />
         <ProGames games={guide.proGames} heroLabel={name} now={new Date()} />

@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
-import type { ItemInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
+import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import {
   benchLabel,
   formatBench,
   PHASES,
+  MIN_MATCHUP_GAMES,
   type Benchmark,
+  type Counter,
   type ItemPick,
   type Phase,
   type ProGame,
@@ -219,6 +222,101 @@ export function ProGames({
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+function CounterList({
+  title,
+  rows,
+  heroes,
+  good,
+}: {
+  title: string;
+  rows: Counter[];
+  heroes: Map<number, HeroInfo>;
+  good: boolean;
+}) {
+  return (
+    <div role="group" aria-label={title}>
+      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No clear matchups yet.</p>
+      ) : (
+        <ul className="space-y-1">
+          {rows.map((r) => {
+            const h = heroes.get(r.heroId);
+            return (
+              <li key={r.heroId}>
+                <Link
+                  href={`/guides/${r.heroId}`}
+                  className="group flex items-center gap-2.5 rounded-md px-1 py-1 hover:bg-white/[0.03]"
+                >
+                  <HeroPortrait hero={h} heroId={r.heroId} size="xs" />
+                  <span className="min-w-0 flex-1 truncate text-sm group-hover:text-gold">
+                    {heroName(h, r.heroId)}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm font-semibold tabular-nums",
+                      good ? "text-win" : "text-loss",
+                    )}
+                  >
+                    {(r.rate * 100).toFixed(0)}%
+                  </span>
+                  <span className="w-16 text-right text-xs text-muted-foreground tabular-nums">
+                    {r.games} games
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Who the hero beats and who beats it, in pro games. */
+export function Counters({
+  counters,
+  heroes,
+  heroLabel,
+}: {
+  counters: { strongAgainst: Counter[]; weakAgainst: Counter[] } | null;
+  heroes: Map<number, HeroInfo>;
+  heroLabel: string;
+}) {
+  return (
+    <section aria-labelledby="guide-counters" className="panel space-y-4 p-5">
+      <div>
+        <p className="kicker">Pro games</p>
+        <h2 id="guide-counters" className="text-lg font-semibold">
+          Matchups
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {heroLabel}&apos;s win rate against each hero in pro games. Only heroes with{" "}
+          {MIN_MATCHUP_GAMES}+ games count, and small samples are pulled toward 50% when ranking.
+        </p>
+      </div>
+      {!counters ? (
+        <Unavailable />
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <CounterList
+            title={`${heroLabel} is strong against`}
+            rows={counters.strongAgainst}
+            heroes={heroes}
+            good
+          />
+          <CounterList
+            title={`${heroLabel} struggles against`}
+            rows={counters.weakAgainst}
+            heroes={heroes}
+            good={false}
+          />
+        </div>
       )}
     </section>
   );

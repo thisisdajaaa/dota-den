@@ -43,3 +43,20 @@ it("counts the pro record", () => {
   const g = (won: boolean) => ({ won }) as ProGame;
   expect(proRecord([g(true), g(false), g(true)])).toEqual({ games: 3, wins: 2 });
 });
+
+import { counters } from "@/modules/guides/domain/hero-guide";
+
+describe("counters", () => {
+  it("ranks opponents by a damped win rate and ignores small samples", () => {
+    const res = counters([
+      { heroId: 1, games: 100, wins: 65 },
+      { heroId: 2, games: 10, wins: 9 }, // too few games
+      { heroId: 3, games: 30, wins: 20 },
+      { heroId: 4, games: 200, wins: 80 },
+      { heroId: 5, games: 40, wins: 20 }, // even: neither list
+    ]);
+    expect(res.strongAgainst.map((c) => c.heroId)).toEqual([1, 3]);
+    expect(res.strongAgainst[0]).toEqual({ heroId: 1, games: 100, wins: 65, rate: 0.65 });
+    expect(res.weakAgainst.map((c) => c.heroId)).toEqual([4]);
+  });
+});
