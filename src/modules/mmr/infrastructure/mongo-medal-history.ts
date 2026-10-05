@@ -1,7 +1,8 @@
 import type { Db } from "mongodb";
 import { shouldRecord, type MedalSnapshot } from "../domain/medal-history";
 
-const COLLECTION = "rank_history";
+export const MEDAL_COLLECTION = "rank_history";
+const COLLECTION = MEDAL_COLLECTION;
 
 interface MedalDoc extends MedalSnapshot {
   accountId32: number;

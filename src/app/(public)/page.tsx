@@ -112,13 +112,21 @@ async function LatestPatchCard() {
 
 export default async function LandingPage({ searchParams }: PageProps<"/">) {
   if (await getCurrentUser({ tolerateErrors: true })) redirect("/dashboard");
-  const { auth_error, bye } = await searchParams;
+  const { auth_error, bye, deleted } = await searchParams;
   const signedOut = bye === "1";
   const authError = typeof auth_error === "string" ? auth_error : null;
   const signInRequired = authError === "signed_out";
 
   return (
     <div className="space-y-20">
+      {deleted === "1" && (
+        <Alert>
+          <AlertTitle>Your account was deleted</AlertTitle>
+          <AlertDescription>
+            Everything Dota Den kept about you has been removed. Thanks for trying it.
+          </AlertDescription>
+        </Alert>
+      )}
       {signedOut && (
         <Alert>
           <AlertTitle>You&apos;re signed out of Dota Den</AlertTitle>

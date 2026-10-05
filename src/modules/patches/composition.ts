@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -16,6 +17,7 @@ import {
 } from "./infrastructure/mongo-patch-repositories";
 import { OpenDotaPatchReferenceCatalog } from "./infrastructure/opendota-reference-catalog";
 import { ValvePatchAdapter } from "./infrastructure/valve-patch-adapter";
+import * as userData from "./infrastructure/user-data";
 
 // One gateway/catalog per server instance so dedup, caches and circuit state are shared.
 const globalForPatches = globalThis as typeof globalThis & {
@@ -104,4 +106,14 @@ export async function ensurePatchesFresh(): Promise<void> {
   } catch (e) {
     logger.error("patch_refresh_error", { trigger: "lazy", error: e });
   }
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }

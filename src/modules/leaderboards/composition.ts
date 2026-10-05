@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { createHash } from "node:crypto";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
@@ -40,6 +41,7 @@ import {
   activityCountsByUser,
 } from "./infrastructure/mongo-activity-repository";
 import { bestHeroThisWeek, rankedWeekFor } from "./infrastructure/opendota-ranked-week";
+import * as userData from "./infrastructure/user-data";
 
 /** OpenDota teammates considered as friends (most games on the same team first). */
 const MAX_PEER_FRIENDS = 200;
@@ -246,4 +248,14 @@ export async function getRankedWeek(viewer: {
     unknown: ids.length - known.length + (idle.length - reallyIdle),
     friendsIncomplete: found.incomplete,
   };
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }
