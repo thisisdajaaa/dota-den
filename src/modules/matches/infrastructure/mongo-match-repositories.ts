@@ -357,6 +357,9 @@ export class MongoMatchQueries implements MatchQueries {
             heroId: 1,
             result: 1,
             "queue.queueClass": 1,
+            kills: 1,
+            deaths: 1,
+            assists: 1,
           },
           limit: 20_000,
         },
@@ -368,6 +371,9 @@ export class MongoMatchQueries implements MatchQueries {
       heroId: d.heroId,
       result: d.result,
       queueClass: d.queue.queueClass,
+      kills: d.kills,
+      deaths: d.deaths,
+      assists: d.assists,
     }));
   }
 

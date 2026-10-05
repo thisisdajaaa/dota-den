@@ -104,6 +104,9 @@ export interface RankedResultRow {
   heroId: number;
   result: "win" | "loss";
   queueClass: "solo" | "party" | "unknown";
+  kills?: number;
+  deaths?: number;
+  assists?: number;
 }
 
 export interface MatchListPage {

@@ -6,12 +6,9 @@ import type { HeroPatchNotes } from "../domain/patch";
 import { steamCdn } from "./cdn";
 import { NoteList } from "./note-list";
 
-export interface HeroCohort {
-  before: { games: number; wins: number };
-  after: { games: number; wins: number };
-}
+import { kdaOf, MIN_COHORT_GAMES as MIN_COHORT, type HeroCohort } from "../domain/digest";
 
-const MIN_COHORT = 5;
+export type { HeroCohort };
 
 function Cohort({ cohort }: { cohort: HeroCohort }) {
   const rate = (c: { games: number; wins: number }) => (c.games ? c.wins / c.games : null);
@@ -25,14 +22,18 @@ function Cohort({ cohort }: { cohort: HeroCohort }) {
           <div className="text-base font-semibold tabular-nums">
             {formatPercent(rate(cohort.before))}
           </div>
-          <div className="text-muted-foreground">{cohort.before.games} games</div>
+          <div className="text-muted-foreground">
+            {cohort.before.games} games · KDA {kdaOf(cohort.before)?.toFixed(2) ?? "—"}
+          </div>
         </div>
         <div>
           <div className="text-muted-foreground">Since this patch</div>
           <div className="text-base font-semibold tabular-nums">
             {formatPercent(rate(cohort.after))}
           </div>
-          <div className="text-muted-foreground">{cohort.after.games} games</div>
+          <div className="text-muted-foreground">
+            {cohort.after.games} games · KDA {kdaOf(cohort.after)?.toFixed(2) ?? "—"}
+          </div>
         </div>
       </div>
       <p className="mt-2 text-muted-foreground">

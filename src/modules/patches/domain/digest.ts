@@ -5,13 +5,23 @@
 import type { HeroPatchNotes, Patch } from "./patch";
 
 /** Games on each side before a before/since comparison is shown. */
-export const MIN_COHORT_GAMES = 5;
+/** Games needed on each side of a patch before comparing them. */
+export const MIN_COHORT_GAMES = 10;
 /** How far before and after the patch the comparison looks. */
 export const COHORT_WINDOW_MS = 30 * 86_400_000;
 
 export interface Record {
   games: number;
   wins: number;
+  /** Kills, deaths and assists summed (for KDA), when the games carry them. */
+  kills: number;
+  deaths: number;
+  assists: number;
+}
+
+/** (Kills + assists) / deaths over a record; null without games. */
+export function kdaOf(r: Record): number | null {
+  return r.games ? (r.kills + r.assists) / Math.max(1, r.deaths) : null;
 }
 
 export interface HeroCohort {
@@ -39,16 +49,27 @@ export interface PatchDigest {
 
 /** Your ranked record on a hero in the windows before and since `released`. */
 export function heroCohort(
-  results: readonly { heroId: number; startedAt: Date; result: "win" | "loss" }[],
+  results: readonly {
+    heroId: number;
+    startedAt: Date;
+    result: "win" | "loss";
+    kills?: number;
+    deaths?: number;
+    assists?: number;
+  }[],
   heroId: number,
   released: Date,
 ): HeroCohort {
-  const cohort: HeroCohort = { before: { games: 0, wins: 0 }, after: { games: 0, wins: 0 } };
+  const empty = () => ({ games: 0, wins: 0, kills: 0, deaths: 0, assists: 0 });
+  const cohort: HeroCohort = { before: empty(), after: empty() };
   for (const m of results) {
     if (m.heroId !== heroId) continue;
     const side = m.startedAt.getTime() < released.getTime() ? cohort.before : cohort.after;
     side.games++;
     if (m.result === "win") side.wins++;
+    side.kills += m.kills ?? 0;
+    side.deaths += m.deaths ?? 0;
+    side.assists += m.assists ?? 0;
   }
   return cohort;
 }
