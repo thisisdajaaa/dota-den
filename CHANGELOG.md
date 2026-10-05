@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-05
+
+- Images straight from the CDN (fixes #1)
+
 ## 2026-10-03
 
 - Your build vs the pros
