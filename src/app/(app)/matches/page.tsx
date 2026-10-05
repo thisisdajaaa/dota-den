@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ChevronRight, SearchX } from "lucide-react";
+import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
+import { getMatchIdsWithTag, getTagCounts } from "@/modules/annotations/composition";
 import { getDraftRecord } from "@/modules/drafts/composition";
 import { DraftRecordCard } from "@/modules/drafts/ui/draft-record-card";
 import { getCurrentUser } from "@/modules/identity/composition";
@@ -31,8 +33,12 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
   const now = new Date();
 
   const queries = await getMatchQueries();
+  const [tagged, tags] = await Promise.all([
+    filter.tag ? getMatchIdsWithTag(user.id, filter.tag).catch(() => []) : undefined,
+    getTagCounts(user.id).catch(() => []),
+  ]);
   const [page, played, heroes] = await Promise.all([
-    queries.listMatches(user.accountId32, filter, now, PAGE_SIZE),
+    queries.listMatches(user.accountId32, filter, now, PAGE_SIZE, tagged),
     queries.playedHeroes(user.accountId32),
     getHeroMap(),
   ]);
@@ -56,7 +62,8 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
     filter.mode !== "all" ||
     filter.queue !== "all" ||
     filter.result !== "all" ||
-    filter.hero !== undefined;
+    filter.hero !== undefined ||
+    filter.tag !== undefined;
 
   return (
     <div className="space-y-6">
@@ -120,6 +127,30 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
           </Link>
         )}
       </div>
+
+      {tags.length > 0 && (
+        <nav aria-label="Your tags" className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs text-muted-foreground">Your tags:</span>
+          {tags.map((t) => {
+            const active = filter.tag === t.tag;
+            return (
+              <Link
+                key={t.tag}
+                href={withFilter({ tag: active ? undefined : t.tag })}
+                aria-current={active ? "true" : undefined}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs",
+                  active
+                    ? "border-gold/50 bg-gold/15 text-gold"
+                    : "border-white/10 text-muted-foreground hover:border-gold/40 hover:text-gold",
+                )}
+              >
+                {t.tag} <span className="tabular-nums opacity-70">{t.matches}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       <Suspense fallback={null}>
         <DraftRecordSection accountId32={user.accountId32} />

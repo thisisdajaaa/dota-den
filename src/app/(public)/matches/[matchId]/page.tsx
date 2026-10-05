@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Clock, Info } from "lucide-react";
 import { cn } from "cn";
 import { LocalTime } from "@/components/local-time";
+import { getMatchAnnotation } from "@/modules/annotations/composition";
+import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
 import { getAiOpponent } from "@/modules/drafts/composition";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { getCurrentUser } from "@/modules/identity/composition";
@@ -207,6 +209,12 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         />
       </Suspense>
 
+      {me && viewer && (
+        <Suspense fallback={null}>
+          <NotesSection userId={viewer.id} matchId={match.matchId} />
+        </Suspense>
+      )}
+
       <LaningCard
         matchId={match.matchId}
         players={match.players}
@@ -294,5 +302,12 @@ async function MatchDraftSection({
           : `${name(winner)} won.`
       }
     />
+  );
+}
+
+async function NotesSection({ userId, matchId }: { userId: string; matchId: string }) {
+  const a = await getMatchAnnotation(userId, matchId).catch(() => null);
+  return (
+    <MatchNotesCard matchId={matchId} initialTags={a?.tags ?? []} initialNote={a?.note ?? ""} />
   );
 }
