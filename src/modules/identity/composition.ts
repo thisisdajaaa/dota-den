@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { cookies } from "next/headers";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -14,6 +15,7 @@ import {
   MongoUserRepository,
   adminUserRows,
 } from "./infrastructure/mongo-identity-repositories";
+import * as userData from "./infrastructure/user-data";
 
 export const SESSION_COOKIE = "dd_session";
 export const STATE_COOKIE = "dd_oid_state";
@@ -109,4 +111,14 @@ export async function setProfileVisibility(
 /** Admin overview: every user with session counts and last activity. */
 export async function getAdminUserRows() {
   return adminUserRows(await getDb());
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }

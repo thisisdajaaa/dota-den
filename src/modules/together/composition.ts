@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { getDb } from "@/lib/db/mongo";
 import { logger } from "@/lib/logger";
 import {
@@ -40,6 +41,7 @@ import {
   teammateStats,
   type TeammateStat,
 } from "./domain/teammates";
+import * as userData from "./infrastructure/user-data";
 
 /** Shared matches considered per friend (OpenDota's most recent, one upstream call). */
 export const SHARED_MATCH_LIMIT = 100;
@@ -227,4 +229,14 @@ export async function getTeammatesOverview(user: {
     queueMix: recentQueueMix(own.facts),
     overall,
   });
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }

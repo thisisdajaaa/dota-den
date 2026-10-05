@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -19,6 +20,7 @@ import type { PlayerDirectory, ProviderError } from "./application/ports";
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "./domain/public-player";
 import { MongoFollowRepository } from "./infrastructure/mongo-follow-repository";
 import { OpenDotaPlayerDirectory, steamAvatar } from "./infrastructure/opendota-player-directory";
+import * as userData from "./infrastructure/user-data";
 
 /** Tracked players rendered per page: each costs up to two (cached) upstream calls. */
 export const TRACKED_PAGE_SIZE = 20;
@@ -145,4 +147,14 @@ export async function getTrackedPlayers(owner: FollowOwner, page = 1): Promise<T
     };
   });
   return { items, total: follows.length, page: current, pageCount };
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }

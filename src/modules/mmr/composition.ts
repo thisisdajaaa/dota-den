@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
@@ -11,6 +12,7 @@ import {
   MongoMmrEntryRepository,
   mmrEntryCountsByUser,
 } from "./infrastructure/mongo-mmr-repository";
+import * as userData from "./infrastructure/user-data";
 
 export const TZ_COOKIE = "dd_tz";
 
@@ -54,4 +56,14 @@ export async function recordMedal(accountId32: number, rankTier: number | null):
 /** Medal sightings, oldest first. */
 export async function getMedalHistory(accountId32: number) {
   return medalHistory(await getDb(), accountId32);
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }

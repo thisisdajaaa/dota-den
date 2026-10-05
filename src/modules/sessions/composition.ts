@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import type { DashboardFact } from "@/modules/matches/application/ports";
@@ -10,6 +11,7 @@ import {
   MongoSessionNoteRepository,
   MongoSessionSettingsRepository,
 } from "./infrastructure/mongo-session-repositories";
+import * as userData from "./infrastructure/user-data";
 
 /**
  * Sessions read other contexts only through their query services: imported matches from
@@ -42,4 +44,14 @@ export async function getSessionService(): Promise<SessionService<DashboardFact>
     settings: new MongoSessionSettingsRepository(db),
     defaultGapMinutes: env().SESSION_DEFAULT_GAP_MINUTES,
   });
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }
