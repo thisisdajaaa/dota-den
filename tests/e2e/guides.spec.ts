@@ -51,3 +51,10 @@ test("unknown and malformed heroes show not found", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Hero not found" })).toBeVisible();
   }
 });
+
+test("images load straight from the CDN, not through the image optimizer", async ({ page }) => {
+  await page.goto("/guides");
+  const src = await page.locator("img").first().getAttribute("src");
+  expect(src).toMatch(/^https:\/\/cdn\.cloudflare\.steamstatic\.com\//);
+  expect(await page.locator('img[src*="/_next/image"]').count()).toBe(0);
+});
