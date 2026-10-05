@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   // Keep the dev-mode badge away from the sidebar's account chip.
   devIndicators: { position: "bottom-right" },
   images: {
+    // Served straight from Valve's and Steam's CDNs, which already send small, cached
+    // images. Vercel's optimizer added nothing but a monthly quota: when it ran out, every
+    // image failed with 402 (issue #1).
+    unoptimized: true,
     // Hotlinked from Valve/Steam CDNs, not rehosted (spec §10 legal note).
     remotePatterns: [
       { protocol: "https", hostname: "cdn.cloudflare.steamstatic.com", pathname: "/apps/dota2/**" },
