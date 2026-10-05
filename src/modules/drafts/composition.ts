@@ -21,6 +21,8 @@ import { OpenDotaAbilityCatalog } from "./infrastructure/opendota-ability-catalo
 import { MongoDraftRoomRepository } from "./infrastructure/mongo-draft-rooms";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
 import type { DraftHero } from "./ui/types";
+import { draftRecord, type DraftRecord } from "./domain/draft-record";
+import { findDraftReads, rankedLineups, saveDraftRead } from "./infrastructure/match-draft-reads";
 
 async function scoringHeroes(): Promise<AiHero[]> {
   return [...(await getHeroMap()).values()].map((h) => ({
@@ -190,4 +192,52 @@ export async function getDraftHeroes(): Promise<DraftHero[]> {
 /** Admin overview: finished room drafts per captain. */
 export async function getRoomDraftCounts(userIds: readonly string[]) {
   return roomDraftCountsByUser(await getDb(), userIds);
+}
+
+/** Ranked games looked at, and new games graded per request (each costs matchup lookups). */
+const DRAFT_RECORD_GAMES = 30;
+const DRAFT_RECORD_NEW_PER_VIEW = 6;
+
+export interface DraftRecordView {
+  record: DraftRecord;
+  /** Recent ranked games with full lineups. */
+  total: number;
+  accuracy: number;
+}
+
+/**
+ * Your recent ranked games graded by the draft outlook. Grades are saved per match and
+ * filled a few at a time, so the first views show a partial count. Null when OpenDota
+ * can't be read.
+ */
+export async function getDraftRecord(accountId32: number): Promise<DraftRecordView | null> {
+  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
+  const lineups = await rankedLineups(
+    openDotaGateway(),
+    { baseUrl: OPENDOTA_BASE_URL ?? "https://api.opendota.com/api", apiKey: OPENDOTA_API_KEY },
+    accountId32,
+    DRAFT_RECORD_GAMES,
+  );
+  if (!lineups) return null;
+  const db = await getDb();
+  const saved = await findDraftReads(
+    db,
+    lineups.map((l) => l.matchId),
+  );
+  const ai = await getAiOpponent();
+  const missing = lineups.filter((l) => !saved.has(l.matchId)).slice(0, DRAFT_RECORD_NEW_PER_VIEW);
+  let accuracy = 0.57;
+  for (const l of missing) {
+    const outlook = await ai.outlookForHeroes(l.radiant, l.dire).catch(() => null);
+    if (!outlook || outlook.radiantPct === null) continue;
+    accuracy = outlook.accuracy.fitted;
+    saved.set(l.matchId, outlook.radiantPct);
+    await saveDraftRead(db, l.matchId, outlook.radiantPct).catch(() => {});
+  }
+  const graded = lineups.flatMap((l) =>
+    saved.has(l.matchId)
+      ? [{ yourSide: l.yourSide, won: l.won, radiantPct: saved.get(l.matchId)! }]
+      : [],
+  );
+  return { record: draftRecord(graded), total: lineups.length, accuracy };
 }
