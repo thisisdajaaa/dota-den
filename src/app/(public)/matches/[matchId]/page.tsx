@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Clock, Info } from "lucide-react";
 import { cn } from "cn";
 import { LocalTime } from "@/components/local-time";
+import { getAiOpponent } from "@/modules/drafts/composition";
+import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap, getItemMap, getOpenDotaAdapter } from "@/modules/matches/composition";
 import { partyGroups } from "@/modules/matches/domain/match-detail";
@@ -196,6 +199,14 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         hrefFor={(slot) => `/matches/${match.matchId}?p=${slot}#performance`}
       />
 
+      <Suspense fallback={null}>
+        <MatchDraftSection
+          radiant={radiant.map((p) => p.heroId)}
+          dire={dire.map((p) => p.heroId)}
+          radiantWin={match.radiantWin}
+        />
+      </Suspense>
+
       <LaningCard
         matchId={match.matchId}
         players={match.players}
@@ -254,5 +265,34 @@ function BackLink({ signedIn }: { signedIn: boolean }) {
       <ArrowLeft aria-hidden className="size-4" />
       {signedIn ? "Back to dashboard" : "Home"}
     </Link>
+  );
+}
+
+async function MatchDraftSection({
+  radiant,
+  dire,
+  radiantWin,
+}: {
+  radiant: number[];
+  dire: number[];
+  radiantWin: boolean;
+}) {
+  if (radiant.length !== 5 || dire.length !== 5) return null;
+  const outlook = await (await getAiOpponent()).outlookForHeroes(radiant, dire).catch(() => null);
+  if (!outlook || outlook.radiantPct === null) return null;
+  const name = (s: "radiant" | "dire") => (s === "radiant" ? "Radiant" : "Dire");
+  const winner = radiantWin ? "radiant" : "dire";
+  return (
+    <DraftRead
+      outlook={outlook}
+      name={name}
+      outcome={(favoured) =>
+        favoured
+          ? favoured === winner
+            ? `${name(winner)} won, as the draft suggested.`
+            : `${name(winner)} won despite the draft.`
+          : `${name(winner)} won.`
+      }
+    />
   );
 }
