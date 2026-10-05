@@ -30,6 +30,7 @@ const ENABLED: readonly NavKey[] = [
   "draft",
   "live",
   "leaderboards",
+  "account",
 ];
 
 /** Admins also get the Admin page in their navigation. */

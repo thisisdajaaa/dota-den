@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { randomInt } from "node:crypto";
 import type { Db } from "mongodb";
 import { getDb } from "@/lib/db/mongo";
@@ -23,6 +24,7 @@ import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights"
 import type { DraftHero } from "./ui/types";
 import { draftRecord, type DraftRecord } from "./domain/draft-record";
 import { findDraftReads, rankedLineups, saveDraftRead } from "./infrastructure/match-draft-reads";
+import * as userData from "./infrastructure/user-data";
 
 async function scoringHeroes(): Promise<AiHero[]> {
   return [...(await getHeroMap()).values()].map((h) => ({
@@ -240,4 +242,14 @@ export async function getDraftRecord(accountId32: number): Promise<DraftRecordVi
       : [],
   );
   return { record: draftRecord(graded), total: lineups.length, accuracy };
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }

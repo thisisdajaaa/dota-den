@@ -1,4 +1,5 @@
 import "server-only";
+import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import { getDb } from "@/lib/db/mongo";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -21,6 +22,7 @@ import {
   MongoSyncStateRepository,
   matchStatsByAccount,
 } from "./infrastructure/mongo-match-repositories";
+import * as userData from "./infrastructure/user-data";
 
 // One gateway per server instance so dedup, cache and circuit state are shared.
 const globalForGateway = globalThis as typeof globalThis & { __ddOpenDota?: ProviderGateway };
@@ -138,4 +140,14 @@ export async function getPublicRecentMatches(
 /** Admin overview: imported matches and sync state per account. */
 export async function getMatchStatsByAccount(accountIds: readonly number[]) {
   return matchStatsByAccount(await getDb(), accountIds);
+}
+
+/** Your data in this part of the app, for "Download your data". */
+export async function exportMyData(owner: DataOwner) {
+  return userData.exportUserData(await getDb(), owner);
+}
+
+/** Deletes (or, where shared with others, anonymises) your data here. Returns counts. */
+export async function deleteMyData(owner: DataOwner) {
+  return userData.deleteUserData(await getDb(), owner);
 }
