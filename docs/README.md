@@ -8,6 +8,8 @@
 | [Draft engine](draft-engine.md)   | Rulesets, positions, lanes, scoring, outlook, report card, calibration, AI captain and review |
 | [Data sources](data-sources.md)   | OpenDota endpoints and explorer queries, Valve feed, Groq, keys and limits                    |
 | [Operations](operations.md)       | Deploys, cron, indexes, secrets, troubleshooting                                              |
+| [Roadmap](roadmap.md)             | What we could build next, by priority, linked to GitHub issues                                |
+| [Changelog](../CHANGELOG.md)      | Every production release, newest first                                                        |
 
 ## Decisions (ADRs)
 

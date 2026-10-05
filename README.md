@@ -9,7 +9,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-driver-47a248?logo=mongodb&logoColor=white)
 
-[Production](https://dota-den.vercel.app) · [Staging](https://dota-den-develop.vercel.app) · [Docs](docs/README.md) · [Decisions (ADRs)](docs/adr)
+[Production](https://dota-den.vercel.app) · [Staging](https://dota-den-develop.vercel.app) · [Docs](docs/README.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Decisions (ADRs)](docs/adr)
 
 </div>
 
