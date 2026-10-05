@@ -7,6 +7,7 @@ import {
   BookOpenText,
   CalendarRange,
   Ellipsis,
+  FileChartColumn,
   GraduationCap,
   History,
   LayoutDashboard,
@@ -29,6 +30,7 @@ export type NavKey =
   | "heroes"
   | "mmr"
   | "sessions"
+  | "report"
   | "together"
   | "meta"
   | "guides"
@@ -46,6 +48,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "heroes", href: "/heroes", label: "Heroes", icon: Shield, auth: true },
     { key: "mmr", href: "/mmr", label: "MMR journal", icon: CalendarRange, auth: true },
     { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
+    { key: "report", href: "/report", label: "Battle report", icon: FileChartColumn, auth: true },
     { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
     { key: "meta", href: "/meta", label: "Meta", icon: TrendingUp, auth: false },
     { key: "guides", href: "/guides", label: "Guides", icon: GraduationCap, auth: false },
