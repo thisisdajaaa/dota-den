@@ -104,6 +104,9 @@ export interface RankedResultRow {
   heroId: number;
   result: "win" | "loss";
   queueClass: "solo" | "party" | "unknown";
+  kills?: number;
+  deaths?: number;
+  assists?: number;
 }
 
 export interface MatchListPage {
@@ -126,6 +129,8 @@ export interface MatchQueries {
     filter: MatchListFilter,
     now: Date,
     limit: number,
+    /** Only these matches (e.g. the ones you tagged); undefined for all. */
+    onlyMatchIds?: readonly string[],
   ): Promise<MatchListPage>;
   /** Ranked results in a time range (for the MMR calendar). */
   rankedResults(accountId32: number, range: { from: Date; to: Date }): Promise<RankedResultRow[]>;

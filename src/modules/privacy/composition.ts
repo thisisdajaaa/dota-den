@@ -1,5 +1,6 @@
 import "server-only";
 import { logger } from "@/lib/logger";
+import * as annotations from "@/modules/annotations/composition";
 import * as drafts from "@/modules/drafts/composition";
 import * as identity from "@/modules/identity/composition";
 import * as leaderboards from "@/modules/leaderboards/composition";
@@ -12,7 +13,17 @@ import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
 import * as together from "@/modules/together/composition";
 
 /** Every part of the app that keeps data about a player. Identity goes last on delete. */
-const PARTS = [mmr, sessions, players, patches, leaderboards, drafts, matches, together];
+const PARTS = [
+  mmr,
+  sessions,
+  players,
+  patches,
+  leaderboards,
+  drafts,
+  matches,
+  together,
+  annotations,
+];
 
 /** Everything Dota Den keeps about you, as one JSON-ready object. */
 export async function exportAllMyData(owner: DataOwner) {

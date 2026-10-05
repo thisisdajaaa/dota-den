@@ -250,3 +250,35 @@ test("your real ranked drafts are graded: per match and over recent games", asyn
   ).toBeVisible();
   await expect(draft).toContainText(/(Radiant|Dire) won/);
 });
+
+test("tag your matches, add a note, and filter by tag", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.goto("/matches/7000000011");
+  const notes = page.getByRole("region", { name: "Your notes" });
+  await notes.getByRole("button", { name: "+ tilted" }).click();
+  await notes.getByLabel("Add a tag").fill("Mid Diff!");
+  await notes.getByRole("button", { name: "Add", exact: true }).click();
+  await notes.getByLabel("Note").fill("Lost mid; try an earlier Mek");
+  await notes.getByRole("button", { name: "Save" }).click();
+  await expect(notes.getByRole("button", { name: "Saved" })).toBeDisabled();
+
+  await page.reload();
+  const again = page.getByRole("region", { name: "Your notes" });
+  await expect(again.getByLabel("Tags on this match")).toContainText("tilted");
+  await expect(again.getByLabel("Tags on this match")).toContainText("mid diff");
+  await expect(again.getByLabel("Note")).toHaveValue("Lost mid; try an earlier Mek");
+
+  await page.goto("/matches");
+  const tags = page.getByRole("navigation", { name: "Your tags" });
+  await tags.getByRole("link", { name: /tilted/ }).click();
+  await expect(page).toHaveURL(/\/matches\?tag=tilted$/);
+  await expect(
+    page.getByRole("region", { name: "Matches" }).locator('a[href^="/matches/"]'),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("region", { name: "Matches" }).locator('a[href="/matches/7000000011"]'),
+  ).toBeVisible();
+});

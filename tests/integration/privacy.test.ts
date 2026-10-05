@@ -1,5 +1,6 @@
 import { ObjectId, type Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import * as annotations from "@/modules/annotations/infrastructure/mongo-annotations";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
 import * as identity from "@/modules/identity/infrastructure/user-data";
 import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
@@ -18,7 +19,18 @@ beforeAll(async () => {
 });
 afterAll(async () => teardown?.());
 
-const PARTS = [mmr, sessions, players, patches, leaderboards, drafts, matches, together, identity];
+const PARTS = [
+  mmr,
+  sessions,
+  players,
+  patches,
+  leaderboards,
+  drafts,
+  matches,
+  together,
+  annotations,
+  identity,
+];
 
 async function seed(userId: ObjectId, accountId32: number, friendAccount: number) {
   const u = userId.toHexString();

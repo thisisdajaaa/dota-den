@@ -280,6 +280,7 @@ export class MongoMatchQueries implements MatchQueries {
     filter: MatchListFilter,
     now: Date,
     limit: number,
+    onlyMatchIds?: readonly string[],
   ): Promise<MatchListPage> {
     const latestPatch = await this.latestPatch(accountId32);
     // Only allow-listed, typed values reach the query (no user-controlled operators).
@@ -290,6 +291,7 @@ export class MongoMatchQueries implements MatchQueries {
     if (filter.range === "patch") base["patch.patch"] = latestPatch;
     if (filter.queue !== "all") base["queue.queueClass"] = filter.queue;
     if (filter.hero !== undefined) base.heroId = filter.hero;
+    if (onlyMatchIds) base.matchId = { $in: [...onlyMatchIds] };
     // The record ignores the result filter; the list and its count apply it.
     const listed: Record<string, unknown> =
       filter.result === "all" ? base : { ...base, result: filter.result };
@@ -357,6 +359,9 @@ export class MongoMatchQueries implements MatchQueries {
             heroId: 1,
             result: 1,
             "queue.queueClass": 1,
+            kills: 1,
+            deaths: 1,
+            assists: 1,
           },
           limit: 20_000,
         },
@@ -368,6 +373,9 @@ export class MongoMatchQueries implements MatchQueries {
       heroId: d.heroId,
       result: d.result,
       queueClass: d.queue.queueClass,
+      kills: d.kills,
+      deaths: d.deaths,
+      assists: d.assists,
     }));
   }
 

@@ -5,7 +5,7 @@ import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
-import { type PatchDigest, type Record } from "@/modules/patches/domain/digest";
+import { kdaOf, type PatchDigest, type Record } from "@/modules/patches/domain/digest";
 import { getLatestPatchDigest } from "@/modules/patches/patch-digest";
 
 export function PatchDigestSkeleton() {
@@ -92,7 +92,8 @@ export async function PatchDigestSection({ user }: { user: User }) {
                         <span className={h.delta >= 0 ? "text-win" : "text-loss"}>
                           {formatPercent(rate(after))}
                         </span>{" "}
-                        ({before.games} before, {after.games} since)
+                        ({before.games} before, {after.games} since) · KDA{" "}
+                        {kdaOf(before)?.toFixed(1)} → {kdaOf(after)?.toFixed(1)}
                       </>
                     )}
                   </p>

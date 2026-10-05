@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { heroCohort, MIN_COHORT_GAMES, patchDigest } from "@/modules/patches/domain/digest";
+import { heroCohort, kdaOf, MIN_COHORT_GAMES, patchDigest } from "@/modules/patches/domain/digest";
 
 const released = new Date("2026-09-01T00:00:00Z");
 const game = (heroId: number, daysFromRelease: number, win: boolean) => ({
   heroId,
   startedAt: new Date(released.getTime() + daysFromRelease * 86_400_000),
   result: (win ? "win" : "loss") as "win" | "loss",
+  kills: 4,
+  deaths: 2,
+  assists: 6,
 });
 const note = (text: string) => ({ text, indentLevel: 1, info: null, aghanims: null });
 const patch = {
@@ -41,7 +44,11 @@ describe("heroCohort", () => {
       1,
       released,
     );
-    expect(c).toEqual({ before: { games: 2, wins: 1 }, after: { games: 1, wins: 1 } });
+    expect(c).toEqual({
+      before: { games: 2, wins: 1, kills: 8, deaths: 4, assists: 12 },
+      after: { games: 1, wins: 1, kills: 4, deaths: 2, assists: 6 },
+    });
+    expect(kdaOf(c.before)).toBe(5);
   });
 });
 
@@ -57,7 +64,7 @@ describe("patchDigest", () => {
     const [one, two] = d.heroes;
     expect(one.highlights).toEqual(["Base armor increased by 1", "Blink: Cooldown reduced"]);
     expect(one.noteCount).toBe(3);
-    expect(one.delta).toBeCloseTo(4 / 5 - 2 / 5);
+    expect(one.delta).toBeCloseTo(4 / MIN_COHORT_GAMES - 2 / MIN_COHORT_GAMES);
     // One game before and none since: never a comparison.
     expect(two.delta).toBeNull();
   });

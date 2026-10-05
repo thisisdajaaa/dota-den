@@ -7,6 +7,12 @@ export const MatchListFilterSchema = z.object({
   queue: z.enum(["all", "solo", "party", "unknown"]).catch("all"),
   result: z.enum(["all", "win", "loss"]).catch("all"),
   hero: z.coerce.number().int().min(1).max(1000).optional().catch(undefined),
+  /** One of your match tags (normalized: lower case letters, digits, spaces, dashes). */
+  tag: z
+    .string()
+    .regex(/^[\p{L}\p{N} -]{1,20}$/u)
+    .optional()
+    .catch(undefined),
   cursor: z
     .string()
     .regex(/^\d{10,15}_\d{1,20}$/)
@@ -26,6 +32,7 @@ export function parseMatchListFilter(
     queue: first(params.queue),
     result: first(params.result),
     hero: first(params.hero),
+    tag: first(params.tag),
     cursor: first(params.cursor),
   });
 }
@@ -38,6 +45,7 @@ export function matchListHref(filter: Partial<MatchListFilter>, base = "/matches
   if (filter.queue && filter.queue !== "all") params.set("queue", filter.queue);
   if (filter.result && filter.result !== "all") params.set("result", filter.result);
   if (filter.hero) params.set("hero", String(filter.hero));
+  if (filter.tag) params.set("tag", filter.tag);
   if (filter.cursor) params.set("cursor", filter.cursor);
   const qs = params.toString();
   return qs ? `${base}?${qs}` : base;
