@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ChevronRight, SearchX } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
+import { getDraftRecord } from "@/modules/drafts/composition";
+import { DraftRecordCard } from "@/modules/drafts/ui/draft-record-card";
 import { getCurrentUser } from "@/modules/identity/composition";
 import {
   matchListHref,
@@ -118,6 +121,10 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
         )}
       </div>
 
+      <Suspense fallback={null}>
+        <DraftRecordSection accountId32={user.accountId32} />
+      </Suspense>
+
       <section
         className="panel grid grid-cols-1 gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center"
         aria-label="Filtered totals"
@@ -188,4 +195,10 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
       )}
     </div>
   );
+}
+
+async function DraftRecordSection({ accountId32 }: { accountId32: number }) {
+  const view = await getDraftRecord(accountId32).catch(() => null);
+  if (!view || view.record.graded === 0) return null;
+  return <DraftRecordCard view={view} />;
 }

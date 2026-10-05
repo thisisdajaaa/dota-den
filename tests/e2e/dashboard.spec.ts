@@ -231,3 +231,22 @@ test("the overview shows achievements from your own games", async ({ page }) => 
   await expect(ach.getByRole("listitem", { name: /^Veteran/ })).toContainText("12 / 100");
   await expect(ach).toContainText(/\d+ of \d+ tiers/);
 });
+
+test("your real ranked drafts are graded: per match and over recent games", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.goto("/matches");
+  const card = page.getByRole("region", { name: "Did the draft decide it?" });
+  await expect(card).toContainText("Your last 12 ranked games");
+  await expect(card).toContainText("Draft favoured you");
+  await expect(card).toContainText("a tendency, not a verdict");
+
+  await page.goto("/matches/7000000012");
+  const draft = page.getByRole("region", { name: "The draft" });
+  await expect(
+    draft.getByRole("img", { name: /Estimated win chance from the draft/ }),
+  ).toBeVisible();
+  await expect(draft).toContainText(/(Radiant|Dire) won/);
+});

@@ -47,6 +47,17 @@ const MATCHES = Array.from({ length: 12 }, (_, i) => ({
   // every game, Manta in four, BKB in two; consumables and components are filtered out.
   purchase: AM_PURCHASES[i] ?? null,
 }));
+// Both lineups per match (for draft grading): distinct fixture heroes, the player's own hero
+// in their slot.
+for (const m of MATCHES) {
+  const slots = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132];
+  m.heroes = Object.fromEntries(
+    slots.map((slot, k) => [
+      String(slot),
+      { hero_id: slot === m.player_slot ? m.hero_id : 100 + k },
+    ]),
+  );
+}
 
 function player(slot, extra = {}) {
   return {
