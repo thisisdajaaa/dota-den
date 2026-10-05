@@ -3,6 +3,7 @@
  * Usage: npm run db:indexes  (reads MONGODB_URI / MONGODB_DB_NAME from the environment)
  */
 import { getDb, getMongoClient } from "@/lib/db/mongo";
+import { ensureAnnotationIndexes } from "@/modules/annotations/infrastructure/mongo-annotations";
 import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo-draft-history";
 import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import { ensureMatchDraftReadIndexes } from "@/modules/drafts/infrastructure/match-draft-reads";
@@ -23,6 +24,7 @@ import { ensureTogetherIndexes } from "@/modules/together/infrastructure/mongo-t
 async function main(): Promise<void> {
   const db = await getDb();
   await ensureDraftMetaCacheIndexes(db);
+  await ensureAnnotationIndexes(db);
   await ensureIdentityIndexes(db);
   await ensureErrorIndexes(db);
   await ensureJobIndexes(db);
