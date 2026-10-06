@@ -19,7 +19,14 @@ describe("MmrEntryDialog", () => {
   });
 
   it("reads the MMR from a screenshot into the box, for you to check before saving", async () => {
-    const fetch = vi.fn(async () => Response.json({ mmr: 5420, seen: "next to the medal" }));
+    const fetch = vi.fn(async () =>
+      Response.json({
+        success: true,
+        message: "OK",
+        statusCode: 200,
+        data: { mmr: 5420, seen: "next to the medal" },
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
     render(<MmrEntryDialog canReadScreenshots />);
     fireEvent.click(screen.getByRole("button", { name: "Log MMR" }));
@@ -42,7 +49,14 @@ describe("MmrEntryDialog", () => {
   it("says so when no MMR is found, and hides the option without the AI provider", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => Response.json({ mmr: null, seen: null })),
+      vi.fn(async () =>
+        Response.json({
+          success: true,
+          message: "OK",
+          statusCode: 200,
+          data: { mmr: null, seen: null },
+        }),
+      ),
     );
     const { unmount } = render(<MmrEntryDialog canReadScreenshots />);
     fireEvent.click(screen.getByRole("button", { name: "Log MMR" }));
