@@ -79,7 +79,7 @@ export const rankedWeekService = new RankedWeekService({
     recordFor: (id) => rankedWeekFor(openDotaGateway(), openDotaConfig(), id),
     bestHero: (id) => bestHeroThisWeek(openDotaGateway(), openDotaConfig(), id),
   },
-  profiles: playersService,
+  profiles: { publicProfile: (id) => playersService.publicProfile(id) },
 });
 
 export const leaderboardsController = new LeaderboardsController({ activity: activityService });

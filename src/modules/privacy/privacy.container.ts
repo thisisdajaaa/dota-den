@@ -1,5 +1,6 @@
 import "server-only";
 import { logger } from "@/common/logging/logger";
+import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
 import { draftsPrivacy } from "@/modules/drafts";
 import { goalsService } from "@/modules/goals";
@@ -15,22 +16,25 @@ import { togetherService } from "@/modules/together";
 import { PrivacyController } from "./privacy.controller";
 import { PrivacyService } from "./privacy.service";
 
-export const privacyService = new PrivacyService({
-  parts: [
-    mmrJournalService,
-    sessionService,
-    followService,
-    patchWatchlistService,
-    activityService,
-    draftsPrivacy,
-    matchesService,
-    togetherService,
-    annotationsService,
-    goalsService,
-    battleReportService,
-  ],
-  identity: usersService,
-  logger,
-});
+export const privacyService = lazy(
+  () =>
+    new PrivacyService({
+      parts: [
+        mmrJournalService,
+        sessionService,
+        followService,
+        patchWatchlistService,
+        activityService,
+        draftsPrivacy,
+        matchesService,
+        togetherService,
+        annotationsService,
+        goalsService,
+        battleReportService,
+      ],
+      identity: usersService,
+      logger,
+    }),
+);
 
 export const privacyController = new PrivacyController({ service: privacyService });
