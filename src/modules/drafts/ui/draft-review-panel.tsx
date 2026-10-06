@@ -1,11 +1,12 @@
 "use client";
 
+import { apiRequest } from "@/common/http/api-client";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import type { ReviewResult } from "../application/ai-opponent-service";
-import { encodeSnapshot, snapshotOf } from "../application/snapshot";
+import type { ReviewResult } from "../dtos/responses/drafts.dto";
+import { encodeSnapshot, snapshotOf } from "../domain/snapshot";
 import type { DraftState, Side } from "../domain/draft-state";
 import type { RoleChoices } from "./draft-outlook-panel";
 
@@ -26,20 +27,11 @@ export function DraftReviewPanel({ state, roles }: { state: DraftState; roles: R
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/v1/drafts/review", {
+      const data = await apiRequest<ReviewResult>("/api/v1/drafts/review", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), roles }),
+        body: { snapshot: encodeSnapshot(snapshotOf(state)), roles },
       });
-      const body = (await res.json().catch(() => null)) as
-        (ReviewResult & { error?: undefined }) | { error?: { message?: string } } | null;
-      if (!res.ok || !body || ("error" in body && body.error)) {
-        throw new Error(
-          (body as { error?: { message?: string } })?.error?.message ??
-            "The AI review is unavailable right now.",
-        );
-      }
-      setResult({ key, data: body as ReviewResult });
+      setResult({ key, data });
     } catch (e) {
       setError({
         key,

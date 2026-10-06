@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap, getPlayerProfile } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { PlayerBanner } from "@/modules/matches/ui/player-banner";
@@ -40,7 +40,7 @@ export async function generateMetadata({
 }: PageProps<"/players/[accountId]">): Promise<Metadata> {
   const accountId32 = parseAccountId((await params).accountId);
   if (accountId32 === null) return { title: "Player not found" };
-  const profile = await getPlayerProfile(accountId32);
+  const profile = await matchesService.playerProfile(accountId32);
   return { title: displayName(profile?.personaName ?? null, accountId32) };
 }
 
@@ -50,7 +50,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
 
   const [view, heroes, viewer] = await Promise.all([
     playersService.publicPlayer(accountId32),
-    getHeroMap(),
+    matchesService.heroMap(),
     getCurrentUser({ tolerateErrors: true }),
   ]);
   if (!view.profile.ok && view.profile.error.type === "not_found") notFound();

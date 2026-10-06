@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
-import type { HeroInfo } from "@/modules/matches/application/ports";
-import { getHeroMap } from "@/modules/matches/composition";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
+import { matchesService } from "@/modules/matches";
 import { plural } from "@/modules/matches/ui/format";
 import type { RoleView } from "@/modules/meta/dtos/responses/meta.dto";
 import { metaService, type MetaSourceError as SourceError } from "@/modules/meta";
@@ -37,7 +37,7 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
   const position = picked ?? yours;
 
   const patch = metaService.latestPatch();
-  const catalog = getHeroMap().catch((e: unknown): Map<number, HeroInfo> => {
+  const catalog = matchesService.heroMap().catch((e: unknown): Map<number, HeroInfo> => {
     logger.warn("meta_hero_catalog_failed", { error: e });
     return new Map();
   });

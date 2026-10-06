@@ -6,15 +6,15 @@ import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { annotationsService } from "@/modules/annotations";
-import { getDraftRecord } from "@/modules/drafts/composition";
+import { draftRecordService } from "@/modules/drafts";
 import { DraftRecordCard } from "@/modules/drafts/ui/draft-record-card";
 import { getCurrentUser } from "@/modules/identity";
 import {
   matchListHref,
   parseMatchListFilter,
   type MatchListFilter,
-} from "@/modules/matches/application/match-list-filter";
-import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
+} from "@/modules/matches/schemas/match-list-filter.schema";
+import { matchQueries, matchesService } from "@/modules/matches";
 import { MIN_SAMPLE } from "@/modules/matches/domain/match-summary";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroFilter } from "@/modules/matches/ui/hero-filter";
@@ -32,7 +32,7 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
   const filter = parseMatchListFilter(await searchParams);
   const now = new Date();
 
-  const queries = await getMatchQueries();
+  const queries = matchQueries;
   const [tagged, tags] = await Promise.all([
     filter.tag
       ? annotationsService.matchIdsWithTag(user.id, filter.tag).catch(() => [])
@@ -42,7 +42,7 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
   const [page, played, heroes] = await Promise.all([
     queries.listMatches(user.accountId32, filter, now, PAGE_SIZE, tagged),
     queries.playedHeroes(user.accountId32),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
 
   // Changing any filter restarts pagination.
@@ -231,7 +231,7 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
 }
 
 async function DraftRecordSection({ accountId32 }: { accountId32: number }) {
-  const view = await getDraftRecord(accountId32).catch(() => null);
+  const view = await draftRecordService.forPlayer(accountId32).catch(() => null);
   if (!view || view.record.graded === 0) return null;
   return <DraftRecordCard view={view} />;
 }

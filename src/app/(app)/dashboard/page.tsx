@@ -4,13 +4,9 @@ import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
-import {
-  BACKFILL_COOLDOWN_MS,
-  MatchSyncService,
-  SYNC_COOLDOWN_MS,
-} from "@/modules/matches/application/match-sync-service";
-import type { DashboardFilter } from "@/modules/matches/application/ports";
-import { getHeroMap, getMatchQueries, getPlayerProfile } from "@/modules/matches/composition";
+import { BACKFILL_COOLDOWN_MS, MatchSyncService, SYNC_COOLDOWN_MS } from "@/modules/matches";
+import type { DashboardFilter } from "@/modules/matches/domain/read-models";
+import { matchQueries, matchesService } from "@/modules/matches";
 import { summarizeMatches } from "@/modules/matches/domain/match-summary";
 import { DashboardFilters } from "@/modules/matches/ui/dashboard-filters";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
@@ -53,12 +49,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const filter = parseFilter(await searchParams);
   const now = new Date();
 
-  const queries = await getMatchQueries();
+  const queries = matchQueries;
   const [status, { facts, latestPatch }, profile, heroes, latestSession, tz] = await Promise.all([
     queries.importStatus(user.accountId32),
     queries.dashboardFacts(user.accountId32, filter, now),
-    getPlayerProfile(user.accountId32),
-    getHeroMap(),
+    matchesService.playerProfile(user.accountId32),
+    matchesService.heroMap(),
     // Optional card: a sessions failure must not take down the dashboard.
     sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
     getViewerTimeZone(),

@@ -3,10 +3,10 @@ import type {
   ImportedPlayerMatch,
   LockOutcome,
   MatchProvider,
-  PlayerMatchFactRepository,
+  MatchFactsPort,
   SyncState,
-  SyncStateRepository,
-} from "@/modules/matches/application/ports";
+  SyncStatesPort,
+} from "@/modules/matches/matches.ports";
 import {
   BACKFILL_COOLDOWN_MS,
   HISTORY_REFRESH_INTERVAL_MS,
@@ -14,7 +14,7 @@ import {
   PERIODIC_REFRESH_INTERVAL_MS,
   RESCAN_DELAY_MS,
   SYNC_COOLDOWN_MS,
-} from "@/modules/matches/application/match-sync-service";
+} from "@/modules/matches/services/match-sync.service";
 import type { PlayerMatchFact } from "@/modules/matches/domain/player-match-fact";
 import { err, ok } from "@/common/result";
 
@@ -70,7 +70,7 @@ class FakeUpstream implements MatchProvider {
   }
 }
 
-class MemoryFacts implements PlayerMatchFactRepository {
+class MemoryFacts implements MatchFactsPort {
   byKey = new Map<string, PlayerMatchFact>();
   async upsertMany(facts: readonly PlayerMatchFact[]) {
     let inserted = 0;
@@ -85,7 +85,7 @@ class MemoryFacts implements PlayerMatchFactRepository {
   }
 }
 
-class MemorySyncState implements SyncStateRepository {
+class MemorySyncState implements SyncStatesPort {
   state: (SyncState & { lockedUntil: Date | null }) | null = null;
   async acquire(
     accountId32: number,

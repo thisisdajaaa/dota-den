@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "cn";
-import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";

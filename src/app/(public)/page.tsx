@@ -13,7 +13,7 @@ import { SteamIcon } from "@/components/icons/steam-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { getCurrentUser } from "@/modules/identity";
 import { patchesService } from "@/modules/patches";
@@ -65,7 +65,7 @@ async function LatestPatchCard() {
   await patchesService.ensureFresh();
   const [latest, heroes] = await Promise.all([
     patchesService.latest().catch(() => null),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   if (!latest) return null;
   const patch = await patchesService.getByVersion(latest.version).catch(() => null);

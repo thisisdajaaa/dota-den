@@ -3,13 +3,13 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Eye, Radio, UserRound } from "lucide-react";
 import { cn } from "cn";
 import { LocalTime } from "@/components/local-time";
-import type { HistoryOpponent } from "../application/draft-history-ports";
+import type { HistoryOpponent } from "../draft-history.ports";
 import type {
   HeadToHeadView,
   HistoryEntryView,
   HistoryPageView,
   PublicCaptain,
-} from "../application/history-views";
+} from "../dtos/responses/history-views.dto";
 import type { HeroCount, ReportedWinner } from "../domain/draft-history";
 import type { Side } from "../domain/draft-state";
 import type { DraftHero } from "./types";

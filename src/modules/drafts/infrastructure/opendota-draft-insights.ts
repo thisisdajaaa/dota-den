@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ProviderGateway } from "@/common/providers/provider-gateway";
-import type { DraftInsights } from "../application/ports";
+import type { DraftInsights } from "../drafts.ports";
 import {
   pairKey,
   type HeroMeta,
@@ -10,7 +10,7 @@ import {
 } from "../domain/draft-scoring";
 import { laneKey, type LaneTable } from "../domain/draft-lanes";
 import type { PositionTable } from "../domain/draft-positions";
-import type { DraftMetaCache } from "./mongo-draft-meta-cache";
+import type { DraftMetaCache } from "../repositories/draft-meta-cache.repository";
 
 const HeroStatsSchema = z.array(
   z

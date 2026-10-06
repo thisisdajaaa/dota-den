@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,8 +9,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import type { EventView, RoomView } from "../application/room-views";
-import { encodeSnapshot, snapshotOf } from "../application/snapshot";
+import type { EventView, RoomView } from "../dtos/responses/room-views.dto";
+import { encodeSnapshot, snapshotOf } from "../domain/snapshot";
 import { availableHeroes, currentTurn, resolveTime, type Side } from "../domain/draft-state";
 import { getRuleset } from "../domain/rulesets";
 import { DraftOutlookPanel, positionsFrom, useDraftOutlook } from "./draft-outlook-panel";
@@ -28,8 +29,6 @@ function seconds(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
 }
-
-type ApiError = { error?: { message?: string; details?: { room?: RoomView } } } | null;
 
 /** A live multiplayer draft room. The server is authoritative; this view polls and resyncs. */
 export function RoomClient({
@@ -72,13 +71,12 @@ export function RoomClient({
 
   const poll = useCallback(async () => {
     try {
-      const res = await fetch(
+      const body = await apiRequest<
+        { unchanged: true; serverNow: number } | { room: RoomView; events: EventView[] }
+      >(
         `/api/v1/drafts/rooms/${roomRef.current.id}?rev=${roomRef.current.rev}&after=${lastSeq.current}`,
         { cache: "no-store" },
       );
-      if (!res.ok) throw new Error(String(res.status));
-      const body = (await res.json()) as
-        { unchanged: true; serverNow: number } | { room: RoomView; events: EventView[] };
       setConnected(true);
       if ("room" in body) apply(body.room, body.events);
       else {
@@ -124,24 +122,22 @@ export function RoomClient({
   async function post(path: string, body?: unknown): Promise<RoomView | null> {
     setBusy(true);
     try {
-      const res = await fetch(`/api/v1/drafts/rooms/${room.id}/${path}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body ?? {}),
-      });
-      const json = (await res.json().catch(() => null)) as
-        ({ room?: RoomView; roomId?: string } & ApiError) | null;
-      if (!res.ok) {
-        const stale = json?.error?.details?.room;
-        if (stale) apply(stale);
-        toast.error(json?.error?.message ?? "Something went wrong.");
-        return null;
-      }
+      const json = await apiRequest<{ room?: RoomView; roomId?: string }>(
+        `/api/v1/drafts/rooms/${room.id}/${path}`,
+        { method: "POST", body: body ?? {} },
+      );
       if (json?.room) apply(json.room);
       void poll();
       return json?.room ?? null;
-    } catch {
-      toast.error("Network error. Check your connection.");
+    } catch (e) {
+      if (!(e instanceof ApiClientError)) {
+        toast.error("Network error. Check your connection.");
+        return null;
+      }
+      // A stale move comes back with the current room so the screen can resync.
+      const stale = (e.details as { room?: RoomView } | undefined)?.room;
+      if (stale) apply(stale);
+      toast.error(e.message);
       return null;
     } finally {
       setBusy(false);

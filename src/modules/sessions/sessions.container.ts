@@ -2,8 +2,8 @@ import "server-only";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { lazy } from "@/common/utils/lazy";
-import type { DashboardFact } from "@/modules/matches/application/ports";
-import { getMatchQueries } from "@/modules/matches/composition";
+import type { DashboardFact } from "@/modules/matches/domain/read-models";
+import { matchQueries } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import {
   SessionNotesRepository,
@@ -25,9 +25,11 @@ export const sessionService = lazy(
       matches: {
         async listMatches(accountId32) {
           // Every game type; the query returns the newest 5,000 (older ones don't form sessions).
-          const { facts } = await (
-            await getMatchQueries()
-          ).dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date());
+          const { facts } = await matchQueries.dashboardFacts(
+            accountId32,
+            { range: "all", mode: "all" },
+            new Date(),
+          );
           return facts;
         },
       },

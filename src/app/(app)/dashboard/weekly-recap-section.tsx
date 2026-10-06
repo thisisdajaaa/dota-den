@@ -1,6 +1,6 @@
 import { logger } from "@/common/logging/logger";
 import type { User } from "@/modules/identity/domain/user";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { mmrInsightsService } from "@/modules/mmr";
 import { WeeklyRecapCard } from "@/modules/mmr/ui/weekly-recap-card";
 

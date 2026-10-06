@@ -51,7 +51,7 @@ test("a friend sees your challenge answers and finished drafts on the leaderboar
     .click();
   const grade = heroPage.waitForResponse("**/api/v1/drafts/challenges/grade");
   await heroPage.getByRole("button", { name: "Lock in pick" }).click();
-  const graded = await (await grade).json();
+  const graded = (await (await grade).json()).data;
   expect(graded.saved).toMatchObject({ counted: true });
   await expect(heroPage.getByRole("region", { name: "Result" })).toContainText("Your grade");
 
@@ -64,7 +64,7 @@ test("a friend sees your challenge answers and finished drafts on the leaderboar
     },
     headers: { origin },
   });
-  expect((await repeat.json()).saved).toMatchObject({ counted: false });
+  expect((await repeat.json()).data.saved).toMatchObject({ counted: false });
 
   await heroPage.goto("/draft/challenges");
   await expect(heroPage.getByRole("region", { name: "Your progress" })).toContainText(

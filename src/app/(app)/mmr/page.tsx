@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { toMmrEntryDto } from "@/modules/mmr/dtos/responses/mmr-entry.dto";
 import { getViewerTimeZone } from "@/common/http/request-context";
@@ -73,7 +73,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
   const owner = { userId: user.id, accountId32: user.accountId32 };
   const [{ entries, medals, period, calendar, climbs, matches }, heroes] = await Promise.all([
     mmrInsightsService.calendarView(owner, { view, anchor, scope, timeZone, now }),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   const s = calendar.summary;
 

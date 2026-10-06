@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
-import {
-  getDraftHeroes,
-  getDraftRoomEvents,
-  getDraftRoomService,
-} from "@/modules/drafts/composition";
-import { eventView, roomView } from "@/modules/drafts/room-http";
+import { draftRoomService, getDraftHeroes } from "@/modules/drafts";
+import { eventView, roomView } from "@/modules/drafts/dtos/responses/room-views.dto";
 import { RoomClient, RoomNotAvailable } from "@/modules/drafts/ui/room-client";
 import { getCurrentUser } from "@/modules/identity";
 
@@ -25,7 +21,7 @@ export default async function DraftRoomPage({ params }: PageProps<"/draft/rooms/
     );
   }
   const [room, heroes, user] = await Promise.all([
-    (await getDraftRoomService()).get(roomId),
+    draftRoomService.get(roomId),
     getDraftHeroes(),
     getCurrentUser({ tolerateErrors: true }),
   ]);
@@ -37,7 +33,7 @@ export default async function DraftRoomPage({ params }: PageProps<"/draft/rooms/
       </div>
     );
   }
-  const events = await getDraftRoomEvents(roomId, 0);
+  const events = await draftRoomService.events(roomId, 0);
   return (
     <div className="space-y-6">
       {header}

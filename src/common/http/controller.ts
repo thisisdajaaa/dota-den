@@ -19,6 +19,10 @@ export interface RateLimitPolicy {
   name: string;
   limit: number;
   windowMs: number;
+  /** Count in this instance only (cheap, for high-rate polling). */
+  local?: boolean;
+  /** Key by client IP even when signed in (e.g. limits shared by guests and users). */
+  byIp?: boolean;
 }
 
 export interface HandlerOptions<U, B, Q, P> {
@@ -26,7 +30,8 @@ export interface HandlerOptions<U, B, Q, P> {
   guard?: Guard<U>;
   /** Mutations from another origin are refused (CSRF defence). Defaults to true for non-GET. */
   sameOrigin?: boolean;
-  rateLimit?: RateLimitPolicy;
+  /** A policy, or a function returning one (for limits read from the environment). */
+  rateLimit?: RateLimitPolicy | (() => RateLimitPolicy);
   body?: ZodType<B>;
   query?: ZodType<Q>;
   params?: ZodType<P>;
@@ -78,10 +83,13 @@ export function handler<U = undefined, B = undefined, Q = undefined, P = undefin
         throw new ForbiddenError("Cross-origin request rejected");
       const user = (opts.guard ? await opts.guard(req) : undefined) as U;
       if (opts.rateLimit) {
-        const { name, limit, windowMs } = opts.rateLimit;
+        const policy = typeof opts.rateLimit === "function" ? opts.rateLimit() : opts.rateLimit;
+        const { name, limit, windowMs } = policy;
         const who =
-          user && typeof user === "object" && "id" in user ? String(user.id) : clientKey(req);
-        if (!(await rateLimit(`${name}:${who}`, limit, windowMs)))
+          !policy.byIp && user && typeof user === "object" && "id" in user
+            ? String(user.id)
+            : clientKey(req);
+        if (!(await rateLimit(`${name}:${who}`, limit, windowMs, { local: policy.local })))
           throw new RateLimitedError(undefined, Math.ceil(windowMs / 1000));
       }
       const params = parse(opts.params, route ? await route.params : {}, "Invalid path");

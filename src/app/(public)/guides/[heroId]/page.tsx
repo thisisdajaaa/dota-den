@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { guideService } from "@/modules/guides";
 import { Benchmarks, Counters, ItemBuilds, ProGames } from "@/modules/guides/ui/guide-sections";
-import { getHeroMap, getItemMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 
 const HERO_ID = /^[1-9]\d{0,3}$/;
@@ -14,7 +14,9 @@ export async function generateMetadata({
   params,
 }: PageProps<"/guides/[heroId]">): Promise<Metadata> {
   const { heroId } = await params;
-  const hero = HERO_ID.test(heroId) ? (await getHeroMap()).get(Number(heroId)) : undefined;
+  const hero = HERO_ID.test(heroId)
+    ? (await matchesService.heroMap()).get(Number(heroId))
+    : undefined;
   return hero
     ? {
         title: `${hero.name} guide`,
@@ -27,7 +29,7 @@ export default async function HeroGuidePage({ params }: PageProps<"/guides/[hero
   const { heroId: raw } = await params;
   if (!HERO_ID.test(raw)) notFound();
   const heroId = Number(raw);
-  const [heroes, items] = await Promise.all([getHeroMap(), getItemMap()]);
+  const [heroes, items] = await Promise.all([matchesService.heroMap(), matchesService.itemMap()]);
   const hero = heroes.get(heroId);
   if (heroes.size > 0 && !hero) notFound();
 

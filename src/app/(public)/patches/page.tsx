@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChevronRight, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { changesAffectingPool } from "@/modules/patches/domain/patch";
 import { parsePatchVersion } from "@/modules/patches/domain/patch-version";
@@ -29,7 +29,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
   const [page, user, heroes] = await Promise.all([
     queries.list({ cursor, limit: 12 }),
     getCurrentUser({ tolerateErrors: true }),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
 
   const latest = !cursor ? page.items[0] : undefined;

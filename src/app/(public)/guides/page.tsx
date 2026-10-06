@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { HeroPicker } from "@/modules/guides/ui/hero-picker";
 
 export const metadata: Metadata = {
@@ -16,7 +16,9 @@ const ATTRS = [
 ] as const;
 
 export default async function GuidesPage() {
-  const heroes = [...(await getHeroMap()).values()].sort((a, b) => a.name.localeCompare(b.name));
+  const heroes = [...(await matchesService.heroMap()).values()].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const groups = [
     ...ATTRS.map((a) => ({
       label: a.label,

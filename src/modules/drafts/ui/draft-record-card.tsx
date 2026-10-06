@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import type { DraftRecordView } from "../composition";
+import type { DraftRecordView } from "../dtos/responses/draft-record.dto";
 
 function pct(r: { games: number; wins: number }): string {
   return r.games ? `${Math.round((r.wins / r.games) * 100)}%` : "—";

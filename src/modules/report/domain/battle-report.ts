@@ -23,6 +23,8 @@ export interface ReportGame {
   towerDamage: number | null;
   /** 1 safe, 2 mid, 3 off, 4 jungle: parsed replays only. */
   laneRole: number | null;
+  /** Whether OpenDota has parsed the replay. */
+  parsed: boolean;
 }
 
 export const RECORD_STATS = [
@@ -60,6 +62,9 @@ export interface HeroLine {
   kills: number;
   deaths: number;
   assists: number;
+  /** Sums and counts over games that report them (for averages). */
+  gpm: { sum: number; games: number };
+  xpm: { sum: number; games: number };
 }
 
 export interface BattleReport {
@@ -108,12 +113,22 @@ export function battleReport(
       kills: 0,
       deaths: 0,
       assists: 0,
+      gpm: { sum: 0, games: 0 },
+      xpm: { sum: 0, games: 0 },
     };
     h.games++;
     if (g.won) h.wins++;
     h.kills += g.kills;
     h.deaths += g.deaths;
     h.assists += g.assists;
+    if (g.goldPerMin !== null) {
+      h.gpm.sum += g.goldPerMin;
+      h.gpm.games++;
+    }
+    if (g.xpPerMin !== null) {
+      h.xpm.sum += g.xpPerMin;
+      h.xpm.games++;
+    }
     heroes.set(g.heroId, h);
 
     if (g.laneRole !== null && g.laneRole >= 1 && g.laneRole <= 4) {
@@ -169,5 +184,32 @@ export function battleReport(
         .sort((a, b) => a.role - b.role),
     },
     days,
+  };
+}
+
+/** Average of a sum over games, or null with no games. */
+export const avgOf = (x: { sum: number; games: number }): number | null =>
+  x.games ? x.sum / x.games : null;
+
+export interface PeriodTotals {
+  games: number;
+  winRate: number | null;
+  /** (kills + assists) / max(1, deaths), averaged per game. */
+  kda: number | null;
+  gpm: number | null;
+}
+
+/** Headline numbers for comparing one period with another. */
+export function periodTotals(games: readonly ReportGame[]): PeriodTotals {
+  const n = games.length;
+  if (n === 0) return { games: 0, winRate: null, kda: null, gpm: null };
+  const k = games.reduce((s, g) => s + g.kills + g.assists, 0);
+  const d = games.reduce((s, g) => s + g.deaths, 0);
+  const withGpm = games.filter((g) => g.goldPerMin !== null);
+  return {
+    games: n,
+    winRate: games.filter((g) => g.won).length / n,
+    kda: k / Math.max(1, d),
+    gpm: withGpm.length ? withGpm.reduce((s, g) => s + g.goldPerMin!, 0) / withGpm.length : null,
   };
 }

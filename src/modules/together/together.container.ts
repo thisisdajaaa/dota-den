@@ -2,11 +2,7 @@ import "server-only";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
-import {
-  getMatchQueries,
-  getOpenDotaAdapter,
-  getPublicRecentMatches,
-} from "@/modules/matches/composition";
+import { matchQueries, matchesService, openDotaAdapter } from "@/modules/matches";
 import { followService, playerDirectory, playersService } from "@/modules/players";
 import { MatchDetailSeatReader } from "./infrastructure/match-seat-reader";
 import { TogetherMatchesRepository } from "./repositories/together.repository";
@@ -19,16 +15,16 @@ export const SHARED_MATCH_LIMIT = 100;
 export const togetherMatchesRepository = new TogetherMatchesRepository(getDb);
 
 const ownFacts = async (accountId32: number) =>
-  (await getMatchQueries()).dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date());
+  matchQueries.dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date());
 
 export const togetherService = lazy(
   () =>
     new TogetherService({
       finder: {
         sharedMatches: (me, friend) =>
-          getPublicRecentMatches(me, SHARED_MATCH_LIMIT, { includedAccountId: friend }),
+          matchesService.publicRecentMatches(me, SHARED_MATCH_LIMIT, { includedAccountId: friend }),
       },
-      seats: new MatchDetailSeatReader(getOpenDotaAdapter()),
+      seats: new MatchDetailSeatReader(openDotaAdapter),
       repo: togetherMatchesRepository,
       ownGames: {
         ownGames: async (me) =>

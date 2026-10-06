@@ -3,7 +3,7 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { getDraftHeroes, getDraftHistoryService } from "@/modules/drafts/composition";
+import { draftHistoryService, getDraftHeroes } from "@/modules/drafts";
 import {
   FriendFilter,
   HeadToHeadSummary,
@@ -58,7 +58,7 @@ export default async function DraftHistoryPage({
   // Filtering by your own account would match every draft.
   const friend = requested === user.accountId32 ? null : requested;
   const pageNo = positiveInt(params.page) ?? 1;
-  const service = await getDraftHistoryService();
+  const service = draftHistoryService;
   const [opponents, page, summary, heroList] = await Promise.all([
     service.opponents(user.id),
     service.list(user.id, { friendAccountId: friend, page: pageNo }),

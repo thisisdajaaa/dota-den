@@ -3,14 +3,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { AnnotationsService } from "@/modules/annotations/annotations.service";
 import type { DataOwner } from "@/common/privacy/user-data";
-import * as drafts from "@/modules/drafts/infrastructure/user-data";
+import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { UsersService } from "@/modules/identity/services/users.service";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
-import * as matches from "@/modules/matches/infrastructure/user-data";
+import { MatchReadRepository } from "@/modules/matches/repositories/matches.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { MmrJournalService } from "@/modules/mmr/services/mmr-journal.service";
@@ -111,6 +111,24 @@ const mmr = servicePart((getDb) => {
     entries,
     medals: new MedalHistoryRepository(getDb),
   });
+});
+
+const matches = servicePart((getDb) => {
+  const repo = new MatchReadRepository(getDb);
+  return {
+    exportMyData: (o: DataOwner) => repo.exportForOwner(o),
+    deleteMyData: (o: DataOwner) => repo.deleteForOwner(o),
+  };
+});
+
+const drafts = servicePart((getDb) => {
+  const repo = new DraftHistoryRepository(getDb);
+  return {
+    exportMyData: async (o: DataOwner) => ({ friendRoomDrafts: await repo.exportForOwner(o) }),
+    deleteMyData: async (o: DataOwner) => ({
+      friendRoomDraftsAnonymised: await repo.anonymiseOwner(o),
+    }),
+  };
 });
 
 const PARTS = [

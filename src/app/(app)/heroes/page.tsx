@@ -9,8 +9,8 @@ import { PoolAdviceCard } from "@/modules/advisor/ui/pool-advice-card";
 import { heroesService } from "@/modules/heroes";
 import { countOf, HeroGrid, unavailableCopy } from "@/modules/heroes/ui/hero-sections";
 import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
-import type { HeroInfo } from "@/modules/matches/application/ports";
-import { getHeroMap } from "@/modules/matches/composition";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
+import { matchesService } from "@/modules/matches";
 import { plural } from "@/modules/matches/ui/format";
 import { getCurrentUser } from "@/modules/identity";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
@@ -20,7 +20,10 @@ export const metadata: Metadata = { title: "Heroes" };
 export default async function HeroesPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const [rows, heroes] = await Promise.all([heroesService.index(user.accountId32), getHeroMap()]);
+  const [rows, heroes] = await Promise.all([
+    heroesService.index(user.accountId32),
+    matchesService.heroMap(),
+  ]);
   const games = rows.reduce((n, r) => n + r.games, 0);
 
   return (

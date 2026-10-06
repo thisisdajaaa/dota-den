@@ -1,13 +1,14 @@
 import "server-only";
 import { logger } from "@/common/logging/logger";
 import { annotationsService } from "@/modules/annotations";
-import * as drafts from "@/modules/drafts/composition";
+import { draftsPrivacy } from "@/modules/drafts";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
-import * as matches from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import { patchWatchlistService } from "@/modules/patches";
+import { battleReportService } from "@/modules/report";
 import { followService } from "@/modules/players";
 import { sessionService } from "@/modules/sessions";
 import { togetherService } from "@/modules/together";
@@ -21,11 +22,12 @@ export const privacyService = new PrivacyService({
     followService,
     patchWatchlistService,
     activityService,
-    drafts,
-    matches,
+    draftsPrivacy,
+    matchesService,
     togetherService,
     annotationsService,
     goalsService,
+    battleReportService,
   ],
   identity: usersService,
   logger,

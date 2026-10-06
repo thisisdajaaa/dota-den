@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, History, Info } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { ESTIMATE_PER_GAME } from "@/modules/mmr/domain/calendar";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { sessionService } from "@/modules/sessions";
@@ -29,7 +29,7 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
   const owner = { userId: user.id, accountId32: user.accountId32 };
 
   const service = sessionService;
-  const [heroes, { timeZone }] = await Promise.all([getHeroMap(), getViewerTimeZone()]);
+  const [heroes, { timeZone }] = await Promise.all([matchesService.heroMap(), getViewerTimeZone()]);
   const [page, tilt] = await Promise.all([
     service.list(owner, Number.isFinite(requested) ? requested : 1),
     service.tilt(owner).catch(() => null),

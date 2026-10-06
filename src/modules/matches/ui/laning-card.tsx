@@ -1,4 +1,4 @@
-import type { HeroInfo, ItemInfo } from "../application/ports";
+import type { HeroInfo, ItemInfo } from "../matches.ports";
 import type { MatchPlayer } from "../domain/match-detail";
 import { clockTime, keyItemTimings, laneOpponents } from "../domain/match-laning";
 import { HeroPortrait, heroName } from "./hero-portrait";

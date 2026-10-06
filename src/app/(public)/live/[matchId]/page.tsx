@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Radio } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { getAiOpponent } from "@/modules/drafts/composition";
+import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { liveService } from "@/modules/live";
 import { clock, draftComplete, leadText, sideHeroes } from "@/modules/live/domain/live-game";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { LineupRow } from "@/modules/live/ui/live-game-card";
 import { WatchSection } from "@/modules/live/ui/watch-section";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 
 export const metadata: Metadata = { title: "Live game" };
 
@@ -19,7 +19,7 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
   const { matchId } = await params;
   const [game, heroes] = await Promise.all([
     MATCH_ID.test(matchId) ? liveService.game(matchId) : null,
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   const back = (
     <Link

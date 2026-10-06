@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
@@ -117,7 +117,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
   const [aView, bView, heroes] = await Promise.all([
     playersService.publicPlayer(a),
     playersService.publicPlayer(b),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   const side = (id: number, v: Loaded) => {
     const profile = v.profile.ok ? v.profile.value : null;

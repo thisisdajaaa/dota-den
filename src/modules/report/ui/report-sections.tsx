@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { cn } from "cn";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
-import type { BattleReport, RecordStat } from "../domain/battle-report";
+import {
+  avgOf,
+  type BattleReport,
+  type PeriodTotals,
+  type RecordStat,
+} from "../domain/battle-report";
+import { MIN_REPLAY_GAMES, type ReplayAggregate } from "../domain/replay-summary";
 
 const RECORD_LABEL: Record<RecordStat, string> = {
   heroDamage: "Max hero damage",
@@ -279,6 +285,317 @@ export function CalendarCard({
         <span className="mr-1 ml-1 inline-block size-2.5 rounded-sm bg-loss align-middle" /> more
         losses
       </p>
+    </section>
+  );
+}
+
+const signedPct = (d: number) =>
+  `${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d * 100).toFixed(1)} pts`;
+const signedNum = (d: number, digits = 0) =>
+  `${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d).toFixed(digits)}`;
+
+/** This period against the one of the same length just before it. */
+export function CompareCard({
+  current,
+  previous,
+  previousLabel,
+}: {
+  current: PeriodTotals;
+  previous: PeriodTotals;
+  previousLabel: string;
+}) {
+  const rows: Array<{
+    label: string;
+    now: string;
+    before: string;
+    delta: string | null;
+    good: boolean | null;
+  }> = [
+    {
+      label: "Games",
+      now: String(current.games),
+      before: String(previous.games),
+      delta: signedNum(current.games - previous.games),
+      good: null,
+    },
+    {
+      label: "Win rate",
+      now: current.winRate === null ? "—" : formatPercent(current.winRate),
+      before: previous.winRate === null ? "—" : formatPercent(previous.winRate),
+      delta:
+        current.winRate !== null && previous.winRate !== null
+          ? signedPct(current.winRate - previous.winRate)
+          : null,
+      good:
+        current.winRate !== null && previous.winRate !== null
+          ? current.winRate >= previous.winRate
+          : null,
+    },
+    {
+      label: "KDA",
+      now: current.kda === null ? "—" : current.kda.toFixed(2),
+      before: previous.kda === null ? "—" : previous.kda.toFixed(2),
+      delta:
+        current.kda !== null && previous.kda !== null
+          ? signedNum(current.kda - previous.kda, 2)
+          : null,
+      good: current.kda !== null && previous.kda !== null ? current.kda >= previous.kda : null,
+    },
+    {
+      label: "Gold per minute",
+      now: current.gpm === null ? "—" : String(Math.round(current.gpm)),
+      before: previous.gpm === null ? "—" : String(Math.round(previous.gpm)),
+      delta:
+        current.gpm !== null && previous.gpm !== null
+          ? signedNum(current.gpm - previous.gpm)
+          : null,
+      good: current.gpm !== null && previous.gpm !== null ? current.gpm >= previous.gpm : null,
+    },
+  ];
+  return (
+    <section className="panel overflow-hidden" aria-labelledby="report-compare">
+      <div className="p-5 pb-3">
+        <h2 id="report-compare" className="text-lg font-semibold">
+          Compared with the period before
+        </h2>
+        <p className="text-xs text-muted-foreground">{previousLabel}</p>
+      </div>
+      {previous.games === 0 ? (
+        <p className="border-t border-white/[0.06] px-5 py-4 text-sm text-muted-foreground">
+          No games in the period before, so there&apos;s nothing to compare.
+        </p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-y border-white/[0.06] text-left text-xs text-muted-foreground">
+              <th scope="col" className="px-5 py-2 font-medium">
+                Stat
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                This period
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Before
+              </th>
+              <th scope="col" className="px-5 py-2 text-right font-medium">
+                Change
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.05]">
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <th scope="row" className="px-5 py-2 text-left font-normal">
+                  {r.label}
+                </th>
+                <td className="px-2 py-2 text-right tabular-nums">{r.now}</td>
+                <td className="px-2 py-2 text-right text-muted-foreground tabular-nums">
+                  {r.before}
+                </td>
+                <td
+                  className={cn(
+                    "px-5 py-2 text-right tabular-nums",
+                    r.good === true && "text-win",
+                    r.good === false && "text-loss",
+                  )}
+                >
+                  {r.delta ?? "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+/** Every hero played in the period with record, KDA and average GPM/XPM. */
+export function HeroTable({
+  rows,
+  heroes,
+}: {
+  rows: BattleReport["heroes"];
+  heroes: Map<number, HeroInfo>;
+}) {
+  return (
+    <section className="panel overflow-hidden" aria-labelledby="report-hero-table">
+      <h2 id="report-hero-table" className="p-5 pb-3 text-lg font-semibold">
+        Every hero this period
+      </h2>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-sm">
+          <thead>
+            <tr className="border-y border-white/[0.06] text-left text-xs text-muted-foreground">
+              <th scope="col" className="px-5 py-2 font-medium">
+                Hero
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Games
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Record
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                Win rate
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                KDA
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                GPM
+              </th>
+              <th scope="col" className="px-5 py-2 text-right font-medium">
+                XPM
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/[0.05]">
+            {rows.map((r) => {
+              const h = heroes.get(r.heroId);
+              const rate = r.wins / r.games;
+              const gpm = avgOf(r.gpm);
+              const xpm = avgOf(r.xpm);
+              return (
+                <tr key={r.heroId}>
+                  <th scope="row" className="px-5 py-2 text-left font-normal">
+                    <Link
+                      href={`/heroes/${r.heroId}`}
+                      className="flex items-center gap-2.5 hover:text-gold"
+                    >
+                      <HeroPortrait hero={h} heroId={r.heroId} size="xs" />
+                      <span className="truncate">{heroName(h, r.heroId)}</span>
+                    </Link>
+                  </th>
+                  <td className="px-2 py-2 text-right tabular-nums">{r.games}</td>
+                  <td className="px-2 py-2 text-right tabular-nums">
+                    <span className="text-win">{r.wins}</span>–
+                    <span className="text-loss">{r.games - r.wins}</span>
+                  </td>
+                  <td
+                    className={cn(
+                      "px-2 py-2 text-right tabular-nums",
+                      rate >= 0.5 ? "text-win" : "text-loss",
+                    )}
+                  >
+                    {formatPercent(rate)}
+                  </td>
+                  <td className="px-2 py-2 text-right text-muted-foreground tabular-nums">
+                    {((r.kills + r.assists) / Math.max(1, r.deaths)).toFixed(2)}
+                  </td>
+                  <td className="px-2 py-2 text-right tabular-nums">
+                    {gpm === null ? "—" : Math.round(gpm)}
+                  </td>
+                  <td className="px-5 py-2 text-right tabular-nums">
+                    {xpm === null ? "—" : Math.round(xpm)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function SampleNote({ read, parsed }: { read: number; parsed: number }) {
+  return (
+    <p className="text-xs text-muted-foreground">
+      From {read} parsed replay{read === 1 ? "" : "s"} ({parsed} of this period&apos;s games are
+      parsed{read < parsed ? "; more are read each visit" : ""}).
+    </p>
+  );
+}
+
+/** Lanes won, drawn and lost (gold at 10 minutes against your lane opponents). */
+export function LanesCard({
+  replays,
+}: {
+  replays: { aggregate: ReplayAggregate; parsedInPeriod: number };
+}) {
+  const { lanes } = replays.aggregate;
+  return (
+    <section className="panel space-y-3 p-5" aria-labelledby="report-lanes">
+      <div>
+        <p className="kicker">Parsed replays</p>
+        <h2 id="report-lanes" className="text-lg font-semibold">
+          Lane results
+        </h2>
+        <SampleNote read={replays.aggregate.games} parsed={replays.parsedInPeriod} />
+      </div>
+      {lanes.games < MIN_REPLAY_GAMES ? (
+        <p className="text-sm text-muted-foreground">
+          Not enough parsed lanes yet ({lanes.games} of {MIN_REPLAY_GAMES} needed). Use “Get
+          detailed stats” on a match page to have its replay parsed.
+        </p>
+      ) : (
+        <>
+          <p className="text-2xl font-semibold tabular-nums">
+            {formatPercent(lanes.won / lanes.games)}{" "}
+            <span className="text-sm font-normal text-muted-foreground">of lanes won</span>
+          </p>
+          <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm tabular-nums">
+            <li>
+              <span className="text-win">{lanes.won}</span> won
+            </li>
+            <li>{lanes.even} even</li>
+            <li>
+              <span className="text-loss">{lanes.lost}</span> lost
+            </li>
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            A lane counts as won or lost when one side earned at least 10% more gold by minute 10.
+            Roaming and jungle games aren&apos;t counted.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Roshan, stacks, dewards and runes per game, from parsed replays. */
+export function ObjectivesCard({
+  replays,
+}: {
+  replays: { aggregate: ReplayAggregate; parsedInPeriod: number };
+}) {
+  const { games, totals } = replays.aggregate;
+  const per = (n: number) => (games ? (n / games).toFixed(1) : "—");
+  const rows = [
+    { label: "Roshan kills", total: totals.roshanKills },
+    { label: "Camps stacked", total: totals.campsStacked },
+    { label: "Wards destroyed", total: totals.dewards },
+    { label: "Power runes", total: totals.powerRunes },
+    { label: "Bounty runes", total: totals.bountyRunes },
+  ];
+  return (
+    <section className="panel space-y-3 p-5" aria-labelledby="report-objectives">
+      <div>
+        <p className="kicker">Parsed replays</p>
+        <h2 id="report-objectives" className="text-lg font-semibold">
+          Map objectives
+        </h2>
+        <SampleNote read={games} parsed={replays.parsedInPeriod} />
+      </div>
+      {games < MIN_REPLAY_GAMES ? (
+        <p className="text-sm text-muted-foreground">
+          Not enough parsed replays yet ({games} of {MIN_REPLAY_GAMES} needed).
+        </p>
+      ) : (
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {rows.map((r) => (
+            <div key={r.label}>
+              <dt className="text-xs text-muted-foreground">{r.label}</dt>
+              <dd className="text-lg font-semibold tabular-nums">
+                {per(r.total)}
+                <span className="text-xs font-normal text-muted-foreground"> /game</span>
+              </dd>
+              <dd className="text-xs text-muted-foreground tabular-nums">{r.total} total</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </section>
   );
 }
