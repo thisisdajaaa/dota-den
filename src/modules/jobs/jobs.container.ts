@@ -7,7 +7,7 @@ import { logger } from "@/common/logging/logger";
 import { draftInsights } from "@/modules/drafts/composition";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/application/match-sync-service";
 import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
-import { warmMetaCaches } from "@/modules/meta/composition";
+import { metaService } from "@/modules/meta";
 import { recordMedal } from "@/modules/mmr/composition";
 import { getPatchImportService } from "@/modules/patches/composition";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
@@ -73,7 +73,7 @@ export const cronService = new CronService({
     record: recordMedal,
   },
   patches: { importLatest: async () => (await getPatchImportService()).importLatest() },
-  caches: { warmDraftData, warmMeta: warmMetaCaches },
+  caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
   queue: jobQueue,
   logger,
 });

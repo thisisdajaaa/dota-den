@@ -2,7 +2,7 @@ import type { HeroInfo } from "@/modules/matches/application/ports";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
-import type { DuosView } from "../application/meta-service";
+import type { DuosView } from "../dtos/responses/meta.dto";
 import { POSITION_INFO, type Position } from "../domain/position";
 import { MetaSection, Unavailable } from "./meta-section";
 

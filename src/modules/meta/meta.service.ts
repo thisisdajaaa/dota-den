@@ -1,5 +1,8 @@
+import type { Logger } from "@/common/logging/logger";
+import { mapLimit } from "@/common/utils/map-limit";
+import { heroPatchChanges } from "./domain/patch-tips";
 import { err, ok, type Result } from "@/common/result";
-import { duosForPosition, type DuoResult } from "../domain/lane-duos";
+import { duosForPosition } from "./domain/lane-duos";
 import {
   laneCandidates,
   rankHeroes,
@@ -7,10 +10,11 @@ import {
   MIN_PRO_DRAFTS,
   type LaneStats,
   type ProDrafts,
-  type RankedHero,
-} from "../domain/meta-stats";
-import { deriveRole, type Position, type RoleDerivation } from "../domain/position";
-import type { MetaHero, MetaStatsSource, PlayerLaneHistory, SourceError } from "./ports";
+} from "./domain/meta-stats";
+import { deriveRole, type Position } from "./domain/position";
+import type { MetaHero, MetaStatsSource, PlayerLaneHistory, SourceError } from "./meta.ports";
+import type { LatestPatchResult, LatestPatchSource } from "./meta.ports";
+import type { DuosView, RoleView, TopHeroesView } from "./dtos/responses/meta.dto";
 
 /** How many heroes to fetch lane data for per position (upstream calls are bounded). */
 export const LANE_CANDIDATES = 28;
@@ -19,36 +23,6 @@ export const TOP_HEROES = 10;
 /** Tournament data is a bonus: don't hold the hero list back for it longer than this. */
 export const PRO_DEADLINE_MS = 8_000;
 export const LANE_DEADLINE_MS = 12_000;
-
-export interface TopHeroesView {
-  position: Position;
-  heroes: RankedHero[];
-  /** Heroes whose lane data we checked for this position. */
-  checked: number;
-  sources: {
-    publicFetchedAt: Date;
-    /** "partial" when some heroes' lane data failed; "unavailable" when all did. */
-    lane: "ok" | "partial" | "unavailable";
-    /** Oldest lane data used. */
-    laneFetchedAt: Date | null;
-    pro:
-      | { status: "ok"; drafts: number; windowDays: number; fetchedAt: Date }
-      | { status: "too_few"; drafts: number; windowDays: number; fetchedAt: Date }
-      | { status: "unavailable" };
-  };
-}
-
-export interface DuosView {
-  result: DuoResult;
-  windowDays: number | null;
-  fetchedAt: Date | null;
-}
-
-export interface RoleView {
-  derivation: RoleDerivation;
-  windowDays: number;
-  fetchedAt: Date;
-}
 
 const TIMEOUT = Symbol("timeout");
 
@@ -65,39 +39,26 @@ async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | typeof TI
   }
 }
 
-/** Map with at most `limit` calls in flight. */
-export async function mapLimit<T, R>(
-  items: readonly T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const out = new Array<R>(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      out[i] = await fn(items[i]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return out;
-}
-
 export class MetaService {
   constructor(
     private readonly deps: {
       stats: MetaStatsSource;
       lanes: PlayerLaneHistory;
-      heroes: readonly MetaHero[];
+      /** The hero catalog (ids and roles). */
+      heroes: () => Promise<readonly MetaHero[]>;
+      /** The newest imported patch, for the patch tips (from the patches feature). */
+      patches?: LatestPatchSource;
+      logger?: Pick<Logger, "warn">;
     },
   ) {}
 
   /** The user's most-played position from their recent games with lane info. */
   async userRole(accountId32: number): Promise<Result<RoleView, SourceError>> {
-    if (this.deps.heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
+    const heroes = await this.deps.heroes();
+    if (heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
     const res = await this.deps.lanes.recentLanes(accountId32);
     if (!res.ok) return res;
-    const roles = new Map(this.deps.heroes.map((h) => [h.id, h.roles]));
+    const roles = new Map(heroes.map((h) => [h.id, h.roles]));
     return ok({
       derivation: deriveRole(res.value.value.games, (id) => roles.get(id)),
       windowDays: res.value.value.windowDays,
@@ -107,7 +68,8 @@ export class MetaService {
 
   async topHeroes(position: Position): Promise<Result<TopHeroesView, SourceError>> {
     const { stats } = this.deps;
-    if (this.deps.heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
+    const heroes = await this.deps.heroes();
+    if (heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
     // Start the tournament query right away; it runs alongside the public stats.
     const proPromise = stats.proDrafts();
     const pub = await stats.heroStats();
@@ -116,7 +78,7 @@ export class MetaService {
     if (publicStats.length === 0) return err({ type: "invalid_payload", cause: "no hero stats" });
     const byId = new Map(publicStats.map((s) => [s.heroId, s]));
 
-    const ids = laneCandidates(position, this.deps.heroes, byId, LANE_CANDIDATES);
+    const ids = laneCandidates(position, heroes, byId, LANE_CANDIDATES);
     const lanesPromise = mapLimit(ids, LANE_CONCURRENCY, (id) => stats.laneRoles(id));
     const [laneResults, proRes] = await Promise.all([
       withDeadline(lanesPromise, LANE_DEADLINE_MS),
@@ -148,7 +110,7 @@ export class MetaService {
       }
     }
 
-    const roles = new Map(this.deps.heroes.map((h) => [h.id, h.roles]));
+    const roles = new Map(heroes.map((h) => [h.id, h.roles]));
     const ranked = rankHeroes(
       position,
       // A hero whose lane data failed can't be placed in a lane, so it's left out. Only when
@@ -189,5 +151,40 @@ export class MetaService {
       windowDays: res.value.value.windowDays,
       fetchedAt: res.value.fetchedAt,
     });
+  }
+
+  /** The newest imported patch with its hero changes. Never throws. */
+  async latestPatch(): Promise<LatestPatchResult> {
+    try {
+      const patch = await this.deps.patches?.latest();
+      if (!patch) return { status: "none" };
+      return {
+        status: "ok",
+        patch: {
+          version: patch.version,
+          publishedAt: patch.publishedAt,
+          heroes: heroPatchChanges(patch),
+        },
+      };
+    } catch (e) {
+      this.deps.logger?.warn("meta_patch_unavailable", { error: e });
+      return { status: "unavailable" };
+    }
+  }
+
+  /**
+   * Run the Meta page's slow tournament queries so their results are cached (in Redis, for
+   * every server) before anyone asks. Called by the daily cron. Never throws.
+   */
+  async warmCaches(): Promise<Array<{ key: string; ok: boolean }>> {
+    const { stats } = this.deps;
+    const [drafts, duos] = await Promise.all([
+      stats.proDrafts().catch(() => null),
+      stats.proLaneDuos().catch(() => null),
+    ]);
+    return [
+      { key: "proDrafts", ok: drafts?.ok ?? false },
+      { key: "proLaneDuos", ok: duos?.ok ?? false },
+    ];
   }
 }

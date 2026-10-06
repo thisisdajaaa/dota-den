@@ -1,7 +1,9 @@
+import type { Patch } from "@/modules/patches/domain/patch";
+import type { LatestPatch } from "./domain/patch-tips";
 import type { Result } from "@/common/result";
-import type { DuoRow } from "../domain/lane-duos";
-import type { HeroPublicStats, LaneStats, ProDrafts } from "../domain/meta-stats";
-import type { LaneGame } from "../domain/position";
+import type { DuoRow } from "./domain/lane-duos";
+import type { HeroPublicStats, LaneStats, ProDrafts } from "./domain/meta-stats";
+import type { LaneGame } from "./domain/position";
 
 export type SourceError =
   | { type: "rate_limited"; retryAfterMs: number | null }
@@ -39,3 +41,11 @@ export interface MetaHero {
   id: number;
   roles: readonly string[];
 }
+
+/** The newest imported patch with its notes (from the patches feature); null when none. */
+export interface LatestPatchSource {
+  latest(): Promise<Pick<Patch, "sections" | "version" | "publishedAt"> | null>;
+}
+
+export type LatestPatchResult =
+  { status: "ok"; patch: LatestPatch } | { status: "none" } | { status: "unavailable" };

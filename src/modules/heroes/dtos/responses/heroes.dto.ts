@@ -1,4 +1,4 @@
-import { type PositionBreakdown } from "@/modules/meta";
+import { type PositionBreakdown } from "@/modules/meta/domain/position";
 import {
   type HeroRecord,
   type ItemSummary,

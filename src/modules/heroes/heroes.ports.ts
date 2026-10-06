@@ -1,4 +1,4 @@
-import type { LaneGame } from "@/modules/meta";
+import type { LaneGame } from "@/modules/meta/domain/position";
 import type { Result } from "@/common/result";
 import type { HeroGame, ItemMeta, MatchupRow } from "./domain/hero-stats";
 

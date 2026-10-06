@@ -4,14 +4,13 @@ import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { ok } from "@/common/result";
 import { lazy } from "@/common/utils/lazy";
 import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
-import { getHighRankHeroStats, getPlayerLaneHistory } from "@/modules/meta/composition";
+import { metaSource } from "@/modules/meta";
 import type { ItemCatalog } from "./heroes.ports";
 import { HeroesService } from "./heroes.service";
 import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";
 
 /** Hero pages: your imported games plus OpenDota's per-player hero data, wired together. */
 export const heroesService = lazy(() => {
-  const highRankStats = getHighRankHeroStats();
   return new HeroesService({
     own: {
       games: async (accountId32) =>
@@ -33,13 +32,13 @@ export const heroesService = lazy(() => {
     player: new OpenDotaHeroSource(openDotaGateway(), openDotaConfig()),
     highRank: {
       heroStats: async () => {
-        const res = await highRankStats();
+        const res = await metaSource.heroStats();
         return res.ok ? ok(res.value.value) : res;
       },
     },
     lanes: {
       recentLanes: async (accountId32) => {
-        const res = await getPlayerLaneHistory().recentLanes(accountId32);
+        const res = await metaSource.recentLanes(accountId32);
         return res.ok ? ok(res.value.value) : res;
       },
     },

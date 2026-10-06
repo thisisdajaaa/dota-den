@@ -1,4 +1,4 @@
-import { positionBreakdown } from "@/modules/meta";
+import { positionBreakdown } from "@/modules/meta/domain/position";
 import { err, ok, type Result } from "@/common/result";
 import {
   averageOf,

@@ -10,7 +10,7 @@ import type {
   PlayerLaneHistory,
   SourceError,
   SourceResult,
-} from "../application/ports";
+} from "../meta.ports";
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 
