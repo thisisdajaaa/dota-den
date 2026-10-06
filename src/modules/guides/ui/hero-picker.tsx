@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { SearchInput } from "@/components/search-input";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 
 /** Folds case and accents, and ignores spaces and punctuation ("anti mage" finds Anti-Mage). */

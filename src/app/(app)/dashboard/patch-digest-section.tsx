@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { logger } from "@/common/logging/logger";
 import type { User } from "@/modules/identity/domain/user";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
@@ -21,11 +22,11 @@ const rate = (r: Record) => (r.games ? r.wins / r.games : null);
 /** "How the latest patch affects you". Streams behind Suspense; a failure blanks only this card. */
 export async function PatchDigestSection({ user }: { user: User }) {
   let digest: PatchDigest | null;
-  let heroes: Awaited<ReturnType<typeof getHeroMap>>;
+  let heroes: Map<number, HeroInfo>;
   try {
     [digest, heroes] = await Promise.all([
       patchesService.latestDigest(user, new Date()),
-      getHeroMap(),
+      matchesService.heroMap(),
     ]);
   } catch (error) {
     logger.error("patch_digest_failed", { error });

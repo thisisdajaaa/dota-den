@@ -27,7 +27,7 @@ import {
 import { LeaderboardBoard } from "@/modules/leaderboards/ui/leaderboard-board";
 import { RankedWeekCard } from "@/modules/leaderboards/ui/ranked-week-card";
 import { VisibilityToggle } from "@/modules/leaderboards/ui/visibility-toggle";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 
 export const metadata: Metadata = { title: "Leaderboards" };
@@ -126,7 +126,7 @@ async function RankedWeekSection({ viewer }: { viewer: { userId: string; account
       logger.warn("ranked_week_failed", { error });
       return null;
     }),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   if (!view) return null;
   return <RankedWeekCard view={view} heroes={heroes} />;

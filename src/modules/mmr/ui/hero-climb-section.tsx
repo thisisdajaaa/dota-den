@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ESTIMATE_PER_GAME } from "../domain/calendar";
 import type { HeroClimb } from "../domain/hero-climb";

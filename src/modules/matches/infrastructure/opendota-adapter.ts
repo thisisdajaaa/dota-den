@@ -18,7 +18,7 @@ import type {
   PatchTimelineSource,
   PlayerProfileSnapshot,
   ProviderError,
-} from "../application/ports";
+} from "../matches.ports";
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 export const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com";

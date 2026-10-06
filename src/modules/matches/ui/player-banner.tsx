@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { HeroInfo, PlayerProfileSnapshot } from "../application/ports";
+import type { HeroInfo, PlayerProfileSnapshot } from "../matches.ports";
 import { parseRankTier } from "../domain/rank-tier";
 import { formatPercent } from "./format";
 import { RankMedal, rankLabel } from "./rank-medal";

@@ -97,27 +97,34 @@ server instance, with constructor injection (`new GoalsService({ repository, ses
 Repositories take `getDb` (a function), so containers are synchronous.
 When building an object reads the environment or opens a client (OpenDota, Groq, Twitch),
 the container wraps it in `lazy()` (`src/common/utils/lazy.ts`). Importing a container then has
-no side effects, but call sites still read naturally (`liveService.overview()`). Other features are
+no side effects, but call sites still read naturally (`liveService.overview()`).
+A service that needs data fetched per request to be built (the drafts AI captain holds the
+current hero catalog) is exposed as an async factory (`getAiOpponent()`), so a failed lookup
+never sticks for the life of the server.
+
+Containers import each other's indexes, and those imports can form cycles (players → matches →
+jobs → drafts → leaderboards → players). So a container must never read another feature's object
+while it is being built: pass it inside a closure (`(id) => playersService.publicProfile(id)`) or
+build the service with `lazy()`. Constants other features need belong in `domain/`. Other features are
 reached through their `index.ts` and passed in as port implementations.
 
 ### Import rules (enforced by `tests/unit/architecture.test.ts`)
 
-| File                                            | May import                                                                                                   | Must not import                                                                   |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| `domain/*`                                      | own `domain/`, `@/common/result`                                                                             | next, react, mongodb, other `@/common/*`, anything else in the module             |
-| `*.model.ts`, `*.ports.ts`, `dtos/`, `schemas/` | own model/domain/dtos/schemas, zod                                                                           | next, mongodb (types-only in models), services, repositories                      |
-| `*.service.ts`                                  | own domain, model, ports, dtos, `@/common/errors`, `@/common/utils`, `@/common/logging`                      | next, react, mongodb, `@/common/db`, repositories, controllers, ui                |
-| `*.repository.ts`                               | own model, mongodb, `@/common/db` types, `@/common/privacy`                                                  | next, services, controllers, ui                                                   |
-| `*.controller.ts`                               | own service (type), schemas, dtos, `@/common/http`, `@/common/errors`                                        | mongodb, `@/common/db`, repositories                                              |
-| `ui/*`                                          | own domain/dtos/model types, other features' `ui/` and `domain/`, `@/components`, `@/common/http/api-client` | mongodb, `@/common/db`, `@/common/config/env`, containers, repositories, services |
-| other features                                  | `@/modules/<other>` (index), `@/modules/<other>/domain/*`, `@/modules/<other>/ui/*`                          | anything else inside another feature                                              |
-| `src/app/**`                                    | `@/modules/<feature>` (index), `ui/`, `domain/`, `@/components`, `@/common/http`                             | repositories, `@/common/db`, mongodb                                              |
+| File                                            | May import                                                                                                            | Must not import                                                                   |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `domain/*`                                      | own `domain/`, `@/common/result`                                                                                      | next, react, mongodb, other `@/common/*`, anything else in the module             |
+| `*.model.ts`, `*.ports.ts`, `dtos/`, `schemas/` | own model/domain/dtos/schemas, zod                                                                                    | next, mongodb (types-only in models), services, repositories                      |
+| `*.service.ts`                                  | own domain, model, ports, dtos, `@/common/errors`, `@/common/utils`, `@/common/logging`                               | next, react, mongodb, `@/common/db`, repositories, controllers, ui                |
+| `*.repository.ts`                               | own model, mongodb, `@/common/db` types, `@/common/privacy`                                                           | next, services, controllers, ui                                                   |
+| `*.controller.ts`                               | own service (type), schemas, dtos, `@/common/http`, `@/common/errors`                                                 | mongodb, `@/common/db`, repositories                                              |
+| `ui/*`                                          | own domain/dtos/model types, other features' `ui/` and `domain/`, `@/components`, `@/common/http/api-client`          | mongodb, `@/common/db`, `@/common/config/env`, containers, repositories, services |
+| other features                                  | `@/modules/<other>` (index), `@/modules/<other>/domain/*`, `@/modules/<other>/ui/*`                                   | anything else inside another feature                                              |
+| `src/app/**`                                    | `@/modules/<feature>` (index), `ui/`, `domain/`, `dtos/`, `schemas/` (to parse URLs), `@/components`, `@/common/http` | repositories, `@/common/db`, mongodb                                              |
 
 ### Migration
 
-Modules move to this anatomy one at a time, each change released on its own. The architecture
-test applies the new rules to any module that has a `<feature>.container.ts`. Modules not yet
-migrated keep the ADR 0004 rules until they move. `goals` is the reference implementation.
+All 22 features moved to this anatomy in October 2026, released in three parts. The architecture
+test now requires every feature to have a container and applies the role rules everywhere.
 
 ## Consequences
 

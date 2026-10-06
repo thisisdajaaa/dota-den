@@ -31,7 +31,7 @@ const isEnvelope = (b: unknown): b is Envelope<unknown> =>
 
 export async function apiRequest<T>(
   url: string,
-  init: { method?: string; body?: unknown; signal?: AbortSignal } = {},
+  init: { method?: string; body?: unknown; signal?: AbortSignal; cache?: RequestCache } = {},
 ): Promise<T> {
   const form = typeof FormData !== "undefined" && init.body instanceof FormData;
   const res = await fetch(url, {
@@ -45,6 +45,7 @@ export async function apiRequest<T>(
           ? (init.body as FormData)
           : JSON.stringify(init.body),
     signal: init.signal,
+    cache: init.cache,
   });
   const body: unknown = res.status === 204 ? null : await res.json().catch(() => null);
   const retry = Number(res.headers.get("retry-after"));

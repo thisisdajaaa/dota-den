@@ -1,27 +1,24 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DraftHistoryService } from "@/modules/drafts/application/draft-history-service";
-import { DraftRoomService, type Actor } from "@/modules/drafts/application/draft-room-service";
+import { DraftHistoryService } from "@/modules/drafts/services/draft-history.service";
+import { DraftRoomService } from "@/modules/drafts/services/draft-room.service";
+import { type Actor } from "@/modules/drafts/dtos/responses/drafts.dto";
 import type { DraftHistoryRecord } from "@/modules/drafts/domain/draft-history";
 import type { DraftRoom } from "@/modules/drafts/domain/draft-room";
 import { availableHeroes, currentTurn } from "@/modules/drafts/domain/draft-state";
 import {
   DRAFT_HISTORY_COLLECTION,
-  ensureDraftHistoryIndexes,
-  MongoDraftHistoryRepository,
-} from "@/modules/drafts/infrastructure/mongo-draft-history";
-import {
-  ensureDraftRoomIndexes,
-  MongoDraftRoomRepository,
-} from "@/modules/drafts/infrastructure/mongo-draft-rooms";
+  DraftHistoryRepository,
+} from "@/modules/drafts/repositories/draft-history.repository";
+import { DraftRoomsRepository } from "@/modules/drafts/repositories/draft-rooms.repository";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
 let teardown: () => Promise<void>;
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensureDraftRoomIndexes(db);
-  await ensureDraftHistoryIndexes(db);
+  await new DraftRoomsRepository(async () => db).ensureIndexes();
+  await new DraftHistoryRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -33,8 +30,8 @@ const POOL = Array.from({ length: 130 }, (_, i) => i + 1);
 
 function services() {
   let id = 0;
-  const rooms = new MongoDraftRoomRepository(db);
-  const repo = new MongoDraftHistoryRepository(db);
+  const rooms = new DraftRoomsRepository(async () => db);
+  const repo = new DraftHistoryRepository(async () => db);
   const history = new DraftHistoryService({
     history: repo,
     getRoom: (roomId) => rooms.get(roomId),

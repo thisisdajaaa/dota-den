@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { AiOpponentService, type AiHero } from "@/modules/drafts/application/ai-opponent-service";
-import type { DraftReviewer, ReviewRequest } from "@/modules/drafts/application/ports";
-import type { DraftSnapshot } from "@/modules/drafts/application/snapshot";
+import { AiOpponentService } from "@/modules/drafts/services/ai-opponent.service";
+import { type AiHero } from "@/modules/drafts/dtos/responses/drafts.dto";
+import type { DraftReviewer, ReviewRequest } from "@/modules/drafts/drafts.ports";
+import type { DraftSnapshot } from "@/modules/drafts/domain/snapshot";
 import type { DraftReport } from "@/modules/drafts/domain/draft-report";
 import { sideReport } from "@/modules/drafts/domain/draft-report";
 import {
@@ -10,6 +11,7 @@ import {
   briefDescription,
   validateReview,
 } from "@/modules/drafts/domain/draft-review";
+import { GroqClient } from "@/common/llm/groq-client";
 import { GroqDraftAdvisor } from "@/modules/drafts/infrastructure/groq-draft-advisor";
 import { err, ok } from "@/common/result";
 
@@ -215,7 +217,9 @@ describe("GroqDraftAdvisor.review", () => {
         { status: 200 },
       );
     });
-    const adv = new GroqDraftAdvisor({ apiKey: "k", model: "m", fetch });
+    const adv = new GroqDraftAdvisor(new GroqClient({ apiKey: "k", fetch, retryDelayMs: 0 }), {
+      model: "m",
+    });
     const res = await adv.review({
       lineups: {
         radiant: [

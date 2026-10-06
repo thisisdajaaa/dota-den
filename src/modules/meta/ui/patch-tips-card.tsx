@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, BookOpenText, Swords, TrendingDown, TrendingUp, Trophy } from "lucide-react";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import type { RankedHero } from "../domain/meta-stats";
 import { tipsFor, type LatestPatch, type TipKind } from "../domain/patch-tips";

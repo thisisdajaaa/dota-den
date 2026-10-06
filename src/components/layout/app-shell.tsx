@@ -5,7 +5,7 @@ import { SteamIcon } from "@/components/icons/steam-icon";
 import { InstallButton } from "@/components/pwa";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/modules/identity";
-import { getPlayerProfile } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { getViewerTimeZone } from "@/common/http/request-context";
@@ -106,7 +106,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const [profile, tz] = await Promise.all([
-    getPlayerProfile(user.accountId32),
+    matchesService.playerProfile(user.accountId32),
     getViewerTimeZone(),
   ]);
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);

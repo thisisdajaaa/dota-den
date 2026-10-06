@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { OG, OG_SIZE, OgFrame, OgHero } from "@/components/og/og-frame";
-import { getHeroMap, getOpenDotaAdapter } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 
 export const alt = "Dota 2 match on Dota Den";
 export const size = OG_SIZE;
@@ -12,8 +12,8 @@ const duration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart
 export default async function Image({ params }: { params: Promise<{ matchId: string }> }) {
   const { matchId } = await params;
   const [res, heroes] = await Promise.all([
-    /^\d{1,20}$/.test(matchId) ? getOpenDotaAdapter().fetchMatch(matchId) : null,
-    getHeroMap(),
+    /^\d{1,20}$/.test(matchId) ? matchesService.match(matchId) : null,
+    matchesService.heroMap(),
   ]);
   if (!res?.ok) {
     return new ImageResponse(

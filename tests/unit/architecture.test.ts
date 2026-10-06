@@ -3,9 +3,9 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Enforces docs/adr/0009-feature-module-anatomy.md. A feature with `<name>.container.ts` is
- * migrated and gets the role rules (controller / service / repository / model / ui …);
- * features not yet migrated keep the ADR 0004 layer rules until they move.
+ * Enforces docs/adr/0009-feature-module-anatomy.md: every feature has `<name>.container.ts`,
+ * and each file's role (controller / service / repository / model / ui …) decides what it
+ * may import.
  */
 const ROOT = join(process.cwd(), "src");
 const MODULES = join(ROOT, "modules");
@@ -110,7 +110,6 @@ function violations(
 }
 
 const inMigrated = moduleFiles.filter((f) => migrated.has(f.feature));
-const inLegacy = moduleFiles.filter((f) => !migrated.has(f.feature));
 /** The role of an import into the file's own feature, or null for anything else. */
 const ownRole = (f: ModuleFile, spec: string): Role | null => {
   const t = target(f.file, spec);
@@ -120,7 +119,8 @@ const ownRole = (f: ModuleFile, spec: string): Role | null => {
 describe("architecture: shared code", () => {
   it("finds files to check", () => {
     expect(moduleFiles.length).toBeGreaterThan(0);
-    expect(migrated.has("goals")).toBe(true);
+    // Every feature follows ADR 0009 (a <feature>.container.ts wires it).
+    expect(features.filter((f) => !migrated.has(f))).toEqual([]);
   });
 
   it("src/common never depends on a feature or the app", () => {
@@ -163,9 +163,7 @@ describe("architecture: all features", () => {
     const found = violations(moduleFiles, (f, spec) => {
       const t = target(f.file, spec);
       if (!t || t.feature === f.feature) return false;
-      if (t.role === "index" || t.role === "domain" || t.role === "ui") return false;
-      // Features not yet migrated still expose composition.ts and application/ (ADR 0004).
-      return !(!migrated.has(t.feature) && (t.role === "composition" || t.role === "application"));
+      return !(t.role === "index" || t.role === "domain" || t.role === "ui");
     });
     expect(found).toEqual([]);
   });
@@ -276,28 +274,6 @@ describe("architecture: migrated features (ADR 0009 roles)", () => {
   });
 });
 
-describe("architecture: features not yet migrated (ADR 0004 layers)", () => {
-  it("application imports no framework, database or infrastructure", () => {
-    const found = violations(inLegacy, (f, spec) => {
-      if (f.role !== "application") return false;
-      if (isFramework(spec) || spec.startsWith("@/common/db")) return true;
-      const own = ownRole(f, spec);
-      return own === "infrastructure" || own === "ui";
-    });
-    expect(found).toEqual([]);
-  });
-
-  it("ui never imports mongodb, infrastructure, db or env", () => {
-    const found = violations(inLegacy, (f, spec) => {
-      if (f.role !== "ui") return false;
-      if (spec === "mongodb" || spec.startsWith("@/common/db") || spec === "@/common/config/env")
-        return true;
-      return target(f.file, spec)?.role === "infrastructure";
-    });
-    expect(found).toEqual([]);
-  });
-});
-
 describe("architecture: app routes and pages", () => {
   it("never touch the database or a migrated feature's internals", () => {
     const found = walk(APP).flatMap((f) =>
@@ -308,10 +284,75 @@ describe("architecture: app routes and pages", () => {
           if (s.startsWith("@/common/db")) return !f.endsWith(join("api", "health", "route.ts"));
           const t = target(f, s);
           if (!t || !migrated.has(t.feature)) return false;
-          return !["index", "domain", "ui", "dto", "model"].includes(t.role);
+          // Pages may parse their URL with a feature's schemas.
+          return !["index", "domain", "ui", "dto", "model", "schema"].includes(t.role);
         })
         .map((s) => `${relative(ROOT, f)} → ${s}`),
     );
+    expect(found).toEqual([]);
+  });
+});
+
+/**
+ * Containers import each other's indexes, and those imports can form cycles. Reading another
+ * feature's object while a container is being built then fails ("Cannot access X before
+ * initialization") depending on which module loads first. So another feature's imports may
+ * only be used inside a closure or a lazy() factory, which run at call time.
+ */
+function usedEagerly(src: string, name: string): number[] {
+  const lines: number[] = [];
+  const re = new RegExp(`(?<![\\w.$])${name}(?![\\w$])`, "g");
+  for (const m of src.matchAll(re)) {
+    const at = m.index!;
+    const lineStart = src.lastIndexOf("\n", at) + 1;
+    if (src.slice(lineStart, lineStart + 7) === "import ") continue;
+    // Walk outwards through the enclosing brackets; any arrow body or lazy() makes it deferred.
+    let depth = 0;
+    let deferred = false;
+    for (let i = at - 1; i >= 0; i--) {
+      const c = src[i];
+      // A line starting at column 0 begins the top-level statement: nothing encloses it.
+      if (c === "\n" && depth === 0 && /\S/.test(src[i + 1] ?? "")) break;
+      if (c === ")" || c === "}" || c === "]") depth++;
+      else if (c === "(" || c === "{" || c === "[") {
+        if (depth > 0) {
+          depth--;
+          continue;
+        }
+        // The text before the bracket on its line: an arrow, lazy(, or a function signature.
+        const before = src.slice(src.lastIndexOf("\n", i) + 1, i).trimEnd();
+        const fnBody = c === "{" && /\)\s*(:\s*[^=;{]+)?$/.test(before);
+        if (before.endsWith("=>") || /lazy$/.test(before) || fnBody) {
+          deferred = true;
+          break;
+        }
+      } else if (depth === 0 && src.startsWith("=>", i)) {
+        // Expression-bodied arrow: `(x) => name.method(x)`.
+        deferred = true;
+        break;
+      }
+    }
+    if (!deferred) lines.push(src.slice(0, at).split("\n").length);
+  }
+  return lines;
+}
+
+describe("architecture: containers", () => {
+  it("use other features' objects only inside closures or lazy() (no init cycles)", () => {
+    const found = moduleFiles
+      .filter((f) => f.role === "container")
+      .flatMap((f) => {
+        const src = readFileSync(f.file, "utf8");
+        const names = [...src.matchAll(/import \{([^}]*)\} from "@\/modules\/([a-z-]+)";/g)]
+          .filter((m) => m[2] !== f.feature)
+          .flatMap((m) => m[1].split(","))
+          .map((n) => n.trim())
+          .filter((n) => n && !n.startsWith("type "))
+          .map((n) => n.split(" as ").pop()!.trim());
+        return names.flatMap((n) =>
+          usedEagerly(src, n).map((line) => `${relative(ROOT, f.file)}:${line} → ${n}`),
+        );
+      });
     expect(found).toEqual([]);
   });
 });

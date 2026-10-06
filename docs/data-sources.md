@@ -2,7 +2,7 @@
 
 ## OpenDota
 
-All calls go through `ProviderGateway` (`src/modules/shared/infrastructure/provider-gateway.ts`): timeouts, bounded
+All calls go through `ProviderGateway` (`src/common/providers/provider-gateway.ts`): timeouts, bounded
 retries with jitter that honour `Retry-After`, a circuit breaker, in-flight de-duplication and a TTL cache. Failures
 degrade the page section that needed the data ("unavailable right now"), never the whole page.
 

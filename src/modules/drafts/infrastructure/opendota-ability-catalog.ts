@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ProviderGateway } from "@/common/providers/provider-gateway";
-import type { AbilityCatalog } from "../application/ports";
+import type { AbilityCatalog } from "../drafts.ports";
 import { abilityTags, briefDescription, type HeroKit } from "../domain/draft-review";
 
 const DAY_MS = 24 * 3_600_000;

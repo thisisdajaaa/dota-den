@@ -5,7 +5,7 @@ import {
   replaySnapshot,
   snapshotOf,
   type DraftSnapshot,
-} from "@/modules/drafts/application/snapshot";
+} from "@/modules/drafts/domain/snapshot";
 import { isComplete } from "@/modules/drafts/domain/draft-state";
 import { getRuleset } from "@/modules/drafts/domain/rulesets";
 

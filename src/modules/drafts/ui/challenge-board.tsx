@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest, errorMessage } from "@/common/http/api-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -164,22 +165,16 @@ export function ChallengeBoard({
     if (selected.length !== puzzle.answerCount) return;
     setStatus({ kind: "grading" });
     try {
-      const res = await fetch("/api/v1/drafts/challenges/grade", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ type: puzzle.type, seed: puzzle.seed, heroIds: selected }),
-      });
-      const body = (await res.json().catch(() => null)) as
-        | (ChallengeResult & {
-            error?: undefined;
-            saved?: (SavedStreak & { counted: boolean }) | null;
-          })
-        | { error: { message: string } }
-        | null;
-      if (!res.ok || !body || body.error) {
+      let body: ChallengeResult & { saved?: (SavedStreak & { counted: boolean }) | null };
+      try {
+        body = await apiRequest("/api/v1/drafts/challenges/grade", {
+          method: "POST",
+          body: { type: puzzle.type, seed: puzzle.seed, heroIds: selected },
+        });
+      } catch (e) {
         setStatus({
           kind: "error",
-          message: body?.error?.message ?? "Couldn't grade your answer. Please try again.",
+          message: errorMessage(e, "Couldn't grade your answer. Please try again."),
         });
         return;
       }

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { cn } from "cn";
-import type { ItemInfo } from "../application/ports";
+import type { ItemInfo } from "../matches.ports";
 
 /** Item icon (88×64 source). Empty slots render as a recessed well. */
 export function ItemIcon({

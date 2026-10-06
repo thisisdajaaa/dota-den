@@ -5,7 +5,7 @@ import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
-import { getDraftHistoryService } from "@/modules/drafts/composition";
+import { draftHistoryService } from "@/modules/drafts";
 import { usersService, type User } from "@/modules/identity";
 import { followService, ownerOf, playerDirectory, playersService } from "@/modules/players";
 import { draftsReferee } from "./infrastructure/drafts-referee";
@@ -32,7 +32,7 @@ const friends = new FriendsLookupService({
   tracked: (viewer) =>
     followService.list(ownerOf({ id: viewer.userId, accountId32: viewer.accountId32 })),
   peers: (id) => playerDirectory.peers(id),
-  roomOpponents: async (userId, limit) => (await getDraftHistoryService()).opponents(userId, limit),
+  roomOpponents: async (userId, limit) => draftHistoryService.opponents(userId, limit),
   logger,
 });
 
@@ -53,7 +53,7 @@ export const leaderboardService = lazy(
   () =>
     new LeaderboardService({
       activity: activityRepository,
-      rooms: { totals: async (query) => (await getDraftHistoryService()).captainTotals(query) },
+      rooms: { totals: async (query) => draftHistoryService.captainTotals(query) },
       accounts,
       profiles: {
         profile: async (accountId32) => {
@@ -79,7 +79,7 @@ export const rankedWeekService = new RankedWeekService({
     recordFor: (id) => rankedWeekFor(openDotaGateway(), openDotaConfig(), id),
     bestHero: (id) => bestHeroThisWeek(openDotaGateway(), openDotaConfig(), id),
   },
-  profiles: playersService,
+  profiles: { publicProfile: (id) => playersService.publicProfile(id) },
 });
 
 export const leaderboardsController = new LeaderboardsController({ activity: activityService });

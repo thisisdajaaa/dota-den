@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, X } from "lucide-react";
 import { cn } from "cn";
-import type { HeroInfo, RankedResultRow } from "@/modules/matches/application/ports";
+import type { HeroInfo, RankedResultRow } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { queueLabel } from "@/modules/matches/ui/format";
 import { ESTIMATE_PER_GAME, type CalendarDay } from "../domain/calendar";

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
-import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import {

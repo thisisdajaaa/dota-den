@@ -2,7 +2,7 @@
 
 | Document                          | What's in it                                                                                  |
 | --------------------------------- | --------------------------------------------------------------------------------------------- |
-| [Architecture](architecture.md)   | Modules and layer rules, composition, data flows, caching                                     |
+| [Architecture](architecture.md)   | Feature module anatomy, data flows, caching                                                   |
 | [Configuration](configuration.md) | Every environment variable: type, default, where it's used                                    |
 | [API reference](api.md)           | Every route handler: method, auth, limits, request and response                               |
 | [Draft engine](draft-engine.md)   | Rulesets, positions, lanes, scoring, outlook, report card, calibration, AI captain and review |

@@ -1,5 +1,5 @@
 import { SafeImage } from "@/components/safe-image";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import type { HeroPatchNotes } from "../domain/patch";

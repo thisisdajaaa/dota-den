@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronDown, Info, Loader2, Swords, UsersRound } from "lucide-react";
 import { cn } from "cn";
 import { StatTile } from "@/components/stat-tile";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";

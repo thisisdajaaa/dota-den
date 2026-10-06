@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TrendingDown, TrendingUp } from "lucide-react";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DraftMetaCache } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
+import type { DraftMetaCache } from "@/modules/drafts/repositories/draft-meta-cache.repository";
 import {
   OpenDotaDraftInsights,
   toPositions,

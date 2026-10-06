@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { getHeroMap } from "@/modules/matches/composition";
-import { getChallengeService } from "@/modules/drafts/composition";
+import { matchesService } from "@/modules/matches";
+import { getChallengeService } from "@/modules/drafts";
 import {
   CHALLENGE_INFO,
   describePosition,
@@ -71,7 +71,7 @@ export default async function DraftChallengePage({
   }
 
   const [heroMap, service, saved] = await Promise.all([
-    getHeroMap(),
+    matchesService.heroMap(),
     getChallengeService(),
     viewerChallengeStreak(),
   ]);

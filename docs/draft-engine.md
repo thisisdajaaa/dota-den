@@ -105,7 +105,7 @@ OpenDota key the script throttles itself to the free rate limit (a few minutes).
 
 ## AI captain
 
-`application/ai-opponent-service.ts` → `move()`. The server ranks candidates and sends a shortlist of 12 with their
+`services/ai-opponent.service.ts` → `move()`. The server ranks candidates and sends a shortlist of 12 with their
 facts, the lineup situation by position, and the tournament picture to the language model
 (`infrastructure/groq-draft-advisor.ts`). The model must pick from the shortlist and give a short reason citing the
 data; anything else (or a timeout) falls back to the top-ranked candidate, marked "rule-based" in the draft log.
