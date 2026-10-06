@@ -7,7 +7,7 @@ import {
   snapshotOf,
 } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import type { DraftReferee } from "../leaderboards.ports";
 
 /** Replays drafts with the drafts context's engine and asks its AI captain for the outlook. */
@@ -15,7 +15,7 @@ export const draftsReferee: DraftReferee = {
   async replay(encoded) {
     const decoded = decodeSnapshot(encoded);
     if (!decoded.ok) return err({ type: "invalid_snapshot" });
-    const pool = [...(await getHeroMap()).keys()];
+    const pool = [...(await matchesService.heroMap()).keys()];
     if (pool.length === 0) return err({ type: "heroes_unavailable" });
     const replayed = replaySnapshot(decoded.value, pool);
     if (!replayed.ok) return err({ type: "invalid_snapshot" });

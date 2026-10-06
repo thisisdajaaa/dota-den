@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
-import type { HeroInfo } from "../application/ports";
+import type { HeroInfo } from "../matches.ports";
 import type { MatchPlayer } from "../domain/match-detail";
 import {
   betterThan,

@@ -5,7 +5,7 @@ import { logger } from "@/common/logging/logger";
 import { ProviderGateway } from "@/common/providers/provider-gateway";
 import { sharedGatewayOptions } from "@/common/providers/shared-gateway-options";
 import { lazy } from "@/common/utils/lazy";
-import { getMatchQueries } from "@/modules/matches/composition";
+import { matchQueries } from "@/modules/matches";
 import { OpenDotaPatchReferenceCatalog } from "./infrastructure/opendota-reference-catalog";
 import { ValvePatchAdapter } from "./infrastructure/valve-patch-adapter";
 import { PatchesController } from "./patches.controller";
@@ -79,7 +79,7 @@ export const patchesService = new PatchesService({
   importer: () => patchImportService,
   watchlists: patchWatchlistService,
   ranked: {
-    rankedResults: async (id, range) => (await getMatchQueries()).rankedResults(id, range),
+    rankedResults: async (id, range) => matchQueries.rankedResults(id, range),
   },
   logger,
 });

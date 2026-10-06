@@ -6,7 +6,7 @@ import {
   openDotaGateway,
 } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { patchesService } from "@/modules/patches";
 import { OpenDotaMetaSource } from "./infrastructure/opendota-meta-source";
 import { MetaService } from "./meta.service";
@@ -23,7 +23,8 @@ export const metaSource = lazy(
 export const metaService = new MetaService({
   stats: metaSource,
   lanes: metaSource,
-  heroes: async () => [...(await getHeroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
+  heroes: async () =>
+    [...(await matchesService.heroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
   patches: {
     latest: async () => {
       await patchesService.ensureFresh();

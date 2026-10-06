@@ -5,7 +5,7 @@ import * as drafts from "@/modules/drafts/composition";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
-import * as matches from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import { patchWatchlistService } from "@/modules/patches";
 import { followService } from "@/modules/players";
@@ -22,7 +22,7 @@ export const privacyService = new PrivacyService({
     patchWatchlistService,
     activityService,
     drafts,
-    matches,
+    matchesService,
     togetherService,
     annotationsService,
     goalsService,

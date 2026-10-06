@@ -1,14 +1,13 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { toFact } from "@/modules/matches/application/match-sync-service";
-import type { ImportedPlayerMatch } from "@/modules/matches/application/ports";
+import { toFact } from "@/modules/matches/services/match-sync.service";
+import type { ImportedPlayerMatch } from "@/modules/matches/matches.ports";
 import {
-  ensureMatchIndexes,
   MATCH_COLLECTIONS,
-  MongoMatchQueries,
-  MongoPlayerMatchFactRepository,
-  MongoSyncStateRepository,
-} from "@/modules/matches/infrastructure/mongo-match-repositories";
+  MatchReadRepository,
+  MatchFactsRepository,
+  SyncStatesRepository,
+} from "@/modules/matches/repositories/matches.repository";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -16,7 +15,7 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensureMatchIndexes(db);
+  await new MatchFactsRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -42,9 +41,9 @@ function fact(accountId32: number, matchId: string, partySize: number | null = 1
   return toFact(m, []);
 }
 
-describe("MongoPlayerMatchFactRepository", () => {
+describe("MatchFactsRepository", () => {
   it("upserts idempotently per (account, match) and shares one match record", async () => {
-    const repo = new MongoPlayerMatchFactRepository(db);
+    const repo = new MatchFactsRepository(async () => db);
     expect(await repo.upsertMany([fact(1, "m1"), fact(2, "m1")])).toEqual({
       inserted: 2,
       updated: 0,
@@ -62,14 +61,14 @@ describe("MongoPlayerMatchFactRepository", () => {
   });
 
   it("handles an empty batch", async () => {
-    expect(await new MongoPlayerMatchFactRepository(db).upsertMany([])).toEqual({
+    expect(await new MatchFactsRepository(async () => db).upsertMany([])).toEqual({
       inserted: 0,
       updated: 0,
     });
   });
 });
 
-describe("MongoSyncStateRepository", () => {
+describe("SyncStatesRepository", () => {
   const opts = (now: Date) => ({
     now,
     lockTtlMs: 60_000,
@@ -78,7 +77,7 @@ describe("MongoSyncStateRepository", () => {
   });
 
   it("lets exactly one concurrent caller acquire the lock", async () => {
-    const repo = new MongoSyncStateRepository(db);
+    const repo = new SyncStatesRepository(async () => db);
     const now = new Date();
     const outcomes = await Promise.all(
       Array.from({ length: 5 }, () => repo.acquire(42, opts(now))),
@@ -88,7 +87,7 @@ describe("MongoSyncStateRepository", () => {
   });
 
   it("applies cooldown after release and allows reacquire after it", async () => {
-    const repo = new MongoSyncStateRepository(db);
+    const repo = new SyncStatesRepository(async () => db);
     const t0 = new Date("2026-09-29T00:00:00Z");
     expect((await repo.acquire(43, opts(t0))).type).toBe("acquired");
     await repo.release(43, {
@@ -106,7 +105,7 @@ describe("MongoSyncStateRepository", () => {
   });
 
   it("uses the shorter backfill cooldown while history is incomplete", async () => {
-    const repo = new MongoSyncStateRepository(db);
+    const repo = new SyncStatesRepository(async () => db);
     const t0 = new Date("2026-09-29T00:00:00Z");
     await repo.acquire(45, opts(t0));
     await repo.release(45, {
@@ -125,7 +124,7 @@ describe("MongoSyncStateRepository", () => {
   });
 
   it("recovers from an expired lock and from abandon", async () => {
-    const repo = new MongoSyncStateRepository(db);
+    const repo = new SyncStatesRepository(async () => db);
     const t0 = new Date("2026-09-29T00:00:00Z");
     await repo.acquire(44, opts(t0));
     expect((await repo.acquire(44, opts(new Date(t0.getTime() + 60_001)))).type).toBe("acquired");
@@ -134,7 +133,7 @@ describe("MongoSyncStateRepository", () => {
   });
 
   it("lists accounts due a background sync, longest wait first", async () => {
-    const repo = new MongoSyncStateRepository(db);
+    const repo = new SyncStatesRepository(async () => db);
     const release = async (id: number, lastSyncAt: Date, backfillComplete: boolean) => {
       await repo.acquire(id, opts(lastSyncAt));
       await repo.release(id, {
@@ -155,12 +154,12 @@ describe("MongoSyncStateRepository", () => {
   });
 });
 
-describe("MongoMatchQueries.listMatches", () => {
+describe("MatchReadRepository.listMatches", () => {
   const ACCOUNT = 777;
   const all = { range: "all", mode: "all", queue: "all", result: "all" } as const;
 
   beforeAll(async () => {
-    const repo = new MongoPlayerMatchFactRepository(db);
+    const repo = new MatchFactsRepository(async () => db);
     const facts = Array.from({ length: 30 }, (_, i) => {
       const f = fact(ACCOUNT, `L${String(i).padStart(3, "0")}`, i % 3 === 0 ? null : i % 3);
       return {
@@ -174,7 +173,7 @@ describe("MongoMatchQueries.listMatches", () => {
   });
 
   it("pages newest-first with a cursor, without gaps or duplicates", async () => {
-    const q = new MongoMatchQueries(db);
+    const q = new MatchReadRepository(async () => db);
     const now = new Date("2026-02-01");
     const seen: string[] = [];
     let cursor: string | undefined;
@@ -192,7 +191,7 @@ describe("MongoMatchQueries.listMatches", () => {
   });
 
   it("applies queue, result and hero filters to items and totals alike", async () => {
-    const q = new MongoMatchQueries(db);
+    const q = new MatchReadRepository(async () => db);
     const now = new Date("2026-02-01");
     const unknown = await q.listMatches(ACCOUNT, { ...all, queue: "unknown" }, now, 50);
     expect(unknown.record.games).toBe(10);
@@ -207,7 +206,7 @@ describe("MongoMatchQueries.listMatches", () => {
   });
 
   it("lists played heroes by games", async () => {
-    expect(await new MongoMatchQueries(db).playedHeroes(ACCOUNT)).toEqual([
+    expect(await new MatchReadRepository(async () => db).playedHeroes(ACCOUNT)).toEqual([
       { heroId: 1, games: 20 },
       { heroId: 14, games: 10 },
     ]);

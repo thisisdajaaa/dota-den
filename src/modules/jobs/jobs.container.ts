@@ -5,8 +5,7 @@ import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { draftInsights } from "@/modules/drafts/composition";
-import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/application/match-sync-service";
-import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
+import { BACKFILL_COOLDOWN_MS, matchesService, matchSyncService } from "@/modules/matches";
 import { metaService } from "@/modules/meta";
 import { medalService } from "@/modules/mmr";
 import { patchImportService } from "@/modules/patches";
@@ -24,8 +23,8 @@ export const jobRunsRepository = new JobRunsRepository(getDb);
 export const cronRunsRepository = new CronRunsRepository(getDb);
 
 const matches: MatchSyncPort = {
-  sync: async (id) => (await getMatchSyncService()).sync(id),
-  syncDue: async (opts) => (await getMatchSyncService()).syncDue(opts),
+  sync: async (id) => matchSyncService.sync(id),
+  syncDue: async (opts) => matchSyncService.syncDue(opts),
 };
 
 /** QStash when configured (durable, retried, can wait); otherwise in-process after the response. */
@@ -67,7 +66,7 @@ export const cronService = new CronService({
   matches,
   medals: {
     currentRankTier: async (id) => {
-      const profile = await getPlayerProfile(id);
+      const profile = await matchesService.playerProfile(id);
       return profile ? { rankTier: profile.rankTier } : null;
     },
     record: (id, tier) => medalService.record(id, tier),

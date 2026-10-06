@@ -2,7 +2,7 @@ import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/common/http/http";
 import { getRouteUser } from "@/modules/identity";
-import { getPlayerProfile } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import type { HistoryError } from "./application/draft-history-service";
 import type { Actor, RoomError } from "./application/draft-room-service";
 import type { EventView, RoomView } from "./application/room-views";
@@ -48,7 +48,7 @@ export function eventView(e: RoomEvent): EventView {
 export async function routeActor(req: NextRequest): Promise<Actor | null> {
   const user = await getRouteUser(req);
   if (!user) return null;
-  const profile = await getPlayerProfile(user.accountId32);
+  const profile = await matchesService.playerProfile(user.accountId32);
   return {
     userId: user.id,
     captain: {

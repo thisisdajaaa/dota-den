@@ -3,7 +3,7 @@ import { goalsService } from "@/modules/goals";
 import { describeGoal } from "@/modules/goals/domain/goals";
 import { GoalsCard } from "@/modules/goals/ui/goals-card";
 import type { User } from "@/modules/identity";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 
 /** Up to two goals for the week, measured from the player's own games and MMR log. */

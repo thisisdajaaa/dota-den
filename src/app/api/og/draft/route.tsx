@@ -3,12 +3,12 @@ import type { NextRequest } from "next/server";
 import { OG, OG_SIZE, OgFrame, OgHero } from "@/components/og/og-frame";
 import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 
 /** Link preview for a shared draft: both lineups, and the report card when it's finished. */
 export async function GET(req: NextRequest): Promise<ImageResponse> {
   const raw = req.nextUrl.searchParams.get("snapshot") ?? "";
-  const heroes = await getHeroMap();
+  const heroes = await matchesService.heroMap();
   const decoded = raw.length <= 2_000 ? decodeSnapshot(raw) : null;
   // Replayed through the rules engine: a tampered link can't render a made-up draft.
   const replayed = decoded?.ok ? replaySnapshot(decoded.value, [...heroes.keys()]) : null;

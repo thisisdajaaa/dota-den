@@ -6,11 +6,12 @@ import type {
   ImportedPlayerMatch,
   MatchProvider,
   PatchTimelineSource,
-  PlayerMatchFactRepository,
+  MatchFactsPort,
   ProviderError,
   SyncState,
-  SyncStateRepository,
-} from "./ports";
+  SyncStatesPort,
+} from "../matches.ports";
+import type { SyncError, SyncSummary } from "../dtos/responses/matches.dto";
 
 export const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
 /** Shorter wait between syncs while older history is still being imported. */
@@ -27,21 +28,6 @@ export const PERIODIC_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Time for the upstream to finish a refresh before we re-walk the whole history. */
 export const RESCAN_DELAY_MS = 15 * 60 * 1000;
 export const MAX_PAGES_PER_SYNC = 5;
-
-export type SyncError =
-  | { type: "sync_in_progress" }
-  | { type: "cooldown"; retryAt: Date }
-  | { type: "provider"; error: ProviderError };
-
-export interface SyncSummary {
-  fetched: number;
-  inserted: number;
-  updated: number;
-  rejected: number;
-  backfillComplete: boolean;
-  /** True when this sync asked the upstream to fetch the player's history from Steam. */
-  historyRefreshRequested: boolean;
-}
 
 export function toFact(
   m: ImportedPlayerMatch,
@@ -63,8 +49,8 @@ export class MatchSyncService {
     private readonly deps: {
       provider: MatchProvider;
       patches: PatchTimelineSource;
-      facts: PlayerMatchFactRepository;
-      syncState: SyncStateRepository;
+      facts: MatchFactsPort;
+      syncState: SyncStatesPort;
       now?: () => Date;
       pageSize?: number;
       maxPages?: number;

@@ -9,7 +9,7 @@ import { clock, draftComplete, leadText, sideHeroes } from "@/modules/live/domai
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { LineupRow } from "@/modules/live/ui/live-game-card";
 import { WatchSection } from "@/modules/live/ui/watch-section";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 
 export const metadata: Metadata = { title: "Live game" };
 
@@ -19,7 +19,7 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
   const { matchId } = await params;
   const [game, heroes] = await Promise.all([
     MATCH_ID.test(matchId) ? liveService.game(matchId) : null,
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   const back = (
     <Link

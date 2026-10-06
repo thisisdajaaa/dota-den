@@ -6,7 +6,8 @@ import type { Db } from "mongodb";
 import { getDb } from "@/common/db/mongo";
 import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
-import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
+import { openDotaGateway } from "@/common/providers/opendota";
 import { AiOpponentService, type AiHero } from "./application/ai-opponent-service";
 import { ChallengeService } from "./application/challenge-service";
 import { DraftHistoryService } from "./application/draft-history-service";
@@ -26,7 +27,7 @@ import { findDraftReads, rankedLineups, saveDraftRead } from "./infrastructure/m
 import * as userData from "./infrastructure/user-data";
 
 async function scoringHeroes(): Promise<AiHero[]> {
-  return [...(await getHeroMap()).values()].map((h) => ({
+  return [...(await matchesService.heroMap()).values()].map((h) => ({
     id: h.id,
     name: h.name,
     roles: h.roles,
@@ -131,7 +132,7 @@ export async function getDraftRoomService(): Promise<DraftRoomService> {
   const config = env();
   return new DraftRoomService({
     rooms: roomRepository(db),
-    heroPool: async () => [...(await getHeroMap()).keys()],
+    heroPool: async () => [...(await matchesService.heroMap()).keys()],
     newId: newRoomId,
     enabled: config.FEATURE_DRAFT_ROOMS,
     limits: {
@@ -156,7 +157,7 @@ export async function getDraftRoomEvents(roomId: string, after: number) {
 
 /** The hero catalog as the draft screens need it, sorted by name. Empty if unavailable. */
 export async function getDraftHeroes(): Promise<DraftHero[]> {
-  return [...(await getHeroMap()).values()]
+  return [...(await matchesService.heroMap()).values()]
     .map((h) => ({
       id: h.id,
       name: h.name,

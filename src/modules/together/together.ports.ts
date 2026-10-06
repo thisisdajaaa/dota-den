@@ -1,5 +1,5 @@
 import type { Result } from "@/common/result";
-import type { DashboardFact } from "@/modules/matches/application/ports";
+import type { DashboardFact } from "@/modules/matches/domain/read-models";
 import type { Peer, WinLoss } from "@/modules/players/domain/public-player";
 import type { PairAnalysis, TogetherOverview } from "./dtos/responses/together.dto";
 import type { AccountPair, PairClassification } from "./domain/pair";

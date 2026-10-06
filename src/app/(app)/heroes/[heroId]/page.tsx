@@ -23,8 +23,8 @@ import { ProgressCard } from "@/modules/heroes/ui/progress-card";
 import { guideService } from "@/modules/guides";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { getCurrentUser } from "@/modules/identity";
-import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
-import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
+import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
+import { matchesService, matchQueries } from "@/modules/matches";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
@@ -44,7 +44,7 @@ export async function generateMetadata({
 }: PageProps<"/heroes/[heroId]">): Promise<Metadata> {
   const heroId = parseHeroId((await params).heroId);
   if (heroId === null) return { title: "Hero not found" };
-  const hero = (await getHeroMap()).get(heroId);
+  const hero = (await matchesService.heroMap()).get(heroId);
   return { title: `You on ${heroName(hero, heroId)}` };
 }
 
@@ -68,11 +68,8 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
   if (heroId === null) notFound();
 
   const service = heroesService;
-  const [heroes, queries, { timeZone }] = await Promise.all([
-    getHeroMap(),
-    getMatchQueries(),
-    getViewerTimeZone(),
-  ]);
+  const queries = matchQueries;
+  const [heroes, { timeZone }] = await Promise.all([matchesService.heroMap(), getViewerTimeZone()]);
   const hero = heroes.get(heroId);
   const now = new Date();
   const { record, trend } = await service.overview(user.accountId32, heroId, timeZone);
@@ -272,7 +269,7 @@ async function BuildSection({
 }) {
   const [res, items] = await Promise.all([
     details,
-    getItemMap().catch((): Map<number, ItemInfo> => new Map()),
+    matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
   ]);
   if (!res.ok || !res.value.items?.enough || items.size === 0) return null;
   const pro = await guideService
@@ -289,7 +286,7 @@ async function BuildSection({
 async function ItemsSection({ details, name }: { details: DetailsResult; name: string }) {
   const [res, items] = await Promise.all([
     details,
-    getItemMap().catch((): Map<number, ItemInfo> => new Map()),
+    matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
   ]);
   if (!res.ok)
     return (

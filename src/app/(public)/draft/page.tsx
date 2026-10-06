@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AlertTriangle, Eye, History, Puzzle, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/application/snapshot";
 import { getRuleset } from "@/modules/drafts/domain/rulesets";
 import { DraftBoard } from "@/modules/drafts/ui/draft-board";
@@ -29,7 +29,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/draft">): P
 export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
   const { snapshot } = await searchParams;
   const [heroMap, user] = await Promise.all([
-    getHeroMap(),
+    matchesService.heroMap(),
     // Only decides whether finished drafts are saved; an outage just skips that.
     getCurrentUser({ tolerateErrors: true }),
   ]);

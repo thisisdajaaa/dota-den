@@ -102,16 +102,16 @@ reached through their `index.ts` and passed in as port implementations.
 
 ### Import rules (enforced by `tests/unit/architecture.test.ts`)
 
-| File                                            | May import                                                                                                   | Must not import                                                                   |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| `domain/*`                                      | own `domain/`, `@/common/result`                                                                             | next, react, mongodb, other `@/common/*`, anything else in the module             |
-| `*.model.ts`, `*.ports.ts`, `dtos/`, `schemas/` | own model/domain/dtos/schemas, zod                                                                           | next, mongodb (types-only in models), services, repositories                      |
-| `*.service.ts`                                  | own domain, model, ports, dtos, `@/common/errors`, `@/common/utils`, `@/common/logging`                      | next, react, mongodb, `@/common/db`, repositories, controllers, ui                |
-| `*.repository.ts`                               | own model, mongodb, `@/common/db` types, `@/common/privacy`                                                  | next, services, controllers, ui                                                   |
-| `*.controller.ts`                               | own service (type), schemas, dtos, `@/common/http`, `@/common/errors`                                        | mongodb, `@/common/db`, repositories                                              |
-| `ui/*`                                          | own domain/dtos/model types, other features' `ui/` and `domain/`, `@/components`, `@/common/http/api-client` | mongodb, `@/common/db`, `@/common/config/env`, containers, repositories, services |
-| other features                                  | `@/modules/<other>` (index), `@/modules/<other>/domain/*`, `@/modules/<other>/ui/*`                          | anything else inside another feature                                              |
-| `src/app/**`                                    | `@/modules/<feature>` (index), `ui/`, `domain/`, `@/components`, `@/common/http`                             | repositories, `@/common/db`, mongodb                                              |
+| File                                            | May import                                                                                                            | Must not import                                                                   |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `domain/*`                                      | own `domain/`, `@/common/result`                                                                                      | next, react, mongodb, other `@/common/*`, anything else in the module             |
+| `*.model.ts`, `*.ports.ts`, `dtos/`, `schemas/` | own model/domain/dtos/schemas, zod                                                                                    | next, mongodb (types-only in models), services, repositories                      |
+| `*.service.ts`                                  | own domain, model, ports, dtos, `@/common/errors`, `@/common/utils`, `@/common/logging`                               | next, react, mongodb, `@/common/db`, repositories, controllers, ui                |
+| `*.repository.ts`                               | own model, mongodb, `@/common/db` types, `@/common/privacy`                                                           | next, services, controllers, ui                                                   |
+| `*.controller.ts`                               | own service (type), schemas, dtos, `@/common/http`, `@/common/errors`                                                 | mongodb, `@/common/db`, repositories                                              |
+| `ui/*`                                          | own domain/dtos/model types, other features' `ui/` and `domain/`, `@/components`, `@/common/http/api-client`          | mongodb, `@/common/db`, `@/common/config/env`, containers, repositories, services |
+| other features                                  | `@/modules/<other>` (index), `@/modules/<other>/domain/*`, `@/modules/<other>/ui/*`                                   | anything else inside another feature                                              |
+| `src/app/**`                                    | `@/modules/<feature>` (index), `ui/`, `domain/`, `dtos/`, `schemas/` (to parse URLs), `@/components`, `@/common/http` | repositories, `@/common/db`, mongodb                                              |
 
 ### Migration
 

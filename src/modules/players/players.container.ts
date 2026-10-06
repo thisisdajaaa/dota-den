@@ -3,7 +3,7 @@ import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
-import { getOpenDotaAdapter, getPublicRecentMatches } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { OpenDotaPlayerDirectory, steamAvatar } from "./infrastructure/opendota-player-directory";
 import { PlayersController } from "./players.controller";
 import { FollowsRepository } from "./repositories/follows.repository";
@@ -23,8 +23,8 @@ export const playersService = lazy(
     new PlayersService({
       directory: playerDirectory,
       profiles: {
-        fetchPlayerProfile: (id) => getOpenDotaAdapter().fetchPlayerProfile(id),
-        recentMatches: (id, limit) => getPublicRecentMatches(id, limit),
+        fetchPlayerProfile: (id) => matchesService.profile(id),
+        recentMatches: (id, limit) => matchesService.publicRecentMatches(id, limit),
       },
       follows: followService,
       safeAvatar: steamAvatar,

@@ -1,7 +1,13 @@
-import type { AnyBulkWriteOperation, Collection, Db } from "mongodb";
+import "server-only";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
+import type { AnyBulkWriteOperation, Db } from "mongodb";
 import type { PlayerMatchFact } from "../domain/player-match-fact";
 import type { QueueClass } from "../domain/queue-classification";
-import { decodeCursor, encodeCursor, type MatchListFilter } from "../application/match-list-filter";
+import {
+  decodeCursor,
+  encodeCursor,
+  type MatchListFilter,
+} from "../schemas/match-list-filter.schema";
 import type {
   DashboardFact,
   MatchListPage,
@@ -11,10 +17,10 @@ import type {
   ImportStatus,
   LockOutcome,
   MatchQueries,
-  PlayerMatchFactRepository,
+  MatchFactsPort,
   SyncState,
-  SyncStateRepository,
-} from "../application/ports";
+  SyncStatesPort,
+} from "../matches.ports";
 
 const SCHEMA_VERSION = 1;
 
@@ -46,35 +52,42 @@ interface SyncStateDoc extends SyncState {
   lockedUntil: Date | null;
 }
 
-export async function ensureMatchIndexes(db: Db): Promise<void> {
-  const facts = db.collection(MATCH_COLLECTIONS.facts);
-  const matches = db.collection(MATCH_COLLECTIONS.matches);
-  await Promise.all([
-    facts.createIndex({ accountId32: 1, matchId: 1 }, { unique: true, name: "uniq_account_match" }),
-    facts.createIndex({ accountId32: 1, startedAt: -1 }, { name: "by_account_date" }),
-    facts.createIndex(
-      { accountId32: 1, "patch.patch": 1, startedAt: -1 },
-      { name: "by_account_patch" },
-    ),
-    facts.createIndex(
-      { accountId32: 1, "queue.queueClass": 1, startedAt: -1 },
-      { name: "by_account_queue" },
-    ),
-    matches.createIndex({ matchId: 1 }, { unique: true, name: "uniq_matchId" }),
-    matches.createIndex({ startedAt: -1 }, { name: "by_date" }),
-    db
-      .collection(MATCH_COLLECTIONS.syncState)
-      .createIndex({ accountId32: 1 }, { unique: true, name: "uniq_accountId32" }),
-  ]);
-}
+export class MatchFactsRepository implements MatchFactsPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-export class MongoPlayerMatchFactRepository implements PlayerMatchFactRepository {
-  private readonly facts: Collection<PlayerMatchFactDoc>;
-  private readonly matches: Collection<MatchDoc>;
+  /** Facts, shared match records and sync state. */
+  async ensureIndexes(): Promise<void> {
+    const db = await this.getDb();
+    const facts = db.collection(MATCH_COLLECTIONS.facts);
+    const matches = db.collection(MATCH_COLLECTIONS.matches);
+    await Promise.all([
+      facts.createIndex(
+        { accountId32: 1, matchId: 1 },
+        { unique: true, name: "uniq_account_match" },
+      ),
+      facts.createIndex({ accountId32: 1, startedAt: -1 }, { name: "by_account_date" }),
+      facts.createIndex(
+        { accountId32: 1, "patch.patch": 1, startedAt: -1 },
+        { name: "by_account_patch" },
+      ),
+      facts.createIndex(
+        { accountId32: 1, "queue.queueClass": 1, startedAt: -1 },
+        { name: "by_account_queue" },
+      ),
+      matches.createIndex({ matchId: 1 }, { unique: true, name: "uniq_matchId" }),
+      matches.createIndex({ startedAt: -1 }, { name: "by_date" }),
+      db
+        .collection(MATCH_COLLECTIONS.syncState)
+        .createIndex({ accountId32: 1 }, { unique: true, name: "uniq_accountId32" }),
+    ]);
+  }
 
-  constructor(db: Db) {
-    this.facts = db.collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
-    this.matches = db.collection<MatchDoc>(MATCH_COLLECTIONS.matches);
+  private async facts() {
+    return (await this.getDb()).collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
+  }
+
+  private async matches() {
+    return (await this.getDb()).collection<MatchDoc>(MATCH_COLLECTIONS.matches);
   }
 
   async upsertMany(
@@ -113,18 +126,18 @@ export class MongoPlayerMatchFactRepository implements PlayerMatchFactRepository
     }));
 
     const [factRes] = await Promise.all([
-      this.facts.bulkWrite(factOps, { ordered: false }),
-      this.matches.bulkWrite(matchOps, { ordered: false }),
+      (await this.facts()).bulkWrite(factOps, { ordered: false }),
+      (await this.matches()).bulkWrite(matchOps, { ordered: false }),
     ]);
     return { inserted: factRes.upsertedCount, updated: factRes.matchedCount };
   }
 }
 
-export class MongoSyncStateRepository implements SyncStateRepository {
-  private readonly col: Collection<SyncStateDoc>;
+export class SyncStatesRepository implements SyncStatesPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.col = db.collection<SyncStateDoc>(MATCH_COLLECTIONS.syncState);
+  private async col() {
+    return (await this.getDb()).collection<SyncStateDoc>(MATCH_COLLECTIONS.syncState);
   }
 
   async acquire(
@@ -138,7 +151,9 @@ export class MongoSyncStateRepository implements SyncStateRepository {
   ): Promise<LockOutcome> {
     const before = (ms: number) => new Date(now.getTime() - ms);
     try {
-      const doc = await this.col.findOneAndUpdate(
+      const doc = await (
+        await this.col()
+      ).findOneAndUpdate(
         {
           accountId32,
           $and: [
@@ -173,7 +188,7 @@ export class MongoSyncStateRepository implements SyncStateRepository {
     } catch (e) {
       if (!isDuplicateKey(e)) throw e;
       // The document exists but didn't match: it's either locked or cooling down.
-      const existing = await this.col.findOne({ accountId32 });
+      const existing = await (await this.col()).findOne({ accountId32 });
       if (existing?.lockedUntil && existing.lockedUntil > now) return { type: "locked" };
       if (existing?.lastSyncAt) {
         const wait = existing.backfillComplete ? cooldownMs : backfillCooldownMs;
@@ -184,15 +199,17 @@ export class MongoSyncStateRepository implements SyncStateRepository {
   }
 
   async release(accountId32: number, next: Omit<SyncState, "accountId32">): Promise<void> {
-    await this.col.updateOne({ accountId32 }, { $set: { ...next, lockedUntil: null } });
+    await (await this.col()).updateOne({ accountId32 }, { $set: { ...next, lockedUntil: null } });
   }
 
   async abandon(accountId32: number): Promise<void> {
-    await this.col.updateOne({ accountId32 }, { $set: { lockedUntil: null } });
+    await (await this.col()).updateOne({ accountId32 }, { $set: { lockedUntil: null } });
   }
 
   async dueForSync(limit: number): Promise<number[]> {
-    const docs = await this.col
+    const docs = await (
+      await this.col()
+    )
       .find({}, { projection: { _id: 0, accountId32: 1 } })
       // Longest wait first (never synced first of all). Unfinished imports don't jump the
       // queue: each run gives every account a turn, and long imports continue the next day.
@@ -203,7 +220,7 @@ export class MongoSyncStateRepository implements SyncStateRepository {
   }
 
   async get(accountId32: number): Promise<SyncState | null> {
-    const doc = await this.col.findOne({ accountId32 });
+    const doc = await (await this.col()).findOne({ accountId32 });
     return doc ? toState(doc) : null;
   }
 }
@@ -260,18 +277,17 @@ function toDashboardFact(d: PlayerMatchFactDoc): DashboardFact {
   };
 }
 
-export class MongoMatchQueries implements MatchQueries {
-  constructor(private readonly db: Db) {}
+export class MatchReadRepository implements MatchQueries {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  private get facts(): Collection<PlayerMatchFactDoc> {
-    return this.db.collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
+  private async facts() {
+    return (await this.getDb()).collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
   }
 
   private async latestPatch(accountId32: number): Promise<string | null> {
-    const latest = await this.facts.findOne(
-      { accountId32 },
-      { sort: { startedAt: -1 }, projection: { "patch.patch": 1 } },
-    );
+    const latest = await (
+      await this.facts()
+    ).findOne({ accountId32 }, { sort: { startedAt: -1 }, projection: { "patch.patch": 1 } });
     return latest?.patch.patch ?? null;
   }
 
@@ -306,14 +322,14 @@ export class MongoMatchQueries implements MatchQueries {
     }
 
     const [docs, totals] = await Promise.all([
-      this.facts
+      (await this.facts())
         .find(page, {
           sort: { startedAt: -1, matchId: -1 },
           limit: limit + 1,
           projection: FACT_PROJECTION,
         })
         .toArray(),
-      this.facts
+      (await this.facts())
         .aggregate<{ games: number; wins: number; losses: number }>([
           { $match: base },
           {
@@ -348,7 +364,9 @@ export class MongoMatchQueries implements MatchQueries {
     accountId32: number,
     range: { from: Date; to: Date },
   ): Promise<RankedResultRow[]> {
-    const docs = await this.facts
+    const docs = await (
+      await this.facts()
+    )
       .find(
         { accountId32, ranked: true, startedAt: { $gte: range.from, $lte: range.to } },
         {
@@ -380,7 +398,9 @@ export class MongoMatchQueries implements MatchQueries {
   }
 
   async playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>> {
-    const rows = await this.facts
+    const rows = await (
+      await this.facts()
+    )
       .aggregate<{ _id: number; games: number }>([
         { $match: { accountId32 } },
         { $group: { _id: "$heroId", games: { $sum: 1 } } },
@@ -392,9 +412,8 @@ export class MongoMatchQueries implements MatchQueries {
 
   async importStatus(accountId32: number): Promise<ImportStatus> {
     const [sync, counts] = await Promise.all([
-      new MongoSyncStateRepository(this.db).get(accountId32),
-      this.db
-        .collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts)
+      new SyncStatesRepository(this.getDb).get(accountId32),
+      (await this.facts())
         .aggregate<{ _id: QueueClass; n: number }>([
           { $match: { accountId32 } },
           { $group: { _id: "$queue.queueClass", n: { $sum: 1 } } },
@@ -421,47 +440,73 @@ export class MongoMatchQueries implements MatchQueries {
       query.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
     if (filter.range === "patch") query["patch.patch"] = latestPatch;
 
-    const docs = await this.facts
+    const docs = await (
+      await this.facts()
+    )
       .find(query, { sort: { startedAt: -1 }, limit: 5_000, projection: FACT_PROJECTION })
       .toArray();
     return { facts: docs.map(toDashboardFact), latestPatch };
   }
-}
 
-/** Admin overview: imported matches and sync state per account. */
-export async function matchStatsByAccount(
-  db: Db,
-  accountIds: readonly number[],
-): Promise<Map<number, { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }>> {
-  const ids = [...accountIds];
-  const [counts, states] = await Promise.all([
-    db
-      .collection(MATCH_COLLECTIONS.facts)
-      .aggregate<{ _id: number; n: number }>([
-        { $match: { accountId32: { $in: ids } } },
-        { $group: { _id: "$accountId32", n: { $sum: 1 } } },
-      ])
-      .toArray(),
-    db
-      .collection(MATCH_COLLECTIONS.syncState)
-      .find(
-        { accountId32: { $in: ids } },
-        { projection: { accountId32: 1, lastSyncAt: 1, backfillComplete: 1 } },
-      )
-      .toArray(),
-  ]);
-  const n = new Map(counts.map((c) => [c._id, c.n]));
-  const out = new Map<
-    number,
-    { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }
-  >();
-  for (const id of ids) {
-    const s = states.find((x) => x.accountId32 === id);
-    out.set(id, {
-      matches: n.get(id) ?? 0,
-      lastSyncAt: (s?.lastSyncAt as Date | null | undefined) ?? null,
-      backfillComplete: Boolean(s?.backfillComplete),
-    });
+  /** Admin overview: imported matches and sync state per account. */
+  async statsByAccount(
+    accountIds: readonly number[],
+  ): Promise<Map<number, { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }>> {
+    const db = await this.getDb();
+    const ids = [...accountIds];
+    const [counts, states] = await Promise.all([
+      db
+        .collection(MATCH_COLLECTIONS.facts)
+        .aggregate<{ _id: number; n: number }>([
+          { $match: { accountId32: { $in: ids } } },
+          { $group: { _id: "$accountId32", n: { $sum: 1 } } },
+        ])
+        .toArray(),
+      db
+        .collection(MATCH_COLLECTIONS.syncState)
+        .find(
+          { accountId32: { $in: ids } },
+          { projection: { accountId32: 1, lastSyncAt: 1, backfillComplete: 1 } },
+        )
+        .toArray(),
+    ]);
+    const n = new Map(counts.map((c) => [c._id, c.n]));
+    const out = new Map<
+      number,
+      { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }
+    >();
+    for (const id of ids) {
+      const s = states.find((x) => x.accountId32 === id);
+      out.set(id, {
+        matches: n.get(id) ?? 0,
+        lastSyncAt: (s?.lastSyncAt as Date | null | undefined) ?? null,
+        backfillComplete: Boolean(s?.backfillComplete),
+      });
+    }
+    return out;
   }
-  return out;
+
+  /** Your imported matches and sync state, for "Download your data". */
+  async exportForOwner(owner: DataOwner) {
+    const db = await this.getDb();
+    const [facts, sync] = await Promise.all([
+      db
+        .collection(MATCH_COLLECTIONS.facts)
+        .find({ accountId32: owner.accountId32 })
+        .sort({ startedAt: -1 })
+        .toArray(),
+      db.collection(MATCH_COLLECTIONS.syncState).find({ accountId32: owner.accountId32 }).toArray(),
+    ]);
+    return { matches: forExport(facts), matchSync: forExport(sync) };
+  }
+
+  /** Your imported matches (public data, re-imported if you sign in again). Shared match records stay. */
+  async deleteForOwner(owner: DataOwner) {
+    const db = await this.getDb();
+    const [facts, sync] = await Promise.all([
+      db.collection(MATCH_COLLECTIONS.facts).deleteMany({ accountId32: owner.accountId32 }),
+      db.collection(MATCH_COLLECTIONS.syncState).deleteMany({ accountId32: owner.accountId32 }),
+    ]);
+    return { matches: facts.deletedCount, matchSync: sync.deletedCount };
+  }
 }

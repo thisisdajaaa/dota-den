@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
-import type { DashboardFact, HeroInfo } from "../application/ports";
+import type { DashboardFact, HeroInfo } from "../matches.ports";
 import { formatAgo, formatDuration, queueLabel } from "./format";
 import { HeroPortrait, heroName } from "./hero-portrait";
 

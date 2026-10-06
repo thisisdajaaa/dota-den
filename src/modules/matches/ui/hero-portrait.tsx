@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { cn } from "cn";
-import type { HeroInfo } from "../application/ports";
+import type { HeroInfo } from "../matches.ports";
 
 const SIZES = {
   xs: "h-6 w-[2.67rem]",

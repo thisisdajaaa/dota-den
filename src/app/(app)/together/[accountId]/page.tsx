@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { parseAccountId } from "@/modules/players/domain/player-lookup";
 import { displayName } from "@/modules/players/ui/player-avatar";
 import { friendsService } from "@/modules/together";
@@ -83,7 +83,7 @@ async function PairAnalysisSection({
 }) {
   const [analysis, heroes] = await Promise.all([
     friendsService.pairAnalysis(me, friendId),
-    getHeroMap(),
+    matchesService.heroMap(),
   ]);
   const now = new Date();
 

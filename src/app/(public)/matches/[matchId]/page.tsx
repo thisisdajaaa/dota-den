@@ -10,7 +10,7 @@ import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
 import { getAiOpponent } from "@/modules/drafts/composition";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap, getItemMap, getOpenDotaAdapter } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { partyGroups } from "@/modules/matches/domain/match-detail";
 import { isRanked } from "@/modules/matches/domain/queue-classification";
 import { averageRankTier } from "@/modules/matches/domain/rank-tier";
@@ -38,9 +38,9 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
   if (!MATCH_ID.test(matchId)) notFound();
 
   const [result, heroes, items, viewer] = await Promise.all([
-    getOpenDotaAdapter().fetchMatch(matchId),
-    getHeroMap(),
-    getItemMap(),
+    matchesService.match(matchId),
+    matchesService.heroMap(),
+    matchesService.itemMap(),
     getCurrentUser({ tolerateErrors: true }),
   ]);
 

@@ -10,7 +10,7 @@ import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-ses
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { UsersService } from "@/modules/identity/services/users.service";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
-import * as matches from "@/modules/matches/infrastructure/user-data";
+import { MatchReadRepository } from "@/modules/matches/repositories/matches.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { MmrJournalService } from "@/modules/mmr/services/mmr-journal.service";
@@ -111,6 +111,14 @@ const mmr = servicePart((getDb) => {
     entries,
     medals: new MedalHistoryRepository(getDb),
   });
+});
+
+const matches = servicePart((getDb) => {
+  const repo = new MatchReadRepository(getDb);
+  return {
+    exportMyData: (o: DataOwner) => repo.exportForOwner(o),
+    deleteMyData: (o: DataOwner) => repo.deleteForOwner(o),
+  };
 });
 
 const PARTS = [

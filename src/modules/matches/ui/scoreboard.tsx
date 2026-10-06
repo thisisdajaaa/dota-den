@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
-import type { HeroInfo, ItemInfo } from "../application/ports";
+import type { HeroInfo, ItemInfo } from "../matches.ports";
 import type { MatchPlayer, PartyGroup } from "../domain/match-detail";
 import { HeroPortrait, heroName } from "./hero-portrait";
 import { ItemIcon } from "./item-icon";

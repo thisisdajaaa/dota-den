@@ -1,5 +1,5 @@
 import { SegmentedLinks } from "@/components/segmented-links";
-import type { DashboardFilter } from "../application/ports";
+import type { DashboardFilter } from "../matches.ports";
 
 function href(filter: DashboardFilter): string {
   const params = new URLSearchParams();

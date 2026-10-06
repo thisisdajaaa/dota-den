@@ -1,4 +1,4 @@
-import type { ItemInfo } from "@/modules/matches/application/ports";
+import type { ItemInfo } from "@/modules/matches/domain/read-models";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import { MetaSection } from "@/modules/meta/ui/meta-section";
 import type { BuildRow } from "../domain/build-vs-pros";

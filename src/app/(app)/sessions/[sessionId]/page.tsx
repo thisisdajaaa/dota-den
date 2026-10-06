@@ -5,8 +5,8 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Info, ThumbsDown, Trophy } from "
 import { StatTile } from "@/components/stat-tile";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
-import type { HeroInfo } from "@/modules/matches/application/ports";
-import { getHeroMap } from "@/modules/matches/composition";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
+import { matchesService } from "@/modules/matches";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
@@ -34,7 +34,7 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
   if (!sessionId) notFound();
 
   const service = sessionService;
-  const [heroes, { timeZone }] = await Promise.all([getHeroMap(), getViewerTimeZone()]);
+  const [heroes, { timeZone }] = await Promise.all([matchesService.heroMap(), getViewerTimeZone()]);
   const detail = await service.detail(
     { userId: user.id, accountId32: user.accountId32 },
     sessionId,

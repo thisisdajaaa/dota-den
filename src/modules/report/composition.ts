@@ -1,6 +1,7 @@
 import "server-only";
 import { env } from "@/common/config/env";
-import { getMatchQueries, openDotaGateway } from "@/modules/matches/composition";
+import { matchQueries } from "@/modules/matches";
+import { openDotaGateway } from "@/common/providers/opendota";
 import { mmrJournalService } from "@/modules/mmr";
 import { buildCalendar } from "@/modules/mmr/domain/calendar";
 import { addDays, dayKeyFormatter } from "@/common/time/day-key";
@@ -53,7 +54,7 @@ export async function getBattleReport(
   const rangeFrom = new Date(Date.parse(`${from}T00:00:00Z`) - TZ_PAD_MS);
   const before = entries.findLast((e) => e.observedAt < rangeFrom);
   const loaded = { from: before?.observedAt ?? rangeFrom, to: now };
-  const ranked = await (await getMatchQueries()).rankedResults(user.accountId32, loaded);
+  const ranked = await matchQueries.rankedResults(user.accountId32, loaded);
   const calendar = buildCalendar({
     observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
     matches: ranked,

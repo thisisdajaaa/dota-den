@@ -1,5 +1,5 @@
 import { ok, type Result } from "@/common/result";
-import type { MatchDetailProvider } from "@/modules/matches/application/ports";
+import type { MatchDetailProvider } from "@/modules/matches";
 import type { Seat } from "../domain/relation";
 import type { MatchSeatReader, MatchSeats, ProviderError } from "../together.ports";
 

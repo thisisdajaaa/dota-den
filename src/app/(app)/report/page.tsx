@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap } from "@/modules/matches/composition";
+import { matchesService } from "@/modules/matches";
 import { formatDuration, formatPercent } from "@/modules/matches/ui/format";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { getBattleReport, REPORT_PERIODS, type ReportPeriod } from "@/modules/report/composition";
@@ -28,7 +28,7 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
   const days: ReportPeriod = (REPORT_PERIODS as readonly number[]).includes(raw)
     ? (raw as ReportPeriod)
     : 90;
-  const [{ timeZone }, heroes] = await Promise.all([getViewerTimeZone(), getHeroMap()]);
+  const [{ timeZone }, heroes] = await Promise.all([getViewerTimeZone(), matchesService.heroMap()]);
   const view = await getBattleReport(user, days, timeZone).catch(() => null);
   const fmt = (k: string) =>
     new Intl.DateTimeFormat("en-US", {

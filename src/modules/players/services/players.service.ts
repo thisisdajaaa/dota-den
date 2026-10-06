@@ -5,7 +5,7 @@ import type {
   DashboardFact,
   PlayerProfileSnapshot,
   ProviderError as MatchProviderError,
-} from "@/modules/matches/application/ports";
+} from "@/modules/matches/domain/read-models";
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
 import type { TrackedPlayersPage } from "../dtos/responses/follows.dto";
 import type { FollowOwner } from "../dtos/responses/players.dto";

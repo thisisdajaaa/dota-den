@@ -308,7 +308,8 @@ describe("architecture: app routes and pages", () => {
           if (s.startsWith("@/common/db")) return !f.endsWith(join("api", "health", "route.ts"));
           const t = target(f, s);
           if (!t || !migrated.has(t.feature)) return false;
-          return !["index", "domain", "ui", "dto", "model"].includes(t.role);
+          // Pages may parse their URL with a feature's schemas.
+          return !["index", "domain", "ui", "dto", "model", "schema"].includes(t.role);
         })
         .map((s) => `${relative(ROOT, f)} → ${s}`),
     );

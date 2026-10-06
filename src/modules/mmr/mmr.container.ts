@@ -4,7 +4,7 @@ import { getDb } from "@/common/db/mongo";
 import { GroqClient } from "@/common/llm/groq-client";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
-import { getMatchQueries } from "@/modules/matches/composition";
+import { matchQueries } from "@/modules/matches";
 import { GroqScreenshotReader } from "./infrastructure/groq-screenshot-reader";
 import { MmrController } from "./mmr.controller";
 import { MedalHistoryRepository } from "./repositories/medal-history.repository";
@@ -28,7 +28,7 @@ export const mmrInsightsService = new MmrInsightsService({
   journal: mmrJournalService,
   medals: medalHistoryRepository,
   ranked: {
-    rankedResults: async (id, range) => (await getMatchQueries()).rankedResults(id, range),
+    rankedResults: async (id, range) => matchQueries.rankedResults(id, range),
   },
 });
 

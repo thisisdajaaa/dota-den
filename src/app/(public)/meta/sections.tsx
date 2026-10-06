@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logger } from "@/common/logging/logger";
-import type { HeroInfo } from "@/modules/matches/application/ports";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import type { DuosView, TopHeroesView } from "@/modules/meta/dtos/responses/meta.dto";
 import type { LatestPatchResult, MetaSourceError as SourceError } from "@/modules/meta";
 import type { Position } from "@/modules/meta/domain/position";

@@ -16,7 +16,7 @@ import { NoncesRepository } from "@/modules/identity/repositories/nonces.reposit
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
-import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
+import { MatchFactsRepository } from "@/modules/matches/repositories/matches.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   await ensureMatchDraftReadIndexes(db);
   await ensureDraftHistoryIndexes(db);
   await new ActivityRepository(async () => db).ensureIndexes();
-  await ensureMatchIndexes(db);
+  await new MatchFactsRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();

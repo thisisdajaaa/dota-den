@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "cn";
-import type { HeroInfo } from "../application/ports";
+import type { HeroInfo } from "../matches.ports";
 import {
   HERO_SORT_MIN_GAMES,
   sortHeroes,

@@ -7,7 +7,7 @@ import { requireUser } from "@/modules/identity";
 import { sessionIdFromParam } from "./domain/session";
 import { toSessionNoteDto } from "./dtos/responses/session-note.dto";
 import { SessionGapInputSchema, SessionNoteInputSchema } from "./schemas/sessions.schema";
-import type { DashboardFact } from "@/modules/matches/application/ports";
+import type { DashboardFact } from "@/modules/matches/domain/read-models";
 import type { SessionService } from "./sessions.service";
 
 /** Note saves allowed per user per minute. */

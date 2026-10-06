@@ -1,14 +1,31 @@
 import type { Result } from "@/common/result";
-import type { MatchDetail } from "../domain/match-detail";
-import type { MatchListFilter } from "./match-list-filter";
-import type { PatchTimelineEntry } from "../domain/patch-assignment";
-import type { PlayerMatchFact, Provenance } from "../domain/player-match-fact";
+import type {
+  ProviderError,
+  PlayerProfileSnapshot,
+  RankedResultRow,
+  HeroInfo,
+  DashboardFilter,
+  DashboardFact,
+  DashboardFacts,
+  ItemInfo,
+} from "./domain/read-models";
 
-export type ProviderError =
-  | { type: "rate_limited"; retryAfterMs: number | null }
-  | { type: "unavailable"; cause: string }
-  | { type: "not_found" }
-  | { type: "invalid_payload"; cause: string };
+export type {
+  ProviderError,
+  PlayerProfileSnapshot,
+  RankedResultRow,
+  HeroInfo,
+  DashboardRange,
+  DashboardMode,
+  DashboardFilter,
+  DashboardFact,
+  DashboardFacts,
+  ItemInfo,
+} from "./domain/read-models";
+import type { MatchDetail } from "./domain/match-detail";
+import type { MatchListFilter } from "./schemas/match-list-filter.schema";
+import type { PatchTimelineEntry } from "./domain/patch-assignment";
+import type { PlayerMatchFact, Provenance } from "./domain/player-match-fact";
 
 /** Provider-neutral match row after the anti-corruption layer; policies not yet applied. */
 export interface ImportedPlayerMatch extends Omit<
@@ -23,20 +40,6 @@ export interface ImportedPage {
   matches: ImportedPlayerMatch[];
   /** Rows dropped because they failed validation. */
   rejectedCount: number;
-}
-
-export interface PlayerProfileSnapshot {
-  accountId32: number;
-  personaName: string | null;
-  avatarUrl: string | null;
-  /**
-   * `limited` when the upstream reports full history unavailable (often a Steam privacy
-   * setting); matches it learned from other players may still appear.
-   */
-  matchHistory: "full" | "limited" | "unknown";
-  rankTier: number | null;
-  /** Valve's Immortal leaderboard position for the player's region, when listed. */
-  leaderboardRank: number | null;
 }
 
 export interface MatchProvider {
@@ -56,7 +59,7 @@ export interface PatchTimelineSource {
   getTimeline(): Promise<Result<PatchTimelineEntry[], ProviderError>>;
 }
 
-export interface PlayerMatchFactRepository {
+export interface MatchFactsPort {
   upsertMany(facts: readonly PlayerMatchFact[]): Promise<{ inserted: number; updated: number }>;
 }
 
@@ -75,7 +78,7 @@ export interface SyncState {
 export type LockOutcome =
   { type: "acquired"; state: SyncState } | { type: "locked" } | { type: "cooldown"; retryAt: Date };
 
-export interface SyncStateRepository {
+export interface SyncStatesPort {
   /**
    * Atomically take the per-account lock if not held and not cooling down.
    * `backfillCooldownMs` applies instead of `cooldownMs` while history is still importing.
@@ -95,18 +98,6 @@ export interface SyncStateRepository {
 export interface ImportStatus {
   sync: SyncState | null;
   totals: { all: number; solo: number; party: number; unknown: number };
-}
-
-/** Read models for Match Intelligence (query side). */
-export interface RankedResultRow {
-  matchId: string;
-  startedAt: Date;
-  heroId: number;
-  result: "win" | "loss";
-  queueClass: "solo" | "party" | "unknown";
-  kills?: number;
-  deaths?: number;
-  assists?: number;
 }
 
 export interface MatchListPage {
@@ -139,65 +130,8 @@ export interface MatchQueries {
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
 }
 
-export interface HeroInfo {
-  id: number;
-  name: string;
-  /** null when upstream gives an unexpected image path (never render untrusted hosts). */
-  imageUrl: string | null;
-  iconUrl: string | null;
-  /** Large transparent hero render for banners. */
-  renderUrl: string | null;
-  roles: string[];
-  attackType: "Melee" | "Ranged" | null;
-  primaryAttr: "str" | "agi" | "int" | "all" | null;
-}
-
 export interface HeroCatalog {
   getHeroes(): Promise<Result<HeroInfo[], ProviderError>>;
-}
-
-export type DashboardRange = "all" | "patch" | "30d";
-export type DashboardMode = "all" | "ranked";
-
-export interface DashboardFilter {
-  range: DashboardRange;
-  mode: DashboardMode;
-}
-
-/** Row shape for dashboard read models. */
-export interface DashboardFact {
-  matchId: string;
-  startedAt: Date;
-  durationSec: number;
-  heroId: number;
-  side: "radiant" | "dire";
-  result: "win" | "loss";
-  kills: number;
-  deaths: number;
-  assists: number;
-  ranked: boolean;
-  queueClass: "solo" | "party" | "unknown";
-  partySize: number | null;
-  patch: string | null;
-  patchCertainty: "confident" | "boundary" | "unknown";
-}
-
-export interface DashboardFacts {
-  facts: DashboardFact[];
-  /** Patch of the most recent imported match; the "current patch" filter uses it. */
-  latestPatch: string | null;
-}
-
-export interface ItemInfo {
-  id: number;
-  /** Internal item name ("black_king_bar"), as used in purchase logs. */
-  key: string;
-  name: string;
-  imageUrl: string | null;
-  /** Upstream item class ("consumable", "component", "epic", …), when given. */
-  qual: string | null;
-  /** Gold cost, when given. */
-  cost: number | null;
 }
 
 export interface MatchDetailProvider {
@@ -205,4 +139,14 @@ export interface MatchDetailProvider {
   /** Ask the upstream to parse the replay (laning, item timings, wards). */
   requestParse(matchId: string): Promise<Result<true, ProviderError>>;
   getItems(): Promise<Result<ItemInfo[], ProviderError>>;
+}
+
+/** Everything the matches feature reads from OpenDota (the adapter implements it). */
+export interface OpenDotaMatchesSource
+  extends MatchProvider, PatchTimelineSource, HeroCatalog, MatchDetailProvider {
+  fetchPlayerMatches(
+    accountId32: number,
+    page: { offset: number; limit: number },
+    opts?: { cacheTtlMs?: number; includedAccountId?: number },
+  ): Promise<Result<ImportedPage, ProviderError>>;
 }

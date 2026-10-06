@@ -3,7 +3,7 @@ import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { ok } from "@/common/result";
 import { lazy } from "@/common/utils/lazy";
-import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
+import { matchQueries, matchesService } from "@/modules/matches";
 import { metaSource } from "@/modules/meta";
 import type { ItemCatalog } from "./heroes.ports";
 import { HeroesService } from "./heroes.service";
@@ -15,9 +15,7 @@ export const heroesService = lazy(() => {
     own: {
       games: async (accountId32) =>
         (
-          await (
-            await getMatchQueries()
-          ).dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date())
+          await matchQueries.dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date())
         ).facts.map((f) => ({
           matchId: f.matchId,
           heroId: f.heroId,
@@ -43,10 +41,10 @@ export const heroesService = lazy(() => {
       },
     },
     heroes: async () =>
-      [...(await getHeroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
+      [...(await matchesService.heroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
     items: async (): Promise<ItemCatalog> => {
       try {
-        const items = await getItemMap();
+        const items = await matchesService.itemMap();
         return new Map([...items.values()].map((i) => [i.key, i]));
       } catch (e) {
         logger.warn("hero_items_catalog_failed", { error: e });

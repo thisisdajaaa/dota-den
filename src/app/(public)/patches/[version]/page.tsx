@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
+import { matchQueries, matchesService } from "@/modules/matches";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { COHORT_WINDOW_MS, heroCohort } from "@/modules/patches/domain/digest";
 import { changesAffectingPool, diffSummary } from "@/modules/patches/domain/patch";
@@ -37,7 +37,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
   }
 
   const [heroes, user] = await Promise.all([
-    getHeroMap(),
+    matchesService.heroMap(),
     getCurrentUser({ tolerateErrors: true }),
   ]);
   const now = new Date();
@@ -48,9 +48,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
   const cohorts = new Map<number, HeroCohort>();
   if (user && yours.length > 0) {
     const released = patch.publishedAt.getTime();
-    const results = await (
-      await getMatchQueries()
-    ).rankedResults(user.accountId32, {
+    const results = await matchQueries.rankedResults(user.accountId32, {
       from: new Date(released - COHORT_WINDOW_MS),
       to: new Date(Math.min(now.getTime(), released + COHORT_WINDOW_MS)),
     });
