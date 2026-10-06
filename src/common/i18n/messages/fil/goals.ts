@@ -1,0 +1,57 @@
+import type { MessageTree } from "../../translate";
+import type { goals as en } from "../en/goals";
+
+export const goals: MessageTree<typeof en> = {
+  title: "Mga goal ngayong linggo",
+  lastDay: "Huling araw ng linggo",
+  daysLeft: "{n} araw na lang ngayong linggo",
+  edit: "I-edit",
+  setGoals: "Magtakda ng goal",
+  addGoal: "Magdagdag ng goal",
+  saving: "Sine-save…",
+  save: "I-save ang mga goal",
+  cancel: "Kanselahin",
+  empty:
+    "Pumili ng hanggang {max} bagay na pagtutuunan mo ngayong linggo: win rate, mas maiikling session, pag-log ng MMR mo, o hero na gusto mong praktisin. Ang progreso ay galing sa sarili mong mga laro.",
+  notDone: "Hindi pa tapos",
+  markDone: "Markahang tapos",
+  lastWeek: "Noong nakaraang linggo",
+  met: "naabot",
+  missed: "hindi naabot",
+  saveFailed: "Hindi ma-save ang mga goal mo.",
+  status: { onTrack: "Nasa tamang landas", offTrack: "Lihis na", inProgress: "Ginagawa pa" },
+  presets: {
+    winRate: "Win rate",
+    maxPerSession: "Maiikling session",
+    logAfterSessions: "Mag-log ng MMR pagkatapos ng session",
+    heroGames: "Maglaro ng hero",
+    custom: "Sarili mong goal",
+  },
+  editor: {
+    type: "Uri ng goal {n}",
+    atLeast: "hindi bababa sa",
+    atMost: "hindi hihigit sa",
+    gamesEach: "laro bawat isa",
+    hero: "Hero",
+    times: "beses",
+    yourGoal: "Ang goal mo",
+    customPlaceholder: "hal. Bumili ng ward bawat laro",
+    remove: "Alisin ang goal {n}",
+  },
+  describe: {
+    winRate: "Manalo sa hindi bababa sa {target}% ng mga ranked game",
+    maxPerSession: "Maglaro ng hindi hihigit sa {target} ranked game bawat session",
+    logAfterSessions: "I-log ang MMR mo pagkatapos ng bawat session",
+    heroGames: "Laruin si {hero} nang {target} beses",
+  },
+  progress: {
+    needGames: "{games} / {min} laro bago mabilang",
+    winRate: "{rate}% ({wins}–{losses})",
+    longestSession: "Pinakamahabang session: {games} laro",
+    noSessions: "Wala pang session",
+    sessionsLogged: "{logged} / {total} session ang na-log",
+    heroGames: "{played} / {target} laro",
+    done: "Tapos na",
+    notYet: "Hindi pa",
+  },
+};

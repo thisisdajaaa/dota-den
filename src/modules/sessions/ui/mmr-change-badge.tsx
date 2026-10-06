@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import { signedMmr } from "../domain/session-labels";
 import type { SessionMmr } from "../domain/session-mmr";
 
@@ -6,9 +7,14 @@ import type { SessionMmr } from "../domain/session-mmr";
  * Exact changes get a solid badge; estimates get "≈", a dashed border and the word
  * "estimate", so they can't be mistaken for real values (ADR 0007).
  */
-export function MmrChangeBadge({ mmr, className }: { mmr: SessionMmr; className?: string }) {
+export async function MmrChangeBadge({ mmr, className }: { mmr: SessionMmr; className?: string }) {
+  const t = await getT();
   if (mmr.kind === "none") {
-    return <span className={cn("text-xs text-muted-foreground", className)}>No ranked games</span>;
+    return (
+      <span className={cn("text-xs text-muted-foreground", className)}>
+        {t("sessions.badge.none")}
+      </span>
+    );
   }
   const tone = mmr.delta > 0 ? "text-win" : mmr.delta < 0 ? "text-loss" : "text-muted-foreground";
   if (mmr.kind === "exact") {
@@ -21,7 +27,7 @@ export function MmrChangeBadge({ mmr, className }: { mmr: SessionMmr; className?
         )}
       >
         {signedMmr(mmr.delta)} MMR
-        <span className="font-normal text-muted-foreground">exact</span>
+        <span className="font-normal text-muted-foreground">{t("sessions.badge.exact")}</span>
       </span>
     );
   }
@@ -32,18 +38,17 @@ export function MmrChangeBadge({ mmr, className }: { mmr: SessionMmr; className?
         tone,
         className,
       )}
-      title={`Estimate: ±${mmr.perGame} per ranked game, not your real MMR change`}
+      title={t("sessions.badge.estimateTitle", { n: mmr.perGame })}
     >
       ≈ {signedMmr(mmr.delta)} MMR
-      <span className="font-normal text-muted-foreground">estimate</span>
+      <span className="font-normal text-muted-foreground">{t("sessions.badge.estimate")}</span>
     </span>
   );
 }
 
-export const ESTIMATE_REASONS: Record<Extract<SessionMmr, { kind: "estimate" }>["reason"], string> =
-  {
-    no_entries: "You haven't logged any MMR yet.",
-    not_bracketed: "Log your MMR right before and right after a session to get the exact change.",
-    other_games_between:
-      "Other ranked games were played between your MMR entries, so the change can't be pinned on this session alone.",
-  };
+/** Message keys for why a session's change is only an estimate. */
+export const ESTIMATE_REASONS = {
+  no_entries: "sessions.reasons.no_entries",
+  not_bracketed: "sessions.reasons.not_bracketed",
+  other_games_between: "sessions.reasons.other_games_between",
+} as const satisfies Record<Extract<SessionMmr, { kind: "estimate" }>["reason"], string>;

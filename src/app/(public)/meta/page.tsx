@@ -5,11 +5,13 @@ import { BookOpen, Compass } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import { plural, type Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { matchesService } from "@/modules/matches";
-import { plural } from "@/modules/matches/ui/format";
 import type { RoleView } from "@/modules/meta/dtos/responses/meta.dto";
 import { metaService, type MetaSourceError as SourceError } from "@/modules/meta";
 import {
@@ -24,11 +26,15 @@ import { RolePicker, RoleTabs } from "@/modules/meta/ui/role-picker";
 import type { Result } from "@/common/result";
 import { LaneDuosSection, PatchLine, PatchTipsSection, settle, TopHeroesSection } from "./sections";
 
-export const metadata: Metadata = { title: "Meta" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("meta.title") };
+}
 
 export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
   const params = await searchParams;
   const picked = parsePosition(params.pos);
+  const t = await getT();
 
   const service = metaService;
   const user = await getCurrentUser({ tolerateErrors: true });
@@ -45,13 +51,13 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Meta"
-        title="What's strong right now"
-        description="The heroes and lane partners doing best for each role in recent high-rank games and tournaments, with this patch's changes."
+        kicker={t("meta.page.kicker")}
+        title={t("meta.page.title")}
+        description={t("meta.page.description")}
         actions={
           <Button asChild variant="outline">
             <Link href="/guides">
-              <BookOpen aria-hidden className="size-4" /> Hero guides
+              <BookOpen aria-hidden className="size-4" /> {t("meta.page.guides")}
             </Link>
           </Button>
         }
@@ -60,12 +66,12 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
         <PatchLine patch={patch} />
       </Suspense>
 
-      {user && <YourRole role={role} />}
+      {user && <YourRole role={role} t={t} />}
 
       {position === null ? (
         <section aria-labelledby="pick-role" className="space-y-3">
           <h2 id="pick-role" className="text-lg font-semibold">
-            Which role do you play?
+            {t("meta.page.pickRole")}
           </h2>
           <RolePicker />
         </section>
@@ -77,6 +83,7 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
           service={service}
           patch={patch}
           catalog={catalog}
+          t={t}
         />
       )}
     </div>
@@ -89,12 +96,14 @@ function RoleSections({
   service,
   patch,
   catalog,
+  t,
 }: {
   position: Position;
   yours: Position | null;
   service: typeof metaService;
   patch: ReturnType<typeof metaService.latestPatch>;
   catalog: Promise<Map<number, HeroInfo>>;
+  t: Translator<Messages>;
 }) {
   // Started once and shared: the tips section reuses the hero ranking.
   const heroes = settle(service.topHeroes(position), "top_heroes");
@@ -104,15 +113,15 @@ function RoleSections({
       <RoleTabs active={position} yours={yours} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <Suspense fallback={<SectionSkeleton label="Loading top heroes" rows={6} />}>
+          <Suspense fallback={<SectionSkeleton label={t("meta.page.loadingTopHeroes")} rows={6} />}>
             <TopHeroesSection heroes={heroes} catalog={catalog} />
           </Suspense>
         </div>
         <div className="space-y-6 lg:col-span-2">
-          <Suspense fallback={<SectionSkeleton label="Loading patch tips" rows={3} />}>
+          <Suspense fallback={<SectionSkeleton label={t("meta.page.loadingTips")} rows={3} />}>
             <PatchTipsSection position={position} heroes={heroes} patch={patch} catalog={catalog} />
           </Suspense>
-          <Suspense fallback={<SectionSkeleton label="Loading lane duos" rows={4} />}>
+          <Suspense fallback={<SectionSkeleton label={t("meta.page.loadingDuos")} rows={4} />}>
             <LaneDuosSection position={position} duos={duos} catalog={catalog} />
           </Suspense>
         </div>
@@ -121,24 +130,28 @@ function RoleSections({
   );
 }
 
-function YourRole({ role }: { role: Result<RoleView, SourceError | { type: "error" }> | null }) {
+function YourRole({
+  role,
+  t,
+}: {
+  role: Result<RoleView, SourceError | { type: "error" }> | null;
+  t: Translator<Messages>;
+}) {
   if (!role) return null;
+  const games = (n: number) => plural(t, "meta.counts.games", n);
   let body: React.ReactNode;
   if (!role.ok) {
-    body = (
-      <p className="text-sm text-muted-foreground">
-        Your recent lanes are unavailable right now, so we can&apos;t tell your role. Pick one
-        below.
-      </p>
-    );
+    body = <p className="text-sm text-muted-foreground">{t("meta.yourRole.unavailable")}</p>;
   } else {
     const { derivation: d, windowDays } = role.value;
     if (d.position === null) {
       body = (
         <p className="text-sm text-muted-foreground">
-          We can&apos;t tell your role yet: {plural(d.counted, "game")} from the last {windowDays}{" "}
-          days {d.counted === 1 ? "has" : "have"} lane data, and we need at least {MIN_ROLE_GAMES}.
-          Lane data only exists for games OpenDota has parsed. Pick a role below.
+          {t(d.counted === 1 ? "meta.yourRole.tooFewOne" : "meta.yourRole.tooFewOther", {
+            games: games(d.counted),
+            days: windowDays,
+            min: MIN_ROLE_GAMES,
+          })}
         </p>
       );
     } else {
@@ -149,17 +162,19 @@ function YourRole({ role }: { role: Result<RoleView, SourceError | { type: "erro
             {info.short} · {info.name}
           </p>
           <p className="text-sm text-muted-foreground">
-            Based on your last {plural(d.counted, "game")} with lane data (past {windowDays} days).
-            {d.skipped > 0 &&
-              ` ${plural(d.skipped, "other game")} had no lane data and ${d.skipped === 1 ? "isn't" : "aren't"} counted.`}
+            {t("meta.yourRole.basedOn", { games: games(d.counted), days: windowDays })}
+            {d.skipped > 0 && ` ${plural(t, "meta.counts.otherGames", d.skipped)}`}
           </p>
-          <ul aria-label="Games by position" className="flex flex-wrap gap-1.5 pt-1">
+          <ul aria-label={t("meta.yourRole.byPosition")} className="flex flex-wrap gap-1.5 pt-1">
             {POSITIONS.filter((p) => d.byPosition[p] > 0).map((p) => (
               <li
                 key={p}
                 className="rounded-md border border-white/[0.07] bg-white/[0.02] px-2 py-0.5 text-xs text-muted-foreground"
               >
-                {POSITION_INFO[p].short}: {plural(d.byPosition[p], "game")}
+                {t("meta.yourRole.positionGames", {
+                  pos: POSITION_INFO[p].short,
+                  games: games(d.byPosition[p]),
+                })}
               </li>
             ))}
           </ul>
@@ -174,7 +189,7 @@ function YourRole({ role }: { role: Result<RoleView, SourceError | { type: "erro
       </span>
       <div className="min-w-0 space-y-1">
         <h2 id="your-role" className="kicker">
-          Your role
+          {t("meta.yourRole.title")}
         </h2>
         {body}
       </div>

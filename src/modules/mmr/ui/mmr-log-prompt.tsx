@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 
 const DISMISS_KEY = "dd_mmr_prompt_dismissed";
 
@@ -36,6 +38,7 @@ export function MmrLogPrompt({
   lastMmr: number | null;
   exactIfLoggedNow: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const dismissed = useSyncExternalStore(subscribe, readDismissed, () => "");
   const [mmr, setMmr] = useState("");
@@ -43,13 +46,15 @@ export function MmrLogPrompt({
   const [error, setError] = useState<string | null>(null);
   if (dismissed === newestGameId) return null;
 
-  const games = `${gamesSince} ranked game${gamesSince === 1 ? "" : "s"}`;
   const message =
     lastMmr === null
-      ? `Log your MMR after you play and Dota Den can show exactly how much each game moved it.`
+      ? t("mmr.prompt.first")
       : exactIfLoggedNow
-        ? `You played 1 ranked game since you logged ${lastMmr.toLocaleString("en-US")}. Log your MMR now and that game's change will be exact.`
-        : `You played ${games} since you logged ${lastMmr.toLocaleString("en-US")}. Logging now gives the total change for those games; log after each game to see every game's exact change.`;
+        ? t("mmr.prompt.exactNow", { mmr: lastMmr.toLocaleString("en-US") })
+        : t("mmr.prompt.many", {
+            games: plural(t, "mmr.prompt.games", gamesSince),
+            mmr: lastMmr.toLocaleString("en-US"),
+          });
 
   function dismiss() {
     try {
@@ -69,18 +74,18 @@ export function MmrLogPrompt({
         method: "POST",
         body: { mmr: mmr.trim(), observedAt: new Date().toISOString(), note: null },
       });
-      toast.success("MMR logged.");
+      toast.success(t("mmr.prompt.logged"));
       setMmr("");
       router.refresh();
     } catch (err) {
-      setError(fieldErrors(err).mmr?.[0] ?? errorMessage(err, "Couldn't save that."));
+      setError(fieldErrors(err).mmr?.[0] ?? errorMessage(err, t("mmr.prompt.saveFailed")));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section aria-label="Log your MMR" className="panel flex items-start gap-3 p-4">
+    <section aria-label={t("mmr.prompt.region")} className="panel flex items-start gap-3 p-4">
       <TrendingUp aria-hidden className="mt-2 size-5 shrink-0 text-gold" />
       {/* Message and form wrap on narrow screens; the close button keeps its own column. */}
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-3">
@@ -89,8 +94,8 @@ export function MmrLogPrompt({
           <div>
             <input
               inputMode="numeric"
-              aria-label="Your MMR now"
-              placeholder="MMR now"
+              aria-label={t("mmr.prompt.input")}
+              placeholder={t("mmr.prompt.placeholder")}
               value={mmr}
               onChange={(e) => setMmr(e.target.value)}
               className="h-9 w-28 rounded-lg border border-white/10 bg-background px-3 text-sm tabular-nums"
@@ -102,14 +107,14 @@ export function MmrLogPrompt({
             )}
           </div>
           <Button type="submit" size="sm" disabled={busy || !mmr.trim()} className="h-9">
-            {busy ? "Saving…" : "Log it"}
+            {busy ? t("mmr.prompt.saving") : t("mmr.prompt.logIt")}
           </Button>
         </form>
       </div>
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Not now"
+        aria-label={t("mmr.prompt.notNow")}
         className="grid size-9 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
       >
         <X aria-hidden className="size-4" />

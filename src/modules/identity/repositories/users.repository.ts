@@ -84,6 +84,18 @@ export class UsersRepository implements UserRepository {
     return docs.map((d) => d._id.toHexString());
   }
 
+  /** The user's chosen UI language. */
+  async setLanguage(id: string, language: string, now: Date): Promise<boolean> {
+    if (!ObjectId.isValid(id)) return false;
+    const res = await (
+      await this.col()
+    ).updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { "settings.language": language, updatedAt: now } },
+    );
+    return res.matchedCount === 1;
+  }
+
   async setProfileVisibility(
     id: string,
     visibility: ProfileVisibility,

@@ -4,49 +4,50 @@ import { History } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { env } from "@/common/config/env";
+import { getT } from "@/common/i18n/server";
 import { getCurrentUser } from "@/modules/identity";
 import { NewRoomForm } from "@/modules/drafts/ui/new-room-form";
 
-export const metadata: Metadata = { title: "New draft room" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("drafts.newRoomPage.metaTitle") };
+}
 
 export default async function NewDraftRoomPage() {
   const user = await getCurrentUser({ tolerateErrors: true });
   const enabled = env().FEATURE_DRAFT_ROOMS;
+  const t = await getT();
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Draft practice"
-        title="Draft against a friend"
-        description="Create a room, send the link, and draft live: one captain on each side, with the real Captain's Mode order and timer. Anyone with the link can watch."
+        kicker={t("drafts.pages.kicker")}
+        title={t("drafts.newRoomPage.title")}
+        description={t("drafts.newRoomPage.description")}
         actions={
           <>
             {user && (
               <Button asChild variant="outline">
                 <Link href="/draft/rooms/history">
-                  <History aria-hidden className="size-4" /> Your draft history
+                  <History aria-hidden className="size-4" /> {t("drafts.pages.history")}
                 </Link>
               </Button>
             )}
             <Button asChild variant="outline">
-              <Link href="/draft">Back to drafting</Link>
+              <Link href="/draft">{t("drafts.pages.backToDrafting")}</Link>
             </Button>
           </>
         }
       />
       {!enabled ? (
-        <p className="panel p-5 text-sm text-muted-foreground">
-          Draft rooms are turned off right now.
-        </p>
+        <p className="panel p-5 text-sm text-muted-foreground">{t("drafts.newRoomPage.off")}</p>
       ) : user ? (
         <NewRoomForm />
       ) : (
         <section className="panel grid max-w-xl gap-3 p-5">
-          <p className="text-sm text-muted-foreground">
-            Sign in so your friend can see who they&apos;re drafting against.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("drafts.newRoomPage.signIn")}</p>
           <Button asChild className="justify-self-start">
             {/* Full navigation: the route redirects to Steam. */}
-            <a href="/api/v1/auth/steam/login">Sign in through Steam</a>
+            <a href="/api/v1/auth/steam/login">{t("drafts.pages.signInSteam")}</a>
           </Button>
         </section>
       )}

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { after } from "next/server";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import { plural, type Translator } from "@/common/i18n/translate";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
 import { BACKFILL_COOLDOWN_MS, MatchSyncService, SYNC_COOLDOWN_MS } from "@/modules/matches";
@@ -9,7 +12,7 @@ import type { DashboardFilter } from "@/modules/matches/domain/read-models";
 import { matchQueries, matchesService } from "@/modules/matches";
 import { summarizeMatches } from "@/modules/matches/domain/match-summary";
 import { DashboardFilters } from "@/modules/matches/ui/dashboard-filters";
-import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
+import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { FormStrip } from "@/modules/matches/ui/form-strip";
 import { PlayerBanner } from "@/modules/matches/ui/player-banner";
 import { QueueSplitCard } from "@/modules/matches/ui/queue-split-card";
@@ -32,7 +35,10 @@ import { PatchDigestSection, PatchDigestSkeleton } from "./patch-digest-section"
 import { StandingSection } from "./standing-section";
 import { TeammatesSection } from "./teammates-section";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("dashboard.title") };
+}
 
 function parseFilter(params: Record<string, string | string[] | undefined>): DashboardFilter {
   const range = params.range;
@@ -48,6 +54,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   if (!user) return null;
   const filter = parseFilter(await searchParams);
   const now = new Date();
+  const t = await getT();
 
   const queries = matchQueries;
   const [status, { facts, latestPatch }, profile, heroes, latestSession, tz] = await Promise.all([
@@ -106,6 +113,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       {!hasAnyMatches ? (
         <EmptyState
+          t={t}
           stage={
             !sync?.lastSyncAt
               ? "first_sync"
@@ -120,45 +128,54 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           <div className="flex flex-wrap items-center justify-between gap-3">
             <DashboardFilters filter={filter} latestPatch={latestPatch} />
             <p className="text-xs text-muted-foreground tabular-nums">
-              Showing {overall.games.toLocaleString()} of your {status.totals.all.toLocaleString()}{" "}
-              matches
+              {t("dashboard.showing", {
+                shown: overall.games.toLocaleString(),
+                total: status.totals.all.toLocaleString(),
+              })}
             </p>
           </div>
 
           {overall.games === 0 ? (
             <div className="panel p-8 text-center text-sm text-muted-foreground">
-              No matches in this view. Try a wider time range.
+              {t("dashboard.noneInView")}
             </div>
           ) : (
             <>
-              <section aria-label="Key stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <section
+                aria-label={t("dashboard.keyStats")}
+                className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+              >
                 <StatTile
-                  label="Win rate"
+                  label={t("dashboard.winRate")}
                   value={formatPercent(overall.winRate)}
                   meter={overall.winRate}
                   tone={overall.winRate !== null && overall.winRate >= 0.5 ? "win" : "loss"}
-                  detail={`${plural(overall.wins, "win")} · ${plural(overall.losses, "loss")}`}
+                  detail={`${plural(t, "dashboard.wins", overall.wins)} · ${plural(t, "dashboard.losses", overall.losses)}`}
                 />
                 <StatTile
-                  label="Solo win rate"
+                  label={t("dashboard.soloWinRate")}
                   value={formatPercent(byQueue.solo.winRate)}
                   meter={byQueue.solo.winRate}
                   tone={byQueue.solo.lowSample ? "muted" : "gold"}
-                  detail={`${plural(byQueue.solo.games, "solo game")}${byQueue.solo.lowSample ? " · too few to judge" : ""}`}
+                  detail={`${plural(t, "dashboard.soloGames", byQueue.solo.games)}${byQueue.solo.lowSample ? t("dashboard.tooFew") : ""}`}
                 />
                 <StatTile
-                  label="Party win rate"
+                  label={t("dashboard.partyWinRate")}
                   value={formatPercent(byQueue.party.winRate)}
                   meter={byQueue.party.winRate}
                   tone={byQueue.party.lowSample ? "muted" : "gold"}
-                  detail={`${plural(byQueue.party.games, "party game")}${byQueue.party.lowSample ? " · too few to judge" : ""}`}
+                  detail={`${plural(t, "dashboard.partyGames", byQueue.party.games)}${byQueue.party.lowSample ? t("dashboard.tooFew") : ""}`}
                 />
                 <StatTile
-                  label="KDA ratio"
+                  label={t("dashboard.kdaRatio")}
                   value={averages ? averages.kda.toFixed(2) : "—"}
                   detail={
                     averages
-                      ? `Avg ${averages.kills.toFixed(1)} kills · ${averages.deaths.toFixed(1)} deaths · ${averages.assists.toFixed(1)} assists`
+                      ? t("dashboard.averages", {
+                          kills: averages.kills.toFixed(1),
+                          deaths: averages.deaths.toFixed(1),
+                          assists: averages.assists.toFixed(1),
+                        })
                       : undefined
                   }
                 />
@@ -215,23 +232,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   );
 }
 
-const EMPTY_COPY = {
-  first_sync: {
-    title: "Summoning your match history…",
-    body: "We're importing your games from OpenDota. This page updates automatically.",
-  },
-  fetching: {
-    title: "OpenDota is fetching your match history",
-    body: "We've asked OpenDota to pull your games from Steam. This usually takes a few minutes, sometimes longer for big histories. You can leave this page open: it checks again automatically.",
-  },
-  no_public_data: {
-    title: "No public matches found yet",
-    body: "OpenDota still has no games for this account. In Dota 2, go to Settings → Options → Social and turn on “Expose Public Match Data”. We ask OpenDota to re-fetch your history every few hours, and it also picks up games you play from now on.",
-  },
-} as const;
-
-function EmptyState({ stage }: { stage: keyof typeof EMPTY_COPY }) {
-  const copy = EMPTY_COPY[stage];
+function EmptyState({
+  t,
+  stage,
+}: {
+  t: Translator<Messages>;
+  stage: "first_sync" | "fetching" | "no_public_data";
+}) {
   return (
     <section
       className="panel grid place-items-center gap-3 px-6 py-16 text-center"
@@ -240,8 +247,8 @@ function EmptyState({ stage }: { stage: keyof typeof EMPTY_COPY }) {
       <span className="grid size-14 place-items-center rounded-full bg-gold/10 text-gold ring-1 ring-gold/30">
         <Swords aria-hidden className="size-6" />
       </span>
-      <h2 className="text-lg font-semibold">{copy.title}</h2>
-      <p className="max-w-md text-sm text-muted-foreground">{copy.body}</p>
+      <h2 className="text-lg font-semibold">{t(`dashboard.empty.${stage}.title`)}</h2>
+      <p className="max-w-md text-sm text-muted-foreground">{t(`dashboard.empty.${stage}.body`)}</p>
     </section>
   );
 }

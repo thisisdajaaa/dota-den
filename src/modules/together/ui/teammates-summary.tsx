@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPercent, plural } from "@/modules/matches/ui/format";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
+import { formatPercent } from "@/modules/matches/ui/format";
 import { displayName } from "@/modules/players/ui/player-avatar";
 import type { TeammatesOverview } from "../dtos/responses/together-views.dto";
 import {
@@ -35,50 +37,72 @@ const nameLink = (t: { accountId32: number; personaName: string | null }) => (
 );
 
 /** Headline tiles for the overview's Teammates section. */
-export function TeammatesSummary({ data }: { data: TeammatesOverview }) {
+export async function TeammatesSummary({ data }: { data: TeammatesOverview }) {
+  const t = await getT();
   const { best, mostPlayed, rivals, queueMix } = data;
   const rival = rivals[0];
   return (
     <section
-      aria-label="Teammate highlights"
+      aria-label={t("together.summary.label")}
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
       <Tile
-        label="Best teammate"
+        label={t("together.summary.best")}
         detail={
           best
-            ? `${formatPercent(best.teammate.winRate)} in ${plural(best.teammate.withGames, "game")} on your team. Ranked after pulling each rate toward your usual ${formatPercent(best.baselineRate)} (as if ${SHRINK_GAMES} extra average games), so short lucky runs don't win.`
-            : `Needs a teammate with ${MIN_TEAMMATE_GAMES}+ games on your team and your overall record.`
+            ? t("together.summary.bestDetail", {
+                rate: formatPercent(best.teammate.winRate),
+                games: plural(t, "together.units.game", best.teammate.withGames),
+                usual: formatPercent(best.baselineRate),
+                shrink: SHRINK_GAMES,
+              })
+            : t("together.summary.bestNeeds", { min: MIN_TEAMMATE_GAMES })
         }
       >
-        {best ? nameLink(best.teammate) : "Not enough games yet"}
+        {best ? nameLink(best.teammate) : t("together.summary.notEnough")}
       </Tile>
       <Tile
-        label="Most played with"
+        label={t("together.summary.mostPlayed")}
         detail={
           mostPlayed
-            ? `${plural(mostPlayed.withGames, "game")} on your team · ${formatPercent(mostPlayed.winRate)} win rate`
-            : "Nobody yet"
+            ? t("together.summary.mostPlayedDetail", {
+                games: plural(t, "together.units.game", mostPlayed.withGames),
+                rate: formatPercent(mostPlayed.winRate),
+              })
+            : t("together.summary.nobody")
         }
       >
         {mostPlayed ? nameLink(mostPlayed) : "—"}
       </Tile>
       <Tile
-        label={`Your last ${plural(queueMix.games || RECENT_QUEUE_GAMES, "game")}`}
+        label={t("together.summary.lastGames", {
+          games: plural(t, "together.units.game", queueMix.games || RECENT_QUEUE_GAMES),
+        })}
         detail={
           queueMix.games > 0
-            ? `${queueMix.solo} solo · ${queueMix.unknown} unknown (no party data, never assumed solo)`
-            : "Import your matches to see how often you queue with others."
+            ? t("together.summary.queueDetail", { solo: queueMix.solo, unknown: queueMix.unknown })
+            : t("together.summary.importHint")
         }
       >
-        {queueMix.games > 0 ? `${queueMix.party} in a party` : "No games imported"}
+        {queueMix.games > 0
+          ? t("together.summary.inParty", { n: queueMix.party })
+          : t("together.summary.noGames")}
       </Tile>
       <Tile
-        label="Rival"
+        label={t("together.summary.rival")}
         detail={
           rival
-            ? `Faced ${plural(rival.againstGames, "time")} · you won ${rival.againstWins}${rival.withGames > 0 ? ` · ${plural(rival.withGames, "game")} as teammates` : " · never a teammate"}`
-            : `Nobody you've faced ${MIN_RIVAL_GAMES}+ times and more often than you've teamed with.`
+            ? `${t("together.summary.rivalFaced", {
+                times: plural(t, "together.units.time", rival.againstGames),
+                wins: rival.againstWins,
+              })} · ${
+                rival.withGames > 0
+                  ? t("together.summary.rivalTeammates", {
+                      games: plural(t, "together.units.game", rival.withGames),
+                    })
+                  : t("together.summary.rivalNever")
+              }`
+            : t("together.summary.rivalNone", { min: MIN_RIVAL_GAMES })
         }
       >
         {rival ? (
@@ -86,16 +110,17 @@ export function TeammatesSummary({ data }: { data: TeammatesOverview }) {
             {displayName(rival.personaName, rival.accountId32)}
           </Link>
         ) : (
-          "No rivals yet"
+          t("together.summary.noRivals")
         )}
       </Tile>
     </section>
   );
 }
 
-export function TeammatesSkeleton() {
+export async function TeammatesSkeleton() {
+  const t = await getT();
   return (
-    <div className="space-y-3" aria-busy aria-label="Loading teammates">
+    <div className="space-y-3" aria-busy aria-label={t("together.summary.loading")}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-28 rounded-2xl" />

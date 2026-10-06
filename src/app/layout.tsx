@@ -1,3 +1,7 @@
+import { I18nProvider } from "@/common/i18n/client";
+import { LOCALE_TAGS } from "@/common/i18n/locales";
+import { englishMessages, MESSAGES } from "@/common/i18n/messages";
+import { getLocale } from "@/common/i18n/server";
 import type { Metadata, Viewport } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
@@ -37,18 +41,21 @@ export const viewport: Viewport = {
   themeColor: "#0a0605",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
     <html
-      lang="en"
+      lang={LOCALE_TAGS[locale]}
       className={`dark ${geistSans.variable} ${geistMono.variable} ${cinzel.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <TooltipProvider>
-          <AppShell>{children}</AppShell>
-          <Toaster />
-          <ServiceWorker />
-        </TooltipProvider>
+        <I18nProvider locale={locale} messages={MESSAGES[locale]} fallback={englishMessages}>
+          <TooltipProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+            <ServiceWorker />
+          </TooltipProvider>
+        </I18nProvider>
       </body>
     </html>
   );

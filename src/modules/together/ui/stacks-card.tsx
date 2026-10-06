@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { Trophy } from "lucide-react";
-import { formatPercent, plural } from "@/modules/matches/ui/format";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
+import { formatPercent } from "@/modules/matches/ui/format";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import { MIN_STACK_GAMES, MIN_TOGETHER_GAMES, type Stack } from "../domain/together-stats";
 import type { TrioMember } from "./trios-card";
 
-const SIZE = ["", "Duo", "Trio", "Four-stack", "Five-stack"];
+const SIZE = [null, "duo", "trio", "fourStack", "fiveStack"] as const;
 
 /** Your parties by exactly who was in them, best first (win rate damped for small samples). */
-export function StacksCard({
+export async function StacksCard({
   stacks,
   members,
   unknownPartyGames,
@@ -18,25 +20,22 @@ export function StacksCard({
   members: Map<number, TrioMember>;
   unknownPartyGames: number;
 }) {
+  const t = await getT();
   return (
     <section className="panel overflow-hidden" aria-labelledby="stacks">
       <div className="p-5 pb-3">
-        <p className="kicker">Parties</p>
+        <p className="kicker">{t("together.stacks.kicker")}</p>
         <h2 id="stacks" className="text-lg font-semibold">
-          Best stacks
+          {t("together.stacks.title")}
         </h2>
         <p className="text-xs text-muted-foreground">
-          Who to queue with: confirmed parties ranked by win rate, pulled toward 50% until there are
-          enough games. Needs {MIN_STACK_GAMES} games together.
+          {t("together.stacks.description", { min: MIN_STACK_GAMES })}
         </p>
       </div>
       {stacks.length === 0 ? (
         <div className="flex items-start gap-3 border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground">
           <Trophy aria-hidden className="mt-0.5 size-5 shrink-0" />
-          <p>
-            No party with {MIN_STACK_GAMES}+ games yet. Open a friend&apos;s page to analyse your
-            games together.
-          </p>
+          <p>{t("together.stacks.empty", { min: MIN_STACK_GAMES })}</p>
         </div>
       ) : (
         <ol className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
@@ -57,10 +56,10 @@ export function StacksCard({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
-                    You,{" "}
+                    {t("together.stacks.you")}{" "}
                     {people.map((p, j) => (
                       <Fragment key={p.id}>
-                        {j > 0 && (j === people.length - 1 ? " and " : ", ")}
+                        {j > 0 && (j === people.length - 1 ? ` ${t("together.and")} ` : ", ")}
                         <Link href={`/together/${p.id}`} className="hover:text-gold">
                           {p.name}
                         </Link>
@@ -68,7 +67,8 @@ export function StacksCard({
                     ))}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {SIZE[s.friends.length + 1] ?? "Party"} · {plural(s.games, "game")} ·{" "}
+                    {t(`together.stacks.${SIZE[s.friends.length + 1] ?? "party"}`)} ·{" "}
+                    {plural(t, "together.units.game", s.games)} ·{" "}
                     <span className="text-win">{s.wins}W</span>{" "}
                     <span className="text-loss">{s.games - s.wins}L</span>
                     {s.games >= MIN_TOGETHER_GAMES && ` · ${formatPercent(s.wins / s.games)}`}
@@ -81,8 +81,7 @@ export function StacksCard({
       )}
       {unknownPartyGames > 0 && (
         <p className="border-t border-white/[0.06] px-5 py-3 text-xs text-muted-foreground">
-          {plural(unknownPartyGames, "game")} with a friend on your team had no party data, so{" "}
-          {unknownPartyGames === 1 ? "it isn't" : "they aren't"} counted.
+          {plural(t, "together.stacks.unknownParty", unknownPartyGames)}
         </p>
       )}
     </section>

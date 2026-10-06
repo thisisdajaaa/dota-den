@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/common/i18n/client";
 import { ErrorPanel } from "@/components/error-panel";
 
 export default function PlayersError({
@@ -9,5 +10,6 @@ export default function PlayersError({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
-  return <ErrorPanel error={error} retry={retry} title="Something went wrong loading players" />;
+  const t = useT();
+  return <ErrorPanel error={error} retry={retry} title={t("players.page.error")} />;
 }

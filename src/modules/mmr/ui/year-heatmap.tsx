@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { Calendar } from "../domain/calendar";
 import { addDays, weekday, type DayKey } from "@/common/time/day-key";
 import { basisOf, dayStyle, deltaLabel, periodScale } from "./day-tone";
@@ -7,7 +8,7 @@ import { basisOf, dayStyle, deltaLabel, periodScale } from "./day-tone";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** GitHub-style year heatmap: one column per week, one square per day. */
-export function YearHeatmap({
+export async function YearHeatmap({
   from,
   to,
   calendar,
@@ -22,6 +23,7 @@ export function YearHeatmap({
   hrefForDay: (key: DayKey) => string;
   title?: string;
 }) {
+  const t = await getT();
   const scale = periodScale(calendar.days.values());
   const start = addDays(from, -weekday(from));
   const weeks: DayKey[][] = [];
@@ -53,7 +55,16 @@ export function YearHeatmap({
                   const day = calendar.days.get(key);
                   const basis = basisOf(day);
                   const label = deltaLabel(day);
-                  const text = `${key}: ${label ? `${label} MMR${basis === "estimate" ? " (estimate)" : ""}` : "no ranked games"}${day?.games ? `, ${day.wins}W ${day.losses}L` : ""}`;
+                  const value = label
+                    ? t(
+                        basis === "estimate" ? "mmr.calendar.valueEstimate" : "mmr.calendar.value",
+                        { value: label },
+                      )
+                    : t("mmr.calendar.noRanked");
+                  const record = day?.games
+                    ? `, ${t("mmr.calendar.wl", { wins: day.wins, losses: day.losses })}`
+                    : "";
+                  const text = `${key}: ${value}${record}`;
                   return (
                     <Link
                       key={key}

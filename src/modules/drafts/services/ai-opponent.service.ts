@@ -5,6 +5,7 @@ import {
   assignPositions,
   POSITION_NAMES,
   positionLabel,
+  positionPhrase,
   type Position,
   type PositionTable,
 } from "../domain/draft-positions";
@@ -25,6 +26,7 @@ import type { LaneTable } from "../domain/draft-lanes";
 import { applyAdjustments, validateReview, type DraftReview } from "../domain/draft-review";
 import type { AbilityCatalog, DraftAdvisor, DraftInsights, DraftReviewer } from "../drafts.ports";
 import { replaySnapshot, type DraftSnapshot } from "../domain/snapshot";
+import { phrase, type Phrase } from "../domain/phrase";
 import type {
   AiHero,
   AiMove,
@@ -91,6 +93,8 @@ interface RankedTurn {
   ownBans: AiHero[];
   enemyBans: AiHero[];
   situation: string;
+  /** The situation for the UI to translate. */
+  situationPhrase: Phrase;
   candidates: Candidate[];
   metaContext: string[];
   /** Whether positions come from pro games (else they're a role-tag guess). */
@@ -143,6 +147,53 @@ function positionSituation(
   return forEnemy
     ? `The opponent's lineup: ${lineup}. They still need: ${openText} (${left}).`
     : `Your lineup: ${lineup}. Still open: ${openText} (${left}). Pick a hero for one of the open positions.`;
+}
+
+/** `positionSituation` for the UI to translate. */
+function positionSituationPhrase(
+  action: "pick" | "ban",
+  team: readonly AiHero[],
+  positions: PositionTable | undefined,
+  picksLeft: number,
+  fixed?: ReadonlyMap<number, Position>,
+): Phrase {
+  const { heroes, open } = assignPositions(team, positions, fixed);
+  const byId = new Map(team.map((h) => [h.id, h.name]));
+  const vars = {
+    lineup: heroes.length
+      ? [...heroes]
+          .sort((a, b) => a.position - b.position)
+          .map((h) =>
+            phrase("situation.heroAt", {
+              hero: byId.get(h.heroId) ?? "",
+              position: positionPhrase(h.position),
+            }),
+          )
+      : phrase("situation.noHeroes"),
+    open: open.map(positionPhrase),
+    left: phrase("count.picksLeft", undefined, picksLeft),
+  };
+  return phrase(action === "ban" ? "situation.enemyLineup" : "situation.ownLineup", vars);
+}
+
+/** `situation` for the UI to translate. */
+function countsSituationPhrase(
+  action: "pick" | "ban",
+  needs: ReturnType<typeof lineupNeeds>,
+  forEnemy: boolean,
+): Phrase {
+  const base = phrase(forEnemy ? "situation.countsEnemy" : "situation.counts", {
+    cores: phrase("count.cores", undefined, needs.cores),
+    supports: phrase("count.supports", undefined, needs.supports),
+    left: phrase("count.picksLeft", undefined, needs.picksLeft),
+  });
+  if (action !== "pick") return base;
+  const hint = needs.mustPickSupport
+    ? "situation.mustSupport"
+    : needs.mustPickCore
+      ? "situation.mustCore"
+      : "situation.balance";
+  return phrase("situation.withHint", { base, hint: phrase(hint) });
 }
 
 function situation(
@@ -317,6 +368,15 @@ export class AiOpponentService {
             turn.action === "pick" ? roles[side] : roles[enemySide],
           )
         : situation(turn.action, needs, turn.action === "ban"),
+      situationPhrase: positions
+        ? positionSituationPhrase(
+            turn.action,
+            turn.action === "pick" ? own : enemy,
+            positions,
+            turn.action === "pick" ? ownPicksLeft : enemyPicksLeft,
+            turn.action === "pick" ? roles[side] : roles[enemySide],
+          )
+        : countsSituationPhrase(turn.action, needs, turn.action === "ban"),
       candidates,
       metaContext: metaContext(pro, byId),
       positionsKnown: positions !== undefined,
@@ -399,12 +459,20 @@ export class AiOpponentService {
     /** Positions set by hand: open positions and lanes follow them. */
     handRoles: RoleMaps = {},
   ): Promise<
-    Result<{ action: "pick" | "ban"; situation: string; candidates: Candidate[] }, AiMoveError>
+    Result<
+      {
+        action: "pick" | "ban";
+        situation: string;
+        situationPhrase: Phrase;
+        candidates: Candidate[];
+      },
+      AiMoveError
+    >
   > {
     // Rank deeper than we show, so the list can cover every open position.
     const ranked = await this.rank(snapshot, side, 60, handRoles);
     if (!ranked.ok) return ranked;
-    const { action, situation: text, candidates, positionsKnown } = ranked.value;
+    const { action, situation: text, situationPhrase, candidates, positionsKnown } = ranked.value;
     if (action === "pick" && positionsKnown) {
       // The best hero for each open position first, then the strongest of the rest.
       const open = [...new Set(candidates.map((c) => c.position))].filter(
@@ -419,6 +487,7 @@ export class AiOpponentService {
       return ok({
         action,
         situation: text,
+        situationPhrase,
         candidates: picked.sort(
           (a, b) => (a.position ?? 9) - (b.position ?? 9) || b.score - a.score,
         ),
@@ -426,14 +495,19 @@ export class AiOpponentService {
     }
     const roles = new Set(candidates.map((c) => c.role));
     if (action !== "pick" || roles.size < 2) {
-      return ok({ action, situation: text, candidates: candidates.slice(0, limit) });
+      return ok({
+        action,
+        situation: text,
+        situationPhrase,
+        candidates: candidates.slice(0, limit),
+      });
     }
     const supportSlots = Math.min(2, Math.floor(limit / 2));
     const supports = candidates.filter((c) => c.role === "support").slice(0, supportSlots);
     const cores = candidates.filter((c) => c.role === "core").slice(0, limit - supports.length);
     // Keep overall score order within the mixed list.
     const mixed = [...cores, ...supports].sort((a, b) => b.score - a.score);
-    return ok({ action, situation: text, candidates: mixed });
+    return ok({ action, situation: text, situationPhrase, candidates: mixed });
   }
 
   async move(snapshot: DraftSnapshot, aiSide: Side): Promise<Result<AiMove, AiMoveError>> {

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ChevronRight, UsersRound } from "lucide-react";
-import { formatAgo, plural } from "@/modules/matches/ui/format";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
+import { formatAgo } from "@/modules/matches/ui/format";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import type { FriendCandidate } from "../dtos/responses/together-views.dto";
 
 /** The people you play with; each links to the pair's page. */
-export function FriendList({
+export async function FriendList({
   friends,
   now,
   error,
@@ -15,16 +17,15 @@ export function FriendList({
   /** Set when OpenDota's teammate list couldn't be loaded. */
   error?: string | null;
 }) {
+  const t = await getT();
   return (
     <section className="panel overflow-hidden" aria-labelledby="friends">
       <div className="p-5 pb-3">
-        <p className="kicker">Friends</p>
+        <p className="kicker">{t("together.friends.kicker")}</p>
         <h2 id="friends" className="text-lg font-semibold">
-          People you play with
+          {t("together.friends.title")}
         </h2>
-        <p className="text-xs text-muted-foreground">
-          Your most frequent teammates on OpenDota, plus players you track.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("together.friends.description")}</p>
       </div>
       {error && (
         <p
@@ -38,11 +39,11 @@ export function FriendList({
         <div className="flex items-start gap-3 border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground">
           <UsersRound aria-hidden className="mt-0.5 size-5 shrink-0" />
           <p>
-            No teammates yet. They show up here after a few public matches together. You can also{" "}
+            {t("together.friends.emptyBefore")}{" "}
             <Link href="/players" className="text-gold hover:underline">
-              track a friend
+              {t("together.friends.emptyLink")}
             </Link>{" "}
-            to add them.
+            {t("together.friends.emptyAfter")}
           </p>
         </div>
       ) : (
@@ -60,15 +61,17 @@ export function FriendList({
                     <span className="block truncate font-medium group-hover:text-gold">{name}</span>
                     <span className="block text-xs text-muted-foreground">
                       {f.sameTeamGames !== null
-                        ? `${plural(f.sameTeamGames, "game")} on your team`
-                        : "Tracked player"}
+                        ? t("together.friends.onYourTeam", {
+                            games: plural(t, "together.units.game", f.sameTeamGames),
+                          })
+                        : t("together.friends.tracked")}
                       {" · "}
                       {f.partyGames > 0 ? (
                         <span className="text-gold">
-                          {plural(f.partyGames, "confirmed party game")}
+                          {plural(t, "together.units.confirmedPartyGame", f.partyGames)}
                         </span>
                       ) : (
-                        "no confirmed parties yet"
+                        t("together.friends.noParties")
                       )}
                     </span>
                   </div>
@@ -76,7 +79,7 @@ export function FriendList({
                     <time
                       dateTime={f.lastPlayedAt.toISOString()}
                       className="hidden shrink-0 text-xs text-muted-foreground sm:block"
-                      title="Last played together or against"
+                      title={t("together.friends.lastPlayedTitle")}
                     >
                       {formatAgo(f.lastPlayedAt, now)}
                     </time>

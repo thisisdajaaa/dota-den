@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getT } from "@/common/i18n/server";
 import type { HeroInfo, PlayerProfileSnapshot } from "../matches.ports";
 import { parseRankTier } from "../domain/rank-tier";
 import { formatPercent } from "./format";
@@ -10,11 +11,11 @@ export interface SignatureHero {
   winRate: number | null;
 }
 
-export function PlayerBanner({
+export async function PlayerBanner({
   profile,
   accountId32,
   signature,
-  kicker = "Your den",
+  kicker,
   children,
 }: {
   profile: PlayerProfileSnapshot | null;
@@ -26,11 +27,15 @@ export function PlayerBanner({
   /** Right-aligned slot (sync status). */
   children?: React.ReactNode;
 }) {
+  const t = await getT();
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
-  const name = profile?.personaName ?? `Player ${accountId32}`;
+  const name = profile?.personaName ?? t("matches.banner.fallbackName", { id: accountId32 });
 
   return (
-    <section className="panel relative isolate overflow-hidden" aria-label="Player">
+    <section
+      className="panel relative isolate overflow-hidden"
+      aria-label={t("matches.banner.label")}
+    >
       {signature?.hero.renderUrl && (
         <div
           aria-hidden
@@ -57,7 +62,7 @@ export function PlayerBanner({
 
       <div className="flex flex-col gap-6 p-5 sm:p-8">
         <div className="flex items-start justify-between gap-4">
-          <p className="kicker">{kicker}</p>
+          <p className="kicker">{kicker ?? t("matches.banner.kicker")}</p>
           {children}
         </div>
 
@@ -97,12 +102,15 @@ export function PlayerBanner({
             </h1>
             {rank && <p className="text-sm font-semibold text-gold">{rankLabel(rank)}</p>}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="font-mono">Account {accountId32}</span>
+              <span className="font-mono">{t("matches.banner.account", { id: accountId32 })}</span>
               {signature && (
                 <span>
-                  Signature hero{" "}
+                  {t("matches.banner.signatureHero")}{" "}
                   <span className="font-semibold text-foreground">{signature.hero.name}</span> ·{" "}
-                  {signature.games} games · {formatPercent(signature.winRate)} win rate
+                  {t("matches.banner.signatureStats", {
+                    games: signature.games,
+                    rate: formatPercent(signature.winRate),
+                  })}
                 </span>
               )}
             </div>

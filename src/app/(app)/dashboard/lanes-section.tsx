@@ -1,12 +1,13 @@
 import Link from "next/link";
+import { getT } from "@/common/i18n/server";
 import { logger } from "@/common/logging/logger";
 import { heroesService } from "@/modules/heroes";
 import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
-import { unavailableCopy } from "@/modules/heroes/ui/hero-sections";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
 
-export function LanesSkeleton() {
-  return <SectionSkeleton label="Loading where you play" rows={5} />;
+export async function LanesSkeleton() {
+  const t = await getT();
+  return <SectionSkeleton label={t("dashboard.lanes.loading")} rows={5} />;
 }
 
 /**
@@ -20,11 +21,20 @@ export async function LanesSection({ accountId32 }: { accountId32: number }) {
     logger.error("lanes_section_failed", { error: e });
     res = { ok: false, error: { type: "unavailable", cause: "error" } };
   }
+  const t = await getT();
   if (!res.ok) {
     logger.warn("lanes_section_unavailable", { reason: res.error.type });
     return (
-      <MetaSection id="lane-breakdown" kicker="Lanes and roles" title="Where you play">
-        <Unavailable>{unavailableCopy(res.error, "lane data")}</Unavailable>
+      <MetaSection
+        id="lane-breakdown"
+        kicker={t("dashboard.lanes.kicker")}
+        title={t("dashboard.lanes.title")}
+      >
+        <Unavailable>
+          {res.error.type === "rate_limited"
+            ? t("dashboard.lanes.rateLimited")
+            : t("dashboard.lanes.unavailable")}
+        </Unavailable>
       </MetaSection>
     );
   }
@@ -33,7 +43,7 @@ export async function LanesSection({ accountId32 }: { accountId32: number }) {
       <LaneBreakdownCard view={res.value} />
       <p className="text-right text-xs">
         <Link href="/heroes" className="text-gold hover:underline">
-          Heroes in each position
+          {t("dashboard.lanes.positions")}
         </Link>
       </p>
     </div>

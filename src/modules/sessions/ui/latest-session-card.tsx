@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 import type { PlaySession } from "../domain/session";
@@ -9,7 +11,7 @@ import { MmrChangeBadge } from "./mmr-change-badge";
 import { SessionRecord } from "./session-list";
 
 /** Dashboard teaser for the most recent play session. */
-export function LatestSessionCard({
+export async function LatestSessionCard({
   session,
   mmr,
   heroes,
@@ -20,6 +22,7 @@ export function LatestSessionCard({
   heroes: Map<number, HeroInfo>;
   timeZone: string;
 }) {
+  const t = await getT();
   const labels = sessionTimeLabels(session.startedAt, session.endedAt, timeZone);
   const s = session.stats;
   return (
@@ -27,14 +30,14 @@ export function LatestSessionCard({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 space-y-1">
           <p id="latest-session-kicker" className="kicker">
-            Latest session
+            {t("sessions.latest.kicker")}
           </p>
           <h2 id="latest-session-title" className="text-lg font-semibold">
             {labels.date}
           </h2>
           <p className="text-xs text-muted-foreground">
             {labels.timeRange} · {formatSpan(s.spanSec)} ·{" "}
-            {s.games === 1 ? "1 game" : `${s.games} games`}
+            {plural(t, "sessions.item.games", s.games)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -54,7 +57,7 @@ export function LatestSessionCard({
             href={`/sessions/${session.id}`}
             className="inline-flex items-center gap-1 text-sm font-medium text-gold hover:underline"
           >
-            Open recap <ChevronRight aria-hidden className="size-4" />
+            {t("sessions.latest.openRecap")} <ChevronRight aria-hidden className="size-4" />
           </Link>
         </div>
       </div>

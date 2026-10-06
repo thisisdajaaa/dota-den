@@ -1,8 +1,10 @@
+import { getT } from "@/common/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function DashboardLoading() {
+export default async function DashboardLoading() {
+  const t = await getT();
   return (
-    <div className="space-y-6" aria-busy aria-label="Loading dashboard">
+    <div className="space-y-6" aria-busy aria-label={t("dashboard.loading")}>
       <div className="panel flex items-center gap-5 p-6">
         <Skeleton className="size-24 rounded-xl" />
         <div className="space-y-3">

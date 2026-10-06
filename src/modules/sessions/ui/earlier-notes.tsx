@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { NotebookPen } from "lucide-react";
+import { getT } from "@/common/i18n/server";
 import type { EarlierNote, GoalMet } from "../domain/session-note";
 
-const GOAL_MET_LABEL: Record<GoalMet, string> = {
-  yes: "Goal met",
-  partly: "Goal partly met",
-  no: "Goal missed",
-};
+const GOAL_MET_KEY = {
+  yes: "sessions.item.goalMet",
+  partly: "sessions.item.goalPartly",
+  no: "sessions.item.goalMissed",
+} as const satisfies Record<GoalMet, string>;
 
 function dateLabel(d: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -25,7 +26,7 @@ function dateLabel(d: Date, timeZone: string): string {
  * written (read-only), dated by the session they were saved on, and linked to the session
  * that now holds those games.
  */
-export function EarlierNotes({
+export async function EarlierNotes({
   items,
   timeZone,
   linkToSession = true,
@@ -34,6 +35,7 @@ export function EarlierNotes({
   timeZone: string;
   linkToSession?: boolean;
 }) {
+  const t = await getT();
   return (
     <ul className="space-y-3">
       {items.map(({ note, currentSessionId }) => (
@@ -43,14 +45,18 @@ export function EarlierNotes({
         >
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <NotebookPen aria-hidden className="size-3.5" />
-            <span>Saved for the session starting {dateLabel(note.sessionStartedAt, timeZone)}</span>
+            <span>
+              {t("sessions.earlier.savedFor", {
+                date: dateLabel(note.sessionStartedAt, timeZone),
+              })}
+            </span>
           </p>
           {note.goal && (
             <p className="text-sm">
-              <span className="text-muted-foreground">Goal: </span>
+              <span className="text-muted-foreground">{t("sessions.earlier.goal")}</span>
               {note.goal}
               {note.goalMet && (
-                <span className="ml-2 text-xs text-gold">{GOAL_MET_LABEL[note.goalMet]}</span>
+                <span className="ml-2 text-xs text-gold">{t(GOAL_MET_KEY[note.goalMet])}</span>
               )}
             </p>
           )}
@@ -63,12 +69,10 @@ export function EarlierNotes({
                 href={`/sessions/${currentSessionId}`}
                 className="text-xs text-gold hover:underline"
               >
-                Open the session these games are in now
+                {t("sessions.earlier.openSession")}
               </Link>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                Those games are no longer in your imported history.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("sessions.earlier.gone")}</p>
             ))}
         </li>
       ))}

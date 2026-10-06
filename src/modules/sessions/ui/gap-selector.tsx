@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 import { GAP_OPTIONS, type GapMinutes } from "../domain/session";
 
 /** How long a break has to be before the next game starts a new session. Saved per user. */
 export function GapSelector({ value }: { value: GapMinutes }) {
+  const t = useT();
   const router = useRouter();
   const [selected, setSelected] = useState<GapMinutes>(value);
   const [pending, startTransition] = useTransition();
@@ -26,7 +28,7 @@ export function GapSelector({ value }: { value: GapMinutes }) {
     );
     if (!saved) {
       setSelected(previous);
-      toast.error("Couldn't change the break length. Please try again.");
+      toast.error(t("sessions.gap.failed"));
       return;
     }
     // Back to the first page: page numbers change when sessions regroup.
@@ -39,7 +41,7 @@ export function GapSelector({ value }: { value: GapMinutes }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span id="gap-label" className="text-xs text-muted-foreground">
-        New session after a break of more than
+        {t("sessions.gap.label")}
       </span>
       <div
         role="radiogroup"
@@ -63,7 +65,9 @@ export function GapSelector({ value }: { value: GapMinutes }) {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {g < 60 ? `${g} min` : `${g / 60} h`}
+              {g < 60
+                ? t("sessions.gap.minutes", { n: g })
+                : t("sessions.gap.hours", { n: g / 60 })}
             </button>
           );
         })}

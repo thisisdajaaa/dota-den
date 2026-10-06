@@ -21,6 +21,7 @@ import {
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useT } from "@/common/i18n/client";
 import type { MmrEntryDto } from "../dtos/responses/mmr-entry.dto";
 import { MmrEntryInputSchema } from "../schemas/mmr-entry.schema";
 
@@ -42,6 +43,7 @@ export function MmrEntryDialog({
   /** Offer "Read from screenshot" (needs the AI provider). */
   canReadScreenshots?: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const editing = entry !== undefined;
@@ -82,18 +84,21 @@ export function MmrEntryDialog({
         form.setValue("mmr", String(data.mmr), { shouldDirty: true, shouldValidate: true });
         setReadNote({
           ok: true,
-          text: `Read ${data.mmr.toLocaleString("en-US")}${data.seen ? ` (${data.seen})` : ""}. Check it before saving.`,
+          text: t("mmr.entry.readOk", {
+            mmr: data.mmr.toLocaleString("en-US"),
+            seen: data.seen ? ` (${data.seen})` : "",
+          }),
         });
       } else {
         setReadNote({
           ok: false,
-          text: "Couldn't find your MMR in that screenshot. Type it instead.",
+          text: t("mmr.entry.readNotFound"),
         });
       }
     } catch (e) {
       setReadNote({
         ok: false,
-        text: errorMessage(e, "Couldn't read that screenshot. Check your connection."),
+        text: errorMessage(e, t("mmr.entry.readFailed")),
       });
     } finally {
       setReading(false);
@@ -126,10 +131,14 @@ export function MmrEntryDialog({
           mapped = true;
         }
       }
-      if (!mapped) toast.error(errorMessage(e, "Couldn't save. Please try again."));
+      if (!mapped) toast.error(errorMessage(e, t("mmr.entry.saveFailed")));
       return;
     }
-    toast.success(editing ? "Entry updated" : `Logged ${values.mmr.toLocaleString("en-US")} MMR`);
+    toast.success(
+      editing
+        ? t("mmr.entry.updated")
+        : t("mmr.entry.logged", { mmr: values.mmr.toLocaleString("en-US") }),
+    );
     setOpen(false);
     if (!editing) form.reset({ mmr: "", observedAt: toLocalInput(new Date()), note: "" });
     router.refresh();
@@ -139,24 +148,23 @@ export function MmrEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {editing ? (
-          <Button variant="ghost" size="icon" className="size-8" aria-label="Edit entry">
+          <Button variant="ghost" size="icon" className="size-8" aria-label={t("mmr.entry.edit")}>
             <Pencil className="size-3.5" />
           </Button>
         ) : (
           <Button className="gap-2">
             <Plus className="size-4" />
-            Log MMR
+            {t("mmr.entry.log")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md" onPaste={onPaste}>
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit MMR entry" : "Log your MMR"}</DialogTitle>
-            <DialogDescription>
-              Enter the MMR shown in your Dota client. Log it after a session and we&apos;ll work
-              out how much you gained or lost each day.
-            </DialogDescription>
+            <DialogTitle>
+              {editing ? t("mmr.entry.editTitle") : t("mmr.entry.logTitle")}
+            </DialogTitle>
+            <DialogDescription>{t("mmr.entry.description")}</DialogDescription>
           </DialogHeader>
 
           <FieldGroup className="py-5">
@@ -165,14 +173,14 @@ export function MmrEntryDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="mmr">MMR</FieldLabel>
+                  <FieldLabel htmlFor="mmr">{t("mmr.entry.mmr")}</FieldLabel>
                   <Input
                     {...field}
                     value={String(field.value ?? "")}
                     id="mmr"
                     inputMode="numeric"
                     autoComplete="off"
-                    placeholder="e.g. 5230"
+                    placeholder={t("mmr.entry.mmrPlaceholder")}
                     aria-invalid={fieldState.invalid}
                     autoFocus
                   />
@@ -185,7 +193,7 @@ export function MmrEntryDialog({
                         accept="image/png,image/jpeg,image/webp"
                         className="sr-only"
                         tabIndex={-1}
-                        aria-label="Screenshot of your MMR"
+                        aria-label={t("mmr.entry.screenshot")}
                         onChange={(e) => {
                           const f = e.target.files?.[0];
                           e.target.value = "";
@@ -201,11 +209,9 @@ export function MmrEntryDialog({
                         onClick={() => fileInput.current?.click()}
                       >
                         <ImageUp aria-hidden className="size-4" />
-                        {reading ? "Reading…" : "Read from screenshot"}
+                        {reading ? t("mmr.entry.reading") : t("mmr.entry.readScreenshot")}
                       </Button>
-                      <FieldDescription>
-                        Or paste one. The image is only used to read the number, never stored.
-                      </FieldDescription>
+                      <FieldDescription>{t("mmr.entry.pasteHint")}</FieldDescription>
                       {readNote && (
                         <p
                           role="status"
@@ -224,7 +230,7 @@ export function MmrEntryDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="observedAt">When you saw it</FieldLabel>
+                  <FieldLabel htmlFor="observedAt">{t("mmr.entry.when")}</FieldLabel>
                   <Input
                     {...field}
                     value={String(field.value ?? "")}
@@ -232,7 +238,7 @@ export function MmrEntryDialog({
                     type="datetime-local"
                     aria-invalid={fieldState.invalid}
                   />
-                  <FieldDescription>Your local time. Defaults to now.</FieldDescription>
+                  <FieldDescription>{t("mmr.entry.whenHint")}</FieldDescription>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
@@ -242,13 +248,13 @@ export function MmrEntryDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="note">Note (optional)</FieldLabel>
+                  <FieldLabel htmlFor="note">{t("mmr.entry.note")}</FieldLabel>
                   <Textarea
                     {...field}
                     value={field.value ?? ""}
                     id="note"
                     rows={2}
-                    placeholder="e.g. Tried offlane Mars all session"
+                    placeholder={t("mmr.entry.notePlaceholder")}
                     aria-invalid={fieldState.invalid}
                   />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
@@ -259,10 +265,14 @@ export function MmrEntryDialog({
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {t("mmr.entry.cancel")}
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Saving…" : editing ? "Save changes" : "Log MMR"}
+              {form.formState.isSubmitting
+                ? t("mmr.entry.saving")
+                : editing
+                  ? t("mmr.entry.saveChanges")
+                  : t("mmr.entry.log")}
             </Button>
           </DialogFooter>
         </form>

@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
+import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { matchesService } from "@/modules/matches";
 import { getChallengeService } from "@/modules/drafts";
 import {
-  CHALLENGE_INFO,
   describePosition,
   isChallengeType,
   isValidSeed,
   newSeed,
 } from "@/modules/drafts/domain/challenges";
 import { ChallengeBoard } from "@/modules/drafts/ui/challenge-board";
+import { say } from "@/modules/drafts/ui/i18n";
 import type { DraftHero } from "@/modules/drafts/ui/types";
 import { viewerChallengeStreak } from "@/modules/leaderboards";
 
@@ -21,22 +22,29 @@ export async function generateMetadata({
   params,
 }: PageProps<"/draft/challenges/[type]">): Promise<Metadata> {
   const { type } = await params;
+  const t = await getT();
   return {
-    title: isChallengeType(type) ? `${CHALLENGE_INFO[type].title} challenge` : "Draft challenge",
+    title: isChallengeType(type)
+      ? t("drafts.challengePage.metaTitle", { title: t(`drafts.challenge.types.${type}.title`) })
+      : t("drafts.challengePage.metaFallback"),
   };
 }
 
-function Problem({ title, body, cta }: { title: string; body: string; cta?: boolean }) {
+async function Problem({ title, body, cta }: { title: string; body: string; cta?: boolean }) {
+  const t = await getT();
   return (
     <div className="space-y-6">
-      <PageHeader kicker="Draft challenges" title="Draft challenge" />
+      <PageHeader
+        kicker={t("drafts.challengePage.kicker")}
+        title={t("drafts.challengePage.title")}
+      />
       <section className="panel grid place-items-center gap-3 px-6 py-16 text-center" role="alert">
         <AlertTriangle aria-hidden className="size-8 text-gold" />
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="max-w-md text-sm text-muted-foreground">{body}</p>
         {cta !== false && (
           <Button asChild>
-            <Link href="/draft/challenges">Choose a challenge</Link>
+            <Link href="/draft/challenges">{t("drafts.challengePage.choose")}</Link>
           </Button>
         )}
       </section>
@@ -50,12 +58,13 @@ export default async function DraftChallengePage({
 }: PageProps<"/draft/challenges/[type]">) {
   const { type } = await params;
   const { seed } = await searchParams;
+  const t = await getT();
 
   if (!isChallengeType(type)) {
     return (
       <Problem
-        title="This challenge doesn't exist"
-        body="The link may have been cut off or edited. Pick one of the available challenges instead."
+        title={t("drafts.challengePage.missingTitle")}
+        body={t("drafts.challengePage.missingBody")}
       />
     );
   }
@@ -64,8 +73,8 @@ export default async function DraftChallengePage({
   if (!isValidSeed(seed)) {
     return (
       <Problem
-        title="This puzzle link is broken"
-        body="The puzzle code in the link isn't valid. Start a fresh puzzle instead."
+        title={t("drafts.challengePage.brokenTitle")}
+        body={t("drafts.challengePage.brokenBody")}
       />
     );
   }
@@ -90,30 +99,28 @@ export default async function DraftChallengePage({
   if (!puzzle.ok) {
     return (
       <Problem
-        title="Hero list unavailable"
-        body="We couldn't load enough heroes from OpenDota to build a puzzle. Please try again in a minute."
+        title={t("drafts.challengePage.heroesTitle")}
+        body={t("drafts.challengePage.heroesBody")}
       />
     );
   }
 
-  const info = CHALLENGE_INFO[type];
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Draft challenges"
-        title={info.title}
-        description={info.summary}
+        kicker={t("drafts.challengePage.kicker")}
+        title={t(`drafts.challenge.types.${type}.title`)}
+        description={t(`drafts.challenge.types.${type}.summary`)}
         actions={
           <Button asChild variant="outline">
-            <Link href="/draft/challenges">All challenges</Link>
+            <Link href="/draft/challenges">{t("drafts.challengePage.all")}</Link>
           </Button>
         }
       />
       <ChallengeBoard
         key={`${type}-${seed}`}
         puzzle={puzzle.value}
-        info={info}
-        situation={describePosition(puzzle.value, heroes)}
+        situation={say(t, describePosition(puzzle.value, heroes))}
         heroes={heroes}
         saved={saved}
       />

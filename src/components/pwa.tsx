@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/common/i18n/client";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -23,6 +24,7 @@ export function ServiceWorker() {
  * Android). Safari users add it from the Share menu instead.
  */
 export function InstallButton({ className }: { className?: string }) {
+  const t = useT();
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -51,7 +53,7 @@ export function InstallButton({ className }: { className?: string }) {
       }}
     >
       <Download aria-hidden className="size-4" />
-      Install app
+      {t("system.pwa.install")}
     </Button>
   );
 }

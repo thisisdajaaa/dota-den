@@ -2,7 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "cn";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
-import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
+import { getT } from "@/common/i18n/server";
+import { englishMessages, type Messages } from "@/common/i18n/messages";
+import { plural, translator, type Translator } from "@/common/i18n/translate";
+import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
@@ -21,24 +24,38 @@ import type { SourceError } from "../heroes.ports";
 
 export { Unavailable };
 
-/** "OpenDota is busy" vs "unavailable", in the app's usual words. */
-export function unavailableCopy(error: SourceError | { type: "error" }, what: string): string {
+type T = Translator<Messages>;
+
+const SUBJECTS = {
+  "lane data": "laneData",
+  "public hero stats": "publicHeroStats",
+  "item data": "itemData",
+  matchups: "matchups",
+} as const;
+
+export type UnavailableSubject = keyof typeof SUBJECTS;
+
+const englishT = translator<Messages>(englishMessages, englishMessages);
+
+/** "OpenDota is busy" vs "unavailable", in the app's usual words (English without `t`). */
+export function unavailableCopy(
+  error: SourceError | { type: "error" },
+  what: UnavailableSubject,
+  t: T = englishT,
+): string {
+  const key = SUBJECTS[what];
   return error.type === "rate_limited"
-    ? `OpenDota is getting a lot of requests right now, so ${what} can't be loaded. Try again in a minute.`
-    : `${what.replace(/^./, (c) => c.toUpperCase())} ${what.endsWith("s") ? "are" : "is"} unavailable right now. Try again shortly.`;
+    ? t(`heroes.unavailable.${key}.busy`)
+    : t(`heroes.unavailable.${key}.down`);
 }
 
-/** "1 match", "8 matches", "2 enemy heroes": for words `plural` doesn't cover. */
-export function countOf(n: number, one: string, many: string): string {
-  return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
-}
-
+/** A signed change in percentage points: "+1.2", "-0.4". */
 function pp(delta: number): string {
   const v = (delta * 100).toFixed(1);
-  return `${delta >= 0 ? "+" : ""}${v} points`;
+  return `${delta >= 0 ? "+" : ""}${v}`;
 }
 
-export function HeroBanner({
+export async function HeroBanner({
   hero,
   heroId,
   games,
@@ -47,10 +64,11 @@ export function HeroBanner({
   heroId: number;
   games: number;
 }) {
+  const t = await getT();
   const name = heroName(hero, heroId);
   return (
     <section
-      aria-label="Hero"
+      aria-label={t("heroes.banner.label")}
       className="panel relative flex items-center gap-5 overflow-hidden p-6"
     >
       {hero?.renderUrl && (
@@ -64,20 +82,23 @@ export function HeroBanner({
       )}
       <HeroPortrait hero={hero} heroId={heroId} size="lg" />
       <div className="relative min-w-0 space-y-1">
-        <p className="kicker">Your hero</p>
+        <p className="kicker">{t("heroes.banner.kicker")}</p>
         <h1 className="font-display text-3xl font-bold tracking-wide">{name}</h1>
         <p className="text-sm text-muted-foreground">
           {[hero?.attackType, ...(hero?.roles ?? []).slice(0, 3)].filter(Boolean).join(" · ") ||
-            "Hero details unavailable"}
+            t("heroes.banner.detailsUnavailable")}
         </p>
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
           {games > 0 && (
             <Link href={`/matches?hero=${heroId}`} className="text-gold hover:underline">
-              All {countOf(games, "match", "matches")} on {name}
+              {t("heroes.banner.allMatches", {
+                matches: plural(t, "heroes.counts.matches", games),
+                name,
+              })}
             </Link>
           )}
           <Link href={`/guides/${heroId}`} className="text-gold hover:underline">
-            Pro guide for {name}
+            {t("heroes.banner.proGuide", { name })}
           </Link>
         </p>
       </div>
@@ -85,44 +106,51 @@ export function HeroBanner({
   );
 }
 
-export function TrendCard({ trend, heroLabel }: { trend: WinRateTrend; heroLabel: string }) {
+export async function TrendCard({ trend, heroLabel }: { trend: WinRateTrend; heroLabel: string }) {
+  const t = await getT();
+  const games = (n: number) => plural(t, "heroes.counts.games", n);
   const byPatch = trend.by === "patch";
   return (
     <MetaSection
       id="hero-trend"
-      kicker="Over time"
-      title="Win rate trend"
+      kicker={t("heroes.trend.kicker")}
+      title={t("heroes.trend.title")}
       description={
         byPatch
-          ? `Your win rate on ${heroLabel}, split by patch.`
-          : `Your win rate on ${heroLabel}, split by month. We split by patch only when your games cover at least two patches and the patch is known for most of them.`
+          ? t("heroes.trend.byPatch", { hero: heroLabel })
+          : t("heroes.trend.byMonth", { hero: heroLabel })
       }
       footer={
         <>
-          {trend.buckets.length > 0 && (
-            <>Faded bars have under {MIN_SAMPLE} games: too few to judge. </>
-          )}
-          {trend.unassigned > 0 &&
-            `${plural(trend.unassigned, "game")} with no known patch left out. `}
-          {trend.older > 0 && `${plural(trend.older, "older game")} not shown.`}
+          {trend.buckets.length > 0 && t("heroes.trend.faded", { n: MIN_SAMPLE })}
+          {trend.unassigned > 0 && t("heroes.trend.noPatch", { games: games(trend.unassigned) })}
+          {trend.older > 0 &&
+            t("heroes.trend.older", { games: plural(t, "heroes.counts.olderGames", trend.older) })}
         </>
       }
     >
       {trend.buckets.length === 0 ? (
-        <Unavailable>No games to chart yet.</Unavailable>
+        <Unavailable>{t("heroes.trend.empty")}</Unavailable>
       ) : (
-        <ul className="space-y-2 px-5 pb-4" aria-label={byPatch ? "By patch" : "By month"}>
+        <ul
+          className="space-y-2 px-5 pb-4"
+          aria-label={byPatch ? t("heroes.trend.byPatchLabel") : t("heroes.trend.byMonthLabel")}
+        >
           {trend.buckets.map((b) => (
             <li
               key={b.key}
               className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-3 text-sm"
-              title={`${b.label}: ${formatPercent(b.winRate)} over ${plural(b.games, "game")}`}
+              title={t("heroes.trend.barTitle", {
+                label: b.label,
+                rate: formatPercent(b.winRate),
+                games: games(b.games),
+              })}
             >
               <span className="font-medium tabular-nums">{b.label}</span>
               <WinRateBar rate={b.winRate} muted={b.lowSample} />
               <span className="w-40 text-right text-xs text-muted-foreground tabular-nums">
                 <span className="font-semibold text-foreground">{formatPercent(b.winRate)}</span> ·{" "}
-                {plural(b.games, "game")}
+                {games(b.games)}
               </span>
             </li>
           ))}
@@ -132,7 +160,7 @@ export function TrendCard({ trend, heroLabel }: { trend: WinRateTrend; heroLabel
   );
 }
 
-export function HighRankCard({
+export async function HighRankCard({
   comparison,
   heroLabel,
   yourGames,
@@ -141,12 +169,13 @@ export function HighRankCard({
   heroLabel: string;
   yourGames: number;
 }) {
+  const t = await getT();
   return (
     <MetaSection
       id="hero-high-rank"
-      kicker="Public games"
-      title="High-rank win rate"
-      footer="Public high-rank games are Ancient, Divine and Immortal combined (OpenDota)."
+      kicker={t("heroes.highRank.kicker")}
+      title={t("heroes.highRank.title")}
+      footer={t("heroes.highRank.footer")}
     >
       <div className="space-y-2 px-5 pb-4 text-sm">
         <p>
@@ -154,15 +183,23 @@ export function HighRankCard({
             {formatPercent(comparison.publicRate)}
           </span>{" "}
           <span className="text-muted-foreground">
-            over {comparison.publicGames.toLocaleString("en-US")} public high-rank games on{" "}
-            {heroLabel}
+            {t("heroes.highRank.over", {
+              games: comparison.publicGames.toLocaleString("en-US"),
+              hero: heroLabel,
+            })}
           </span>
         </p>
         <WinRateBar rate={comparison.publicRate} />
         <p className="text-muted-foreground">
           {comparison.delta === null
-            ? `You have ${plural(yourGames, "game")} on ${heroLabel}: too few to compare (${MIN_SAMPLE}+ needed).`
-            : `You are ${pp(comparison.delta)} ${comparison.delta >= 0 ? "above" : "below"} that.`}
+            ? t("heroes.highRank.tooFew", {
+                games: plural(t, "heroes.counts.games", yourGames),
+                hero: heroLabel,
+                min: MIN_SAMPLE,
+              })
+            : t(comparison.delta >= 0 ? "heroes.highRank.above" : "heroes.highRank.below", {
+                delta: pp(comparison.delta),
+              })}
         </p>
       </div>
     </MetaSection>
@@ -174,11 +211,13 @@ function MatchupList({
   entries,
   heroes,
   empty,
+  t,
 }: {
   title: string;
   entries: MatchupEntry[];
   heroes: Map<number, HeroInfo>;
   empty: string;
+  t: T;
 }) {
   return (
     <div className="space-y-2">
@@ -201,7 +240,7 @@ function MatchupList({
                       <span className="font-semibold text-foreground">
                         {formatPercent(e.winRate)}
                       </span>{" "}
-                      · {plural(e.games, "game")}
+                      · {plural(t, "heroes.counts.games", e.games)}
                     </span>
                   </div>
                   <WinRateBar rate={e.winRate} className="h-1.5" />
@@ -215,7 +254,7 @@ function MatchupList({
   );
 }
 
-export function MatchupsCard({
+export async function MatchupsCard({
   view,
   heroes,
   heroLabel,
@@ -224,39 +263,49 @@ export function MatchupsCard({
   heroes: Map<number, HeroInfo>;
   heroLabel: string;
 }) {
+  const t = await getT();
   const m = view.matchups;
   return (
     <MetaSection
       id="hero-matchups"
-      kicker="Matchups"
-      title={`Who you beat and lose to on ${heroLabel}`}
-      footer={`From your ${plural(view.games, "game")} on ${heroLabel} on OpenDota. Heroes you met in fewer than ${m.minGames} games are left out (${countOf(m.enemiesBelowMin, "enemy hero", "enemy heroes")}, ${countOf(m.alliesBelowMin, "allied hero", "allied heroes")}).`}
+      kicker={t("heroes.matchups.kicker")}
+      title={t("heroes.matchups.title", { hero: heroLabel })}
+      footer={t("heroes.matchups.footer", {
+        games: plural(t, "heroes.counts.games", view.games),
+        hero: heroLabel,
+        min: m.minGames,
+        enemies: plural(t, "heroes.counts.enemyHeroes", m.enemiesBelowMin),
+        allies: plural(t, "heroes.counts.alliedHeroes", m.alliesBelowMin),
+      })}
     >
       <div className="grid grid-cols-1 gap-6 px-5 pb-5 md:grid-cols-3">
         <MatchupList
-          title="You beat"
+          title={t("heroes.matchups.beat")}
           entries={m.beats}
           heroes={heroes}
-          empty={`No enemy hero with ${MIN_MATCHUP_GAMES}+ games where you win half or more.`}
+          empty={t("heroes.matchups.emptyBeat", { min: MIN_MATCHUP_GAMES })}
+          t={t}
         />
         <MatchupList
-          title="You lose to"
+          title={t("heroes.matchups.loseTo")}
           entries={m.losesTo}
           heroes={heroes}
-          empty={`No enemy hero with ${MIN_MATCHUP_GAMES}+ games where you lose more than you win.`}
+          empty={t("heroes.matchups.emptyLoseTo", { min: MIN_MATCHUP_GAMES })}
+          t={t}
         />
         <MatchupList
-          title="You win with"
+          title={t("heroes.matchups.winWith")}
           entries={m.allies}
           heroes={heroes}
-          empty={`No allied hero with ${MIN_MATCHUP_GAMES}+ games where you win half or more.`}
+          empty={t("heroes.matchups.emptyWinWith", { min: MIN_MATCHUP_GAMES })}
+          t={t}
         />
       </div>
     </MetaSection>
   );
 }
 
-export function ItemsCard({
+export async function ItemsCard({
   details,
   items,
   heroLabel,
@@ -266,32 +315,39 @@ export function ItemsCard({
   items: Map<string, ItemInfo>;
   heroLabel: string;
 }) {
+  const t = await getT();
+  const games = (n: number) => plural(t, "heroes.counts.games", n);
   const summary = details.items;
   const byId = new Map([...items.values()].map((i) => [i.id, i]));
   return (
     <MetaSection
       id="hero-items"
-      kicker="Items"
-      title="Your most-bought items"
+      kicker={t("heroes.items.kicker")}
+      title={t("heroes.items.title")}
       footer={
         summary
-          ? `From ${plural(summary.withData, "game")} with purchase data (parsed replays) among your last ${plural(summary.sample, "game")} on ${heroLabel}. Consumables, recipes and cheap components are left out.`
+          ? t("heroes.items.footer", {
+              withData: games(summary.withData),
+              sample: games(summary.sample),
+              hero: heroLabel,
+            })
           : undefined
       }
     >
       {!summary ? (
-        <Unavailable>
-          Item names are unavailable right now, so we can&apos;t list items.
-        </Unavailable>
+        <Unavailable>{t("heroes.items.noNames")}</Unavailable>
       ) : !summary.enough ? (
         <Unavailable>
-          Only {plural(summary.withData, "game")} on {heroLabel} have purchase data. Item stats show
-          once at least {MIN_ITEM_GAMES} of your games have parsed replays.
+          {t("heroes.items.notEnough", {
+            games: games(summary.withData),
+            hero: heroLabel,
+            min: MIN_ITEM_GAMES,
+          })}
         </Unavailable>
       ) : summary.items.length === 0 ? (
-        <Unavailable>No notable items in your games with purchase data.</Unavailable>
+        <Unavailable>{t("heroes.items.none")}</Unavailable>
       ) : (
-        <ul className="space-y-2 px-5 pb-4" aria-label="Most-bought items">
+        <ul className="space-y-2 px-5 pb-4" aria-label={t("heroes.items.listLabel")}>
           {summary.items.map((it) => {
             const info = items.get(it.key);
             return (
@@ -302,7 +358,7 @@ export function ItemsCard({
                 </span>
                 <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                   <span className="font-semibold text-foreground">{formatPercent(it.share)}</span>{" "}
-                  of games · {it.games} of {summary.withData}
+                  {t("heroes.items.ofGames", { games: it.games, total: summary.withData })}
                 </span>
               </li>
             );
@@ -314,7 +370,7 @@ export function ItemsCard({
 }
 
 /** Grid of every hero you've played, linking to each hero page. */
-export function HeroGrid({
+export async function HeroGrid({
   rows,
   heroes,
   now,
@@ -323,10 +379,11 @@ export function HeroGrid({
   heroes: Map<number, HeroInfo>;
   now: Date;
 }) {
+  const t = await getT();
   return (
     <ul
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-      aria-label="Heroes you've played"
+      aria-label={t("heroes.grid.label")}
     >
       {rows.map((r) => {
         const hero = heroes.get(r.heroId);
@@ -335,7 +392,11 @@ export function HeroGrid({
           <li key={r.heroId}>
             <Link
               href={`/heroes/${r.heroId}`}
-              aria-label={`${name}: ${plural(r.games, "game")}, ${formatPercent(r.winRate)} win rate`}
+              aria-label={t("heroes.grid.cardLabel", {
+                name,
+                games: plural(t, "heroes.counts.games", r.games),
+                rate: formatPercent(r.winRate),
+              })}
               className="panel flex items-center gap-3 p-3 transition-colors hover:border-gold/30 hover:bg-white/[0.03]"
             >
               <HeroPortrait hero={hero} heroId={r.heroId} size="md" />
@@ -353,7 +414,7 @@ export function HeroGrid({
                 </div>
                 <WinRateBar rate={r.winRate} muted={r.lowSample} className="h-1.5" />
                 <p className="text-[0.7rem] text-muted-foreground tabular-nums">
-                  {plural(r.games, "game")} · KDA {r.kda?.toFixed(2) ?? "—"}
+                  {plural(t, "heroes.counts.games", r.games)} · KDA {r.kda?.toFixed(2) ?? "—"}
                   {r.lastPlayed && ` · ${formatAgo(r.lastPlayed, now)}`}
                 </p>
               </div>

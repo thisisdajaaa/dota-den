@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/common/i18n/client";
 import { ErrorPanel } from "@/components/error-panel";
 
 export default function TogetherError({
@@ -9,11 +10,6 @@ export default function TogetherError({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
-  return (
-    <ErrorPanel
-      error={error}
-      retry={retry}
-      title="Something went wrong loading your games together"
-    />
-  );
+  const t = useT();
+  return <ErrorPanel error={error} retry={retry} title={t("together.page.error")} />;
 }

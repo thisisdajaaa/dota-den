@@ -1,12 +1,15 @@
 import { Info } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { Badge } from "@/components/ui/badge";
 import type { MatchSummary, WinRecord } from "../domain/match-summary";
 import { MIN_SAMPLE } from "../domain/match-summary";
-import { formatPercent, partyName, plural } from "./format";
+import { formatPercent, partyName } from "./format";
 import { WinRateBar } from "./win-rate-bar";
 
-function Row({ label, record, hint }: { label: string; record: WinRecord; hint?: string }) {
+async function Row({ label, record, hint }: { label: string; record: WinRecord; hint?: string }) {
+  const t = await getT();
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 py-2.5 sm:grid-cols-[8rem_1fr_auto]">
       <div>
@@ -23,10 +26,10 @@ function Row({ label, record, hint }: { label: string; record: WinRecord; hint?:
       <div className="text-right sm:w-40">
         <div className="text-base font-semibold tabular-nums">{formatPercent(record.winRate)}</div>
         <div className="text-[0.7rem] whitespace-nowrap text-muted-foreground tabular-nums">
-          {record.wins} wins · {record.losses} losses
+          {t("matches.queueSplit.record", { wins: record.wins, losses: record.losses })}
           {record.games > 0 && record.lowSample && (
             <Badge variant="outline" className="ml-1.5 h-4 px-1 text-[0.6rem]">
-              few games
+              {t("matches.queueSplit.fewGames")}
             </Badge>
           )}
         </div>
@@ -35,27 +38,40 @@ function Row({ label, record, hint }: { label: string; record: WinRecord; hint?:
   );
 }
 
-export function QueueSplitCard({ summary }: { summary: MatchSummary }) {
+export async function QueueSplitCard({ summary }: { summary: MatchSummary }) {
+  const t = await getT();
   const { byQueue, byPartySize, overall } = summary;
   const classified = byQueue.solo.games + byQueue.party.games;
   return (
     <section className="panel p-5" aria-labelledby="queue-split">
       <div className="mb-2 flex items-baseline justify-between gap-4">
         <div>
-          <p className="kicker">Solo vs party</p>
+          <p className="kicker">{t("matches.queueSplit.kicker")}</p>
           <h2 id="queue-split" className="text-lg font-semibold">
-            Win rate by queue
+            {t("matches.queueSplit.title")}
           </h2>
         </div>
         <span className="text-xs text-muted-foreground tabular-nums">
-          Queue known for {classified} of {overall.games} games
+          {t("matches.queueSplit.known", { known: classified, total: overall.games })}
         </span>
       </div>
 
       <div className="divide-y divide-white/[0.06]">
-        <Row label="Solo" record={byQueue.solo} hint="You queued alone" />
-        <Row label="Party" record={byQueue.party} hint="You queued with friends" />
-        <Row label="Unknown" record={byQueue.unknown} hint="Dota didn't record it" />
+        <Row
+          label={t("matches.queue.solo")}
+          record={byQueue.solo}
+          hint={t("matches.queueSplit.soloHint")}
+        />
+        <Row
+          label={t("matches.queue.party")}
+          record={byQueue.party}
+          hint={t("matches.queueSplit.partyHint")}
+        />
+        <Row
+          label={t("matches.queue.unknown")}
+          record={byQueue.unknown}
+          hint={t("matches.queueSplit.unknownHint")}
+        />
       </div>
 
       {byPartySize.length > 0 && (
@@ -71,8 +87,8 @@ export function QueueSplitCard({ summary }: { summary: MatchSummary }) {
               <span className="font-medium">{partyName(p.partySize)}</span>{" "}
               <span className="font-semibold tabular-nums">{formatPercent(p.winRate)}</span>{" "}
               <span className="text-muted-foreground tabular-nums">
-                · {plural(p.games, "game")}
-                {p.lowSample && ", too few to judge"}
+                · {plural(t, "matches.queueSplit.games", p.games)}
+                {p.lowSample && t("matches.queueSplit.tooFew")}
               </span>
             </span>
           ))}
@@ -81,12 +97,7 @@ export function QueueSplitCard({ summary }: { summary: MatchSummary }) {
 
       <p className="mt-4 flex gap-2 text-xs text-muted-foreground">
         <Info aria-hidden className="mt-px size-3.5 shrink-0" />
-        <span>
-          We only count a game as solo or party when Dota&apos;s match data says so. Games without
-          that info go under Unknown and are never assumed to be solo. Win rates from fewer than{" "}
-          {MIN_SAMPLE} games can swing a lot, so they&apos;re shown faded. The line in the middle of
-          each bar marks 50%.
-        </span>
+        <span>{t("matches.queueSplit.note", { min: MIN_SAMPLE })}</span>
       </p>
     </section>
   );

@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import type { DuosView, TopHeroesView } from "@/modules/meta/dtos/responses/meta.dto";
@@ -27,10 +30,14 @@ export async function settle<T>(
   }
 }
 
-const unavailableCopy = (error: SourceError | { type: "error" }, what: string) =>
+const unavailableCopy = (
+  t: Translator<Messages>,
+  error: SourceError | { type: "error" },
+  what: "heroStats" | "proLaneData",
+) =>
   error.type === "rate_limited"
-    ? `OpenDota is getting a lot of requests right now, so ${what} can't be loaded. Try again in a minute.`
-    : `${what.replace(/^./, (c) => c.toUpperCase())} ${what.endsWith("s") ? "are" : "is"} unavailable right now. Try again shortly.`;
+    ? t(`meta.unavailable.${what}.busy`)
+    : t(`meta.unavailable.${what}.down`);
 
 export async function TopHeroesSection({
   heroes,
@@ -39,11 +46,15 @@ export async function TopHeroesSection({
   heroes: Promise<Loaded<TopHeroesView>>;
   catalog: Promise<Map<number, HeroInfo>>;
 }) {
-  const [res, cat] = await Promise.all([heroes, catalog]);
+  const [res, cat, t] = await Promise.all([heroes, catalog, getT()]);
   if (!res.ok)
     return (
-      <MetaSection id="meta-top-heroes" kicker="Right now" title="Top heroes">
-        <Unavailable>{unavailableCopy(res.error, "hero stats")}</Unavailable>
+      <MetaSection
+        id="meta-top-heroes"
+        kicker={t("meta.topHeroes.kicker")}
+        title={t("meta.topHeroes.titleShort")}
+      >
+        <Unavailable>{unavailableCopy(t, res.error, "heroStats")}</Unavailable>
       </MetaSection>
     );
   return <TopHeroesCard view={res.value} catalog={cat} now={new Date()} />;
@@ -60,14 +71,18 @@ export async function PatchTipsSection({
   patch: Promise<LatestPatchResult>;
   catalog: Promise<Map<number, HeroInfo>>;
 }) {
-  const [res, latest, cat] = await Promise.all([heroes, patch, catalog]);
+  const [res, latest, cat, t] = await Promise.all([heroes, patch, catalog, getT()]);
   if (!res.ok)
     return (
-      <MetaSection id="meta-patch-tips" kicker="Patch" title="Patch tips">
+      <MetaSection
+        id="meta-patch-tips"
+        kicker={t("meta.tips.kickerShort")}
+        title={t("meta.tips.title")}
+      >
         <Unavailable>
-          Patch tips need the hero stats, which are unavailable right now. You can still{" "}
+          {t("meta.tips.needStats")}{" "}
           <Link href="/patches" className="text-gold hover:underline">
-            read the patch notes
+            {t("meta.tips.readNotes")}
           </Link>
           .
         </Unavailable>
@@ -93,41 +108,39 @@ export async function LaneDuosSection({
   duos: Promise<Loaded<DuosView>>;
   catalog: Promise<Map<number, HeroInfo>>;
 }) {
-  const [res, cat] = await Promise.all([duos, catalog]);
+  const [res, cat, t] = await Promise.all([duos, catalog, getT()]);
   if (!res.ok)
     return (
-      <MetaSection id="meta-lane-duos" kicker="Lane partners" title="Strongest lane duos">
-        <Unavailable>{unavailableCopy(res.error, "pro lane data")}</Unavailable>
+      <MetaSection id="meta-lane-duos" kicker={t("meta.duos.kicker")} title={t("meta.duos.title")}>
+        <Unavailable>{unavailableCopy(t, res.error, "proLaneData")}</Unavailable>
       </MetaSection>
     );
   return <LaneDuosCard position={position} view={res.value} catalog={cat} now={new Date()} />;
 }
 
 export async function PatchLine({ patch }: { patch: Promise<LatestPatchResult> }) {
-  const latest = await patch;
+  const [latest, t] = await Promise.all([patch, getT()]);
   if (latest.status !== "ok")
     return (
       <p className="text-xs text-muted-foreground">
-        {latest.status === "none"
-          ? "No patch notes imported yet."
-          : "Patch info is unavailable right now."}
+        {latest.status === "none" ? t("meta.patchLine.none") : t("meta.patchLine.unavailable")}
       </p>
     );
   const { version, publishedAt } = latest.patch;
   return (
     <p className="text-xs text-muted-foreground">
-      Latest patch:{" "}
+      {t("meta.patchLine.latest")}{" "}
       <Link
         href={`/patches/${encodeURIComponent(version)}`}
         className="font-medium text-gold hover:underline"
       >
         {version}
       </Link>
-      , released{" "}
-      {new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
-        publishedAt,
-      )}
-      . Public stats cover recent games and may include some from before it.
+      {t("meta.patchLine.released", {
+        date: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
+          publishedAt,
+        ),
+      })}
     </p>
   );
 }

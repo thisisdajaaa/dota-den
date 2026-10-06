@@ -12,7 +12,11 @@ import {
   topTrios,
   type SharedGame,
 } from "@/modules/together/domain/together-stats";
+import { englishMessages, type Messages } from "@/common/i18n/messages";
+import { translator } from "@/common/i18n/translate";
 import { comparisonCopy, formatDelta } from "@/modules/together/ui/copy";
+
+const t = translator<Messages>(englishMessages, englishMessages);
 
 const DAY = 86_400_000;
 const T0 = Date.parse("2026-09-01T00:00:00Z");
@@ -151,14 +155,14 @@ describe("baseline comparison", () => {
     expect(c.togetherRate).toBeCloseTo(0.58);
     expect(c.baselineRate).toBeCloseTo(0.518);
     expect(c.delta).toBeCloseTo(0.062);
-    expect(comparisonCopy(c, { games: 500, wins: 259 }).value).toBe("+6.2% vs your usual");
+    expect(comparisonCopy(t, c, { games: 500, wins: 259 }).value).toBe("+6.2% vs your usual");
   });
 
   it("formats deltas in plain language", () => {
     expect(formatDelta(0.062)).toBe("+6.2%");
     expect(formatDelta(-0.03)).toBe("−3.0%");
     expect(formatDelta(0.0001)).toBe("±0.0%");
-    expect(comparisonCopy({ kind: "too_few_together", games: 4, needed: 10 }, null).value).toBe(
+    expect(comparisonCopy(t, { kind: "too_few_together", games: 4, needed: 10 }, null).value).toBe(
       "Too few games together to judge",
     );
   });

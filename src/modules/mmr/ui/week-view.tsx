@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { Calendar } from "../domain/calendar";
 import { daysBetween, type DayKey } from "@/common/time/day-key";
 import { basisOf, dayStyle, deltaLabel, periodScale } from "./day-tone";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export function WeekView({
+export async function WeekView({
   from,
   to,
   calendar,
@@ -21,6 +22,7 @@ export function WeekView({
   selected: DayKey | null;
   hrefForDay: (key: DayKey) => string;
 }) {
+  const t = await getT();
   const scale = periodScale(calendar.days.values());
   return (
     <ol className="grid grid-cols-1 gap-2 sm:grid-cols-7">
@@ -55,7 +57,9 @@ export function WeekView({
               <span className="text-right sm:text-left">
                 <span className="block text-lg font-semibold tabular-nums">{label ?? "—"}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {day?.games ? `${day.wins} wins · ${day.losses} losses` : "No ranked games"}
+                  {day?.games
+                    ? t("mmr.calendar.record", { wins: day.wins, losses: day.losses })
+                    : t("mmr.calendar.noRankedGames")}
                 </span>
               </span>
             </Link>

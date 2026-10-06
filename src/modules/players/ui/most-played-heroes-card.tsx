@@ -1,10 +1,12 @@
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
-import { formatPercent, plural } from "@/modules/matches/ui/format";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
+import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
 import { winRate, type HeroUsage } from "../domain/public-player";
 
-export function MostPlayedHeroesCard({
+export async function MostPlayedHeroesCard({
   heroes,
   catalog,
   error,
@@ -13,12 +15,13 @@ export function MostPlayedHeroesCard({
   catalog: Map<number, HeroInfo>;
   error?: string | null;
 }) {
+  const t = await getT();
   return (
     <section className="panel overflow-hidden" aria-labelledby="most-played-heroes">
       <div className="p-5 pb-3">
-        <p className="kicker">Heroes</p>
+        <p className="kicker">{t("players.mostPlayed.kicker")}</p>
         <h2 id="most-played-heroes" className="text-lg font-semibold">
-          Most played heroes
+          {t("players.mostPlayed.title")}
         </h2>
       </div>
       {error ? (
@@ -30,7 +33,7 @@ export function MostPlayedHeroesCard({
         </p>
       ) : heroes.length === 0 ? (
         <p className="border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground">
-          No public hero stats yet.
+          {t("players.mostPlayed.empty")}
         </p>
       ) : (
         <ol className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
@@ -43,7 +46,10 @@ export function MostPlayedHeroesCard({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{heroName(hero, h.heroId)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {plural(h.games, "game")} · {formatPercent(rate)} win rate
+                    {t("players.mostPlayed.detail", {
+                      games: plural(t, "players.units.game", h.games),
+                      rate: formatPercent(rate),
+                    })}
                   </p>
                 </div>
                 <span className="hidden w-20 sm:block">

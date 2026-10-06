@@ -62,8 +62,8 @@ export class GoalsService {
       week: week.from,
       daysLeft: daysBetween(today, week.to).length - 1,
       thisWeek: goals.map((goal) => {
-        const { current, met, fraction } = goalProgress(goal, thisWeek);
-        return { goal, current, met, fraction };
+        const { current, status, met, fraction } = goalProgress(goal, thisWeek);
+        return { goal, current, status, met, fraction };
       }),
       lastWeek: lastGoals.map((goal) => ({
         goal,

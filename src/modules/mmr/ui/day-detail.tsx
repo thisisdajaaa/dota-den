@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { ChevronRight, X } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { HeroInfo, RankedResultRow } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { queueLabel } from "@/modules/matches/ui/format";
 import { ESTIMATE_PER_GAME, type CalendarDay } from "../domain/calendar";
 import { basisOf, deltaLabel } from "./day-tone";
 
-export function DayDetail({
+export async function DayDetail({
   dayKey,
   day,
   matches,
@@ -22,6 +23,7 @@ export function DayDetail({
   timeZone: string;
   closeHref: string;
 }) {
+  const t = await getT();
   const basis = basisOf(day);
   const label = deltaLabel(day);
   const time = new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" });
@@ -37,7 +39,7 @@ export function DayDetail({
     <section className="panel p-5" aria-labelledby="day-detail">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="kicker">Day details</p>
+          <p className="kicker">{t("mmr.day.kicker")}</p>
           <h2 id="day-detail" className="text-lg font-semibold">
             {date}
           </h2>
@@ -46,7 +48,7 @@ export function DayDetail({
           href={closeHref}
           scroll={false}
           className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-          aria-label="Close day details"
+          aria-label={t("mmr.day.close")}
         >
           <X className="size-4" />
         </Link>
@@ -54,7 +56,7 @@ export function DayDetail({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-          <div className="text-xs text-muted-foreground">MMR change</div>
+          <div className="text-xs text-muted-foreground">{t("mmr.day.change")}</div>
           <div
             className={cn(
               "text-2xl font-semibold tabular-nums",
@@ -69,34 +71,36 @@ export function DayDetail({
           </div>
           <div className="text-xs text-muted-foreground">
             {basis === "actual"
-              ? "Exact, from MMR you logged before and after these games."
+              ? t("mmr.day.exact")
               : basis === "estimate"
-                ? `Estimate: ±${ESTIMATE_PER_GAME} per ranked game. Log your MMR before and after a session for the exact number.`
-                : "No ranked games this day."}
+                ? t("mmr.day.estimate", { n: ESTIMATE_PER_GAME })
+                : t("mmr.day.none")}
           </div>
         </div>
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-          <div className="text-xs text-muted-foreground">Ranked games</div>
+          <div className="text-xs text-muted-foreground">{t("mmr.day.rankedGames")}</div>
           <div className="text-2xl font-semibold">{day?.games ?? 0}</div>
           <div className="text-xs text-muted-foreground">
-            {day?.games ? `${day.wins} wins · ${day.losses} losses` : "Nothing played"}
+            {day?.games
+              ? t("mmr.calendar.record", { wins: day.wins, losses: day.losses })
+              : t("mmr.day.nothing")}
           </div>
         </div>
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-          <div className="text-xs text-muted-foreground">MMR logged</div>
+          <div className="text-xs text-muted-foreground">{t("mmr.day.logged")}</div>
           {day?.observations.length ? (
             <ul className="mt-1 space-y-0.5 text-sm tabular-nums">
               {day.observations.map((o, i) => (
                 <li key={i}>
                   <span className="font-semibold">{o.mmr.toLocaleString("en-US")}</span>{" "}
                   <span className="text-xs text-muted-foreground">
-                    at {time.format(o.observedAt)}
+                    {t("mmr.day.at", { time: time.format(o.observedAt) })}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <div className="text-sm text-muted-foreground">No entries this day</div>
+            <div className="text-sm text-muted-foreground">{t("mmr.day.noEntries")}</div>
           )}
         </div>
       </div>
@@ -123,7 +127,7 @@ export function DayDetail({
                     {time.format(m.startedAt)}
                   </span>
                   <span className={cn("w-9 text-xs font-semibold", win ? "text-win" : "text-loss")}>
-                    {win ? "Win" : "Loss"}
+                    {win ? t("mmr.day.win") : t("mmr.day.loss")}
                   </span>
                   <ChevronRight
                     aria-hidden

@@ -22,10 +22,14 @@ describe("weekly goals", () => {
   it("measures win rate once there are enough games", () => {
     expect(goalProgress({ type: "winRate", target: 60 }, week)).toMatchObject({
       current: "67% (4–2)",
+      status: { kind: "winRate", rate: 67, wins: 4, losses: 2 },
       met: true,
     });
     const few = { ...week, games: week.games.slice(0, 3) };
-    expect(goalProgress({ type: "winRate", target: 60 }, few).met).toBeNull();
+    expect(goalProgress({ type: "winRate", target: 60 }, few)).toMatchObject({
+      status: { kind: "needGames", games: 3, min: 5 },
+      met: null,
+    });
   });
 
   it("checks session length and MMR logging per session", () => {
@@ -34,13 +38,18 @@ describe("weekly goals", () => {
     // Logged after the first session (within 3h of its end), not after the second.
     expect(goalProgress({ type: "logAfterSessions" }, week)).toMatchObject({
       current: "1 / 2 sessions logged",
+      status: { kind: "sessionsLogged", logged: 1, total: 2 },
       met: false,
     });
   });
 
   it("counts hero games and custom goals", () => {
     const hero = goalProgress({ type: "heroGames", heroId: 1, target: 5 }, week);
-    expect(hero).toMatchObject({ current: "4 / 5 games", met: null });
+    expect(hero).toMatchObject({
+      current: "4 / 5 games",
+      status: { kind: "heroGames", played: 4, target: 5 },
+      met: null,
+    });
     expect(finalResult(hero)).toBe(false);
     expect(goalProgress({ type: "custom", text: "Ward more", done: true }, week).met).toBe(true);
   });

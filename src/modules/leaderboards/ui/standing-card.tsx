@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { ChevronRight, Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import type { StandingView } from "../dtos/responses/leaderboard-views.dto";
-import { BOARD_LABEL, BOARD_UNIT, leaderboardHref } from "./copy";
+import { leaderboardHref } from "./copy";
 
-function Heading() {
+function Heading({ t }: { t: Translator<Messages> }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div>
-        <p className="kicker">Leaderboards</p>
-        <h2 className="text-lg font-semibold">Your standing among friends</h2>
+        <p className="kicker">{t("leaderboards.standing.kicker")}</p>
+        <h2 className="text-lg font-semibold">{t("leaderboards.standing.title")}</h2>
       </div>
       <Trophy aria-hidden className="size-5 text-gold" />
     </div>
@@ -17,13 +20,13 @@ function Heading() {
 }
 
 /** The overview's small "Your standing" card: your all-time rank on each friends board. */
-export function StandingCard({ standings }: { standings: StandingView[] }) {
+export async function StandingCard({ standings }: { standings: StandingView[] }) {
+  const t = await getT();
   return (
-    <section aria-label="Your standing" className="panel space-y-3 p-5">
-      <Heading />
+    <section aria-label={t("leaderboards.standing.label")} className="panel space-y-3 p-5">
+      <Heading t={t} />
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {standings.map((s) => {
-          const [one, many] = BOARD_UNIT[s.kind];
           return (
             <li key={s.kind}>
               <Link
@@ -35,12 +38,12 @@ export function StandingCard({ standings }: { standings: StandingView[] }) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium group-hover:text-gold">
-                    {BOARD_LABEL[s.kind]}
+                    {t(`leaderboards.boards.${s.kind}`)}
                   </span>
                   <span className="block text-xs text-muted-foreground">
                     {s.rank === null
-                      ? "Not played yet"
-                      : `${s.value} ${s.value === 1 ? one : many} · ${s.players} ${s.players === 1 ? "player" : "players"}`}
+                      ? t("leaderboards.standing.notPlayed")
+                      : `${t(`leaderboards.units.${s.kind}.${s.value === 1 ? "one" : "other"}`, { n: s.value })} · ${t(`leaderboards.units.player.${s.players === 1 ? "one" : "other"}`, { n: s.players })}`}
                   </span>
                 </span>
                 <ChevronRight
@@ -56,17 +59,19 @@ export function StandingCard({ standings }: { standings: StandingView[] }) {
   );
 }
 
-export function StandingUnavailable() {
+export async function StandingUnavailable() {
+  const t = await getT();
   return (
-    <section aria-label="Your standing" className="panel space-y-2 p-5">
-      <Heading />
+    <section aria-label={t("leaderboards.standing.label")} className="panel space-y-2 p-5">
+      <Heading t={t} />
       <p role="alert" className="text-sm text-muted-foreground">
-        Your standing is unavailable right now. The rest of your overview is unaffected.
+        {t("leaderboards.standing.unavailable")}
       </p>
     </section>
   );
 }
 
-export function StandingSkeleton() {
-  return <Skeleton className="h-32 rounded-2xl" aria-label="Loading your standing" />;
+export async function StandingSkeleton() {
+  const t = await getT();
+  return <Skeleton className="h-32 rounded-2xl" aria-label={t("leaderboards.standing.loading")} />;
 }

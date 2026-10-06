@@ -6,6 +6,7 @@ import { Check, Circle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import { MAX_CUSTOM_LENGTH, MAX_GOALS, type Goal } from "../domain/goals";
 
@@ -19,12 +20,12 @@ export interface GoalRow {
 
 type Preset = Goal["type"];
 
-const PRESETS: { type: Preset; label: string }[] = [
-  { type: "winRate", label: "Win rate" },
-  { type: "maxPerSession", label: "Short sessions" },
-  { type: "logAfterSessions", label: "Log MMR after sessions" },
-  { type: "heroGames", label: "Play a hero" },
-  { type: "custom", label: "Your own" },
+const PRESETS: readonly Preset[] = [
+  "winRate",
+  "maxPerSession",
+  "logAfterSessions",
+  "heroGames",
+  "custom",
 ];
 
 function blank(type: Preset, firstHero: number): Goal {
@@ -57,11 +58,12 @@ function GoalEditor({
   onChange: (g: Goal) => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   const id = `goal-${index}`;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-white/10 p-2.5">
       <label htmlFor={`${id}-type`} className="sr-only">
-        Goal {index + 1} type
+        {t("goals.editor.type", { n: index + 1 })}
       </label>
       <select
         id={`${id}-type`}
@@ -70,14 +72,14 @@ function GoalEditor({
         className={field}
       >
         {PRESETS.map((p) => (
-          <option key={p.type} value={p.type}>
-            {p.label}
+          <option key={p} value={p}>
+            {t(`goals.presets.${p}`)}
           </option>
         ))}
       </select>
       {goal.type === "winRate" && (
         <label className="flex items-center gap-1.5 text-sm">
-          at least
+          {t("goals.editor.atLeast")}
           <input
             type="number"
             min={40}
@@ -91,7 +93,7 @@ function GoalEditor({
       )}
       {goal.type === "maxPerSession" && (
         <label className="flex items-center gap-1.5 text-sm">
-          at most
+          {t("goals.editor.atMost")}
           <input
             type="number"
             min={1}
@@ -100,13 +102,13 @@ function GoalEditor({
             onChange={(e) => onChange({ ...goal, target: Number(e.target.value) })}
             className={cn(field, "w-16")}
           />
-          games each
+          {t("goals.editor.gamesEach")}
         </label>
       )}
       {goal.type === "heroGames" && (
         <>
           <label htmlFor={`${id}-hero`} className="sr-only">
-            Hero
+            {t("goals.editor.hero")}
           </label>
           <select
             id={`${id}-hero`}
@@ -129,21 +131,21 @@ function GoalEditor({
               onChange={(e) => onChange({ ...goal, target: Number(e.target.value) })}
               className={cn(field, "w-16")}
             />
-            times
+            {t("goals.editor.times")}
           </label>
         </>
       )}
       {goal.type === "custom" && (
         <>
           <label htmlFor={`${id}-text`} className="sr-only">
-            Your goal
+            {t("goals.editor.yourGoal")}
           </label>
           <input
             id={`${id}-text`}
             value={goal.text}
             maxLength={MAX_CUSTOM_LENGTH}
             onChange={(e) => onChange({ ...goal, text: e.target.value })}
-            placeholder="e.g. Buy wards every game"
+            placeholder={t("goals.editor.customPlaceholder")}
             className={cn(field, "min-w-0 flex-1")}
           />
         </>
@@ -151,7 +153,7 @@ function GoalEditor({
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove goal ${index + 1}`}
+        aria-label={t("goals.editor.remove", { n: index + 1 })}
         className="ml-auto grid size-8 place-items-center rounded-md text-muted-foreground hover:text-foreground"
       >
         <Trash2 aria-hidden className="size-4" />
@@ -161,9 +163,14 @@ function GoalEditor({
 }
 
 function Status({ met }: { met: boolean | null }) {
-  if (met === true) return <Check aria-label="On track" className="size-4 text-emerald-400" />;
-  if (met === false) return <X aria-label="Off track" className="size-4 text-rose-400" />;
-  return <Circle aria-label="In progress" className="size-4 text-muted-foreground" />;
+  const t = useT();
+  if (met === true)
+    return <Check aria-label={t("goals.status.onTrack")} className="size-4 text-emerald-400" />;
+  if (met === false)
+    return <X aria-label={t("goals.status.offTrack")} className="size-4 text-rose-400" />;
+  return (
+    <Circle aria-label={t("goals.status.inProgress")} className="size-4 text-muted-foreground" />
+  );
 }
 
 /** This week's goals (up to two) with progress, and how last week's went. */
@@ -178,6 +185,7 @@ export function GoalsCard({
   heroes: { id: number; name: string }[];
   daysLeft: number;
 }) {
+  const t = useT();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Goal[]>(rows.map((r) => r.goal));
@@ -190,7 +198,7 @@ export function GoalsCard({
       setEditing(false);
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof ApiClientError ? e.message : "Couldn't save your goals.");
+      toast.error(e instanceof ApiClientError ? e.message : t("goals.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -203,10 +211,10 @@ export function GoalsCard({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="kicker">
-            {daysLeft === 0 ? "Last day of the week" : `${daysLeft} days left this week`}
+            {daysLeft === 0 ? t("goals.lastDay") : t("goals.daysLeft", { n: daysLeft })}
           </p>
           <h2 id="goals-title" className="text-lg font-semibold">
-            Weekly goals
+            {t("goals.title")}
           </h2>
         </div>
         {!editing && (
@@ -220,11 +228,11 @@ export function GoalsCard({
           >
             {rows.length ? (
               <>
-                <Pencil aria-hidden /> Edit
+                <Pencil aria-hidden /> {t("goals.edit")}
               </>
             ) : (
               <>
-                <Plus aria-hidden /> Set goals
+                <Plus aria-hidden /> {t("goals.setGoals")}
               </>
             )}
           </Button>
@@ -249,23 +257,20 @@ export function GoalsCard({
               size="sm"
               onClick={() => setDraft([...draft, blank("winRate", heroes[0]?.id ?? 1)])}
             >
-              <Plus aria-hidden /> Add a goal
+              <Plus aria-hidden /> {t("goals.addGoal")}
             </Button>
           )}
           <div className="flex gap-2">
             <Button onClick={() => void save(draft)} disabled={busy || !valid}>
-              {busy ? "Saving…" : "Save goals"}
+              {busy ? t("goals.saving") : t("goals.save")}
             </Button>
             <Button variant="ghost" onClick={() => setEditing(false)} disabled={busy}>
-              Cancel
+              {t("goals.cancel")}
             </Button>
           </div>
         </div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Pick up to {MAX_GOALS} things to work on this week: a win rate, shorter sessions, logging
-          your MMR, or a hero to practise. Progress comes from your own games.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("goals.empty", { max: MAX_GOALS })}</p>
       ) : (
         <ul className="space-y-3">
           {rows.map((r, i) => (
@@ -293,7 +298,7 @@ export function GoalsCard({
                       )
                     }
                   >
-                    {r.goal.done ? "Not done" : "Mark done"}
+                    {r.goal.done ? t("goals.notDone") : t("goals.markDone")}
                   </Button>
                 )}
               </div>
@@ -319,13 +324,13 @@ export function GoalsCard({
 
       {lastWeek.length > 0 && (
         <div className="border-t border-white/10 pt-3">
-          <p className="mb-1.5 text-xs text-muted-foreground">Last week</p>
+          <p className="mb-1.5 text-xs text-muted-foreground">{t("goals.lastWeek")}</p>
           <ul className="space-y-1">
             {lastWeek.map((g, i) => (
               <li key={i} className="flex items-center gap-2 text-sm">
                 <Status met={g.met} />
                 <span className={cn(!g.met && "text-muted-foreground")}>{g.label}</span>
-                <span className="sr-only">{g.met ? "met" : "missed"}</span>
+                <span className="sr-only">{g.met ? t("goals.met") : t("goals.missed")}</span>
               </li>
             ))}
           </ul>

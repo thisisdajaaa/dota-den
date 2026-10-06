@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { friendsService } from "@/modules/together";
@@ -8,11 +9,15 @@ import { FriendList } from "@/modules/together/ui/friend-list";
 import { StacksCard } from "@/modules/together/ui/stacks-card";
 import { TriosCard, type TrioMember } from "@/modules/together/ui/trios-card";
 
-export const metadata: Metadata = { title: "Play together" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("together.page.title") };
+}
 
 export default async function TogetherPage() {
   const user = await getCurrentUser();
   if (!user) return null;
+  const t = await getT();
   const now = new Date();
   const { friends, overview, peersError } = await friendsService.candidates(user);
 
@@ -21,16 +26,16 @@ export default async function TogetherPage() {
   );
   const peersErrorCopy = peersError
     ? peersError.type === "rate_limited"
-      ? "OpenDota is busy right now, so we couldn't load your teammates. Try again in a minute."
-      : "Couldn't load your teammates from OpenDota right now. Try again shortly."
+      ? t("together.page.peersBusy")
+      : t("together.page.peersError")
     : null;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Group play"
-        title="Play together"
-        description="How you do with the friends you queue with. Only games where you were in the same party count as together; sharing a team by chance doesn't."
+        kicker={t("together.page.kicker")}
+        title={t("together.page.title")}
+        description={t("together.page.description")}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -48,16 +53,14 @@ export default async function TogetherPage() {
             <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
             <div className="space-y-1">
               <h2 id="how" className="font-semibold">
-                How “together” is decided
+                {t("together.page.howTitle")}
               </h2>
               <p className="text-muted-foreground">
-                We check each shared match for the party both of you were in. Games on the same team
-                without party data, and games against each other, are listed separately and never
-                counted. Missing someone?{" "}
+                {t("together.page.howBody")}{" "}
                 <Link href="/players" className="text-gold hover:underline">
-                  Track them
+                  {t("together.page.howLink")}
                 </Link>{" "}
-                and they&apos;ll show up here.
+                {t("together.page.howAfter")}
               </p>
             </div>
           </section>

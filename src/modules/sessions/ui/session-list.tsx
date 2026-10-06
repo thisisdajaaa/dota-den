@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ChevronRight, NotebookPen, Target } from "lucide-react";
 import { cn } from "cn";
+import type { Messages } from "@/common/i18n/messages";
+import { getT } from "@/common/i18n/server";
+import { plural, type Translator } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import type { PlaySession } from "../domain/session";
@@ -18,7 +21,7 @@ export interface SessionListItem {
 }
 
 /** "W–L" with colour and words, so the record reads without colour too. */
-export function SessionRecord({
+export async function SessionRecord({
   wins,
   losses,
   className,
@@ -27,10 +30,14 @@ export function SessionRecord({
   losses: number;
   className?: string;
 }) {
+  const t = await getT();
   return (
     <span
       className={cn("font-semibold tabular-nums", className)}
-      aria-label={`${wins} ${wins === 1 ? "win" : "wins"}, ${losses} ${losses === 1 ? "loss" : "losses"}`}
+      aria-label={t("sessions.record.aria", {
+        wins: plural(t, "sessions.record.wins", wins),
+        losses: plural(t, "sessions.record.losses", losses),
+      })}
     >
       <span className="text-win">{wins}W</span>
       <span className="text-muted-foreground">–</span>
@@ -40,19 +47,22 @@ export function SessionRecord({
 }
 
 /** "3 solo · 2 party · 1 unknown", skipping zeros. */
-export function queueMix(q: { solo: number; party: number; unknown: number }): string {
+export function queueMix(
+  t: Translator<Messages>,
+  q: { solo: number; party: number; unknown: number },
+): string {
   return (
     [
-      q.solo && `${q.solo} solo`,
-      q.party && `${q.party} party`,
-      q.unknown && `${q.unknown} queue unknown`,
+      q.solo && t("sessions.queue.solo", { n: q.solo }),
+      q.party && t("sessions.queue.party", { n: q.party }),
+      q.unknown && t("sessions.queue.unknown", { n: q.unknown }),
     ]
       .filter(Boolean)
       .join(" · ") || "—"
   );
 }
 
-export function SessionList({
+export async function SessionList({
   items,
   heroes,
   timeZone,
@@ -61,6 +71,7 @@ export function SessionList({
   heroes: Map<number, HeroInfo>;
   timeZone: string;
 }) {
+  const t = await getT();
   return (
     <ul className="divide-y divide-white/[0.05]">
       {items.map(({ session, mmr, note }) => {
@@ -73,7 +84,12 @@ export function SessionList({
           <li key={session.id}>
             <Link
               href={`/sessions/${session.id}`}
-              aria-label={`Session on ${labels.date}, ${labels.timeRange}: ${s.wins} wins, ${s.losses} losses`}
+              aria-label={t("sessions.item.aria", {
+                date: labels.date,
+                time: labels.timeRange,
+                wins: s.wins,
+                losses: s.losses,
+              })}
               className="group relative grid grid-cols-1 gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] sm:items-center"
             >
               <span
@@ -87,7 +103,7 @@ export function SessionList({
                 <span className="block font-medium">{labels.date}</span>
                 <span className="block text-xs text-muted-foreground">
                   {labels.timeRange} · {formatSpan(s.spanSec)} ·{" "}
-                  {s.games === 1 ? "1 game" : `${s.games} games`}
+                  {plural(t, "sessions.item.games", s.games)}
                 </span>
                 <span className="flex flex-wrap items-center gap-2 pt-0.5">
                   <SessionRecord wins={s.wins} losses={s.losses} />
@@ -95,27 +111,26 @@ export function SessionList({
                   {hasGoal && (
                     <span className="inline-flex items-center gap-1 text-xs text-gold">
                       <Target aria-hidden className="size-3.5" />
-                      Goal
                       {note?.goalMet === "yes"
-                        ? " met"
+                        ? t("sessions.item.goalMet")
                         : note?.goalMet === "partly"
-                          ? " partly met"
+                          ? t("sessions.item.goalPartly")
                           : note?.goalMet === "no"
-                            ? " missed"
-                            : " set"}
+                            ? t("sessions.item.goalMissed")
+                            : t("sessions.item.goalSet")}
                     </span>
                   )}
                   {hasNote && (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <NotebookPen aria-hidden className="size-3.5" />
-                      Notes
+                      {t("sessions.item.notes")}
                     </span>
                   )}
                 </span>
               </span>
 
               <span className="min-w-0 space-y-1.5">
-                <span className="flex flex-wrap gap-1" aria-label="Heroes played">
+                <span className="flex flex-wrap gap-1" aria-label={t("sessions.item.heroesPlayed")}>
                   {shown.map((h) => (
                     <span
                       key={h.heroId}
@@ -123,8 +138,10 @@ export function SessionList({
                     >
                       <HeroPortrait hero={heroes.get(h.heroId)} heroId={h.heroId} size="xs" />
                       <span className="sr-only">
-                        {heroName(heroes.get(h.heroId), h.heroId)}, {h.games}{" "}
-                        {h.games === 1 ? "game" : "games"}
+                        {t("sessions.item.heroGames", {
+                          hero: heroName(heroes.get(h.heroId), h.heroId),
+                          games: plural(t, "sessions.item.games", h.games),
+                        })}
                       </span>
                     </span>
                   ))}
@@ -134,7 +151,7 @@ export function SessionList({
                     </span>
                   )}
                 </span>
-                <span className="block text-xs text-muted-foreground">{queueMix(s.queue)}</span>
+                <span className="block text-xs text-muted-foreground">{queueMix(t, s.queue)}</span>
               </span>
 
               <ChevronRight

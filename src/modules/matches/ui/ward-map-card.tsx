@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { cn } from "cn";
-import { plural } from "./format";
+import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 import { clockTime } from "../domain/match-laning";
 import {
   inWindow,
@@ -14,6 +15,7 @@ import {
 
 /** A schematic Dota map (drawn here, not game art): bases, lanes and the river. */
 function MapBackdrop() {
+  const t = useT();
   return (
     <g aria-hidden>
       <rect width="100" height="100" rx="3" className="fill-emerald-950/60" />
@@ -30,10 +32,10 @@ function MapBackdrop() {
       <path d="M0 100 L0 76 Q14 74 24 86 Q26 94 24 100 Z" className="fill-emerald-500/25" />
       <path d="M100 0 L100 24 Q86 26 76 14 Q74 6 76 0 Z" className="fill-rose-500/25" />
       <text x="3" y="97" className="fill-emerald-300/70" fontSize="3.4">
-        Radiant
+        {t("matches.sides.radiant")}
       </text>
       <text x="97" y="5.5" textAnchor="end" className="fill-rose-300/70" fontSize="3.4">
-        Dire
+        {t("matches.sides.dire")}
       </text>
     </g>
   );
@@ -41,7 +43,10 @@ function MapBackdrop() {
 
 /** Where the selected player warded and died (team fights only), from a parsed replay. */
 export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: string }) {
+  const t = useT();
   const [win, setWin] = useState<MapWindow>("all");
+  const kind = (k: "observer" | "sentry") =>
+    k === "observer" ? t("matches.wardMap.observer") : t("matches.wardMap.sentry");
   const wards = map.wards.filter((w) => inWindow(w.placedAt, win));
   const deaths = map.teamfightDeaths.filter((d) => inWindow(d.time, win));
   const observers = wards.filter((w) => w.kind === "observer").length;
@@ -50,16 +55,17 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
   return (
     <section className="panel space-y-4 p-5" aria-labelledby="ward-map-title">
       <div>
-        <p className="kicker">Parsed replay</p>
+        <p className="kicker">{t("matches.wardMap.kicker")}</p>
         <h2 id="ward-map-title" className="text-lg font-semibold">
-          Wards and deaths: {heroLabel}
+          {t("matches.wardMap.title", { hero: heroLabel })}
         </h2>
-        <p className="text-xs text-muted-foreground">
-          Where wards went down, and deaths during team fights (the replay only records positions
-          for those). Schematic map; positions come from OpenDota.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("matches.wardMap.description")}</p>
       </div>
-      <div role="radiogroup" aria-label="Time window" className="flex flex-wrap gap-1.5">
+      <div
+        role="radiogroup"
+        aria-label={t("matches.wardMap.windowLabel")}
+        className="flex flex-wrap gap-1.5"
+      >
         {MAP_WINDOWS.map((w) => (
           <button
             key={w.key}
@@ -74,7 +80,7 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
                 : "border-white/10 text-muted-foreground hover:text-foreground",
             )}
           >
-            {w.label}
+            {t(`matches.wardMap.windows.${w.key}`)}
           </button>
         ))}
       </div>
@@ -82,7 +88,11 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
         <svg
           viewBox="0 0 100 100"
           role="img"
-          aria-label={`Map: ${plural(observers, "observer ward")}, ${plural(sentries, "sentry ward")}, ${plural(deaths.length, "team fight death")}`}
+          aria-label={t("matches.wardMap.mapLabel", {
+            observers: plural(t, "matches.wardMap.observerWards", observers),
+            sentries: plural(t, "matches.wardMap.sentryWards", sentries),
+            deaths: plural(t, "matches.wardMap.teamFightDeaths", deaths.length),
+          })}
           className="aspect-square w-full max-w-[22rem]"
         >
           <MapBackdrop />
@@ -101,8 +111,10 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
                 strokeWidth="0.4"
               >
                 <title>
-                  {`${w.kind === "observer" ? "Observer" : "Sentry"} at ${clockTime(w.placedAt)}${
-                    w.removedAt !== null ? `, gone at ${clockTime(w.removedAt)}` : ""
+                  {`${t("matches.wardMap.wardAt", { kind: kind(w.kind), time: clockTime(w.placedAt) })}${
+                    w.removedAt !== null
+                      ? t("matches.wardMap.goneAt", { time: clockTime(w.removedAt) })
+                      : ""
                   }`}
                 </title>
               </circle>
@@ -114,7 +126,7 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
             const cy = p.top * 100;
             return (
               <g key={`d${i}`} className="stroke-rose-500" strokeWidth="0.9" strokeLinecap="round">
-                <title>{`Died in a team fight starting ${clockTime(d.time)}`}</title>
+                <title>{t("matches.wardMap.diedAt", { time: clockTime(d.time) })}</title>
                 <path
                   d={`M${cx - 1.8} ${cy - 1.8} L${cx + 1.8} ${cy + 1.8} M${cx + 1.8} ${cy - 1.8} L${cx - 1.8} ${cy + 1.8}`}
                 />
@@ -126,28 +138,34 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
           <ul className="space-y-1.5">
             <li className="flex items-center gap-2">
               <span aria-hidden className="size-3 rounded-full bg-amber-300" />
-              {plural(observers, "observer ward")}
+              {plural(t, "matches.wardMap.observerWards", observers)}
             </li>
             <li className="flex items-center gap-2">
               <span aria-hidden className="size-2.5 rounded-full bg-sky-400" />
-              {plural(sentries, "sentry ward")}
+              {plural(t, "matches.wardMap.sentryWards", sentries)}
             </li>
             <li className="flex items-center gap-2">
               <span aria-hidden className="font-bold text-rose-500">
                 ×
               </span>
-              {plural(deaths.length, "death")} in team fights
+              {t("matches.wardMap.deathsInFights", {
+                deaths: plural(t, "matches.wardMap.deaths", deaths.length),
+              })}
             </li>
           </ul>
           {wards.length > 0 && (
             <details className="text-xs text-muted-foreground">
-              <summary className="cursor-pointer hover:text-foreground">Ward timings</summary>
+              <summary className="cursor-pointer hover:text-foreground">
+                {t("matches.wardMap.timings")}
+              </summary>
               <ul className="mt-2 max-h-48 space-y-0.5 overflow-y-auto tabular-nums">
                 {wards.map((w, i) => (
                   <li key={i}>
-                    {clockTime(w.placedAt)} {w.kind === "observer" ? "Observer" : "Sentry"}
+                    {clockTime(w.placedAt)} {kind(w.kind)}
                     {w.removedAt !== null &&
-                      ` · lasted ${clockTime(Math.max(0, w.removedAt - w.placedAt))}`}
+                      t("matches.wardMap.lasted", {
+                        time: clockTime(Math.max(0, w.removedAt - w.placedAt)),
+                      })}
                   </li>
                 ))}
               </ul>

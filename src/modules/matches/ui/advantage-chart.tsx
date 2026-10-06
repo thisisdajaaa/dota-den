@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 
 type Series = "gold" | "xp";
 
@@ -36,6 +37,7 @@ function formatK(v: number): string {
  * below = Dire ahead; the regions are labelled in text, not by color alone.
  */
 export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | null }) {
+  const t = useT();
   const [series, setSeries] = useState<Series>("gold");
   const [width, setWidth] = useState(720);
   const [hover, setHover] = useState<number | null>(null);
@@ -74,14 +76,14 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
 
   const active = hover ?? null;
   const activeValue = active !== null ? data[active] : null;
-  const label = series === "gold" ? "gold" : "experience";
+  const sideName = (v: number) => (v > 0 ? t("matches.sides.radiant") : t("matches.sides.dire"));
 
   return (
     <div className="min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div
           role="tablist"
-          aria-label="Advantage series"
+          aria-label={t("matches.advantage.seriesLabel")}
           className="inline-flex rounded-lg border border-white/[0.07] bg-background/40 p-0.5"
         >
           {(["gold", "xp"] as const).map((s) => (
@@ -98,7 +100,7 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {s === "gold" ? "Net worth" : "Experience"}
+              {s === "gold" ? t("matches.advantage.netWorth") : t("matches.advantage.experience")}
             </button>
           ))}
         </div>
@@ -107,12 +109,18 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
             <>
               <span className="text-foreground">{active}:00</span> ·{" "}
               {activeValue === 0
-                ? "Even"
-                : `${activeValue > 0 ? "Radiant" : "Dire"} ${formatK(Math.abs(activeValue)).replace("+", "+")} ${label}`}
+                ? t("matches.advantage.even")
+                : t(`matches.advantage.${series}.lead`, {
+                    side: sideName(activeValue),
+                    value: formatK(Math.abs(activeValue)),
+                  })}
             </>
           ) : (
             <>
-              Final: {data.at(-1)! >= 0 ? "Radiant" : "Dire"} {formatK(Math.abs(data.at(-1)!))}
+              {t("matches.advantage.final", {
+                side: data.at(-1)! >= 0 ? t("matches.sides.radiant") : t("matches.sides.dire"),
+                value: formatK(Math.abs(data.at(-1)!)),
+              })}
             </>
           )}
         </p>
@@ -123,7 +131,7 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
           width={width}
           height={HEIGHT}
           role="img"
-          aria-label={`Radiant ${label} advantage by minute. Use arrow keys to inspect.`}
+          aria-label={t(`matches.advantage.${series}.chart`)}
           tabIndex={0}
           // Never wider than its box, even before the first measurement.
           style={{ maxWidth: "100%" }}
@@ -178,7 +186,7 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
               textAnchor="middle"
               className="fill-muted-foreground text-[10px] tabular-nums"
             >
-              {i}m
+              {t("matches.advantage.minuteTick", { n: i })}
             </text>
           ))}
 
@@ -187,14 +195,14 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
             y={PAD.top + 10}
             className="fill-muted-foreground text-[10px] tracking-wider uppercase"
           >
-            Radiant ahead
+            {t("matches.advantage.radiantAhead")}
           </text>
           <text
             x={PAD.left + 8}
             y={HEIGHT - PAD.bottom - 6}
             className="fill-muted-foreground text-[10px] tracking-wider uppercase"
           >
-            Dire ahead
+            {t("matches.advantage.direAhead")}
           </text>
 
           <path d={area} clipPath={`url(#${clipId}-above)`} className="fill-win/20" />
@@ -230,17 +238,17 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
 
       <details className="text-xs text-muted-foreground">
         <summary className="cursor-pointer select-none hover:text-foreground">
-          View as table
+          {t("matches.advantage.viewTable")}
         </summary>
         <div className="mt-2 max-h-48 overflow-auto">
           <table className="w-full max-w-xs tabular-nums">
             <thead>
               <tr className="text-left">
                 <th scope="col" className="font-medium">
-                  Minute
+                  {t("matches.advantage.minute")}
                 </th>
                 <th scope="col" className="text-right font-medium">
-                  Radiant {label} advantage
+                  {t(`matches.advantage.${series}.column`)}
                 </th>
               </tr>
             </thead>

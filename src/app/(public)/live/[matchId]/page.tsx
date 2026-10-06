@@ -1,32 +1,37 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Radio } from "lucide-react";
+import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { liveService } from "@/modules/live";
-import { clock, draftComplete, leadText, sideHeroes } from "@/modules/live/domain/live-game";
+import { clock, draftComplete, sideHeroes } from "@/modules/live/domain/live-game";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
-import { LineupRow } from "@/modules/live/ui/live-game-card";
+import { leadLabel, LineupRow } from "@/modules/live/ui/live-game-card";
 import { WatchSection } from "@/modules/live/ui/watch-section";
 import { matchesService } from "@/modules/matches";
 
-export const metadata: Metadata = { title: "Live game" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("live.game.metaTitle") };
+}
 
 const MATCH_ID = /^\d{1,20}$/;
 
 export default async function LiveGamePage({ params }: PageProps<"/live/[matchId]">) {
   const { matchId } = await params;
-  const [game, heroes] = await Promise.all([
+  const [game, heroes, t] = await Promise.all([
     MATCH_ID.test(matchId) ? liveService.game(matchId) : null,
     matchesService.heroMap(),
+    getT(),
   ]);
   const back = (
     <Link
       href="/live"
       className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
     >
-      <ArrowLeft aria-hidden className="size-4" /> All live games
+      <ArrowLeft aria-hidden className="size-4" /> {t("live.game.allLive")}
     </Link>
   );
   if (!game) {
@@ -34,10 +39,10 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
       <div className="space-y-6">
         {back}
         <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
-          <h1 className="text-lg font-semibold">This game isn&apos;t live anymore</h1>
+          <h1 className="text-lg font-semibold">{t("live.game.gone")}</h1>
           {MATCH_ID.test(matchId) && (
             <Link href={`/matches/${matchId}`} className="text-sm text-gold hover:underline">
-              See the finished match
+              {t("live.game.seeFinished")}
             </Link>
           )}
         </section>
@@ -60,17 +65,21 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
       {back}
       <AutoRefresh seconds={30} />
       <PageHeader
-        kicker={game.leagueName ?? (game.leagueId ? "League game" : "Public game")}
-        title={game.leagueId ? `${name("radiant")} vs ${name("dire")}` : "Live public game"}
+        kicker={game.leagueName ?? (game.leagueId ? t("live.leagueGame") : t("live.publicGame"))}
+        title={
+          game.leagueId
+            ? t("live.versus", { radiant: name("radiant"), dire: name("dire") })
+            : t("live.game.livePublic")
+        }
         description={
           game.averageMmr
-            ? `Average MMR ${game.averageMmr.toLocaleString("en-US")}, as reported by the game.`
+            ? t("live.game.averageMmr", { mmr: game.averageMmr.toLocaleString("en-US") })
             : undefined
         }
       />
 
       <section
-        aria-label="Now"
+        aria-label={t("live.game.now")}
         className="panel grid grid-cols-1 gap-4 p-5 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
       >
         <div className="text-center sm:text-left">
@@ -79,13 +88,13 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
         </div>
         <div className="text-center">
           <p className="flex items-center justify-center gap-1.5 text-xs text-loss">
-            <Radio aria-hidden className="size-3" /> Live
+            <Radio aria-hidden className="size-3" /> {t("live.game.live")}
           </p>
           <p className="text-xl font-semibold tabular-nums">{clock(game.gameTimeSec)}</p>
-          <p className="text-xs text-muted-foreground">{leadText(game)}</p>
+          <p className="text-xs text-muted-foreground">{leadLabel(t, game)}</p>
           {game.delaySec > 0 && (
             <p className="text-[0.7rem] text-muted-foreground">
-              Feed {Math.round(game.delaySec / 60)} min behind the game
+              {t("live.game.feedBehind", { min: Math.round(game.delaySec / 60) })}
             </p>
           )}
         </div>
@@ -97,7 +106,7 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
 
       <WatchSection streams={watch.streams} links={watch.links} />
 
-      <section aria-label="Lineups" className="panel space-y-4 p-5">
+      <section aria-label={t("live.game.lineups")} className="panel space-y-4 p-5">
         <div>
           <p className="kicker text-win">{name("radiant")}</p>
           <LineupRow game={game} side="radiant" heroes={heroes} names />
@@ -117,15 +126,13 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
               game.radiantLead > 500 ? "radiant" : game.radiantLead < -500 ? "dire" : null;
             return leader
               ? leader === favoured
-                ? `${name(leader)} is ahead, as the draft suggested.`
-                : `${name(leader)} is ahead despite the draft.`
-              : "The game itself is even so far.";
+                ? t("live.game.aheadAsDrafted", { team: name(leader) })
+                : t("live.game.aheadDespite", { team: name(leader) })
+              : t("live.game.even");
           }}
         />
       ) : (
-        <p className="panel p-5 text-sm text-muted-foreground">
-          The draft analysis appears once both teams have picked all five heroes.
-        </p>
+        <p className="panel p-5 text-sm text-muted-foreground">{t("live.game.draftPending")}</p>
       )}
     </div>
   );

@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import type { SessionNoteDto } from "../dtos/responses/session-note.dto";
 import { SessionNoteInputSchema } from "../schemas/sessions.schema";
 import { GOAL_MAX, NOTE_MAX } from "../domain/session-note";
@@ -27,10 +28,10 @@ type FormInput = z.input<typeof SessionNoteInputSchema>;
 type FormOutput = z.output<typeof SessionNoteInputSchema>;
 
 const GOAL_MET_OPTIONS = [
-  { value: "", label: "Not decided" },
-  { value: "yes", label: "Yes" },
-  { value: "partly", label: "Partly" },
-  { value: "no", label: "No" },
+  { value: "", label: "sessions.form.notDecided" },
+  { value: "yes", label: "sessions.form.yes" },
+  { value: "partly", label: "sessions.form.partly" },
+  { value: "no", label: "sessions.form.no" },
 ] as const;
 
 /** Edit the private notes and goal for one session. Validates with the server's schema. */
@@ -41,6 +42,7 @@ export function SessionNoteForm({
   sessionId: string;
   initial: SessionNoteDto | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(SessionNoteInputSchema),
@@ -58,7 +60,7 @@ export function SessionNoteForm({
         `/api/v1/sessions/${encodeURIComponent(sessionId)}/notes`,
         { method: "PUT", body: values },
       );
-      toast.success("Session notes saved");
+      toast.success(t("sessions.form.toastSaved"));
       form.reset({ goal: saved.goal, goalMet: saved.goalMet ?? "", note: saved.note });
       router.refresh();
       return;
@@ -75,27 +77,27 @@ export function SessionNoteForm({
           mapped = true;
         }
       }
-      if (!mapped) toast.error(apiError?.message ?? "Couldn't save. Please try again.");
+      if (!mapped) toast.error(apiError?.message ?? t("sessions.form.saveFailed"));
     }
   }
 
   const { isSubmitting, isDirty } = form.formState;
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} noValidate aria-label="Notes and goal">
+    <form onSubmit={form.handleSubmit(onSubmit)} noValidate aria-label={t("sessions.form.aria")}>
       <FieldGroup>
         <Controller
           name="goal"
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="session-goal">Goal</FieldLabel>
+              <FieldLabel htmlFor="session-goal">{t("sessions.form.goal")}</FieldLabel>
               <Input
                 {...field}
                 value={field.value ?? ""}
                 id="session-goal"
                 autoComplete="off"
-                placeholder="e.g. Die less than 5 times a game"
+                placeholder={t("sessions.form.goalPlaceholder")}
                 aria-invalid={fieldState.invalid}
                 aria-describedby="session-goal-count"
               />
@@ -112,7 +114,7 @@ export function SessionNoteForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <FieldSet data-invalid={fieldState.invalid}>
-              <FieldLegend variant="label">Did you meet it?</FieldLegend>
+              <FieldLegend variant="label">{t("sessions.form.didYouMeet")}</FieldLegend>
               <div className="flex flex-wrap gap-2">
                 {GOAL_MET_OPTIONS.map((o) => {
                   const checked = (field.value ?? "") === o.value;
@@ -139,7 +141,7 @@ export function SessionNoteForm({
                         onBlur={field.onBlur}
                         className="sr-only"
                       />
-                      {o.label}
+                      {t(o.label)}
                     </label>
                   );
                 })}
@@ -154,13 +156,13 @@ export function SessionNoteForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="session-note">Notes</FieldLabel>
+              <FieldLabel htmlFor="session-note">{t("sessions.form.notes")}</FieldLabel>
               <Textarea
                 {...field}
                 value={field.value ?? ""}
                 id="session-note"
                 rows={5}
-                placeholder="What went well, what to work on next time…"
+                placeholder={t("sessions.form.notesPlaceholder")}
                 aria-invalid={fieldState.invalid}
                 aria-describedby="session-note-count"
               />
@@ -174,10 +176,10 @@ export function SessionNoteForm({
 
         <div className="flex items-center justify-end gap-3">
           <span className="text-xs text-muted-foreground" aria-live="polite">
-            {isDirty ? "Unsaved changes" : initial ? "Saved" : ""}
+            {isDirty ? t("sessions.form.unsaved") : initial ? t("sessions.form.saved") : ""}
           </span>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Save notes"}
+            {isSubmitting ? t("sessions.form.saving") : t("sessions.form.save")}
           </Button>
         </div>
       </FieldGroup>

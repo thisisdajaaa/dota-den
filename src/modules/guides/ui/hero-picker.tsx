@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { SearchInput } from "@/components/search-input";
+import { useT } from "@/common/i18n/client";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 
@@ -16,6 +17,7 @@ const fold = (s: string) =>
 
 /** Heroes grouped by attribute, filtered by name as you type. */
 export function HeroPicker({ groups }: { groups: Array<{ label: string; heroes: HeroInfo[] }> }) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const q = fold(query);
   const shown = groups
@@ -27,14 +29,14 @@ export function HeroPicker({ groups }: { groups: Array<{ label: string; heroes: 
       <SearchInput
         value={query}
         onValueChange={setQuery}
-        placeholder="Find a hero"
-        aria-label="Find a hero"
+        placeholder={t("guides.picker.find")}
+        aria-label={t("guides.picker.find")}
         className="max-w-sm"
         inputClassName="h-10"
       />
       {shown.length === 0 ? (
         <p role="status" className="text-sm text-muted-foreground">
-          No hero matches “{query}”.
+          {t("guides.picker.noMatch", { query })}
         </p>
       ) : (
         shown.map((g) => (

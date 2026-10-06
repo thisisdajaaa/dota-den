@@ -8,6 +8,8 @@
  * blended with that prior so a handful of games can't pin a hero to one position.
  */
 
+import { phrase, type Phrase } from "./phrase";
+
 export type Position = 1 | 2 | 3 | 4 | 5;
 export const POSITIONS: readonly Position[] = [1, 2, 3, 4, 5];
 
@@ -18,6 +20,9 @@ export const POSITION_NAMES: Record<Position, string> = {
   4: "Soft support",
   5: "Hard support",
 };
+
+/** A position's name for the UI to translate. */
+export const positionPhrase = (p: Position): Phrase => phrase(`position.pos${p}`);
 
 export const positionLabel = (p: Position) => `Pos ${p} · ${POSITION_NAMES[p]}`;
 export const isSupportPosition = (p: Position) => p >= 4;
@@ -217,4 +222,15 @@ export function positionFact(position: Position, odds: PositionOdds): string {
   }
   const share = Math.round(odds.proShare[position - 1] * 100);
   return `would play ${name}: played there in ${share}% of ${odds.games} pro games`;
+}
+
+/** `positionFact` for the UI to translate. */
+export function positionFactPhrase(position: Position, odds: PositionOdds): Phrase {
+  const name = positionPhrase(position);
+  if (odds.source === "tags" || !odds.proShare) return phrase("facts.positionTags", { name });
+  return phrase("facts.positionPro", {
+    name,
+    share: Math.round(odds.proShare[position - 1] * 100),
+    games: odds.games,
+  });
 }

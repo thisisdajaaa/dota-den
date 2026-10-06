@@ -84,7 +84,7 @@ describe("applyAdjustments", () => {
       offRole: [],
       comboEdge: 0,
       comboPairs: 3,
-      composition: [{ label: "Initiation", passed: true, detail: "" }],
+      composition: [{ id: "initiation", label: "Initiation", passed: true, detail: "" }],
     });
     const report: DraftReport = { radiant: side, dire: side, deciders: [], provisional: false };
     const adjusted = applyAdjustments(report, [
