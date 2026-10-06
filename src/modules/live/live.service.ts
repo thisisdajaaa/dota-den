@@ -1,33 +1,7 @@
-import { splitLive, type LiveGame } from "../domain/live-game";
-import {
-  matchStreams,
-  searchLinks,
-  type LiveStream,
-  type SearchLink,
-  type StreamMatch,
-} from "../domain/watch";
-
-/** Where live games come from. Null means the feed is unavailable right now. */
-export interface LiveSource {
-  games(): Promise<LiveGame[] | null>;
-  leagueName(leagueId: number): Promise<string | null>;
-}
-
-/** Live Dota 2 streams. Null means the streaming site is unavailable right now. */
-export interface StreamSource {
-  dotaStreams(): Promise<LiveStream[] | null>;
-}
-
-export interface WatchOptions {
-  /** Streams whose titles mention this game; null when stream lookup isn't configured or failed. */
-  streams: StreamMatch[] | null;
-  links: SearchLink[];
-}
-
-export interface LiveOverview {
-  league: LiveGame[];
-  topPublic: LiveGame[];
-}
+import { splitLive, type LiveGame } from "./domain/live-game";
+import { matchStreams, searchLinks } from "./domain/watch";
+import type { LiveSource, StreamSource } from "./live.ports";
+import type { LiveOverview, WatchOptions } from "./dtos/responses/live.dto";
 
 export class LiveService {
   constructor(private readonly deps: { source: LiveSource; streams?: StreamSource | null }) {}

@@ -94,7 +94,10 @@ same steps in a fixed order:
 
 No container library. Each feature's `<feature>.container.ts` constructs its objects once per
 server instance, with constructor injection (`new GoalsService({ repository, sessions })`).
-Repositories take `getDb` (a function), so containers are synchronous. Other features are
+Repositories take `getDb` (a function), so containers are synchronous.
+When building an object reads the environment or opens a client (OpenDota, Groq, Twitch),
+the container wraps it in `lazy()` (`src/common/utils/lazy.ts`). Importing a container then has
+no side effects, but call sites still read naturally (`liveService.overview()`). Other features are
 reached through their `index.ts` and passed in as port implementations.
 
 ### Import rules (enforced by `tests/unit/architecture.test.ts`)

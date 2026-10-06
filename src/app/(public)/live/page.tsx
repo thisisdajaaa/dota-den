@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { getLiveService } from "@/modules/live/composition";
+import { liveService } from "@/modules/live";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { LiveGameCard } from "@/modules/live/ui/live-game-card";
 import { getHeroMap } from "@/modules/matches/composition";
@@ -9,7 +9,7 @@ import { getHeroMap } from "@/modules/matches/composition";
 export const metadata: Metadata = { title: "Live games" };
 
 export default async function LivePage() {
-  const [overview, heroes] = await Promise.all([getLiveService().overview(), getHeroMap()]);
+  const [overview, heroes] = await Promise.all([liveService.overview(), getHeroMap()]);
   return (
     <div className="space-y-6">
       <PageHeader

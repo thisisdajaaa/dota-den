@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ProviderGateway } from "@/common/providers/provider-gateway";
-import type { LiveSource } from "../application/live-service";
+import type { LiveSource } from "../live.ports";
 import type { LiveGame } from "../domain/live-game";
 
 const num = z.coerce.number();
