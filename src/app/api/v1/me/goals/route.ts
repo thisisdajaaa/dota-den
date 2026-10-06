@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { rateLimit } from "@/lib/rate-limit";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { rateLimit } from "@/common/http/rate-limit";
 import { saveWeekGoals } from "@/modules/goals/composition";
 import { MAX_CUSTOM_LENGTH, MAX_GOALS } from "@/modules/goals/domain/goals";
 import { getRouteUser } from "@/modules/identity/composition";

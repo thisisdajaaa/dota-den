@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { HeroesService } from "@/modules/heroes/application/heroes-service";
 import type { HeroGameExtras } from "@/modules/heroes/application/ports";
 import { OpenDotaHeroSource } from "@/modules/heroes/infrastructure/opendota-hero-source";
-import { ok, err } from "@/modules/shared/domain/result";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ok, err } from "@/common/result";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 
 function sourceWith(body: unknown, status = 200) {
   const fetch = vi.fn(async (_url: string) => new Response(JSON.stringify(body), { status }));

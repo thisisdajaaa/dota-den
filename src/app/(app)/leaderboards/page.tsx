@@ -5,7 +5,7 @@ import { AlertTriangle, UserPlus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { Button } from "@/components/ui/button";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { BoardView } from "@/modules/leaderboards/application/contracts";
 import { getLeaderboardService, getRankedWeek } from "@/modules/leaderboards/composition";

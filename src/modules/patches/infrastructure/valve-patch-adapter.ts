@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import type {
   GatewayResponse,
   ProviderGateway,
-} from "@/modules/shared/infrastructure/provider-gateway";
+} from "@/common/providers/provider-gateway";
 import {
   cleanNoteText,
   EMPTY_SECTIONS,

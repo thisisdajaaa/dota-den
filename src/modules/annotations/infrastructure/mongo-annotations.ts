@@ -1,6 +1,6 @@
 import type { Db } from "mongodb";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { forExport } from "@/modules/shared/infrastructure/user-data";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { forExport } from "@/common/privacy/user-data";
 import type { MatchAnnotation } from "../domain/annotation";
 
 const COLLECTION = "match_annotations";

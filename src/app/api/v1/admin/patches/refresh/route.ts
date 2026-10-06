@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin, requestId } from "@/lib/http";
-import { logger } from "@/lib/logger";
+import { apiError, isSameOrigin, requestId } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
 import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
 import { MAX_IMPORT_COUNT } from "@/modules/patches/application/patch-import-service";
 import { getPatchImportService } from "@/modules/patches/composition";

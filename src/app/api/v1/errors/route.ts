@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { clientKey, rateLimit } from "@/common/http/rate-limit";
 import { recordError } from "@/modules/errors/composition";
 
 const BodySchema = z.object({

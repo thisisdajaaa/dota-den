@@ -30,7 +30,7 @@ import {
   type DraftTotals,
   type RoomTotals,
 } from "@/modules/leaderboards/domain/ranking";
-import { ok, err } from "@/modules/shared/domain/result";
+import { ok, err } from "@/common/result";
 
 describe("streak rule", () => {
   it("counts Good or better as correct", () => {

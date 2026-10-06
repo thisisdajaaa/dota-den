@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { HeroesService } from "@/modules/heroes/application/heroes-service";
 import { getHeroesService } from "@/modules/heroes/composition";
 import { buildVsPros } from "@/modules/heroes/domain/build-vs-pros";

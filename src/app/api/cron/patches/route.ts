@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isCronAuthorized } from "@/lib/cron-auth";
-import { env } from "@/lib/env";
-import { apiError, requestId } from "@/lib/http";
-import { logger } from "@/lib/logger";
+import { isCronAuthorized } from "@/common/http/cron-auth";
+import { env } from "@/common/config/env";
+import { apiError, requestId } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
 import { draftInsights } from "@/modules/drafts/composition";
 import { bucketedKey } from "@/modules/jobs/domain/job";
 import { getJobQueue, trackCronRun } from "@/modules/jobs/composition";

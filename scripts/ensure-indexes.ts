@@ -2,7 +2,7 @@
  * Apply all collection indexes. Idempotent.
  * Usage: npm run db:indexes  (reads MONGODB_URI / MONGODB_DB_NAME from the environment)
  */
-import { getDb, getMongoClient } from "@/lib/db/mongo";
+import { getDb, getMongoClient } from "@/common/db/mongo";
 import { ensureAnnotationIndexes } from "@/modules/annotations/infrastructure/mongo-annotations";
 import { ensureGoalIndexes } from "@/modules/goals/infrastructure/mongo-goals";
 import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo-draft-history";

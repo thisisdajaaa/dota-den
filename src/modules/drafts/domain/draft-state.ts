@@ -11,7 +11,7 @@
  * nothing here reads a clock or runs an interval. `resolveTime` answers "has this turn
  * expired at time T, and how much reserve has been used?" deterministically.
  */
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import {
   getRuleset,
   turnDurationMs,

@@ -7,7 +7,7 @@ import {
   ProDraftRowSchema,
   PRO_DRAFTS_SQL,
 } from "@/modules/meta/infrastructure/opendota-meta-source";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 
 describe("explorer parsing", () => {
   it("accepts rows with numeric or string counts", () => {

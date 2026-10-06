@@ -3,7 +3,7 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 import { getCurrentUser } from "@/modules/identity/composition";
 import { NewRoomForm } from "@/modules/drafts/ui/new-room-form";
 

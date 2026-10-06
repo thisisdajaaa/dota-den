@@ -1,5 +1,5 @@
 import "server-only";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { trackCronRun } from "@/modules/jobs/composition";
 import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
 import { recordMedal } from "@/modules/mmr/composition";

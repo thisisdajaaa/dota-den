@@ -57,13 +57,15 @@ describe("architecture boundaries", () => {
     const found = violations((f, spec) => {
       if (f.layer !== "domain") return null;
       const rel = relative(ROOT, f.file);
-      if (FRAMEWORK.some((re) => re.test(spec)) || spec.startsWith("@/lib/"))
+      // Pure code only: the shared Result type is the one common import allowed.
+      if (
+        FRAMEWORK.some((re) => re.test(spec)) ||
+        (spec.startsWith("@/common/") && spec !== "@/common/result")
+      )
         return `${rel} → ${spec}`;
       const t = target(f.file, spec);
       if (!t) return null;
-      const allowed =
-        (t.context === f.context && t.layer === "domain") ||
-        (t.context === "shared" && t.layer === "domain");
+      const allowed = t.context === f.context && t.layer === "domain";
       return allowed ? null : `${rel} → ${spec}`;
     });
     expect(found).toEqual([]);
@@ -73,14 +75,13 @@ describe("architecture boundaries", () => {
     const found = violations((f, spec) => {
       if (f.layer !== "application") return null;
       const rel = relative(ROOT, f.file);
-      if (FRAMEWORK.some((re) => re.test(spec)) || spec.startsWith("@/lib/db"))
+      if (FRAMEWORK.some((re) => re.test(spec)) || spec.startsWith("@/common/db"))
         return `${rel} → ${spec}`;
       const t = target(f.file, spec);
       if (!t) return null;
       if (t.layer === "infrastructure" || t.layer === "ui") return `${rel} → ${spec}`;
       // Other contexts only through their public index.
-      if (t.context !== f.context && t.context !== "shared" && t.layer !== "root")
-        return `${rel} → ${spec}`;
+      if (t.context !== f.context && t.layer !== "root") return `${rel} → ${spec}`;
       return null;
     });
     expect(found).toEqual([]);
@@ -90,7 +91,7 @@ describe("architecture boundaries", () => {
     const found = violations((f, spec) => {
       if (f.layer !== "ui") return null;
       const rel = relative(ROOT, f.file);
-      if (spec === "mongodb" || spec.startsWith("@/lib/db") || spec === "@/lib/env")
+      if (spec === "mongodb" || spec.startsWith("@/common/db") || spec === "@/common/config/env")
         return `${rel} → ${spec}`;
       const t = target(f.file, spec);
       return t?.layer === "infrastructure" ? `${rel} → ${spec}` : null;
@@ -101,7 +102,7 @@ describe("architecture boundaries", () => {
   it("modules never read another context's infrastructure", () => {
     const found = violations((f, spec) => {
       const t = target(f.file, spec);
-      if (!t || t.context === f.context || t.context === "shared") return null;
+      if (!t || t.context === f.context) return null;
       return t.layer === "infrastructure" ? `${relative(ROOT, f.file)} → ${spec}` : null;
     });
     expect(found).toEqual([]);
@@ -116,8 +117,8 @@ describe("architecture boundaries", () => {
         .filter(
           (s) =>
             s === "mongodb" ||
-            s.startsWith("@/lib/db") ||
-            s === "@/lib/env" ||
+            s.startsWith("@/common/db") ||
+            s === "@/common/config/env" ||
             s.endsWith("/composition") ||
             s.includes("/infrastructure/"),
         )

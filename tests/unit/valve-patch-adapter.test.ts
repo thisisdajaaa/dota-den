@@ -6,7 +6,7 @@ import {
   OpenDotaPatchReferenceCatalog,
 } from "@/modules/patches/infrastructure/opendota-reference-catalog";
 import { ValvePatchAdapter } from "@/modules/patches/infrastructure/valve-patch-adapter";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 import {
   ABILITIES,
   ABILITY_IDS,

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isCronAuthorized } from "@/lib/cron-auth";
-import { env } from "@/lib/env";
-import { apiError } from "@/lib/http";
+import { isCronAuthorized } from "@/common/http/cron-auth";
+import { env } from "@/common/config/env";
+import { apiError } from "@/common/http/http";
 import { runMatchSync } from "./run-match-sync";
 
 export const maxDuration = 60;

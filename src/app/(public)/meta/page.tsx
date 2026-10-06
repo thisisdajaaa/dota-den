@@ -5,7 +5,7 @@ import { BookOpen, Compass } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { getHeroMap } from "@/modules/matches/composition";
@@ -22,7 +22,7 @@ import {
 } from "@/modules/meta/domain/position";
 import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import { RolePicker, RoleTabs } from "@/modules/meta/ui/role-picker";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import { LaneDuosSection, PatchLine, PatchTipsSection, settle, TopHeroesSection } from "./sections";
 
 export const metadata: Metadata = { title: "Meta" };

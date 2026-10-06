@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { logger } from "@/lib/logger";
-import { rateLimit } from "@/lib/rate-limit";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
+import { rateLimit } from "@/common/http/rate-limit";
 import { getCurrentUser } from "@/modules/identity/composition";
 import { getScreenshotReader } from "@/modules/mmr/composition";
 import { MAX_SCREENSHOT_BYTES, SCREENSHOT_TYPES } from "@/modules/mmr/domain/screenshot-read";

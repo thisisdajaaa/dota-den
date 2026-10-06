@@ -1,7 +1,7 @@
 import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
-import { logger } from "@/lib/logger";
-import { getRedis } from "@/lib/redis";
+import { logger } from "@/common/logging/logger";
+import { getRedis } from "@/common/cache/redis";
 
 /**
  * Rate limiting (ADR 0008). With Upstash Redis configured, limits are a sliding window

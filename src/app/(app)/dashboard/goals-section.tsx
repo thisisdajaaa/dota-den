@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getWeekGoals } from "@/modules/goals/composition";
 import {
   describeGoal,

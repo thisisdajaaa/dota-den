@@ -16,7 +16,7 @@ import {
   SYNC_COOLDOWN_MS,
 } from "@/modules/matches/application/match-sync-service";
 import type { PlayerMatchFact } from "@/modules/matches/domain/player-match-fact";
-import { err, ok } from "@/modules/shared/domain/result";
+import { err, ok } from "@/common/result";
 
 const ACCOUNT = 22202;
 const HOUR = 3_600_000;

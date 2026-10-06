@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 import { getAuthService, STATE_COOKIE } from "@/modules/identity/composition";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {

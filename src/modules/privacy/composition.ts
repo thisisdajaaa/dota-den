@@ -1,5 +1,5 @@
 import "server-only";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import * as annotations from "@/modules/annotations/composition";
 import * as drafts from "@/modules/drafts/composition";
 import * as goals from "@/modules/goals/composition";
@@ -10,7 +10,7 @@ import * as mmr from "@/modules/mmr/composition";
 import * as patches from "@/modules/patches/composition";
 import * as players from "@/modules/players/composition";
 import * as sessions from "@/modules/sessions/composition";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
+import type { DataOwner } from "@/common/privacy/user-data";
 import * as together from "@/modules/together/composition";
 
 /** Every part of the app that keeps data about a player. Identity goes last on delete. */

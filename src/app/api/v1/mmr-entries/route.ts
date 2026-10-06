@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError, isSameOrigin } from "@/lib/http";
+import { apiError, isSameOrigin } from "@/common/http/http";
 import { getRouteUser } from "@/modules/identity/composition";
 import { MmrEntryInputSchema, toMmrEntryDto } from "@/modules/mmr/application/contracts";
 import { getMmrJournal } from "@/modules/mmr/composition";

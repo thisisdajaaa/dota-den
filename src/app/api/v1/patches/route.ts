@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError } from "@/lib/http";
+import { apiError } from "@/common/http/http";
 import { PATCH_PAGE_DEFAULT, PATCH_PAGE_MAX } from "@/modules/patches/application/ports";
 import { getPatchQueries } from "@/modules/patches/composition";
 import { parsePatchVersion } from "@/modules/patches/domain/patch-version";

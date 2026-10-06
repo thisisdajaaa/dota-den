@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError } from "@/lib/http";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { apiError } from "@/common/http/http";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import { isJobName } from "@/modules/jobs/domain/job";
 import { getJobReceiver, getJobRunner } from "@/modules/jobs/composition";
 

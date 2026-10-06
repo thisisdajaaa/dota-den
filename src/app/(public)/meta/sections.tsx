@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import type { DuosView, TopHeroesView } from "@/modules/meta/application/meta-service";
 import type { SourceError } from "@/modules/meta/application/ports";
@@ -9,7 +9,7 @@ import { LaneDuosCard } from "@/modules/meta/ui/lane-duos-card";
 import { MetaSection, Unavailable } from "@/modules/meta/ui/meta-section";
 import { PatchTipsCard } from "@/modules/meta/ui/patch-tips-card";
 import { TopHeroesCard } from "@/modules/meta/ui/top-heroes-card";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 
 type Loaded<T> = Result<T, SourceError | { type: "error" }>;
 

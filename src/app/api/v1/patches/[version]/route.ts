@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError } from "@/lib/http";
+import { apiError } from "@/common/http/http";
 import { getPatchQueries } from "@/modules/patches/composition";
 import { diffSummary } from "@/modules/patches/domain/patch";
 

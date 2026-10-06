@@ -7,7 +7,7 @@ import type {
 } from "@/modules/drafts/application/ports";
 import type { DraftSnapshot } from "@/modules/drafts/application/snapshot";
 import { GroqDraftAdvisor } from "@/modules/drafts/infrastructure/groq-draft-advisor";
-import { err, ok } from "@/modules/shared/domain/result";
+import { err, ok } from "@/common/result";
 
 // 1-20 cores, 21-40 supports.
 const heroes: AiHero[] = Array.from({ length: 40 }, (_, i) => ({

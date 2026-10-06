@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
+import { apiError, isSameOrigin } from "@/common/http/http";
 import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
 import { getPatchWatchlistService } from "@/modules/patches/composition";
 import { WATCHLIST_MAX_HEROES, WATCHLIST_MAX_ITEMS } from "@/modules/patches/domain/watchlist";

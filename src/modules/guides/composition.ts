@@ -1,5 +1,5 @@
 import "server-only";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 import { openDotaGateway } from "@/modules/matches/composition";
 import { GuideService } from "./application/guide-service";
 import { topItems } from "./domain/hero-guide";

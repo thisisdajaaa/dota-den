@@ -1,9 +1,9 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
+import type { DataOwner } from "@/common/privacy/user-data";
 import { cookies } from "next/headers";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { getDb } from "@/lib/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
+import { getDb } from "@/common/db/mongo";
 import { AuthService } from "./application/auth-service";
 import type { ProfileVisibility, User } from "./domain/user";
 import type { IdentityProvider } from "./application/ports";

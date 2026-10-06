@@ -1,6 +1,6 @@
 import "server-only";
-import { getDb } from "@/lib/db/mongo";
-import { logger } from "@/lib/logger";
+import { getDb } from "@/common/db/mongo";
+import { logger } from "@/common/logging/logger";
 import { isNoise, newErrorEvent, type ErrorSource } from "./domain/error-event";
 import { errorGroups, insertErrorEvent } from "./infrastructure/mongo-error-log";
 

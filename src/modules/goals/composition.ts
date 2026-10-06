@@ -1,6 +1,6 @@
 import "server-only";
-import { getDb } from "@/lib/db/mongo";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
+import { getDb } from "@/common/db/mongo";
+import type { DataOwner } from "@/common/privacy/user-data";
 import type { Goal } from "./domain/goals";
 import * as store from "./infrastructure/mongo-goals";
 

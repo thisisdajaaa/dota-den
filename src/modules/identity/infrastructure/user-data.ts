@@ -1,5 +1,5 @@
 import type { Db } from "mongodb";
-import { forExport, type DataOwner } from "@/modules/shared/infrastructure/user-data";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import { ObjectId } from "mongodb";
 import { IDENTITY_COLLECTIONS } from "./mongo-identity-repositories";
 

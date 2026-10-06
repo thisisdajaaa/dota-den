@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError } from "@/lib/http";
+import { apiError } from "@/common/http/http";
 import { getRouteUser } from "@/modules/identity/composition";
 import { getPlayerProfile } from "@/modules/matches/composition";
 import type { HistoryError } from "./application/draft-history-service";

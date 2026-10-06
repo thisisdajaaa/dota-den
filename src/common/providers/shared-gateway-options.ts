@@ -1,7 +1,7 @@
 import "server-only";
-import { env, openDotaBudget } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { getRedis } from "@/lib/redis";
+import { env, openDotaBudget } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
+import { getRedis } from "@/common/cache/redis";
 import type { GatewayOptions } from "./provider-gateway";
 import { RedisResponseCache, RedisUpstreamBudget } from "./redis-gateway-store";
 

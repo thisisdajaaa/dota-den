@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { logger } from "@/lib/logger";
-import { apiLimitArgs } from "@/lib/api-limits";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
+import { apiLimitArgs } from "@/common/http/api-limits";
+import { clientKey, rateLimit } from "@/common/http/rate-limit";
 import { CHALLENGE_TYPES, SEED_PATTERN, type Grade } from "@/modules/drafts/domain/challenges";
 import { getChallengeService } from "@/modules/drafts/composition";
 import { getRouteUser } from "@/modules/identity/composition";

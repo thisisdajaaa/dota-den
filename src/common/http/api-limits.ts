@@ -1,5 +1,5 @@
 import "server-only";
-import { env, type Env } from "@/lib/env";
+import { env, type Env } from "@/common/config/env";
 
 /** One rate limit: at most `limit` requests per `windowMs`, per key. */
 export interface ApiLimit {

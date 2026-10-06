@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError } from "@/lib/http";
-import { rateLimit } from "@/lib/rate-limit";
+import { apiError } from "@/common/http/http";
+import { rateLimit } from "@/common/http/rate-limit";
 import { getRouteUser } from "@/modules/identity/composition";
 import { exportAllMyData } from "@/modules/privacy/composition";
 

@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { SteamId64 } from "../domain/steam-id";
 import type { User } from "../domain/user";
 

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError, isSameOrigin, requestId } from "@/lib/http";
-import { logger } from "@/lib/logger";
+import { apiError, isSameOrigin, requestId } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
 import { recordError } from "@/modules/errors/composition";
 import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
 import { enqueueMatchBackfill } from "@/modules/jobs/composition";

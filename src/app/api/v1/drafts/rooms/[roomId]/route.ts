@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError } from "@/lib/http";
-import { apiLimitArgs } from "@/lib/api-limits";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { apiError } from "@/common/http/http";
+import { apiLimitArgs } from "@/common/http/api-limits";
+import { clientKey, rateLimit } from "@/common/http/rate-limit";
 import { getRouteUser } from "@/modules/identity/composition";
 import { getDraftRoomEvents, getDraftRoomService } from "@/modules/drafts/composition";
 import {

@@ -1,10 +1,10 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
-import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
+import { sharedGatewayOptions } from "@/common/providers/shared-gateway-options";
 import { MatchSyncService, toFact } from "./application/match-sync-service";
 import type {
   DashboardFact,
@@ -14,7 +14,7 @@ import type {
   PlayerProfileSnapshot,
   ProviderError,
 } from "./application/ports";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
 import {
   MongoMatchQueries,

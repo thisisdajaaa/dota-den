@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import type { ProviderGateway } from "@/common/providers/provider-gateway";
 import { bestHeroOf, RANKED_WEEK_DAYS, type RankedWeekInput } from "../domain/ranked-week";
 
 const CACHE_MS = 30 * 60_000;

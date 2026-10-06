@@ -1,6 +1,6 @@
 import "server-only";
 import { Redis } from "@upstash/redis";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 
 /**
  * Upstash Redis over HTTP (ADR 0008), or null when it isn't configured. One client per

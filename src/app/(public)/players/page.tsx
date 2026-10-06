@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { AlertTriangle, Info, SearchX, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity/composition";
 import type { TrackedPlayersPage } from "@/modules/players/application/contracts";
 import { ownerOf } from "@/modules/players/application/follow-service";

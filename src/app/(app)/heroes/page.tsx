@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getAdvisorService } from "@/modules/advisor/composition";
 import { PoolAdviceCard } from "@/modules/advisor/ui/pool-advice-card";
 import { getHeroesService } from "@/modules/heroes/composition";

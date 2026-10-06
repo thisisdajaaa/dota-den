@@ -1,9 +1,9 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
+import type { DataOwner } from "@/common/privacy/user-data";
 import { cookies } from "next/headers";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import { MmrJournalService } from "./application/mmr-journal-service";
 import { GroqScreenshotReader } from "./infrastructure/groq-screenshot-reader";
 import { isValidTimeZone } from "./domain/day-key";

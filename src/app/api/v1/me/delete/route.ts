@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
+import { apiError, isSameOrigin } from "@/common/http/http";
 import { getRouteUser, SESSION_COOKIE } from "@/modules/identity/composition";
 import { deleteAllMyData } from "@/modules/privacy/composition";
 

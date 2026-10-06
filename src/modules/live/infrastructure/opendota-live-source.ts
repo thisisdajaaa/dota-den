@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import type { ProviderGateway } from "@/common/providers/provider-gateway";
 import type { LiveSource } from "../application/live-service";
 import type { LiveGame } from "../domain/live-game";
 

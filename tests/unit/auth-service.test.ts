@@ -13,7 +13,7 @@ import type {
 import { hashToken } from "@/modules/identity/application/session-tokens";
 import { toAccountId32, type SteamId64 } from "@/modules/identity/domain/steam-id";
 import { DEFAULT_USER_SETTINGS, type User } from "@/modules/identity/domain/user";
-import { err, ok } from "@/modules/shared/domain/result";
+import { err, ok } from "@/common/result";
 
 const APP_URL = "https://den.example";
 const STEAM_ID = "76561197960287930" as SteamId64;

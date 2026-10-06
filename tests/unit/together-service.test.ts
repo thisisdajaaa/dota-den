@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { err, ok } from "@/modules/shared/domain/result";
+import { err, ok } from "@/common/result";
 import type {
   MatchSeatReader,
   ProviderError,

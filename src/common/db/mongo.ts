@@ -1,6 +1,6 @@
 import "server-only";
 import { MongoClient, type Db } from "mongodb";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 
 type MongoCache = { client?: MongoClient; connecting?: Promise<MongoClient> };
 

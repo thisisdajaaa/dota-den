@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 
 /** A user's patch watchlist: heroes and items whose changes they want surfaced. */
 export interface PatchWatchlist {

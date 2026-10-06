@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { cdnImage, OpenDotaAdapter } from "@/modules/matches/infrastructure/opendota-adapter";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 import { matchRow, PATCH_CONSTANTS } from "../fixtures/opendota";
 
 const FETCHED_AT = new Date("2026-09-29T00:00:00Z");

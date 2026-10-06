@@ -1,7 +1,7 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { getDb } from "@/lib/db/mongo";
-import { logger } from "@/lib/logger";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { getDb } from "@/common/db/mongo";
+import { logger } from "@/common/logging/logger";
 import {
   getMatchQueries,
   getOpenDotaAdapter,
@@ -13,7 +13,7 @@ import {
   getPlayerDirectory,
   getPublicProfile,
 } from "@/modules/players/composition";
-import { ok, type Result } from "@/modules/shared/domain/result";
+import { ok, type Result } from "@/common/result";
 import {
   MAX_OVERVIEW_TEAMMATES,
   MAX_PEER_CANDIDATES,

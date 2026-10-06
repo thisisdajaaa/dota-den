@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { StandingView } from "@/modules/leaderboards/application/contracts";
 import { getLeaderboardService } from "@/modules/leaderboards/composition";
 import { StandingCard, StandingUnavailable } from "@/modules/leaderboards/ui/standing-card";

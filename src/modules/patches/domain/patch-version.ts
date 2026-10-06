@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 
 /**
  * A Dota 2 gameplay patch version such as "7.41" or a lettered follow-up such as "7.41f".

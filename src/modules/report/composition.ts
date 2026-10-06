@@ -1,5 +1,5 @@
 import "server-only";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 import { getMatchQueries, openDotaGateway } from "@/modules/matches/composition";
 import { getMmrJournal } from "@/modules/mmr/composition";
 import { buildCalendar } from "@/modules/mmr/domain/calendar";

@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { User } from "@/modules/identity/domain/user";
 import { getMatchQueries } from "@/modules/matches/composition";
 import { getMmrJournal } from "@/modules/mmr/composition";

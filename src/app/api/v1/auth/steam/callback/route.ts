@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { requestId } from "@/lib/http";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
+import { requestId } from "@/common/http/http";
 import {
   getAuthService,
   SESSION_COOKIE,

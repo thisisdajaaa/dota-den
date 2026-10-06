@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getAchievements } from "@/modules/achievements/composition";
 import { AchievementsCard } from "@/modules/achievements/ui/achievements-card";
 import type { User } from "@/modules/identity/domain/user";

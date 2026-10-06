@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 
 export type ApiErrorCode =
   | "bad_request"

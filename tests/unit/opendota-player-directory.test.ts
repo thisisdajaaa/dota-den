@@ -4,7 +4,7 @@ import {
   steamAvatar,
 } from "@/modules/players/infrastructure/opendota-player-directory";
 import { topHeroes, topTeammates } from "@/modules/players/domain/public-player";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 import { heroRow, peerRow, searchRow } from "../fixtures/opendota";
 
 function directoryWith(body: unknown, status = 200) {
