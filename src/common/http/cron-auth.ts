@@ -9,3 +9,12 @@ export function isCronAuthorized(req: Request, secret: string): boolean {
     digest(`Bearer ${secret}`),
   );
 }
+
+/** Controller guard for Vercel Cron routes: 503 when cron isn't configured, 401 on a bad secret. */
+export async function requireCron(req: Request): Promise<void> {
+  const { env } = await import("@/common/config/env");
+  const secret = env().CRON_SECRET;
+  const { UnauthorizedError, UpstreamUnavailableError } = await import("@/common/errors/app-error");
+  if (!secret) throw new UpstreamUnavailableError("Cron is not configured");
+  if (!isCronAuthorized(req, secret)) throw new UnauthorizedError("Invalid cron credentials");
+}

@@ -3,7 +3,7 @@ import { apiError, isSameOrigin, requestId } from "@/common/http/http";
 import { logger } from "@/common/logging/logger";
 import { errorsService } from "@/modules/errors";
 import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
-import { enqueueMatchBackfill } from "@/modules/jobs/composition";
+import { jobsService } from "@/modules/jobs";
 import { getMatchSyncService } from "@/modules/matches/composition";
 
 /** Sync the signed-in user's own matches from OpenDota. Cooldown and per-account lock apply. */
@@ -23,9 +23,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     logger.info("match_sync_completed", { ...log, ...result.value });
     // With a durable queue, the rest of a long history keeps importing in the background.
     if (!result.value.backfillComplete) {
-      await enqueueMatchBackfill(accountId32).catch((error: unknown) =>
-        logger.warn("match_backfill_enqueue_failed", { ...log, error }),
-      );
+      await jobsService
+        .enqueueMatchBackfill(accountId32)
+        .catch((error: unknown) => logger.warn("match_backfill_enqueue_failed", { ...log, error }));
     }
     return NextResponse.json(result.value);
   }

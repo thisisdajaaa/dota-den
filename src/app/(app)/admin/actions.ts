@@ -1,17 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { runMatchSync, type MatchSyncRun } from "@/app/api/cron/matches/run-match-sync";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
+import { cronService, type MatchSyncRunDto } from "@/modules/jobs";
 
 /** Admin only: run the daily match sync now and show its result. */
 export async function runMatchSyncNow(): Promise<
-  { ok: true; run: MatchSyncRun } | { ok: false; error: string }
+  { ok: true; run: MatchSyncRunDto } | { ok: false; error: string }
 > {
   const viewer = await getCurrentUser();
   if (!viewer?.roles.includes("admin")) return { ok: false, error: "Admins only." };
   try {
-    const run = await runMatchSync("admin");
+    const run = await cronService.runMatchSync("admin");
     revalidatePath("/admin");
     return { ok: true, run };
   } catch (e) {

@@ -1,5 +1,5 @@
 import type { JobName } from "../domain/job";
-import type { JobHandler, JobRunRepository } from "./ports";
+import type { JobHandler, JobRunRepository } from "../jobs.ports";
 
 export type RunOutcome =
   { status: "succeeded" } | { status: "skipped" } | { status: "failed"; error: string };

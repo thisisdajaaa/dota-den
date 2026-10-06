@@ -1,5 +1,5 @@
 import type { ErrorGroup } from "@/modules/errors";
-import type { getCronRuns, getRecentJobFailures } from "@/modules/jobs/composition";
+import type { CronRun, JobFailure } from "@/modules/jobs";
 
 export interface AdminUserSource {
   /** Every user, with sign-in sessions counted. */
@@ -36,8 +36,8 @@ export interface AdminProfileSource {
   } | null>;
 }
 
-export type CronRunView = Awaited<ReturnType<typeof getCronRuns>>[number];
-export type JobFailureView = Awaited<ReturnType<typeof getRecentJobFailures>>[number];
+export type CronRunView = CronRun;
+export type JobFailureView = JobFailure;
 
 export interface AdminOpsSource {
   jobFailures(): Promise<JobFailureView[]>;

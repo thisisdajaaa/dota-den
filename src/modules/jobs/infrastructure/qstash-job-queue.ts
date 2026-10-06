@@ -1,5 +1,5 @@
 import type { Client } from "@upstash/qstash";
-import type { EnqueueOptions, EnqueueResult, JobQueue } from "../application/ports";
+import type { EnqueueOptions, EnqueueResult, JobQueue } from "../jobs.ports";
 import type { JobName } from "../domain/job";
 
 /** Durable jobs through Upstash QStash: POSTed to `${appUrl}/api/jobs/<name>` with retries. */

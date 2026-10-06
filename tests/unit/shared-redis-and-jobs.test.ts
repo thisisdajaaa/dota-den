@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { JobRunner } from "@/modules/jobs/application/job-runner";
-import type { JobRunRepository } from "@/modules/jobs/application/ports";
+import type { JobRunRepository } from "@/modules/jobs/jobs.ports";
+import { JobRunner } from "@/modules/jobs/services/job-runner.service";
 import { bucketedKey, isJobName } from "@/modules/jobs/domain/job";
 import { InlineJobQueue } from "@/modules/jobs/infrastructure/inline-job-queue";
 import { QStashJobQueue } from "@/modules/jobs/infrastructure/qstash-job-queue";

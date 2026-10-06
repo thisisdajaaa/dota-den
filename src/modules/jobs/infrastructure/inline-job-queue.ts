@@ -1,4 +1,4 @@
-import type { EnqueueOptions, EnqueueResult, JobQueue } from "../application/ports";
+import type { EnqueueOptions, EnqueueResult, JobQueue } from "../jobs.ports";
 import type { JobName } from "../domain/job";
 
 /**

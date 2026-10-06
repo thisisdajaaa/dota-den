@@ -2,7 +2,7 @@ import "server-only";
 import { getRoomDraftCounts } from "@/modules/drafts/composition";
 import { errorsService } from "@/modules/errors";
 import { getAdminUserRows } from "@/modules/identity/composition";
-import { getCronRuns, getRecentJobFailures } from "@/modules/jobs/composition";
+import { cronRunsRepository, jobRunsRepository } from "@/modules/jobs";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { getMatchStatsByAccount } from "@/modules/matches/composition";
 import { getMmrEntryCounts } from "@/modules/mmr/composition";
@@ -19,8 +19,8 @@ export const adminService = new AdminService({
   },
   profiles: { publicProfile: getPublicProfile },
   ops: {
-    jobFailures: getRecentJobFailures,
-    cronRuns: getCronRuns,
+    jobFailures: () => jobRunsRepository.recentFailures(),
+    cronRuns: (limit) => cronRunsRepository.recent(limit),
     errorGroups: (days) => errorsService.recentGroups(days),
   },
 });

@@ -10,8 +10,8 @@ import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mon
 import { ensureMatchDraftReadIndexes } from "@/modules/drafts/infrastructure/match-draft-reads";
 import { ensureDraftRoomIndexes } from "@/modules/drafts/infrastructure/mongo-draft-rooms";
 import { ErrorsRepository } from "@/modules/errors/errors.repository";
-import { ensureCronRunIndexes } from "@/modules/jobs/infrastructure/mongo-cron-runs";
-import { ensureJobIndexes } from "@/modules/jobs/infrastructure/mongo-job-runs";
+import { CronRunsRepository } from "@/modules/jobs/repositories/cron-runs.repository";
+import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
 import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
 import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
@@ -29,8 +29,8 @@ async function main(): Promise<void> {
   await new GoalsRepository(async () => db).ensureIndexes();
   await ensureIdentityIndexes(db);
   await new ErrorsRepository(async () => db).ensureIndexes();
-  await ensureJobIndexes(db);
-  await ensureCronRunIndexes(db);
+  await new JobRunsRepository(async () => db).ensureIndexes();
+  await new CronRunsRepository(async () => db).ensureIndexes();
   await ensureDraftRoomIndexes(db);
   await ensureMatchDraftReadIndexes(db);
   await ensureDraftHistoryIndexes(db);
