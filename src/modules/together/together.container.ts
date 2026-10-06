@@ -38,11 +38,14 @@ export const togetherService = lazy(
     }),
 );
 
-export const friendsService = new FriendsService({
-  directory: playerDirectory,
-  follows: followService,
-  profiles: playersService,
-  ownFacts,
-  together: togetherService,
-  logger,
-});
+export const friendsService = lazy(
+  () =>
+    new FriendsService({
+      directory: playerDirectory,
+      follows: followService,
+      profiles: playersService,
+      ownFacts,
+      together: togetherService,
+      logger,
+    }),
+);
