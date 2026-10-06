@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
 import { parseAccountId } from "@/modules/players/domain/player-lookup";
 import { displayName } from "@/modules/players/ui/player-avatar";
-import { getPairAnalysis } from "@/modules/together/composition";
+import { friendsService } from "@/modules/together";
 import {
   FormTogether,
   HeroPairsTable,
@@ -81,7 +81,10 @@ async function PairAnalysisSection({
   friendId: number;
   friendName: string;
 }) {
-  const [analysis, heroes] = await Promise.all([getPairAnalysis(me, friendId), getHeroMap()]);
+  const [analysis, heroes] = await Promise.all([
+    friendsService.pairAnalysis(me, friendId),
+    getHeroMap(),
+  ]);
   const now = new Date();
 
   if (!analysis.ok) {

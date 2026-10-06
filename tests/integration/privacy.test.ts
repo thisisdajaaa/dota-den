@@ -20,7 +20,8 @@ import {
   SessionSettingsRepository,
 } from "@/modules/sessions/repositories/sessions.repository";
 import { SessionService } from "@/modules/sessions/sessions.service";
-import * as together from "@/modules/together/infrastructure/user-data";
+import { TogetherMatchesRepository } from "@/modules/together/repositories/together.repository";
+import { TogetherService } from "@/modules/together/together.service";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -75,6 +76,17 @@ const sessions = servicePart((getDb) => {
 const players = servicePart((getDb) => {
   const repo = new FollowsRepository(getDb);
   return new FollowService(repo, { data: repo });
+});
+
+const together = servicePart((getDb) => {
+  const repo = new TogetherMatchesRepository(getDb);
+  return new TogetherService({
+    finder: { sharedMatches: async () => ({ ok: true, value: [] }) },
+    seats: { seats: async () => ({ ok: false, error: { type: "unavailable", cause: "test" } }) },
+    repo,
+    ownGames: { ownGames: async () => [] },
+    data: repo,
+  });
 });
 
 const PARTS = [

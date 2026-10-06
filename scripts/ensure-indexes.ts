@@ -25,7 +25,7 @@ import {
   SessionNotesRepository,
   SessionSettingsRepository,
 } from "@/modules/sessions/repositories/sessions.repository";
-import { ensureTogetherIndexes } from "@/modules/together/infrastructure/mongo-together-repository";
+import { TogetherMatchesRepository } from "@/modules/together/repositories/together.repository";
 
 async function main(): Promise<void> {
   const db = await getDb();
@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     new SessionNotesRepository(async () => db).ensureIndexes(),
     new SessionSettingsRepository(async () => db).ensureIndexes(),
   ]);
-  await ensureTogetherIndexes(db);
+  await new TogetherMatchesRepository(async () => db).ensureIndexes();
   console.log(`Indexes ensured on ${db.databaseName}`);
   await (await getMongoClient()).close();
 }

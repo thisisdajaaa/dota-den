@@ -4,9 +4,9 @@ import type {
   MatchSeatReader,
   ProviderError,
   SharedMatch,
-  TogetherRepository,
-} from "@/modules/together/application/ports";
-import { TogetherService } from "@/modules/together/application/together-service";
+  TogetherMatchesPort,
+} from "@/modules/together/together.ports";
+import { TogetherService } from "@/modules/together/together.service";
 import type { AccountPair, PairClassification } from "@/modules/together/domain/pair";
 import type { Seat } from "@/modules/together/domain/relation";
 
@@ -34,7 +34,7 @@ function shared(i: number, over: Partial<SharedMatch> = {}): SharedMatch {
   };
 }
 
-class MemoryRepo implements TogetherRepository {
+class MemoryRepo implements TogetherMatchesPort {
   rows = new Map<string, PairClassification>();
   async find(pair: AccountPair, ids: readonly string[]) {
     return [...this.rows.values()].filter(

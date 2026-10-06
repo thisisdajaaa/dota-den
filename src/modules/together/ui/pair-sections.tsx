@@ -7,7 +7,7 @@ import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
-import type { PairAnalysis, SharedMatchRow } from "../application/together-service";
+import type { PairAnalysis, SharedMatchRow } from "../dtos/responses/together.dto";
 import { MIN_HERO_PAIR_GAMES, type HeroPair, type PairSummary } from "../domain/together-stats";
 import { CAVEAT, comparisonCopy } from "./copy";
 

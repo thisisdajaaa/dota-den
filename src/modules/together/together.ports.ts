@@ -1,7 +1,10 @@
 import type { Result } from "@/common/result";
-import type { AccountPair, PairClassification } from "../domain/pair";
-import type { Seat, Side } from "../domain/relation";
-import type { OwnGame } from "../domain/together-stats";
+import type { DashboardFact } from "@/modules/matches/application/ports";
+import type { Peer, WinLoss } from "@/modules/players/domain/public-player";
+import type { PairAnalysis, TogetherOverview } from "./dtos/responses/together.dto";
+import type { AccountPair, PairClassification } from "./domain/pair";
+import type { Seat, Side } from "./domain/relation";
+import type { OwnGame } from "./domain/together-stats";
 
 export type ProviderError =
   | { type: "rate_limited"; retryAfterMs: number | null }
@@ -48,7 +51,7 @@ export interface MatchSeatReader {
 }
 
 /** Cache of classified shared matches (collection `together_matches`). */
-export interface TogetherRepository {
+export interface TogetherMatchesPort {
   find(pair: AccountPair, matchIds: readonly string[]): Promise<PairClassification[]>;
   /** Idempotent per (matchId, pair). */
   saveMany(rows: readonly PairClassification[]): Promise<void>;
@@ -61,4 +64,29 @@ export interface TogetherRepository {
 /** The signed-in player's own imported games, for the baseline. */
 export interface OwnGamesSource {
   ownGames(accountId32: number): Promise<OwnGame[]>;
+}
+
+/** What FriendsService reads from other features (public data and your own games). */
+export interface FriendsSources {
+  directory: {
+    peers(accountId32: number): Promise<Result<Peer[], ProviderError>>;
+    winLoss(accountId32: number): Promise<Result<WinLoss, ProviderError>>;
+  };
+  follows: {
+    list(owner: { userId: string; accountId32: number }): Promise<Array<{ accountId32: number }>>;
+  };
+  profiles: {
+    publicProfile(accountId32: number): Promise<{
+      personaName: string | null;
+      avatarUrl: string | null;
+      rankTier: number | null;
+      leaderboardRank: number | null;
+    } | null>;
+  };
+  /** Your imported games (all types), newest first. */
+  ownFacts(accountId32: number): Promise<{ facts: DashboardFact[] }>;
+  together: {
+    overview(accountId32: number): Promise<TogetherOverview>;
+    analysePair(me: number, friend: number): Promise<Result<PairAnalysis, ProviderError>>;
+  };
 }

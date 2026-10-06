@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
-import { getTogetherCandidates } from "@/modules/together/composition";
+import { friendsService } from "@/modules/together";
 import { FriendList } from "@/modules/together/ui/friend-list";
 import { StacksCard } from "@/modules/together/ui/stacks-card";
 import { TriosCard, type TrioMember } from "@/modules/together/ui/trios-card";
@@ -14,7 +14,7 @@ export default async function TogetherPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const now = new Date();
-  const { friends, overview, peersError } = await getTogetherCandidates(user);
+  const { friends, overview, peersError } = await friendsService.candidates(user);
 
   const members = new Map<number, TrioMember>(
     friends.map((f) => [f.accountId32, { personaName: f.personaName, avatarUrl: f.avatarUrl }]),

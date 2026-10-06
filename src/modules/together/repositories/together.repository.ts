@@ -1,38 +1,13 @@
-import type { AnyBulkWriteOperation, Collection, Db } from "mongodb";
+import "server-only";
+import type { AnyBulkWriteOperation, Db } from "mongodb";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import type { AccountPair, PairClassification } from "../domain/pair";
-import type { Relation, Seat } from "../domain/relation";
-import type { TogetherRepository } from "../application/ports";
-
-const SCHEMA_VERSION = 1;
-
-export const TOGETHER_COLLECTIONS = { matches: "together_matches" } as const;
-
-interface TogetherMatchDoc {
-  matchId: string;
-  /** Always the smaller account id of the pair. */
-  accountIdA: number;
-  accountIdB: number;
-  relation: Relation;
-  startedAt: Date;
-  radiantWin: boolean | null;
-  seatA: Seat | null;
-  seatB: Seat | null;
-  fetchedAt: Date;
-  schemaVersion: number;
-}
-
-export async function ensureTogetherIndexes(db: Db): Promise<void> {
-  const col = db.collection(TOGETHER_COLLECTIONS.matches);
-  await Promise.all([
-    col.createIndex(
-      { matchId: 1, accountIdA: 1, accountIdB: 1 },
-      { unique: true, name: "uniq_match_pair" },
-    ),
-    // Party lookups for one account, whichever side of the pair it is stored on.
-    col.createIndex({ accountIdA: 1, relation: 1 }, { name: "by_a_relation" }),
-    col.createIndex({ accountIdB: 1, relation: 1 }, { name: "by_b_relation" }),
-  ]);
-}
+import {
+  TOGETHER_COLLECTIONS,
+  TOGETHER_SCHEMA_VERSION as SCHEMA_VERSION,
+  type TogetherMatchDoc,
+} from "../together.model";
+import type { TogetherMatchesPort } from "../together.ports";
 
 function toDomain(d: TogetherMatchDoc): PairClassification {
   return {
@@ -48,16 +23,18 @@ function toDomain(d: TogetherMatchDoc): PairClassification {
   };
 }
 
-export class MongoTogetherRepository implements TogetherRepository {
-  private readonly col: Collection<TogetherMatchDoc>;
+export class TogetherMatchesRepository implements TogetherMatchesPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.col = db.collection<TogetherMatchDoc>(TOGETHER_COLLECTIONS.matches);
+  private async col() {
+    return (await this.getDb()).collection<TogetherMatchDoc>(TOGETHER_COLLECTIONS.matches);
   }
 
   async find(pair: AccountPair, matchIds: readonly string[]): Promise<PairClassification[]> {
     if (matchIds.length === 0) return [];
-    const docs = await this.col
+    const docs = await (
+      await this.col()
+    )
       .find({
         accountIdA: pair.accountIdA,
         accountIdB: pair.accountIdB,
@@ -80,7 +57,7 @@ export class MongoTogetherRepository implements TogetherRepository {
       };
     });
     try {
-      await this.col.bulkWrite(ops, { ordered: false });
+      await (await this.col()).bulkWrite(ops, { ordered: false });
     } catch (e) {
       // Two requests racing on the same new match: the unique index keeps one; that's fine.
       if (!(e && typeof e === "object" && "code" in e && e.code === 11000)) throw e;
@@ -88,7 +65,9 @@ export class MongoTogetherRepository implements TogetherRepository {
   }
 
   async unknownPartyMatchIdsOf(accountId32: number): Promise<string[]> {
-    const ids = await this.col.distinct("matchId", {
+    const ids = await (
+      await this.col()
+    ).distinct("matchId", {
       relation: "same_team_unknown",
       $or: [{ accountIdA: accountId32 }, { accountIdB: accountId32 }],
     });
@@ -96,7 +75,9 @@ export class MongoTogetherRepository implements TogetherRepository {
   }
 
   async partyMatchesOf(accountId32: number): Promise<PairClassification[]> {
-    const docs = await this.col
+    const docs = await (
+      await this.col()
+    )
       .find({
         relation: "party",
         $or: [{ accountIdA: accountId32 }, { accountIdB: accountId32 }],
@@ -105,5 +86,29 @@ export class MongoTogetherRepository implements TogetherRepository {
       .limit(5_000)
       .toArray();
     return docs.map(toDomain);
+  }
+
+  async ensureIndexes(): Promise<void> {
+    const col = await this.col();
+    await Promise.all([
+      col.createIndex(
+        { matchId: 1, accountIdA: 1, accountIdB: 1 },
+        { unique: true, name: "uniq_match_pair" },
+      ),
+      // Party lookups for one account, whichever side of the pair it is stored on.
+      col.createIndex({ accountIdA: 1, relation: 1 }, { name: "by_a_relation" }),
+      col.createIndex({ accountIdB: 1, relation: 1 }, { name: "by_b_relation" }),
+    ]);
+  }
+
+  /** Classified games with friends that involve the player, for "Download your data". */
+  async exportForOwner(owner: DataOwner) {
+    const mine = { $or: [{ accountIdA: owner.accountId32 }, { accountIdB: owner.accountId32 }] };
+    return forExport(await (await this.col()).find(mine).toArray());
+  }
+
+  async deleteForOwner(owner: DataOwner): Promise<number> {
+    const mine = { $or: [{ accountIdA: owner.accountId32 }, { accountIdB: owner.accountId32 }] };
+    return (await (await this.col()).deleteMany(mine)).deletedCount;
   }
 }

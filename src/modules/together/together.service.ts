@@ -1,6 +1,7 @@
+import type { DataOwner } from "@/common/privacy/user-data";
 import { ok, type Result } from "@/common/result";
-import { otherOf, pairOf, resultFor, type PairClassification } from "../domain/pair";
-import { classifyRelation, type Relation } from "../domain/relation";
+import { otherOf, pairOf, resultFor, type PairClassification } from "./domain/pair";
+import { classifyRelation } from "./domain/relation";
 import {
   baselineRecord,
   compareWithBaseline,
@@ -8,56 +9,21 @@ import {
   summarisePair,
   topTrios,
   bestStacks,
-  type BaselineComparison,
-  type HeroPair,
-  type PairSummary,
   type SharedGame,
-  type Trio,
-  type Stack,
-  type WinRecord,
-} from "../domain/together-stats";
+} from "./domain/together-stats";
 import type {
   MatchSeatReader,
   OwnGamesSource,
   ProviderError,
-  SharedMatch,
   SharedMatchFinder,
-  TogetherRepository,
-} from "./ports";
+  TogetherMatchesPort,
+} from "./together.ports";
+import type { PairAnalysis, SharedMatchRow, TogetherOverview } from "./dtos/responses/together.dto";
 
 /** Match details fetched per request at most; later visits continue where this one stopped. */
 export const MAX_NEW_DETAILS = 30;
 /** Match details fetched in parallel (be gentle with the upstream). */
 export const DETAIL_CONCURRENCY = 4;
-
-export interface SharedMatchRow {
-  match: SharedMatch;
-  /** null while this match hasn't been analysed yet. */
-  relation: Relation | null;
-  friendHeroId: number | null;
-}
-
-export interface PairAnalysis {
-  rows: SharedMatchRow[];
-  summary: PairSummary;
-  heroPairs: HeroPair[];
-  baseline: WinRecord | null;
-  comparison: BaselineComparison;
-  /** Shared matches not analysed yet (a later visit continues). */
-  pending: number;
-  /** True when the upstream stopped us early (busy or down); pending ones retry later. */
-  interrupted: boolean;
-}
-
-export interface TogetherOverview {
-  /** Confirmed party games per friend, from matches analysed so far. */
-  partyGames: Map<number, number>;
-  trios: Trio[];
-  /** Best confirmed parties by exactly who was in them. */
-  stacks: Stack[];
-  /** Games with a friend on your team but no party data: left out of stacks, never "together". */
-  unknownPartyGames: number;
-}
 
 /** Run `fn` over `items` with at most `limit` in flight. */
 async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => Promise<R>) {
@@ -80,10 +46,15 @@ export class TogetherService {
     private readonly deps: {
       finder: SharedMatchFinder;
       seats: MatchSeatReader;
-      repo: TogetherRepository;
+      repo: TogetherMatchesPort;
       ownGames: OwnGamesSource;
       now?: () => Date;
       maxNewDetails?: number;
+      /** Needed for "Download your data" and account deletion only. */
+      data?: {
+        exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+        deleteForOwner(owner: DataOwner): Promise<number>;
+      };
     },
   ) {
     this.now = deps.now ?? (() => new Date());
@@ -214,5 +185,13 @@ export class TogetherService {
     const partyIds = new Set(links.map((l) => l.matchId));
     const unknownPartyGames = unknownIds.filter((id) => !partyIds.has(id)).length;
     return { partyGames, trios, stacks: bestStacks(links), unknownPartyGames };
+  }
+
+  async exportMyData(owner: DataOwner) {
+    return { gamesWithFriends: (await this.deps.data?.exportForOwner(owner)) ?? [] };
+  }
+
+  async deleteMyData(owner: DataOwner) {
+    return { gamesWithFriends: (await this.deps.data?.deleteForOwner(owner)) ?? 0 };
   }
 }

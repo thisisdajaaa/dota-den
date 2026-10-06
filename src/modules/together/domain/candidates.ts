@@ -1,4 +1,4 @@
-import type { BestTeammate, QueueMix, TeammateStat, WinLossTotals } from "../domain/teammates";
+/** Candidate friends on /together, and how they are ordered (pure). */
 
 /** Friends shown on /together; public upstream data plus our own cached classifications. */
 export const MAX_PEER_CANDIDATES = 15;
@@ -25,27 +25,4 @@ export function sortCandidates(xs: readonly FriendCandidate[]): FriendCandidate[
       (b.sameTeamGames ?? 0) - (a.sameTeamGames ?? 0) ||
       a.accountId32 - b.accountId32,
   );
-}
-
-/** Teammates listed on the overview; each costs one cached profile lookup (for the rank). */
-export const MAX_OVERVIEW_TEAMMATES = 12;
-
-/** A teammate or rival with public profile details, for the overview's Teammates section. */
-export interface TeammateView extends TeammateStat {
-  personaName: string | null;
-  avatarUrl: string | null;
-  rankTier: number | null;
-  leaderboardRank: number | null;
-  /** Confirmed party games among matches analysed on /together so far. */
-  confirmedParties: number;
-}
-
-export interface TeammatesOverview {
-  teammates: TeammateView[];
-  best: (Omit<BestTeammate, "teammate"> & { teammate: TeammateView }) | null;
-  mostPlayed: TeammateView | null;
-  rivals: TeammateView[];
-  queueMix: QueueMix;
-  /** Your all-time public record; null when OpenDota couldn't provide it. */
-  overall: WinLossTotals | null;
 }
