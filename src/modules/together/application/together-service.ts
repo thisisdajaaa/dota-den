@@ -7,11 +7,13 @@ import {
   heroPairs,
   summarisePair,
   topTrios,
+  bestStacks,
   type BaselineComparison,
   type HeroPair,
   type PairSummary,
   type SharedGame,
   type Trio,
+  type Stack,
   type WinRecord,
 } from "../domain/together-stats";
 import type {
@@ -51,6 +53,10 @@ export interface TogetherOverview {
   /** Confirmed party games per friend, from matches analysed so far. */
   partyGames: Map<number, number>;
   trios: Trio[];
+  /** Best confirmed parties by exactly who was in them. */
+  stacks: Stack[];
+  /** Games with a friend on your team but no party data: left out of stacks, never "together". */
+  unknownPartyGames: number;
 }
 
 /** Run `fn` over `items` with at most `limit` in flight. */
@@ -189,19 +195,24 @@ export class TogetherService {
 
   /** Party counts per friend and top trios, from cached classifications only (no upstream). */
   async overview(me: number): Promise<TogetherOverview> {
-    const party = await this.deps.repo.partyMatchesOf(me);
+    const [party, unknownIds] = await Promise.all([
+      this.deps.repo.partyMatchesOf(me),
+      this.deps.repo.unknownPartyMatchIdsOf(me),
+    ]);
     const partyGames = new Map<number, number>();
     for (const c of party) {
       const friend = otherOf(c, me);
       partyGames.set(friend, (partyGames.get(friend) ?? 0) + 1);
     }
-    const trios = topTrios(
-      party.map((c) => ({
-        matchId: c.matchId,
-        friendId: otherOf(c, me),
-        result: resultFor(c, me),
-      })),
-    ).filter((t) => t.games > 0);
-    return { partyGames, trios };
+    const links = party.map((c) => ({
+      matchId: c.matchId,
+      friendId: otherOf(c, me),
+      result: resultFor(c, me),
+    }));
+    const trios = topTrios(links).filter((t) => t.games > 0);
+    // A match confirmed as a party with another friend isn't unknown.
+    const partyIds = new Set(links.map((l) => l.matchId));
+    const unknownPartyGames = unknownIds.filter((id) => !partyIds.has(id)).length;
+    return { partyGames, trios, stacks: bestStacks(links), unknownPartyGames };
   }
 }

@@ -31,6 +31,7 @@ test("the overview lists your teammates with honest comparisons and a rival", as
 test("open a friend from Together and see your games as a pair", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
   await page.goto("/together");
+  await expect(page.getByRole("region", { name: "Best stacks" })).toBeVisible();
   const friends = page.getByRole("region", { name: "People you play with" });
   await friends
     .getByRole("link", { name: /Fixture Peer/ })

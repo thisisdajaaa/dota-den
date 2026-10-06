@@ -75,7 +75,7 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
   into the box for you to check (nothing is saved without you, and images aren't stored). Your medal is tracked
   automatically too, with every rank-up and rank-down dated.
 - **Overview.** This week against last (record, win rate, MMR change), a tilt check that suggests a break during a
-  losing streak when your own history shows a drop, a prompt to log MMR after ranked games, and achievements.
+  losing streak when your own history shows a drop, a prompt to log MMR after ranked games, achievements, and up to two weekly goals tracked from your own games.
 - **Session recaps and goals.** Back-to-back games are grouped into sessions (your choice of break: 30 to 120 minutes)
   with a recap, streaks, best and worst game, and a note and goal you can mark as met.
 - **After losses.** Your ranked win rate after 2 and 3 straight losses within a session, against your usual rate.

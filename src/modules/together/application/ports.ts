@@ -54,6 +54,8 @@ export interface TogetherRepository {
   saveMany(rows: readonly PairClassification[]): Promise<void>;
   /** Every cached confirmed-party match involving the account (for counts and trios). */
   partyMatchesOf(accountId32: number): Promise<PairClassification[]>;
+  /** Match ids where the account shared a team with a friend but party data was missing. */
+  unknownPartyMatchIdsOf(accountId32: number): Promise<string[]>;
 }
 
 /** The signed-in player's own imported games, for the baseline. */
