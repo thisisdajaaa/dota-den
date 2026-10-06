@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/common/i18n/client";
 
 interface Point {
   t: number;
@@ -16,6 +17,7 @@ const PAD = { top: 16, right: 16, bottom: 26, left: 48 };
  * only a connection, not a claim about what happened in between.
  */
 export function MmrTrendChart({ points }: { points: Point[] }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(640);
   const [active, setActive] = useState<number | null>(null);
@@ -53,19 +55,19 @@ export function MmrTrendChart({ points }: { points: Point[] }) {
         {a ? (
           <>
             <span className="font-semibold text-foreground">
-              {a.mmr.toLocaleString("en-US")} MMR
+              {t("mmr.trend.value", { mmr: a.mmr.toLocaleString("en-US") })}
             </span>{" "}
             · {a.label}
           </>
         ) : (
-          "Hover or tab through the dots to see each entry."
+          t("mmr.trend.hint")
         )}
       </p>
       <svg
         width={width}
         height={HEIGHT}
         role="img"
-        aria-label={`Logged MMR from ${points[0].label} to ${points.at(-1)!.label}`}
+        aria-label={t("mmr.trend.chart", { from: points[0].label, to: points.at(-1)!.label })}
         className="block"
       >
         {ticks.map((t) => (
@@ -108,7 +110,7 @@ export function MmrTrendChart({ points }: { points: Point[] }) {
               fill="transparent"
               tabIndex={0}
               role="button"
-              aria-label={`${p.mmr} MMR, ${p.label}`}
+              aria-label={t("mmr.trend.dot", { mmr: p.mmr, label: p.label })}
               onMouseEnter={() => setActive(i)}
               onMouseLeave={() => setActive(null)}
               onFocus={() => setActive(i)}
@@ -125,10 +127,7 @@ export function MmrTrendChart({ points }: { points: Point[] }) {
           </g>
         ))}
       </svg>
-      <p className="text-xs text-muted-foreground">
-        Dots are your logged entries. The dashed line just connects them; your MMR between entries
-        isn&apos;t known.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("mmr.trend.footnote")}</p>
     </div>
   );
 }

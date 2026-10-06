@@ -22,6 +22,7 @@ export interface RoomResultView {
 export interface HistoryEntryView {
   roomId: string;
   completedAt: string;
+  rulesetId: string;
   rulesetName: string;
   yourSide: Side;
   firstSide: Side;

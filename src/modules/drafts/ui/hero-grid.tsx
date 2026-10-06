@@ -2,16 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/common/i18n/client";
 import { cn } from "cn";
 import { SearchInput } from "@/components/search-input";
 import type { DraftHero } from "./types";
 
-const ATTRS = [
-  { key: "str", label: "Strength" },
-  { key: "agi", label: "Agility" },
-  { key: "int", label: "Intelligence" },
-  { key: "all", label: "Universal" },
-] as const;
+const ATTRS = ["str", "agi", "int", "all"] as const;
 
 /** In-game style hero picker, grouped by primary attribute, with search ("/" to focus). */
 export function HeroGrid({
@@ -27,6 +23,7 @@ export function HeroGrid({
   actionLabel: string;
   onChoose: (heroId: number) => void;
 }) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const q = query.trim().toLowerCase();
@@ -49,11 +46,11 @@ export function HeroGrid({
   const choosable = matches.filter((h) => !unavailable.has(h.id));
 
   return (
-    <section className="panel space-y-4 p-4" aria-label="Heroes">
+    <section className="panel space-y-4 p-4" aria-label={t("drafts.heroGrid.label")}>
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput
           ref={input}
-          aria-label="Search heroes"
+          aria-label={t("drafts.heroGrid.search")}
           value={query}
           onValueChange={setQuery}
           onKeyDown={(e) => {
@@ -62,22 +59,24 @@ export function HeroGrid({
               setQuery("");
             }
           }}
-          placeholder="Search heroes (press / )"
+          placeholder={t("drafts.heroGrid.placeholder")}
           className="flex-1"
         />
         <span className="text-xs text-muted-foreground">
-          {disabled ? "Start the draft to choose heroes" : `Click a hero to ${actionLabel}`}
+          {disabled
+            ? t("drafts.heroGrid.startFirst")
+            : t("drafts.heroGrid.clickTo", { action: actionLabel })}
         </span>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         {ATTRS.map((attr) => {
-          const group = matches.filter((h) => (h.primaryAttr ?? "all") === attr.key);
+          const group = matches.filter((h) => (h.primaryAttr ?? "all") === attr);
           if (group.length === 0) return null;
           return (
-            <div key={attr.key}>
+            <div key={attr}>
               <h3 className="mb-1.5 text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">
-                {attr.label}
+                {t(`drafts.heroGrid.attrs.${attr}`)}
               </h3>
               <ul className="grid grid-cols-[repeat(auto-fill,minmax(3.4rem,1fr))] gap-1">
                 {group.map((h) => {
@@ -88,8 +87,14 @@ export function HeroGrid({
                         type="button"
                         disabled={disabled || taken}
                         onClick={() => onChoose(h.id)}
-                        title={taken ? `${h.name} (unavailable)` : h.name}
-                        aria-label={taken ? `${h.name}, unavailable` : `${actionLabel} ${h.name}`}
+                        title={
+                          taken ? t("drafts.heroGrid.unavailableTitle", { hero: h.name }) : h.name
+                        }
+                        aria-label={
+                          taken
+                            ? t("drafts.heroGrid.unavailableLabel", { hero: h.name })
+                            : t("drafts.heroGrid.choose", { action: actionLabel, hero: h.name })
+                        }
                         className={cn(
                           "group relative block aspect-[16/9] w-full overflow-hidden rounded bg-muted ring-1 ring-white/[0.06] transition",
                           taken

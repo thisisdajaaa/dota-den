@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 
 /** Track / untrack a player for the signed-in user. */
 export function TrackButton({
@@ -20,6 +21,7 @@ export function TrackButton({
   /** Icon-sized control for list rows. */
   compact?: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [tracked, setTracked] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -36,22 +38,26 @@ export function TrackButton({
     setBusy(false);
     if (status === 200) {
       setTracked(!tracked);
-      toast.success(tracked ? `Stopped tracking ${name}` : `Tracking ${name}`);
+      toast.success(
+        tracked ? t("players.track.stopped", { name }) : t("players.track.started", { name }),
+      );
       router.refresh();
       return;
     }
     const message =
       status === 409
-        ? "You're tracking the maximum number of players. Untrack someone first."
+        ? t("players.track.errorMax")
         : status === 429
-          ? "Too many changes. Try again in a minute."
+          ? t("players.track.errorRate")
           : status === 401
-            ? "Your session ended. Sign in again to track players."
-            : "Couldn't update your tracked players. Try again.";
+            ? t("players.track.errorSession")
+            : t("players.track.errorGeneric");
     toast.error(message);
   }
 
-  const label = tracked ? `Stop tracking ${name}` : `Track ${name}`;
+  const label = tracked
+    ? t("players.track.labelStop", { name })
+    : t("players.track.labelTrack", { name });
   const Icon = tracked ? Check : Plus;
 
   return (
@@ -73,7 +79,7 @@ export function TrackButton({
       )}
     >
       <Icon aria-hidden className="size-4" />
-      {!compact && (tracked ? "Tracking" : "Track")}
+      {!compact && (tracked ? t("players.track.tracking") : t("players.track.track"))}
     </button>
   );
 }

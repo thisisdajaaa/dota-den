@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { HeroInfo, ItemInfo } from "../matches.ports";
 import type { MatchPlayer, PartyGroup } from "../domain/match-detail";
 import { HeroPortrait, heroName } from "./hero-portrait";
@@ -12,7 +13,7 @@ function num(v: number | null): string {
   return v >= 10_000 ? `${(v / 1_000).toFixed(1)}k` : v.toLocaleString();
 }
 
-export function Scoreboard({
+export async function Scoreboard({
   side,
   won,
   score,
@@ -31,6 +32,7 @@ export function Scoreboard({
   items: Map<number, ItemInfo>;
   viewerAccountId: number | null;
 }) {
+  const t = await getT();
   const partyOf = (slot: number) => parties.find((p) => p.playerSlots.includes(slot));
   const radiant = side === "radiant";
   const totals = players.reduce(
@@ -54,16 +56,18 @@ export function Scoreboard({
             className={cn("h-6 w-1 rounded-full", radiant ? "bg-win" : "bg-loss")}
           />
           <h2 id={`team-${side}`} className="font-display text-lg font-bold tracking-wider">
-            {radiant ? "The Radiant" : "The Dire"}
+            {radiant ? t("matches.scoreboard.radiantTitle") : t("matches.scoreboard.direTitle")}
           </h2>
           {won && (
             <span className="rounded border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wider text-gold uppercase">
-              Victory
+              {t("matches.scoreboard.victory")}
             </span>
           )}
         </div>
         <div className="flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
-          {totals.nw > 0 && <span>{num(totals.nw)} net worth</span>}
+          {totals.nw > 0 && (
+            <span>{t("matches.scoreboard.netWorthTotal", { value: num(totals.nw) })}</span>
+          )}
           <span className="text-2xl font-semibold text-foreground">{score}</span>
         </div>
       </div>
@@ -82,50 +86,66 @@ export function Scoreboard({
             <col className="w-[4rem]" />
             <col className="w-[19rem]" />
           </colgroup>
-          <caption className="sr-only">{radiant ? "Radiant" : "Dire"} scoreboard</caption>
+          <caption className="sr-only">
+            {t("matches.scoreboard.caption", {
+              side: radiant ? t("matches.sides.radiant") : t("matches.sides.dire"),
+            })}
+          </caption>
           <thead>
             <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
               <th scope="col" className="py-2 pr-3 pl-5 font-medium">
-                Player
+                {t("matches.scoreboard.player")}
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                <abbr title="Kills / Deaths / Assists" className="cursor-help no-underline">
-                  K / D / A
-                </abbr>
-              </th>
-              <th scope="col" className="px-2 py-2 text-right font-medium">
-                <abbr title="Last hits / Denies" className="cursor-help no-underline">
-                  LH / DN
+                <abbr title={t("matches.scoreboard.kdaTitle")} className="cursor-help no-underline">
+                  {t("matches.scoreboard.kda")}
                 </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
                 <abbr
-                  title="Gold per minute / Experience per minute"
+                  title={t("matches.scoreboard.lhdnTitle")}
                   className="cursor-help no-underline"
                 >
-                  GPM / XPM
+                  {t("matches.scoreboard.lhdn")}
                 </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                Net worth
-              </th>
-              <th scope="col" className="px-2 py-2 text-right font-medium">
-                <abbr title="Damage dealt to heroes" className="cursor-help no-underline">
-                  Hero dmg
+                <abbr
+                  title={t("matches.scoreboard.gpmxpmTitle")}
+                  className="cursor-help no-underline"
+                >
+                  {t("matches.scoreboard.gpmxpm")}
                 </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                <abbr title="Damage dealt to buildings" className="cursor-help no-underline">
-                  Tower dmg
+                {t("matches.scoreboard.netWorth")}
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                <abbr
+                  title={t("matches.scoreboard.heroDmgTitle")}
+                  className="cursor-help no-underline"
+                >
+                  {t("matches.scoreboard.heroDmg")}
                 </abbr>
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                <abbr title="Healing done to allies" className="cursor-help no-underline">
-                  Healing
+                <abbr
+                  title={t("matches.scoreboard.towerDmgTitle")}
+                  className="cursor-help no-underline"
+                >
+                  {t("matches.scoreboard.towerDmg")}
+                </abbr>
+              </th>
+              <th scope="col" className="px-2 py-2 text-right font-medium">
+                <abbr
+                  title={t("matches.scoreboard.healingTitle")}
+                  className="cursor-help no-underline"
+                >
+                  {t("matches.scoreboard.healing")}
                 </abbr>
               </th>
               <th scope="col" className="py-2 pr-5 pl-3 font-medium">
-                Items
+                {t("matches.scoreboard.items")}
               </th>
             </tr>
           </thead>
@@ -169,18 +189,21 @@ export function Scoreboard({
                             </Link>
                           ) : (
                             <span className="max-w-32 truncate font-medium text-muted-foreground italic">
-                              Anonymous
+                              {t("matches.scoreboard.anonymous")}
                             </span>
                           )}
                           {isViewer && (
                             <span className="rounded bg-gold/15 px-1 text-[0.6rem] font-semibold text-gold">
-                              YOU
+                              {t("matches.scoreboard.you")}
                             </span>
                           )}
                           {party && (
                             <span
                               className="rounded border border-white/15 px-1 text-[0.6rem] text-muted-foreground"
-                              title={`Queued together (party ${party.label}, ${party.playerSlots.length} players)`}
+                              title={t("matches.scoreboard.partyTitle", {
+                                label: party.label,
+                                n: party.playerSlots.length,
+                              })}
                             >
                               P{party.label}
                             </span>
@@ -189,7 +212,7 @@ export function Scoreboard({
                         <div
                           className="max-w-44 truncate text-[0.7rem] text-muted-foreground"
                           title={[
-                            rank ? rankLabel(rank) : "Unranked",
+                            rank ? rankLabel(rank) : t("matches.scoreboard.unranked"),
                             heroName(hero, p.heroId),
                             p.hasScepter ? "Aghanim's Scepter" : null,
                             p.hasShard ? "Aghanim's Shard" : null,
@@ -205,7 +228,7 @@ export function Scoreboard({
                               {rankLabel(rank)}
                             </span>
                           ) : (
-                            "Unranked"
+                            t("matches.scoreboard.unranked")
                           )}
                           {" · "}
                           {heroName(hero, p.heroId)}
@@ -243,7 +266,7 @@ export function Scoreboard({
                     {p.backpack.some((b) => b !== null) && (
                       <div
                         className="mt-1 flex items-center gap-1 opacity-60"
-                        aria-label="Backpack"
+                        aria-label={t("matches.scoreboard.backpack")}
                       >
                         {p.backpack.map((id, i) => (
                           <ItemIcon key={i} itemId={id} items={items} size="sm" />

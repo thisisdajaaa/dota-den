@@ -1,6 +1,7 @@
+import { getT } from "@/common/i18n/server";
 import { logger } from "@/common/logging/logger";
 import { goalsService } from "@/modules/goals";
-import { describeGoal } from "@/modules/goals/domain/goals";
+import { goalLabel, goalStatusText } from "@/modules/goals/ui/goal-text";
 import { GoalsCard } from "@/modules/goals/ui/goals-card";
 import type { User } from "@/modules/identity";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
@@ -23,14 +24,21 @@ export async function GoalsSection({
       return null;
     });
   if (!view) return null;
+  const t = await getT();
   const name = (id: number) => heroName(heroes.get(id), id);
   const heroOptions = [...heroes.values()]
     .map((h) => ({ id: h.id, name: h.name }))
     .sort((a, b) => a.name.localeCompare(b.name));
   return (
     <GoalsCard
-      rows={view.thisWeek.map((r) => ({ ...r, label: describeGoal(r.goal, name) }))}
-      lastWeek={view.lastWeek.map((g) => ({ label: describeGoal(g.goal, name), met: g.met }))}
+      rows={view.thisWeek.map((r) => ({
+        goal: r.goal,
+        label: goalLabel(t, r.goal, name),
+        current: goalStatusText(t, r.status),
+        met: r.met,
+        fraction: r.fraction,
+      }))}
+      lastWeek={view.lastWeek.map((g) => ({ label: goalLabel(t, g.goal, name), met: g.met }))}
       heroes={heroOptions}
       daysLeft={view.daysLeft}
     />

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
+import { getT } from "@/common/i18n/server";
 import { formatAgo } from "@/modules/matches/ui/format";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import type { TrackedPlayersPage } from "../dtos/responses/follows.dto";
 import { displayName, PlayerAvatar } from "./player-avatar";
 import { TrackButton } from "./track-button";
 
-export function TrackedPlayers({
+export async function TrackedPlayers({
   data,
   limit,
   now,
@@ -18,18 +19,19 @@ export function TrackedPlayers({
   now: Date;
   pageHref: (page: number) => string;
 }) {
+  const t = await getT();
   return (
     <section className="panel overflow-hidden" aria-labelledby="tracked-players">
       <div className="flex items-baseline justify-between gap-3 p-5 pb-3">
         <div>
-          <p className="kicker">Your list</p>
+          <p className="kicker">{t("players.tracked.kicker")}</p>
           <h2 id="tracked-players" className="text-lg font-semibold">
-            Tracked players
+            {t("players.tracked.title")}
           </h2>
         </div>
         {data.total > 0 && (
           <span className="text-xs text-muted-foreground tabular-nums">
-            {data.total} of {limit}
+            {t("players.tracked.count", { total: data.total, limit })}
           </span>
         )}
       </div>
@@ -38,9 +40,9 @@ export function TrackedPlayers({
         <div className="flex items-start gap-3 border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground">
           <UserPlus aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
           <p>
-            You aren&apos;t tracking anyone yet. Search for a friend or a pro, open their profile
-            and press <span className="font-semibold text-foreground">Track</span>. They&apos;ll
-            show up here so you can check on them in one click.
+            {t("players.tracked.emptyBefore")}{" "}
+            <span className="font-semibold text-foreground">{t("players.track.track")}</span>
+            {t("players.tracked.emptyAfter")}
           </p>
         </div>
       ) : (
@@ -61,10 +63,10 @@ export function TrackedPlayers({
                       <span className="block text-xs text-muted-foreground">
                         {p.lastMatchAt ? (
                           <time dateTime={p.lastMatchAt.toISOString()}>
-                            Last match {formatAgo(p.lastMatchAt, now)}
+                            {t("players.tracked.lastMatch", { ago: formatAgo(p.lastMatchAt, now) })}
                           </time>
                         ) : (
-                          "No recent public matches"
+                          t("players.tracked.noRecent")
                         )}
                         {rank && <span className="sm:hidden"> · {rankLabel(rank)}</span>}
                       </span>
@@ -85,22 +87,22 @@ export function TrackedPlayers({
           </ul>
           {data.pageCount > 1 && (
             <nav
-              aria-label="Tracked players pages"
+              aria-label={t("players.tracked.pagesLabel")}
               className="flex items-center justify-between border-t border-white/[0.06] px-5 py-3 text-xs"
             >
               {data.page > 1 ? (
                 <Link href={pageHref(data.page - 1)} className="text-gold hover:underline">
-                  Newer
+                  {t("players.tracked.newer")}
                 </Link>
               ) : (
                 <span />
               )}
               <span className="text-muted-foreground">
-                Page {data.page} of {data.pageCount}
+                {t("players.tracked.pageOf", { page: data.page, count: data.pageCount })}
               </span>
               {data.page < data.pageCount ? (
                 <Link href={pageHref(data.page + 1)} className="text-gold hover:underline">
-                  Older
+                  {t("players.tracked.older")}
                 </Link>
               ) : (
                 <span />

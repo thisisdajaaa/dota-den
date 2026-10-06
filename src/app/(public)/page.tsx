@@ -17,51 +17,26 @@ import { matchesService } from "@/modules/matches";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { getCurrentUser } from "@/modules/identity";
 import { patchesService } from "@/modules/patches";
+import { getT } from "@/common/i18n/server";
 
-const AUTH_ERRORS: Record<string, string> = {
-  state_mismatch: "Your sign-in session expired or was started in another tab. Please try again.",
-  provider_unavailable: "Steam didn't respond. Please try again in a moment.",
-};
+const AUTH_ERRORS = ["state_mismatch", "provider_unavailable"] as const;
 
 const LOOP = [
-  { icon: BookOpenText, title: "Read the patch", body: "See which changes touch your hero pool." },
-  {
-    icon: Swords,
-    title: "Draft with friends",
-    body: "Practice Captain's Mode-style picks and bans.",
-  },
-  {
-    icon: ChartNoAxesColumn,
-    title: "Review together",
-    body: "Solo and party results, with sample sizes.",
-  },
-  {
-    icon: FlaskConical,
-    title: "Set the next experiment",
-    body: "Pick one thing to test next session.",
-  },
-];
+  { icon: BookOpenText, key: "patch" },
+  { icon: Swords, key: "draft" },
+  { icon: ChartNoAxesColumn, key: "review" },
+  { icon: FlaskConical, key: "experiment" },
+] as const;
 
 const FEATURES = [
-  {
-    icon: Users,
-    title: "Solo vs party, honestly",
-    body: "Every match is labelled solo, party or unknown, with its source. Missing data is never counted as solo.",
-  },
-  {
-    icon: BookOpenText,
-    title: "Patch hub",
-    body: "Official patch notes linked to their source, filtered to the heroes you actually play.",
-  },
-  {
-    icon: Swords,
-    title: "Draft practice",
-    body: "Pick/ban drills locally or with friends, with transparent reasons instead of fake win odds.",
-  },
-];
+  { icon: Users, key: "party" },
+  { icon: BookOpenText, key: "patches" },
+  { icon: Swords, key: "draft" },
+] as const;
 
 /** The newest official patch, straight from the patch hub (real data, never a mock). */
 async function LatestPatchCard() {
+  const t = await getT();
   await patchesService.ensureFresh();
   const [latest, heroes] = await Promise.all([
     patchesService.latest().catch(() => null),
@@ -75,23 +50,26 @@ async function LatestPatchCard() {
     <Link
       href={`/patches/${latest.version}`}
       className="panel group relative block w-full max-w-md p-6 transition-[transform,border-color] hover:-translate-y-1 hover:border-gold/30"
-      aria-label={`Latest patch ${latest.version}: read the notes`}
+      aria-label={t("home.patch.aria", { version: latest.version })}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-gold/10 blur-3xl"
       />
-      <p className="kicker">Latest patch</p>
+      <p className="kicker">{t("home.patch.kicker")}</p>
       <p className="mt-1 font-display text-5xl font-bold tracking-wide">{latest.version}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(
           latest.publishedAt,
         )}{" "}
-        · {latest.summary.heroesChanged} heroes and{" "}
-        {latest.summary.itemsChanged + latest.summary.neutralItemsChanged} items changed
+        ·{" "}
+        {t("home.patch.changed", {
+          heroes: latest.summary.heroesChanged,
+          items: latest.summary.itemsChanged + latest.summary.neutralItemsChanged,
+        })}
       </p>
       {changed.length > 0 && (
-        <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Some of the heroes changed">
+        <ul className="mt-5 flex flex-wrap gap-1.5" aria-label={t("home.patch.heroesAria")}>
           {changed.map((h) => (
             <li key={h.heroId} title={heroName(heroes.get(h.heroId), h.heroId)}>
               <HeroPortrait hero={heroes.get(h.heroId)} heroId={h.heroId} size="sm" />
@@ -100,7 +78,7 @@ async function LatestPatchCard() {
         </ul>
       )}
       <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-gold">
-        Read the patch notes{" "}
+        {t("home.patch.read")}{" "}
         <ArrowRight
           aria-hidden
           className="size-4 transition-transform group-hover:translate-x-0.5"
@@ -116,50 +94,50 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
   const signedOut = bye === "1";
   const authError = typeof auth_error === "string" ? auth_error : null;
   const signInRequired = authError === "signed_out";
+  const t = await getT();
+  const authErrorText = (AUTH_ERRORS as readonly string[]).includes(authError ?? "")
+    ? t(`home.authErrors.${authError as (typeof AUTH_ERRORS)[number]}`)
+    : t("home.authErrors.fallback");
 
   return (
     <div className="space-y-20">
       {deleted === "1" && (
         <Alert>
-          <AlertTitle>Your account was deleted</AlertTitle>
-          <AlertDescription>
-            Everything Dota Den kept about you has been removed. Thanks for trying it.
-          </AlertDescription>
+          <AlertTitle>{t("home.alerts.deletedTitle")}</AlertTitle>
+          <AlertDescription>{t("home.alerts.deletedBody")}</AlertDescription>
         </Alert>
       )}
       {signedOut && (
         <Alert>
-          <AlertTitle>You&apos;re signed out of Dota Den</AlertTitle>
+          <AlertTitle>{t("home.alerts.signedOutTitle")}</AlertTitle>
           <AlertDescription>
             <p>
-              Steam keeps you signed in on its own site, so signing in here again uses the same
-              Steam account. To switch accounts, sign out of Steam first:{" "}
+              {t("home.alerts.signedOutBefore")}
               <a
                 href="https://steamcommunity.com/"
                 target="_blank"
                 rel="noreferrer"
                 className="text-gold underline-offset-2 hover:underline"
               >
-                open Steam Community
+                {t("home.alerts.signedOutLink")}
               </a>
-              , click your account name at the top right and choose <strong>Sign out</strong>. Then
-              come back and sign in with the other account.
+              {t("home.alerts.signedOutMiddle")}
+              <strong>{t("home.alerts.signedOutSteamButton")}</strong>
+              {t("home.alerts.signedOutAfter")}
             </p>
           </AlertDescription>
         </Alert>
       )}
       {signInRequired && (
         <Alert>
-          <AlertTitle>Sign in required</AlertTitle>
-          <AlertDescription>Sign in through Steam to view that page.</AlertDescription>
+          <AlertTitle>{t("home.alerts.signInRequiredTitle")}</AlertTitle>
+          <AlertDescription>{t("home.alerts.signInRequiredBody")}</AlertDescription>
         </Alert>
       )}
       {authError && !signInRequired && (
         <Alert variant="destructive">
-          <AlertTitle>Sign-in failed</AlertTitle>
-          <AlertDescription>
-            {AUTH_ERRORS[authError] ?? "We couldn't verify your Steam sign-in. Please try again."}
-          </AlertDescription>
+          <AlertTitle>{t("home.alerts.signInFailedTitle")}</AlertTitle>
+          <AlertDescription>{authErrorText}</AlertDescription>
         </Alert>
       )}
 
@@ -169,18 +147,15 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
           className="pointer-events-none absolute -top-40 left-1/4 -z-10 size-[36rem] rounded-full bg-gold/10 blur-[120px]"
         />
         <div className="space-y-6">
-          <p className="kicker">Unofficial Dota 2 companion</p>
+          <p className="kicker">{t("home.hero.kicker")}</p>
           <h1 className="font-display text-4xl leading-[1.1] font-bold tracking-wide sm:text-5xl lg:text-6xl">
-            Climb with{" "}
+            {t("home.hero.titleBefore")}
             <span className="bg-gradient-to-r from-gold to-[oklch(0.75_0.17_50)] bg-clip-text text-transparent">
-              clarity
+              {t("home.hero.titleHighlight")}
             </span>
-            , not guesswork.
+            {t("home.hero.titleAfter")}
           </h1>
-          <p className="max-w-xl text-lg text-muted-foreground">
-            See how you really play solo versus with your stack, what each patch changed for your
-            heroes, and practice drafts before the game that counts.
-          </p>
+          <p className="max-w-xl text-lg text-muted-foreground">{t("home.hero.body")}</p>
           <div className="flex flex-wrap items-center gap-4">
             <Button
               asChild
@@ -189,12 +164,10 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
             >
               <a href="/api/v1/auth/steam/login">
                 <SteamIcon className="size-4" />
-                Sign in through Steam
+                {t("home.hero.signIn")}
               </a>
             </Button>
-            <span className="text-xs text-muted-foreground">
-              We never see your password. Your data stays private by default.
-            </span>
+            <span className="text-xs text-muted-foreground">{t("home.hero.privacy")}</span>
           </div>
         </div>
         <div className="flex justify-center lg:justify-end">
@@ -206,22 +179,24 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
 
       <section aria-labelledby="loop" className="space-y-6">
         <div>
-          <p className="kicker">The loop</p>
+          <p className="kicker">{t("home.loop.kicker")}</p>
           <h2 id="loop" className="text-2xl font-semibold">
-            From patch day to your next session
+            {t("home.loop.title")}
           </h2>
         </div>
         <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {LOOP.map((step, i) => (
-            <li key={step.title} className="panel p-5">
+            <li key={step.key} className="panel p-5">
               <div className="mb-4 flex items-center justify-between">
                 <span className="grid size-10 place-items-center rounded-lg bg-gold/10 text-gold ring-1 ring-gold/25">
                   <step.icon aria-hidden className="size-5" />
                 </span>
                 <span className="font-display text-2xl font-bold text-white/10">{i + 1}</span>
               </div>
-              <h3 className="font-semibold">{step.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
+              <h3 className="font-semibold">{t(`home.loop.${step.key}.title`)}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t(`home.loop.${step.key}.body`)}
+              </p>
             </li>
           ))}
         </ol>
@@ -229,13 +204,15 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
 
       <section aria-labelledby="features" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <h2 id="features" className="sr-only">
-          Features
+          {t("home.features.title")}
         </h2>
         {FEATURES.map((f) => (
-          <article key={f.title} className="panel p-6">
+          <article key={f.key} className="panel p-6">
             <f.icon aria-hidden className="mb-4 size-6 text-gold" />
-            <h3 className="font-semibold">{f.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+            <h3 className="font-semibold">{t(`home.features.${f.key}.title`)}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {t(`home.features.${f.key}.body`)}
+            </p>
           </article>
         ))}
       </section>

@@ -1,3 +1,4 @@
+import { getT } from "@/common/i18n/server";
 import { SegmentedLinks } from "@/components/segmented-links";
 import type { DashboardFilter } from "../matches.ports";
 
@@ -10,30 +11,36 @@ function href(filter: DashboardFilter): string {
 }
 
 /** One filter row scoping everything below it. */
-export function DashboardFilters({
+export async function DashboardFilters({
   filter,
   latestPatch,
 }: {
   filter: DashboardFilter;
   latestPatch: string | null;
 }) {
+  const t = await getT();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <SegmentedLinks
-        label="Time range"
+        label={t("matches.filters.timeRange")}
         options={[
-          { value: "all", label: "All imported" },
-          { value: "patch", label: latestPatch ? `Patch ${latestPatch}` : "Current patch" },
-          { value: "30d", label: "Last 30 days" },
+          { value: "all", label: t("matches.filters.allImported") },
+          {
+            value: "patch",
+            label: latestPatch
+              ? t("matches.filters.patch", { version: latestPatch })
+              : t("matches.filters.currentPatch"),
+          },
+          { value: "30d", label: t("matches.filters.last30") },
         ]}
         active={filter.range}
         href={(range) => href({ ...filter, range })}
       />
       <SegmentedLinks
-        label="Game type"
+        label={t("matches.filters.gameType")}
         options={[
-          { value: "all", label: "All games" },
-          { value: "ranked", label: "Ranked only" },
+          { value: "all", label: t("matches.filters.allGames") },
+          { value: "ranked", label: t("matches.filters.rankedOnly") },
         ]}
         active={filter.mode}
         href={(mode) => href({ ...filter, mode })}

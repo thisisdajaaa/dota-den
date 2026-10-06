@@ -10,6 +10,6 @@ export interface SavedGoalsDto {
 export interface WeeklyGoalsViewDto {
   week: string;
   daysLeft: number;
-  thisWeek: Array<Pick<GoalProgress, "goal" | "current" | "met" | "fraction">>;
+  thisWeek: Array<Pick<GoalProgress, "goal" | "current" | "status" | "met" | "fraction">>;
   lastWeek: Array<{ goal: Goal; met: boolean }>;
 }

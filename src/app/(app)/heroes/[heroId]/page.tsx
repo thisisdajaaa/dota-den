@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import { heroesService, type HeroesService } from "@/modules/heroes";
 import { buildVsPros } from "@/modules/heroes/domain/build-vs-pros";
@@ -13,7 +15,6 @@ import {
   HighRankCard,
   ItemsCard,
   MatchupsCard,
-  countOf,
   TrendCard,
   Unavailable,
   unavailableCopy,
@@ -25,7 +26,7 @@ import { getViewerTimeZone } from "@/common/http/request-context";
 import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
 import { matchesService, matchQueries } from "@/modules/matches";
-import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
+import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
 import { MetaSection, SectionSkeleton } from "@/modules/meta/ui/meta-section";
@@ -42,10 +43,11 @@ function parseHeroId(raw: string): number | null {
 export async function generateMetadata({
   params,
 }: PageProps<"/heroes/[heroId]">): Promise<Metadata> {
+  const t = await getT();
   const heroId = parseHeroId((await params).heroId);
-  if (heroId === null) return { title: "Hero not found" };
+  if (heroId === null) return { title: t("heroes.detail.notFoundTitle") };
   const hero = (await matchesService.heroMap()).get(heroId);
-  return { title: `You on ${heroName(hero, heroId)}` };
+  return { title: t("heroes.detail.title", { name: heroName(hero, heroId) }) };
 }
 
 /** Await a section's data; a thrown error becomes a failed result (logged), never a crash. */
@@ -66,6 +68,7 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
   if (!user) return null;
   const heroId = parseHeroId((await params).heroId);
   if (heroId === null) notFound();
+  const t = await getT();
 
   const service = heroesService;
   const queries = matchQueries;
@@ -84,12 +87,10 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
         <BackLink />
         <HeroBanner hero={hero} heroId={heroId} games={0} />
         <section className="panel space-y-2 p-6 text-sm">
-          <h2 className="text-lg font-semibold">No games on {name} yet</h2>
-          <p className="text-muted-foreground">
-            None of your imported matches are on {name}. Play a few and they&apos;ll show up here.
-          </p>
+          <h2 className="text-lg font-semibold">{t("heroes.detail.noGamesTitle", { name })}</h2>
+          <p className="text-muted-foreground">{t("heroes.detail.noGamesBody", { name })}</p>
         </section>
-        <Suspense fallback={<SectionSkeleton label="Loading public win rate" rows={1} />}>
+        <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingPublic")} rows={1} />}>
           <HighRankSection service={service} heroId={heroId} record={record} name={name} />
         </Suspense>
       </div>
@@ -110,9 +111,12 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
       <BackLink />
       <HeroBanner hero={hero} heroId={heroId} games={record.games} />
 
-      <section aria-label="Your record" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section
+        aria-label={t("heroes.detail.recordLabel")}
+        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+      >
         <StatTile
-          label="Win rate"
+          label={t("heroes.detail.winRate")}
           value={formatPercent(record.winRate)}
           meter={record.winRate}
           tone={
@@ -122,21 +126,27 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
                 ? "win"
                 : "loss"
           }
-          detail={`${plural(record.wins, "win")} · ${plural(record.losses, "loss")}${record.lowSample ? " · too few to judge" : ""}`}
+          detail={`${plural(t, "heroes.counts.wins", record.wins)} · ${plural(t, "heroes.counts.losses", record.losses)}${record.lowSample ? ` · ${t("heroes.tooFewToJudge")}` : ""}`}
         />
         <StatTile
-          label="Games"
+          label={t("heroes.detail.games")}
           value={record.games.toLocaleString("en-US")}
           detail={
-            record.lastPlayed ? `Last played ${formatAgo(record.lastPlayed, now)}` : undefined
+            record.lastPlayed
+              ? t("heroes.detail.lastPlayed", { ago: formatAgo(record.lastPlayed, now) })
+              : undefined
           }
         />
         <StatTile
-          label="KDA ratio"
+          label={t("heroes.detail.kda")}
           value={record.kda !== null ? record.kda.toFixed(2) : "—"}
           detail={
             record.averages
-              ? `Avg ${record.averages.kills.toFixed(1)} kills · ${record.averages.deaths.toFixed(1)} deaths · ${record.averages.assists.toFixed(1)} assists`
+              ? t("heroes.detail.averages", {
+                  kills: record.averages.kills.toFixed(1),
+                  deaths: record.averages.deaths.toFixed(1),
+                  assists: record.averages.assists.toFixed(1),
+                })
               : undefined
           }
         />
@@ -148,10 +158,12 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
           <TrendCard trend={trend} heroLabel={name} />
-          <Suspense fallback={<SectionSkeleton label="Loading your progress" rows={4} />}>
+          <Suspense
+            fallback={<SectionSkeleton label={t("heroes.detail.loadingProgress")} rows={4} />}
+          >
             <ProgressSection details={details} name={name} />
           </Suspense>
-          <Suspense fallback={<SectionSkeleton label="Loading items" rows={4} />}>
+          <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingItems")} rows={4} />}>
             <ItemsSection details={details} name={name} />
           </Suspense>
           <Suspense fallback={null}>
@@ -159,13 +171,15 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
           </Suspense>
         </div>
         <div className="lg:col-span-2">
-          <Suspense fallback={<SectionSkeleton label="Loading public win rate" rows={1} />}>
+          <Suspense
+            fallback={<SectionSkeleton label={t("heroes.detail.loadingPublic")} rows={1} />}
+          >
             <HighRankSection service={service} heroId={heroId} record={record} name={name} />
           </Suspense>
         </div>
       </div>
 
-      <Suspense fallback={<SectionSkeleton label="Loading matchups" rows={5} />}>
+      <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingMatchups")} rows={5} />}>
         <MatchupsSection
           service={service}
           accountId32={user.accountId32}
@@ -178,13 +192,15 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
       <section className="panel overflow-hidden" aria-labelledby="hero-recent-matches">
         <div className="flex items-baseline justify-between p-5 pb-3">
           <div>
-            <p className="kicker">Match history</p>
+            <p className="kicker">{t("heroes.detail.matchHistory")}</p>
             <h2 id="hero-recent-matches" className="text-lg font-semibold">
-              Recent matches on {name}
+              {t("heroes.detail.recentOn", { name })}
             </h2>
           </div>
           <Link href={`/matches?hero=${heroId}`} className="text-xs text-gold hover:underline">
-            View all {countOf(recent.record.games, "match", "matches")}
+            {t("heroes.detail.viewAll", {
+              matches: plural(t, "heroes.counts.matches", recent.record.games),
+            })}
           </Link>
         </div>
         <MatchRows matches={recent.items} heroes={heroes} now={now} />
@@ -193,14 +209,15 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
   );
 }
 
-function BackLink() {
+async function BackLink() {
+  const t = await getT();
   return (
     <Link
       href="/heroes"
       className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft aria-hidden className="size-4" />
-      All heroes
+      {t("heroes.detail.back")}
     </Link>
   );
 }
@@ -208,13 +225,13 @@ function BackLink() {
 type DetailsResult = ReturnType<typeof settle<Awaited<ReturnType<HeroesService["details"]>>>>;
 
 async function FarmTile({ details }: { details: DetailsResult }) {
-  const res = await details;
+  const [res, t] = await Promise.all([details, getT()]);
   if (!res.ok || !res.value.gpm)
     return (
       <StatTile
         label="GPM / XPM"
         value="—"
-        detail={res.ok ? "No farm data for this hero yet" : "Unavailable right now"}
+        detail={res.ok ? t("heroes.detail.noFarm") : t("heroes.detail.farmUnavailable")}
       />
     );
   const { gpm, xpm } = res.value;
@@ -222,7 +239,9 @@ async function FarmTile({ details }: { details: DetailsResult }) {
     <StatTile
       label="GPM / XPM"
       value={`${Math.round(gpm.average)} / ${xpm ? Math.round(xpm.average) : "—"}`}
-      detail={`Average over your last ${plural(gpm.games, "game")} on this hero`}
+      detail={t("heroes.detail.farmDetail", {
+        games: plural(t, "heroes.counts.games", gpm.games),
+      })}
     />
   );
 }
@@ -239,16 +258,22 @@ async function HighRankSection({
   name: string;
 }) {
   const res = await settle(service.highRank(heroId, record), "high_rank");
-  if (!res.ok)
+  if (!res.ok) {
+    const t = await getT();
     return (
-      <MetaSection id="hero-high-rank" kicker="Public games" title="High-rank win rate">
+      <MetaSection
+        id="hero-high-rank"
+        kicker={t("heroes.highRank.kicker")}
+        title={t("heroes.highRank.title")}
+      >
         <Unavailable>
           {res.error.type === "not_found"
-            ? `No public high-rank games on ${name} to compare with.`
-            : unavailableCopy(res.error, "public hero stats")}
+            ? t("heroes.highRank.none", { name })
+            : unavailableCopy(res.error, "public hero stats", t)}
         </Unavailable>
       </MetaSection>
     );
+  }
   return <HighRankCard comparison={res.value} heroLabel={name} yourGames={record.games} />;
 }
 
@@ -288,12 +313,18 @@ async function ItemsSection({ details, name }: { details: DetailsResult; name: s
     details,
     matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
   ]);
-  if (!res.ok)
+  if (!res.ok) {
+    const t = await getT();
     return (
-      <MetaSection id="hero-items" kicker="Items" title="Your most-bought items">
-        <Unavailable>{unavailableCopy(res.error, "item data")}</Unavailable>
+      <MetaSection
+        id="hero-items"
+        kicker={t("heroes.items.kicker")}
+        title={t("heroes.items.title")}
+      >
+        <Unavailable>{unavailableCopy(res.error, "item data", t)}</Unavailable>
       </MetaSection>
     );
+  }
   const byKey = new Map([...items.values()].map((i) => [i.key, i]));
   return <ItemsCard details={res.value} items={byKey} heroLabel={name} />;
 }
@@ -312,15 +343,17 @@ async function MatchupsSection({
   name: string;
 }) {
   const res = await settle(service.matchups(accountId32, heroId), "matchups");
-  if (!res.ok)
+  if (!res.ok) {
+    const t = await getT();
     return (
       <MetaSection
         id="hero-matchups"
-        kicker="Matchups"
-        title={`Who you beat and lose to on ${name}`}
+        kicker={t("heroes.matchups.kicker")}
+        title={t("heroes.matchups.title", { hero: name })}
       >
-        <Unavailable>{unavailableCopy(res.error, "matchups")}</Unavailable>
+        <Unavailable>{unavailableCopy(res.error, "matchups", t)}</Unavailable>
       </MetaSection>
     );
+  }
   return <MatchupsCard view={res.value} heroes={heroes} heroLabel={name} />;
 }

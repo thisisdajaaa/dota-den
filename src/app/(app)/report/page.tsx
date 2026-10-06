@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
@@ -28,14 +29,14 @@ import {
 } from "@/modules/report/ui/report-sections";
 import { addDays } from "@/common/time/day-key";
 
-export const metadata: Metadata = { title: "Battle report" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("report.title") };
+}
 
 const MIN_ROLE_GAMES = 5;
-const TABS = [
-  { value: "overview", label: "Overview" },
-  { value: "heroes", label: "Heroes" },
-] as const;
-type Tab = (typeof TABS)[number]["value"];
+const TABS = ["overview", "heroes"] as const;
+type Tab = (typeof TABS)[number];
 
 const signed = (v: number) =>
   `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toLocaleString("en-US")}`;
@@ -45,7 +46,11 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
   const user = await getCurrentUser();
   if (!user) return null;
   const params = await searchParams;
-  const [{ timeZone }, heroes] = await Promise.all([getViewerTimeZone(), matchesService.heroMap()]);
+  const [{ timeZone }, heroes, t] = await Promise.all([
+    getViewerTimeZone(),
+    matchesService.heroMap(),
+    getT(),
+  ]);
   const today = dayKeyFormatter(timeZone)(new Date());
   const range = parseReportRange(
     { days: one(params.days), from: one(params.from), to: one(params.to) },
@@ -84,20 +89,23 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Battle report"
-        title="Your battle report"
+        kicker={t("report.title")}
+        title={t("report.heading")}
         description={
           view
-            ? `${fmt(view.from)} to ${fmt(view.to)}: all your public games, from OpenDota.`
-            : "Your games over a period, from OpenDota."
+            ? t("report.description", { from: fmt(view.from), to: fmt(view.to) })
+            : t("report.descriptionFallback")
         }
       />
       <div className="flex flex-wrap items-end gap-3">
         <SegmentedLinks
-          label="Period"
+          label={t("report.period")}
           options={[
-            ...REPORT_PERIODS.map((d) => ({ value: String(d), label: `Last ${d} days` })),
-            ...(range.preset ? [] : [{ value: "custom", label: "Custom" }]),
+            ...REPORT_PERIODS.map((d) => ({
+              value: String(d),
+              label: t("report.lastDays", { n: d }),
+            })),
+            ...(range.preset ? [] : [{ value: "custom", label: t("report.custom") }]),
           ]}
           active={range.preset ? String(range.preset) : "custom"}
           href={(v) => href({ ...(v === "90" || v === "custom" ? {} : { days: v }), ...tabQuery })}
@@ -106,11 +114,11 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
           method="get"
           action="/report"
           className="flex flex-wrap items-end gap-2"
-          aria-label="Custom range"
+          aria-label={t("report.customRange")}
         >
           {tab !== "overview" && <input type="hidden" name="tab" value={tab} />}
           <label className="grid gap-1 text-xs text-muted-foreground">
-            From
+            {t("report.from")}
             <input
               type="date"
               name="from"
@@ -122,7 +130,7 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
             />
           </label>
           <label className="grid gap-1 text-xs text-muted-foreground">
-            To
+            {t("report.to")}
             <input
               type="date"
               name="to"
@@ -133,51 +141,58 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
             />
           </label>
           <Button type="submit" variant="outline" size="sm">
-            Show range
+            {t("report.showRange")}
           </Button>
         </form>
       </div>
       <p className="-mt-3 text-xs text-muted-foreground">
-        Custom ranges cover up to {MAX_RANGE_DAYS} days within the last two years.
+        {t("report.rangeHelp", { max: MAX_RANGE_DAYS })}
       </p>
       <SegmentedLinks
-        label="Report sections"
-        options={TABS}
+        label={t("report.sections")}
+        options={TABS.map((value) => ({ value, label: t(`report.tabs.${value}`) }))}
         active={tab}
         href={(v) => href({ ...rangeQuery, ...(v === "overview" ? {} : { tab: v }) })}
       />
 
       {!view ? (
         <p role="alert" className="panel p-5 text-sm text-muted-foreground">
-          The report is unavailable right now (OpenDota didn&apos;t answer). Try again in a minute.
+          {t("report.unavailable")}
         </p>
       ) : view.report.games === 0 ? (
         <p className="panel p-5 text-sm text-muted-foreground">
-          No public games between {fmt(view.from)} and {fmt(view.to)}.
+          {t("report.noGames", { from: fmt(view.from), to: fmt(view.to) })}
         </p>
       ) : tab === "heroes" ? (
         <HeroTable rows={view.report.heroes} heroes={heroes} />
       ) : (
         <>
-          <section aria-label="Overview" className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+          <section
+            aria-label={t("report.tabs.overview")}
+            className="grid grid-cols-2 gap-3 lg:grid-cols-6"
+          >
             <StatTile
-              label="Games played"
+              label={t("report.tiles.games")}
               value={view.report.games.toLocaleString("en-US")}
               detail={`${view.report.wins}–${view.report.games - view.report.wins} · ${formatPercent(view.report.wins / view.report.games)}`}
             />
-            <StatTile label="Heroes played" value={String(view.report.heroesPlayed)} />
+            <StatTile label={t("report.tiles.heroes")} value={String(view.report.heroesPlayed)} />
             <StatTile
-              label="Average game"
+              label={t("report.tiles.avgGame")}
               value={view.report.avgDurationSec ? formatDuration(view.report.avgDurationSec) : "—"}
             />
-            <StatTile label="Max win streak" value={String(view.report.maxWinStreak)} tone="win" />
             <StatTile
-              label="Max loss streak"
+              label={t("report.tiles.maxWinStreak")}
+              value={String(view.report.maxWinStreak)}
+              tone="win"
+            />
+            <StatTile
+              label={t("report.tiles.maxLossStreak")}
               value={String(view.report.maxLossStreak)}
               tone="loss"
             />
             <StatTile
-              label="Ranked MMR change"
+              label={t("report.tiles.mmr")}
               value={
                 view.mmrExact !== null
                   ? signed(view.mmrExact)
@@ -187,10 +202,10 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
               }
               detail={
                 view.mmrExact !== null
-                  ? "Exact, from your MMR entries"
+                  ? t("report.tiles.mmrExact")
                   : view.rankedGames > 0
-                    ? "Estimate: ±25 per ranked game"
-                    : "No ranked games"
+                    ? t("report.tiles.mmrEstimate")
+                    : t("report.tiles.noRanked")
               }
             />
           </section>

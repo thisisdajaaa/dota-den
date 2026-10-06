@@ -4,6 +4,9 @@ import { Suspense } from "react";
 import { AlertTriangle, Info, SearchX, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
 import type { TrackedPlayersPage } from "@/modules/players";
@@ -15,24 +18,27 @@ import { SearchResults } from "@/modules/players/ui/search-results";
 import { TrackedPlayers } from "@/modules/players/ui/tracked-players";
 import { ownerOf, playersService } from "@/modules/players";
 
-export const metadata: Metadata = { title: "Players" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("players.page.title") };
+}
 
-const LOOKUP_ERRORS: Record<LookupError["type"], string> = {
-  empty: "Type a name, account ID or profile link to search.",
-  too_short: "Type at least 2 characters to search by name.",
-  too_long: "That's too long for a player name. Names are at most 64 characters.",
-};
+const LOOKUP_ERRORS = {
+  empty: "lookupEmpty",
+  too_short: "lookupTooShort",
+  too_long: "lookupTooLong",
+} as const satisfies Record<LookupError["type"], string>;
 
-function searchErrorCopy(error: ProviderError): string {
-  if (error.type === "rate_limited")
-    return "OpenDota is getting a lot of requests right now. Try again in a minute.";
+function searchErrorCopy(t: Translator<Messages>, error: ProviderError): string {
+  if (error.type === "rate_limited") return t("players.page.searchBusy");
   if (error.type === "unavailable" && error.cause === "TimeoutError")
-    return "OpenDota's player search is slow right now. Try again (it's often quicker the second time), or paste an account ID or profile link to go straight to the profile.";
-  return "Player search is unavailable right now. Try again shortly, or paste an account ID or profile link instead.";
+    return t("players.page.searchSlow");
+  return t("players.page.searchUnavailable");
 }
 
 export default async function PlayersPage({ searchParams }: PageProps<"/players">) {
   const params = await searchParams;
+  const t = await getT();
   const q = typeof params.q === "string" ? params.q.slice(0, 200) : "";
   const pageParam = typeof params.page === "string" ? Number.parseInt(params.page, 10) : 1;
   const trackedPage = Number.isSafeInteger(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -64,22 +70,22 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Community"
-        title="Players"
-        description="Look up any Dota 2 player with public match data: their record, favourite heroes and who they queue with."
+        kicker={t("players.page.kicker")}
+        title={t("players.page.title")}
+        description={t("players.page.description")}
       />
 
       <PlayerSearchForm defaultValue={q} />
 
       {lookup && !lookup.ok && (
         <Notice icon="info" role="status">
-          {LOOKUP_ERRORS[lookup.error.type]}
+          {t(`players.page.${LOOKUP_ERRORS[lookup.error.type]}`)}
         </Notice>
       )}
 
       {tracked === "error" ? (
         <Notice icon="alert" role="alert">
-          Couldn&apos;t load your tracked players right now. Try again shortly.
+          {t("players.page.trackedError")}
         </Notice>
       ) : (
         tracked && (
@@ -94,15 +100,13 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
 
       {nameLookup?.vanity && (
         <Notice icon="info" role="status">
-          Steam custom profile links can&apos;t be looked up directly, so we searched for the name “
-          {nameLookup.q}” instead. For an exact match, paste a link with the number in it
-          (steamcommunity.com/profiles/…) or the account ID.
+          {t("players.page.vanity", { q: nameLookup.q })}
         </Notice>
       )}
 
       {nameLookup && (
         // OpenDota's search can take seconds: show the page now and the results when ready.
-        <Suspense key={nameLookup.q} fallback={<SearchingSkeleton q={nameLookup.q} />}>
+        <Suspense key={nameLookup.q} fallback={<SearchingSkeleton t={t} q={nameLookup.q} />}>
           <SearchSection q={nameLookup.q} now={now} />
         </Suspense>
       )}
@@ -110,10 +114,7 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
       {!q.trim() && !viewer && (
         <section className="panel flex items-start gap-3 p-5 text-sm text-muted-foreground">
           <Users aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
-          <p>
-            Search by name to see matching players, or paste an account ID or profile link to jump
-            straight to their profile. Sign in to keep a list of players you track.
-          </p>
+          <p>{t("players.page.intro")}</p>
         </section>
       )}
     </div>
@@ -144,13 +145,13 @@ function Notice({
 }
 
 async function SearchSection({ q, now }: { q: string; now: Date }) {
-  const search = await playersService.search(q);
+  const [search, t] = await Promise.all([playersService.search(q), getT()]);
   if (!search.ok) {
     return (
       <Notice icon="alert" role="alert">
-        {searchErrorCopy(search.error)}{" "}
+        {searchErrorCopy(t, search.error)}{" "}
         <a href={`/players?q=${encodeURIComponent(q)}`} className="text-gold hover:underline">
-          Try again
+          {t("players.page.tryAgain")}
         </a>
       </Notice>
     );
@@ -159,22 +160,23 @@ async function SearchSection({ q, now }: { q: string; now: Date }) {
     return (
       <section className="panel grid place-items-center gap-3 px-6 py-12 text-center" role="status">
         <SearchX aria-hidden className="size-8 text-muted-foreground" />
-        <h2 className="text-lg font-semibold">No players found for “{q}”</h2>
-        <p className="max-w-md text-sm text-muted-foreground">
-          Check the spelling, or paste their account ID or a Steam, Dotabuff or OpenDota profile
-          link instead. Only players with public match data can be found.
-        </p>
+        <h2 className="text-lg font-semibold">{t("players.page.noResultsTitle", { q })}</h2>
+        <p className="max-w-md text-sm text-muted-foreground">{t("players.page.noResultsBody")}</p>
       </section>
     );
   }
   return <SearchResults q={q} hits={search.value} now={now} />;
 }
 
-function SearchingSkeleton({ q }: { q: string }) {
+function SearchingSkeleton({ t, q }: { t: Translator<Messages>; q: string }) {
   return (
-    <section className="panel space-y-3 p-5" aria-busy aria-label="Searching">
+    <section
+      className="panel space-y-3 p-5"
+      aria-busy
+      aria-label={t("players.page.searchingLabel")}
+    >
       <p role="status" className="text-sm text-muted-foreground">
-        Searching OpenDota for “{q}”… this can take a few seconds.
+        {t("players.page.searching", { q })}
       </p>
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="flex items-center gap-3">

@@ -1,8 +1,10 @@
+import { getT } from "@/common/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function TogetherLoading() {
+export default async function TogetherLoading() {
+  const t = await getT();
   return (
-    <div className="space-y-6" aria-busy aria-label="Loading your friends">
+    <div className="space-y-6" aria-busy aria-label={t("together.page.loading")}>
       <div className="space-y-3">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-9 w-64" />

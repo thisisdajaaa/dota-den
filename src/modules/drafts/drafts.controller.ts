@@ -106,12 +106,14 @@ export class DraftsController {
       return ServiceResponse.success({
         action: res.value.action,
         situation: res.value.situation,
+        situationPhrase: res.value.situationPhrase,
         candidates: res.value.candidates.map((c) => ({
           heroId: c.heroId,
           name: c.name,
           role: c.role,
           position: c.position,
           facts: c.facts,
+          factPhrases: c.factPhrases,
         })),
       });
     },

@@ -86,7 +86,14 @@ describe("compositionFeedback", () => {
     for (const team of [[LION, TIDE, JUGG, SHAMAN, AXE], [PA, AM, SLARK, TROLL, JUGG], [LION]]) {
       for (const f of compositionFeedback(team)) {
         expect(f.reason).not.toMatch(/%|win|probab|chance/i);
-        expect(Object.keys(f).sort()).toEqual(["category", "confidence", "level", "reason"]);
+        expect(Object.keys(f).sort()).toEqual([
+          "category",
+          "confidence",
+          "level",
+          "phrase",
+          "reason",
+        ]);
+        expect(JSON.stringify(f.phrase)).not.toMatch(/%|probab|chance/i);
         expect(["low", "medium"]).toContain(f.confidence);
       }
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useT } from "@/common/i18n/client";
 import { useReportError } from "@/components/report-error";
 
 /** Last resort when the root layout itself fails: its own document, so styles are inline. */
@@ -10,9 +11,11 @@ export default function GlobalError({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   useReportError(error);
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body
         style={{
           margin: 0,
@@ -26,12 +29,10 @@ export default function GlobalError({
           padding: 24,
         }}
       >
-        <title>Something went wrong · Dota Den</title>
+        <title>{t("system.error.pageTitle")}</title>
         <div>
-          <h1 style={{ fontSize: 20, margin: "0 0 8px" }}>Something went wrong</h1>
-          <p style={{ color: "#a89f93", margin: "0 0 16px" }}>
-            This is on our side, and we&apos;ve been told about it.
-          </p>
+          <h1 style={{ fontSize: 20, margin: "0 0 8px" }}>{t("system.error.title")}</h1>
+          <p style={{ color: "#a89f93", margin: "0 0 16px" }}>{t("system.error.globalBody")}</p>
           <button
             type="button"
             onClick={() => retry()}
@@ -45,7 +46,7 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            Try again
+            {t("system.error.retry")}
           </button>
         </div>
       </body>

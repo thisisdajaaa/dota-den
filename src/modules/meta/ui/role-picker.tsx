@@ -1,29 +1,32 @@
 import Link from "next/link";
 import { SegmentedLinks } from "@/components/segmented-links";
+import { getT } from "@/common/i18n/server";
 import { POSITIONS, POSITION_INFO, type Position } from "../domain/position";
 
 export const metaHref = (p: Position) => `/meta?pos=${p}`;
 
 /** Tabs to switch position; the user's own position is marked. */
-export function RoleTabs({ active, yours }: { active: Position; yours: Position | null }) {
+export async function RoleTabs({ active, yours }: { active: Position; yours: Position | null }) {
+  const t = await getT();
   return (
     <SegmentedLinks
-      label="Position"
+      label={t("meta.roles.tabsLabel")}
       active={String(active)}
       href={(v) => metaHref(Number(v) as Position)}
       options={POSITIONS.map((p) => ({
         value: String(p),
-        label: `${POSITION_INFO[p].short} · ${POSITION_INFO[p].name}${p === yours ? " (you)" : ""}`,
+        label: `${POSITION_INFO[p].short} · ${POSITION_INFO[p].name}${p === yours ? ` ${t("meta.roles.you")}` : ""}`,
       }))}
     />
   );
 }
 
 /** Big role picker for when we don't know the position yet. */
-export function RolePicker() {
+export async function RolePicker() {
+  const t = await getT();
   return (
     <nav
-      aria-label="Choose your role"
+      aria-label={t("meta.roles.chooseRole")}
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
     >
       {POSITIONS.map((p) => {
@@ -37,7 +40,8 @@ export function RolePicker() {
             <span className="font-display text-2xl font-bold text-gold">{p}</span>
             <span className="font-medium group-hover:text-gold">{info.name}</span>
             <span className="text-xs text-muted-foreground">
-              {info.side === "core" ? "Core" : "Support"}, {info.laneName}
+              {info.side === "core" ? t("meta.roles.core") : t("meta.roles.support")},{" "}
+              {info.laneName}
             </span>
           </Link>
         );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, Eye, History, Puzzle, Users } from "lucide-react";
+import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { matchesService } from "@/modules/matches";
@@ -11,16 +12,19 @@ import { FeedbackPanel } from "@/modules/drafts/ui/feedback-panel";
 import { getCurrentUser } from "@/modules/identity";
 import { SequenceStrip } from "@/modules/drafts/ui/sequence-strip";
 import { TeamPanel } from "@/modules/drafts/ui/team-panel";
+import { rulesetName } from "@/modules/drafts/ui/i18n";
 import type { DraftHero } from "@/modules/drafts/ui/types";
 
 export async function generateMetadata({ searchParams }: PageProps<"/draft">): Promise<Metadata> {
   const { snapshot } = await searchParams;
-  if (typeof snapshot !== "string" || snapshot.length > 2_000) return { title: "Draft practice" };
+  const t = await getT();
+  if (typeof snapshot !== "string" || snapshot.length > 2_000)
+    return { title: t("drafts.pages.metaTitle") };
   // Shared drafts get a preview image with both lineups and the report card.
   const image = `/api/og/draft?snapshot=${encodeURIComponent(snapshot)}`;
   return {
-    title: "Shared draft",
-    description: "A Captain's Mode draft on Dota Den, with its report card and outlook.",
+    title: t("drafts.pages.sharedTitle"),
+    description: t("drafts.pages.sharedDescription"),
     openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", images: [image] },
   };
@@ -28,6 +32,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/draft">): P
 
 export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
   const { snapshot } = await searchParams;
+  const t = await getT();
   const [heroMap, user] = await Promise.all([
     matchesService.heroMap(),
     // Only decides whether finished drafts are saved; an outage just skips that.
@@ -49,9 +54,9 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
     return (
       <section className="panel grid place-items-center gap-3 px-6 py-16 text-center" role="alert">
         <AlertTriangle aria-hidden className="size-8 text-gold" />
-        <h1 className="text-lg font-semibold">Hero list unavailable</h1>
+        <h1 className="text-lg font-semibold">{t("drafts.pages.heroesUnavailable")}</h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          We couldn&apos;t load the hero list from OpenDota. Please try again in a minute.
+          {t("drafts.pages.heroesUnavailableBody")}
         </p>
       </section>
     );
@@ -68,18 +73,16 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
     if (!replayed.ok) {
       return (
         <div className="space-y-6">
-          <PageHeader kicker="Draft practice" title="Shared draft" />
+          <PageHeader kicker={t("drafts.pages.kicker")} title={t("drafts.pages.sharedTitle")} />
           <section
             className="panel grid place-items-center gap-3 px-6 py-16 text-center"
             role="alert"
           >
             <AlertTriangle aria-hidden className="size-8 text-gold" />
-            <h2 className="text-lg font-semibold">This draft link is broken</h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              It may have been cut off or edited. Ask for a fresh link, or start your own draft.
-            </p>
+            <h2 className="text-lg font-semibold">{t("drafts.pages.brokenTitle")}</h2>
+            <p className="max-w-md text-sm text-muted-foreground">{t("drafts.pages.brokenBody")}</p>
             <Button asChild>
-              <Link href="/draft">Start a new draft</Link>
+              <Link href="/draft">{t("drafts.pages.startNew")}</Link>
             </Button>
           </section>
         </div>
@@ -94,19 +97,19 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
     return (
       <div className="space-y-6">
         <PageHeader
-          kicker="Draft practice"
-          title="Shared draft"
-          description={rulesetRes.ok ? rulesetRes.value.name : undefined}
+          kicker={t("drafts.pages.kicker")}
+          title={t("drafts.pages.sharedTitle")}
+          description={rulesetRes.ok ? rulesetName(t, rulesetRes.value) : undefined}
           actions={
             <Button asChild>
-              <Link href="/draft">Start your own draft</Link>
+              <Link href="/draft">{t("drafts.pages.startOwn")}</Link>
             </Button>
           }
         />
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Eye aria-hidden className="size-4" /> Read-only view
+          <Eye aria-hidden className="size-4" /> {t("drafts.pages.readOnly")}
           {state.status !== "completed" &&
-            ` · stopped after step ${state.turns.length} of ${sequence.length}`}
+            t("drafts.pages.stoppedAfter", { step: state.turns.length, total: sequence.length })}
         </p>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {(["radiant", "dire"] as const).map((side) => (
@@ -151,24 +154,24 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Draft practice"
-        title="Captain's Mode drafting"
-        description="Draft against an AI captain, or practice both sides yourself. Every pick and ban is checked against the real Captain's Mode rules, and you can share any draft as a link."
+        kicker={t("drafts.pages.kicker")}
+        title={t("drafts.pages.title")}
+        description={t("drafts.pages.description")}
         actions={
           <>
             <Button asChild variant="outline">
               <Link href="/draft/rooms/new">
-                <Users aria-hidden className="size-4" /> Draft with a friend
+                <Users aria-hidden className="size-4" /> {t("drafts.pages.withFriend")}
               </Link>
             </Button>
             <Button asChild variant="outline">
               <Link href="/draft/rooms/history">
-                <History aria-hidden className="size-4" /> Your draft history
+                <History aria-hidden className="size-4" /> {t("drafts.pages.history")}
               </Link>
             </Button>
             <Button asChild variant="outline">
               <Link href="/draft/challenges">
-                <Puzzle aria-hidden className="size-4" /> Draft challenges
+                <Puzzle aria-hidden className="size-4" /> {t("drafts.pages.challenges")}
               </Link>
             </Button>
           </>

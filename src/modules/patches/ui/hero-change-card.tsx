@@ -1,4 +1,7 @@
 import { SafeImage } from "@/components/safe-image";
+import type { Messages } from "@/common/i18n/messages";
+import { getT } from "@/common/i18n/server";
+import type { Translator } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
@@ -10,42 +13,46 @@ import { kdaOf, MIN_COHORT_GAMES as MIN_COHORT, type HeroCohort } from "../domai
 
 export type { HeroCohort };
 
-function Cohort({ cohort }: { cohort: HeroCohort }) {
+function Cohort({ cohort, t }: { cohort: HeroCohort; t: Translator<Messages> }) {
   const rate = (c: { games: number; wins: number }) => (c.games ? c.wins / c.games : null);
   const enough = cohort.before.games >= MIN_COHORT && cohort.after.games >= MIN_COHORT;
   return (
     <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-xs">
-      <div className="mb-1.5 font-semibold text-foreground">Your ranked games on this hero</div>
+      <div className="mb-1.5 font-semibold text-foreground">{t("patches.hero.cohortTitle")}</div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-muted-foreground">30 days before</div>
+          <div className="text-muted-foreground">{t("patches.hero.before")}</div>
           <div className="text-base font-semibold tabular-nums">
             {formatPercent(rate(cohort.before))}
           </div>
           <div className="text-muted-foreground">
-            {cohort.before.games} games · KDA {kdaOf(cohort.before)?.toFixed(2) ?? "—"}
+            {t("patches.hero.games", {
+              games: cohort.before.games,
+              kda: kdaOf(cohort.before)?.toFixed(2) ?? "—",
+            })}
           </div>
         </div>
         <div>
-          <div className="text-muted-foreground">Since this patch</div>
+          <div className="text-muted-foreground">{t("patches.hero.after")}</div>
           <div className="text-base font-semibold tabular-nums">
             {formatPercent(rate(cohort.after))}
           </div>
           <div className="text-muted-foreground">
-            {cohort.after.games} games · KDA {kdaOf(cohort.after)?.toFixed(2) ?? "—"}
+            {t("patches.hero.games", {
+              games: cohort.after.games,
+              kda: kdaOf(cohort.after)?.toFixed(2) ?? "—",
+            })}
           </div>
         </div>
       </div>
       <p className="mt-2 text-muted-foreground">
-        {enough
-          ? "Other things change too (teammates, the meta, your role), so treat this as a hint, not proof."
-          : `Not enough games on both sides yet (${MIN_COHORT}+ each) to compare.`}
+        {enough ? t("patches.hero.hint") : t("patches.hero.notEnough", { min: MIN_COHORT })}
       </p>
     </div>
   );
 }
 
-export function HeroChangeCard({
+export async function HeroChangeCard({
   change,
   hero,
   cohort,
@@ -56,6 +63,7 @@ export function HeroChangeCard({
   cohort?: HeroCohort;
   action?: React.ReactNode;
 }) {
+  const t = await getT();
   const name = heroName(hero, change.heroId);
   return (
     <article
@@ -81,7 +89,7 @@ export function HeroChangeCard({
               </span>
               <div className="min-w-0 flex-1">
                 <h4 className="text-sm font-semibold">
-                  {a.abilityName ?? `Ability #${a.abilityId}`}
+                  {a.abilityName ?? t("patches.hero.ability", { id: a.abilityId })}
                 </h4>
                 <NoteList notes={a.notes} className="mt-1" />
               </div>
@@ -91,12 +99,12 @@ export function HeroChangeCard({
         {change.talentNotes.length > 0 && (
           <section>
             <h4 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              Talents
+              {t("patches.hero.talents")}
             </h4>
             <NoteList notes={change.talentNotes} />
           </section>
         )}
-        {cohort && cohort.before.games + cohort.after.games > 0 && <Cohort cohort={cohort} />}
+        {cohort && cohort.before.games + cohort.after.games > 0 && <Cohort cohort={cohort} t={t} />}
       </div>
     </article>
   );

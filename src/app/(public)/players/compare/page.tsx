@@ -4,10 +4,12 @@ import { Fragment } from "react";
 import { ArrowLeft, ArrowLeftRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { matchesService } from "@/modules/matches";
-import { formatPercent, plural } from "@/modules/matches/ui/format";
+import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import {
@@ -23,7 +25,10 @@ import { topTeammates } from "@/modules/players/domain/public-player";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import { playersService, type PublicPlayerView } from "@/modules/players";
 
-export const metadata: Metadata = { title: "Compare players" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("players.compare.title") };
+}
 
 const rate = (t: Tally | null) => (t && t.games ? t.wins / t.games : null);
 
@@ -31,6 +36,7 @@ type Loaded = PublicPlayerView;
 
 export default async function ComparePage({ searchParams }: PageProps<"/players/compare">) {
   const params = await searchParams;
+  const t = await getT();
   const viewer = await getCurrentUser({ tolerateErrors: true });
   const a =
     parseAccountId(typeof params.a === "string" ? params.a : "") ?? viewer?.accountId32 ?? null;
@@ -38,13 +44,13 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
 
   const header = (
     <PageHeader
-      kicker="Players"
-      title="Compare players"
-      description="Two players side by side, from their public OpenDota data: record, recent form, heroes, and how they do with and against each other."
+      kicker={t("players.compare.kicker")}
+      title={t("players.compare.title")}
+      description={t("players.compare.description")}
       actions={
         <Button asChild variant="outline">
           <Link href="/players">
-            <ArrowLeft aria-hidden className="size-4" /> All players
+            <ArrowLeft aria-hidden className="size-4" /> {t("players.profile.back")}
           </Link>
         </Button>
       }
@@ -62,7 +68,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
           className="panel grid gap-4 p-5 sm:grid-cols-[1fr_1fr_auto]"
         >
           <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">First player</span>
+            <span className="font-medium">{t("players.compare.first")}</span>
             <input
               name="a"
               defaultValue={a ?? ""}
@@ -71,7 +77,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
             />
           </label>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">Second player</span>
+            <span className="font-medium">{t("players.compare.second")}</span>
             <input
               name="b"
               defaultValue={b ?? ""}
@@ -80,20 +86,20 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
             />
           </label>
           <Button type="submit" className="gap-2 self-end">
-            <ArrowLeftRight aria-hidden className="size-4" /> Compare
+            <ArrowLeftRight aria-hidden className="size-4" /> {t("players.compare.submit")}
           </Button>
         </form>
         {a !== null && a === b && (
           <p role="alert" className="text-sm text-loss">
-            Pick two different players.
+            {t("players.compare.different")}
           </p>
         )}
         {a !== null && suggestions.length > 0 && (
           <section aria-labelledby="compare-suggestions" className="panel p-5">
             <h2 id="compare-suggestions" className="mb-3 text-sm font-semibold">
               {viewer?.accountId32 === a
-                ? "Compare with people you play with"
-                : "Compare with their teammates"}
+                ? t("players.compare.suggestYou")
+                : t("players.compare.suggestTheirs")}
             </h2>
             <ul className="flex flex-wrap gap-2">
               {suggestions.map((p) => (
@@ -148,26 +154,35 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
     hint?: (s: PlayerSummary) => string;
   }[] = [
     {
-      label: "Win rate",
+      label: t("players.compare.winRate"),
       value: (s) => formatPercent(rate(s.record)),
-      hint: (s) => (s.record ? plural(s.record.games, "game") : "unavailable"),
+      hint: (s) =>
+        s.record
+          ? plural(t, "players.units.game", s.record.games)
+          : t("players.compare.unavailable"),
     },
     {
-      label: "Recent form",
+      label: t("players.compare.recentForm"),
       value: (s) => (s.recent.games ? `${s.recent.wins}–${s.recent.games - s.recent.wins}` : "—"),
       hint: (s) =>
-        s.recent.games ? `last ${plural(s.recent.games, "game")}` : "no recent public games",
+        s.recent.games
+          ? t("players.compare.lastGames", {
+              games: plural(t, "players.units.game", s.recent.games),
+            })
+          : t("players.compare.noRecent"),
     },
     {
-      label: "KDA",
+      label: t("players.compare.kda"),
       value: (s) => (s.kda === null ? "—" : s.kda.toFixed(2)),
-      hint: (s) => (s.recent.games ? "(kills + assists) / deaths, recent games" : ""),
+      hint: (s) => (s.recent.games ? t("players.compare.kdaHint") : ""),
     },
     {
-      label: "Most played",
+      label: t("players.compare.mostPlayed"),
       value: (s) => (s.topHero ? heroName(heroes.get(s.topHero.heroId), s.topHero.heroId) : "—"),
       hint: (s) =>
-        s.topHero ? `${plural(s.topHero.games, "game")} · ${formatPercent(rate(s.topHero))}` : "",
+        s.topHero
+          ? `${plural(t, "players.units.game", s.topHero.games)} · ${formatPercent(rate(s.topHero))}`
+          : "",
     },
   ];
 
@@ -175,7 +190,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
     <div className="space-y-6">
       {header}
 
-      <section aria-label="Players" className="grid grid-cols-2 gap-3">
+      <section aria-label={t("players.compare.playersLabel")} className="grid grid-cols-2 gap-3">
         {[left, right].map((p) => (
           <div
             key={p.id}
@@ -194,17 +209,17 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
               </span>
             ) : (
               <span className="text-xs text-muted-foreground">
-                {p.found ? "Rank not public" : "Player not found"}
+                {p.found ? t("players.compare.rankNotPublic") : t("players.compare.playerNotFound")}
               </span>
             )}
           </div>
         ))}
       </section>
 
-      <section aria-label="Side by side" className="panel overflow-hidden">
+      <section aria-label={t("players.compare.sideBySide")} className="panel overflow-hidden">
         <table className="w-full table-fixed text-sm">
           <caption className="sr-only">
-            {left.name} and {right.name} side by side
+            {t("players.compare.caption", { a: left.name, b: right.name })}
           </caption>
           <tbody>
             {rows.map((r) => (
@@ -236,35 +251,37 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
 
       <section aria-labelledby="h2h" className="panel p-5">
         <h2 id="h2h" className="mb-2 text-lg font-semibold">
-          With and against each other
+          {t("players.compare.h2hTitle")}
         </h2>
         {!aView.peers.ok ? (
-          <p className="text-sm text-muted-foreground">Unavailable right now.</p>
+          <p className="text-sm text-muted-foreground">{t("players.compare.unavailableNow")}</p>
         ) : !h2h ? (
-          <p className="text-sm text-muted-foreground">
-            No public matches together or against each other.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("players.compare.noH2h")}</p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
             <li className="rounded-lg border border-white/[0.06] p-3">
-              <p className="text-xs text-muted-foreground">On the same team</p>
+              <p className="text-xs text-muted-foreground">{t("players.compare.sameTeam")}</p>
               <p className="text-lg font-semibold tabular-nums">
                 {h2h.together.games ? formatPercent(rate(h2h.together)) : "—"}
               </p>
               <p className="text-xs text-muted-foreground">
-                {plural(h2h.together.games, "game")} together
-                {h2h.together.games ? `, ${plural(h2h.together.wins, "win")}` : ""}
+                {t("players.compare.together", {
+                  games: plural(t, "players.units.game", h2h.together.games),
+                })}
+                {h2h.together.games ? `, ${plural(t, "players.units.win", h2h.together.wins)}` : ""}
               </p>
             </li>
             <li className="rounded-lg border border-white/[0.06] p-3">
-              <p className="text-xs text-muted-foreground">Against each other</p>
+              <p className="text-xs text-muted-foreground">{t("players.compare.againstTitle")}</p>
               <p className="text-lg font-semibold tabular-nums">
                 {h2h.against.games
                   ? `${left.name} ${h2h.against.wins}–${h2h.against.games - h2h.against.wins}`
                   : "—"}
               </p>
               <p className="text-xs text-muted-foreground">
-                {plural(h2h.against.games, "game")} on opposite teams
+                {t("players.compare.opposite", {
+                  games: plural(t, "players.units.game", h2h.against.games),
+                })}
               </p>
             </li>
           </ul>
@@ -273,15 +290,15 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
 
       <section aria-labelledby="shared-heroes" className="panel p-5">
         <h2 id="shared-heroes" className="mb-1 text-lg font-semibold">
-          Heroes you both play
+          {t("players.compare.sharedTitle")}
         </h2>
         <p className="mb-3 text-xs text-muted-foreground">
-          {MIN_SHARED_HERO_GAMES}+ games each, all public matches.
+          {t("players.compare.sharedNote", { min: MIN_SHARED_HERO_GAMES })}
         </p>
         {shared === null ? (
-          <p className="text-sm text-muted-foreground">Unavailable right now.</p>
+          <p className="text-sm text-muted-foreground">{t("players.compare.unavailableNow")}</p>
         ) : shared.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No heroes in common yet.</p>
+          <p className="text-sm text-muted-foreground">{t("players.compare.noShared")}</p>
         ) : (
           <ul className="divide-y divide-white/[0.05]">
             {shared.map((h) => (
@@ -292,7 +309,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
                 <span className="text-right tabular-nums">
                   <span className="font-semibold">{formatPercent(rate(h.a))}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {plural(h.a.games, "game")}
+                    {plural(t, "players.units.game", h.a.games)}
                   </span>
                 </span>
                 <span className="flex flex-col items-center gap-1 text-center text-xs">
@@ -302,7 +319,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
                 <span className="tabular-nums">
                   <span className="font-semibold">{formatPercent(rate(h.b))}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {plural(h.b.games, "game")}
+                    {plural(t, "players.units.game", h.b.games)}
                   </span>
                 </span>
               </li>
@@ -312,8 +329,13 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
       </section>
 
       <p className="text-xs text-muted-foreground">
-        Public OpenDota data only. Win rates cover all public matches; recent form and KDA cover the
-        latest {plural(Math.max(left.summary.recent.games, right.summary.recent.games), "game")}.
+        {t("players.compare.footer", {
+          games: plural(
+            t,
+            "players.units.game",
+            Math.max(left.summary.recent.games, right.summary.recent.games),
+          ),
+        })}
       </p>
     </div>
   );

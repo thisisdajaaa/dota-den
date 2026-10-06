@@ -5,7 +5,15 @@ import { handler, toNextResponse } from "@/common/http/controller";
 import { requestId } from "@/common/http/http";
 import { ServiceResponse } from "@/common/http/service-response";
 import type { Logger } from "@/common/logging/logger";
-import { requireUser, SESSION_COOKIE, sessionCookieOptions, STATE_COOKIE } from "./identity.guards";
+import { isLocale, LOCALE_COOKIE } from "@/common/i18n/locales";
+import {
+  optionalUser,
+  requireUser,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  STATE_COOKIE,
+} from "./identity.guards";
+import { LanguageSchema } from "./schemas/language.schema";
 import { VisibilitySchema } from "./schemas/visibility.schema";
 import type { AuthService } from "./services/auth.service";
 import type { UsersService } from "./services/users.service";
@@ -68,6 +76,9 @@ export class IdentityController {
       result.value.session.token,
       sessionCookieOptions(result.value.session.expiresAt),
     );
+    // A language chosen on another device follows the account.
+    const language = result.value.user.settings.language;
+    if (isLocale(language)) res.cookies.set(LOCALE_COOKIE, language, this.languageCookie());
     return res;
   });
 
@@ -100,6 +111,35 @@ export class IdentityController {
       res.cookies.set(SESSION_COOKIE, rotated.token, sessionCookieOptions(rotated.expiresAt));
     return res;
   });
+
+  /**
+   * PUT /api/v1/me/settings/language: the UI language. Remembered in a cookie on this device
+   * and, when signed in, on the account (so it follows you to other devices).
+   */
+  setLanguage = handler(
+    {
+      guard: optionalUser,
+      rateLimit: { name: "language", limit: 30, windowMs: 60_000 },
+      body: LanguageSchema,
+    },
+    async ({ user, body }) => {
+      if (user) await this.deps.users.setLanguage(user.id, body.language);
+      const res = toNextResponse(
+        ServiceResponse.success({ language: body.language }, "Language saved"),
+      );
+      res.cookies.set(LOCALE_COOKIE, body.language, this.languageCookie());
+      return res;
+    },
+  );
+
+  private languageCookie() {
+    return {
+      sameSite: "lax" as const,
+      secure: this.deps.secureCookies(),
+      path: "/",
+      maxAge: 365 * 24 * 3600,
+    };
+  }
 
   /**
    * PUT /api/v1/me/settings/visibility: who can see your profile and activity. Private by

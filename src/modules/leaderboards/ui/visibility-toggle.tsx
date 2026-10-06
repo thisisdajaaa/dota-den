@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/common/i18n/client";
 
 /** Opt in to the Everyone boards. Profiles are private by default. */
 export function VisibilityToggle({ listed }: { listed: boolean }) {
+  const t = useT();
   const router = useRouter();
   const [on, setOn] = useState(listed);
   const [busy, setBusy] = useState(false);
@@ -21,12 +23,12 @@ export function VisibilityToggle({ listed }: { listed: boolean }) {
       });
       if (!res.ok) throw new Error();
       toast.success(
-        next ? "You're listed on the Everyone boards." : "You're no longer listed publicly.",
+        next ? t("leaderboards.visibility.listed") : t("leaderboards.visibility.unlisted"),
       );
       router.refresh();
     } catch {
       setOn(!next);
-      toast.error("Couldn't save that. Try again.");
+      toast.error(t("leaderboards.visibility.saveError"));
     } finally {
       setBusy(false);
     }
@@ -42,9 +44,9 @@ export function VisibilityToggle({ listed }: { listed: boolean }) {
         className="mt-1 accent-[var(--gold)]"
       />
       <span>
-        Show me on the Everyone boards
+        {t("leaderboards.visibility.label")}
         <span className="block text-xs text-muted-foreground">
-          Off by default. Your friends see you on the Friends boards either way.
+          {t("leaderboards.visibility.help")}
         </span>
       </span>
     </label>

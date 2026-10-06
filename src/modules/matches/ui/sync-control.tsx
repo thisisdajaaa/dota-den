@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -41,6 +42,7 @@ export function SyncControl({
   awaitingHistory: boolean;
   lastSyncedLabel: string | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [importing, setImporting] = useState(!backfillComplete);
@@ -76,9 +78,13 @@ export function SyncControl({
         setImporting(!s.backfillComplete);
         importingRef.current = !s.backfillComplete || stillEmpty;
         if (s.inserted > 0) {
-          toast.success(`${s.inserted} match${s.inserted === 1 ? "" : "es"} imported`);
+          toast.success(
+            t(s.inserted === 1 ? "matches.sync.imported.one" : "matches.sync.imported.other", {
+              n: s.inserted,
+            }),
+          );
         } else if (manual) {
-          toast("You're up to date");
+          toast(t("matches.sync.upToDate"));
         }
         router.refresh();
         if (!s.backfillComplete) {
@@ -101,7 +107,7 @@ export function SyncControl({
       if ((upstreamBusy || res.status >= 500) && retries.current < MAX_AUTO_RETRIES) {
         retries.current++;
         setStatus("busy");
-        if (manual) toast("OpenDota is busy. We'll keep trying.");
+        if (manual) toast(t("matches.sync.busyToast"));
         schedule(
           upstreamBusy && retryAt
             ? Math.max(5_000, new Date(retryAt).getTime() - Date.now() + 1_000)
@@ -111,7 +117,7 @@ export function SyncControl({
       }
       if (res.status === 429 && retryAt && !upstreamBusy) {
         // Cooldown: quietly try again once it passes if history is still importing.
-        if (manual) toast("Synced recently. Try again in a few minutes.");
+        if (manual) toast(t("matches.sync.cooldown"));
         setStatus(importingRef.current ? "waiting" : "idle");
         if (importingRef.current) {
           schedule(Math.max(1_000, new Date(retryAt).getTime() - Date.now() + 1_000));
@@ -125,12 +131,13 @@ export function SyncControl({
         return;
       }
       const message =
-        (body as { error?: { message?: string } } | null)?.error?.message ?? "Sync failed.";
+        (body as { error?: { message?: string } } | null)?.error?.message ??
+        t("matches.sync.failed");
       setStatus("error");
       if (manual) toast.error(message);
     } catch {
       setStatus("error");
-      if (manual) toast.error("Network error. Check your connection.");
+      if (manual) toast.error(t("matches.sync.network"));
     }
   }
 
@@ -154,19 +161,19 @@ export function SyncControl({
   const label =
     status === "syncing"
       ? importing
-        ? "Importing match history…"
-        : "Syncing…"
+        ? t("matches.sync.importingHistory")
+        : t("matches.sync.syncing")
       : status === "waiting"
         ? awaiting
-          ? "Waiting for OpenDota to fetch your history…"
-          : "Importing older matches…"
+          ? t("matches.sync.waitingHistory")
+          : t("matches.sync.importingOlder")
         : status === "busy"
-          ? "OpenDota is busy. Retrying shortly…"
+          ? t("matches.sync.busy")
           : status === "error"
-            ? "Sync paused. OpenDota may be unavailable."
+            ? t("matches.sync.paused")
             : lastSyncedLabel
-              ? `Synced ${lastSyncedLabel}`
-              : "Not synced yet";
+              ? t("matches.sync.synced", { ago: lastSyncedLabel })
+              : t("matches.sync.notSynced");
 
   return (
     // A soft backdrop keeps the status readable over the banner's hero art.
@@ -193,12 +200,12 @@ export function SyncControl({
             className="size-7"
             onClick={() => void sync(true)}
             disabled={status === "syncing"}
-            aria-label="Sync now"
+            aria-label={t("matches.sync.syncNow")}
           >
             <RefreshCw className={cn("size-3.5", status === "syncing" && "animate-spin")} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Sync now</TooltipContent>
+        <TooltipContent>{t("matches.sync.syncNow")}</TooltipContent>
       </Tooltip>
     </div>
   );

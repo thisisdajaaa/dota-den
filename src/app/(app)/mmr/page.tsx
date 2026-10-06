@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarRange, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import { LocalTime } from "@/components/local-time";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
@@ -26,19 +27,13 @@ import { MonthGrid } from "@/modules/mmr/ui/month-grid";
 import { WeekView } from "@/modules/mmr/ui/week-view";
 import { YearHeatmap } from "@/modules/mmr/ui/year-heatmap";
 
-export const metadata: Metadata = { title: "MMR journal" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("mmr.page.title") };
+}
 
-const VIEWS: ReadonlyArray<{ value: CalendarView; label: string }> = [
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
-  { value: "year", label: "Year" },
-  { value: "all", label: "All time" },
-];
-const SCOPES: ReadonlyArray<{ value: QueueScope; label: string }> = [
-  { value: "all", label: "All ranked" },
-  { value: "solo", label: "Solo" },
-  { value: "party", label: "Party" },
-];
+const VIEWS: readonly CalendarView[] = ["week", "month", "year", "all"];
+const SCOPES: readonly QueueScope[] = ["all", "solo", "party"];
 
 function one(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
@@ -51,6 +46,7 @@ function signed(v: number): string {
 export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
   const user = await getCurrentUser();
   if (!user) return null;
+  const t = await getT();
   const params = await searchParams;
   const { timeZone } = await getViewerTimeZone();
   const dayKey = dayKeyFormatter(timeZone);
@@ -58,11 +54,11 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
   const today = dayKey(now);
 
   const viewParam = one(params.view);
-  const view: CalendarView = VIEWS.some((v) => v.value === viewParam)
+  const view: CalendarView = VIEWS.some((v) => v === viewParam)
     ? (viewParam as CalendarView)
     : "month";
   const scopeParam = one(params.scope);
-  const scope: QueueScope = SCOPES.some((s) => s.value === scopeParam)
+  const scope: QueueScope = SCOPES.some((s) => s === scopeParam)
     ? (scopeParam as QueueScope)
     : "all";
   const anchorParam = one(params.date);
@@ -99,7 +95,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         ? fmt(period.from, { month: "long", year: "numeric" })
         : view === "year"
           ? period.from.slice(0, 4)
-          : `Since ${fmt(period.from, { month: "long", year: "numeric" })}`;
+          : t("mmr.page.since", { date: fmt(period.from, { month: "long", year: "numeric" }) });
 
   const selectedDay = selected ? calendar.days.get(selected) : undefined;
   const selectedMatches = selected
@@ -116,41 +112,47 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Progression"
-        title="MMR journal"
-        description="Log the MMR your Dota client shows. We match it against your ranked games to show exactly where you gained and lost it."
+        kicker={t("mmr.page.kicker")}
+        title={t("mmr.page.title")}
+        description={t("mmr.page.description")}
         actions={<MmrEntryDialog canReadScreenshots={screenshotService.available} />}
       />
 
-      <section aria-label="Summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label={t("mmr.page.summary")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
-          label="Current MMR"
+          label={t("mmr.page.currentMmr")}
           value={current ? current.mmr.toLocaleString("en-US") : "—"}
           detail={
-            current ? `Logged ${formatAgo(current.observedAt, now)}` : "Log your MMR to start"
+            current
+              ? t("mmr.page.loggedAgo", { ago: formatAgo(current.observedAt, now) })
+              : t("mmr.page.logToStart")
           }
           tone="gold"
         />
         <StatTile
-          label={`Change · ${periodLabel}`}
+          label={t("mmr.page.change", { period: periodLabel })}
           value={periodChange}
           detail={
             s.actualNet !== null
-              ? "Exact, from your entries"
+              ? t("mmr.page.exactFromEntries")
               : s.games > 0
-                ? `Estimate: ±${ESTIMATE_PER_GAME} per ranked game`
-                : "No ranked games"
+                ? t("mmr.page.estimatePerRanked", { n: ESTIMATE_PER_GAME })
+                : t("mmr.page.noRanked")
           }
         />
         <StatTile
-          label="Ranked record"
+          label={t("mmr.page.rankedRecord")}
           value={s.games ? `${s.wins}–${s.losses}` : "—"}
-          detail={s.games ? `${formatPercent(s.winRate)} win rate` : "No ranked games"}
+          detail={
+            s.games
+              ? t("mmr.page.winRate", { rate: formatPercent(s.winRate) })
+              : t("mmr.page.noRanked")
+          }
           meter={s.winRate}
           tone={s.winRate !== null && s.winRate >= 0.5 ? "win" : "loss"}
         />
         <StatTile
-          label="Best / worst day"
+          label={t("mmr.page.bestWorst")}
           value={
             s.best || s.worst
               ? `${s.best ? signed(dayValue(s.best)) : "—"} / ${s.worst ? signed(dayValue(s.worst)) : "—"}`
@@ -166,10 +168,10 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
                     .filter(Boolean)
                     .join(" / "),
                   [s.best, s.worst].some((d) => d && d.actualDelta === null)
-                    ? "estimated"
-                    : "exact",
+                    ? t("mmr.page.estimated")
+                    : t("mmr.page.exact"),
                 ].join(" · ")
-              : "Play some ranked games"
+              : t("mmr.page.playSome")
           }
         />
       </section>
@@ -181,7 +183,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
               <Link
                 href={href({ date: period.prev, day: null })}
                 scroll={false}
-                aria-label="Previous period"
+                aria-label={t("mmr.page.prevPeriod")}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
               >
                 <ChevronLeft className="size-4" />
@@ -194,7 +196,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
               <Link
                 href={href({ date: period.next, day: null })}
                 scroll={false}
-                aria-label="Next period"
+                aria-label={t("mmr.page.nextPeriod")}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
               >
                 <ChevronRight className="size-4" />
@@ -206,20 +208,20 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
                 scroll={false}
                 className="ml-1 text-xs text-gold hover:underline"
               >
-                Today
+                {t("mmr.page.today")}
               </Link>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
             <SegmentedLinks
-              label="Calendar view"
-              options={VIEWS}
+              label={t("mmr.page.calendarView")}
+              options={VIEWS.map((value) => ({ value, label: t(`mmr.views.${value}`) }))}
               active={view}
               href={(v) => href({ view: v, day: null })}
             />
             <SegmentedLinks
-              label="Queue"
-              options={SCOPES}
+              label={t("mmr.page.queue")}
+              options={SCOPES.map((value) => ({ value, label: t(`mmr.scopes.${value}`) }))}
               active={scope}
               href={(v) => href({ scope: v })}
             />
@@ -277,8 +279,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         {scope !== "all" && (
           <p className="flex gap-2 text-xs text-muted-foreground">
             <Info aria-hidden className="mt-px size-3.5 shrink-0" />
-            Dota doesn&apos;t track MMR separately for solo and party, so exact changes only show on
-            days where every ranked game was {scope}. Other days use the estimate.
+            {t("mmr.page.scopeNote", { scope })}
           </p>
         )}
       </section>
@@ -302,12 +303,12 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <section className="panel p-5 lg:col-span-3" aria-labelledby="trend-title">
-          <p className="kicker">Trend</p>
+          <p className="kicker">{t("mmr.page.trendKicker")}</p>
           <h2 id="trend-title" className="mb-3 text-lg font-semibold">
-            Logged MMR
+            {t("mmr.page.trendTitle")}
           </h2>
           {entries.length === 0 ? (
-            <EmptyJournal />
+            <EmptyJournal text={t("mmr.page.emptyJournal")} />
           ) : (
             <MmrTrendChart
               points={entries.map((e) => ({
@@ -325,13 +326,13 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
 
         <section className="panel overflow-hidden lg:col-span-2" aria-labelledby="entries-title">
           <div className="p-5 pb-3">
-            <p className="kicker">Journal</p>
+            <p className="kicker">{t("mmr.page.journalKicker")}</p>
             <h2 id="entries-title" className="text-lg font-semibold">
-              Your entries
+              {t("mmr.page.entriesTitle")}
             </h2>
           </div>
           {entries.length === 0 ? (
-            <p className="px-5 pb-5 text-sm text-muted-foreground">No entries yet.</p>
+            <p className="px-5 pb-5 text-sm text-muted-foreground">{t("mmr.page.noEntries")}</p>
           ) : (
             <ul className="max-h-96 divide-y divide-white/[0.05] overflow-y-auto border-t border-white/[0.06]">
               {[...entries].reverse().map((e, i, arr) => {
@@ -377,16 +378,13 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
   );
 }
 
-function EmptyJournal() {
+function EmptyJournal({ text }: { text: string }) {
   return (
     <div className="grid place-items-center gap-3 py-10 text-center">
       <span className="grid size-12 place-items-center rounded-full bg-gold/10 text-gold ring-1 ring-gold/30">
         <CalendarRange aria-hidden className="size-5" />
       </span>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        Log your MMR from the Dota client, ideally before and after each session. The more often you
-        log, the more days show an exact change instead of an estimate.
-      </p>
+      <p className="max-w-sm text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }

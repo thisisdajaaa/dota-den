@@ -1,22 +1,23 @@
 "use client";
 
 import { apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import type { ReviewResult } from "../dtos/responses/drafts.dto";
 import { encodeSnapshot, snapshotOf } from "../domain/snapshot";
-import type { DraftState, Side } from "../domain/draft-state";
+import type { DraftState } from "../domain/draft-state";
 import type { RoleChoices } from "./draft-outlook-panel";
-
-const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
+import { sideName } from "./i18n";
 
 /**
  * The AI review of a finished draft. On request (it costs a model call), and clearly
  * labelled: the data report card stays the source of truth.
  */
 export function DraftReviewPanel({ state, roles }: { state: DraftState; roles: RoleChoices }) {
+  const t = useT();
   const key = `${encodeSnapshot(snapshotOf(state))}|${JSON.stringify(roles)}`;
   const [result, setResult] = useState<{ key: string; data: ReviewResult } | null>(null);
   const [error, setError] = useState<{ key: string; message: string } | null>(null);
@@ -35,7 +36,7 @@ export function DraftReviewPanel({ state, roles }: { state: DraftState; roles: R
     } catch (e) {
       setError({
         key,
-        message: e instanceof Error ? e.message : "The AI review is unavailable right now.",
+        message: e instanceof Error ? e.message : t("drafts.review.unavailable"),
       });
     } finally {
       setBusy(false);
@@ -43,25 +44,25 @@ export function DraftReviewPanel({ state, roles }: { state: DraftState; roles: R
   }
 
   return (
-    <section aria-label="AI review" className="rounded-xl border border-gold/20 bg-gold/[0.03] p-3">
+    <section
+      aria-label={t("drafts.review.label")}
+      className="rounded-xl border border-gold/20 bg-gold/[0.03] p-3"
+    >
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <Sparkles aria-hidden className="size-4 text-gold" /> AI review
+          <Sparkles aria-hidden className="size-4 text-gold" /> {t("drafts.review.title")}
           {current && (
             <span className="text-xs font-normal text-muted-foreground">{current.model}</span>
           )}
         </h3>
         {!current && (
           <Button size="sm" variant="outline" onClick={run} disabled={busy}>
-            {busy ? "Reviewing…" : "Get the AI review"}
+            {busy ? t("drafts.review.reviewing") : t("drafts.review.get")}
           </Button>
         )}
       </header>
       {!current && (
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          A language model reads both lineups with this patch&apos;s abilities and the numbers
-          above, then explains combos, win conditions and key matchups.
-        </p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{t("drafts.review.intro")}</p>
       )}
       {error?.key === key && (
         <p role="alert" className="mt-2 text-sm text-loss">
@@ -74,6 +75,7 @@ export function DraftReviewPanel({ state, roles }: { state: DraftState; roles: R
 }
 
 function ReviewBody({ data }: { data: ReviewResult }) {
+  const t = useT();
   const { review, report, adjusted } = data;
   return (
     <div className="mt-2 space-y-3 text-sm">
@@ -89,15 +91,15 @@ function ReviewBody({ data }: { data: ReviewResult }) {
                   side === "radiant" ? "text-win" : "text-loss",
                 )}
               >
-                {sideName(side)}
+                {sideName(t, side)}
               </p>
               <p className="mt-1">
-                <span className="text-muted-foreground">Win condition: </span>
+                <span className="text-muted-foreground">{t("drafts.review.winCondition")}</span>
                 {plan.winCondition}
               </p>
               {plan.timing && (
                 <p className="mt-1">
-                  <span className="text-muted-foreground">Timing: </span>
+                  <span className="text-muted-foreground">{t("drafts.review.timing")}</span>
                   {plan.timing}
                 </p>
               )}
@@ -132,7 +134,7 @@ function ReviewBody({ data }: { data: ReviewResult }) {
       {review.combos.length > 0 && (
         <div>
           <h4 className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
-            Combos
+            {t("drafts.review.combos")}
           </h4>
           <ul className="mt-1 space-y-1">
             {review.combos.map((c) => (
@@ -151,7 +153,7 @@ function ReviewBody({ data }: { data: ReviewResult }) {
       {review.keyMatchups.length > 0 && (
         <div>
           <h4 className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
-            Key matchups
+            {t("drafts.review.keyMatchups")}
           </h4>
           <ul className="mt-1 space-y-1">
             {review.keyMatchups.map((m) => (
@@ -165,30 +167,34 @@ function ReviewBody({ data }: { data: ReviewResult }) {
       {review.adjustments.length > 0 && (
         <div>
           <h4 className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
-            Grade nudges
+            {t("drafts.review.nudges")}
           </h4>
           <ul className="mt-1 space-y-1">
             {review.adjustments.map((a) => (
               <li key={`${a.side}-${a.criterion}`}>
                 <span className={a.side === "radiant" ? "text-win" : "text-loss"}>
-                  {sideName(a.side)}
+                  {sideName(t, a.side)}
                 </span>{" "}
-                {a.criterion === "combos" ? "Combos" : "Composition"}{" "}
+                {a.criterion === "combos"
+                  ? t("drafts.review.combos")
+                  : t("drafts.review.composition")}{" "}
                 {a.delta > 0 ? `+${a.delta}` : a.delta}: {a.reason}
               </li>
             ))}
           </ul>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            With these nudges: Radiant {adjusted.radiant.grade} ({adjusted.radiant.overall}) · Dire{" "}
-            {adjusted.dire.grade} ({adjusted.dire.overall}). The report card above keeps the data
-            grades (Radiant {report.radiant.grade}, Dire {report.dire.grade}).
+            {t("drafts.review.withNudges", {
+              rg: adjusted.radiant.grade ?? "",
+              ro: adjusted.radiant.overall ?? "",
+              dg: adjusted.dire.grade ?? "",
+              do: adjusted.dire.overall ?? "",
+              rd: report.radiant.grade ?? "",
+              dd: report.dire.grade ?? "",
+            })}
           </p>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">
-        Written by a language model from the heroes&apos; current abilities and our numbers. It can
-        be wrong; it can only nudge Combos and Composition, by up to 8 points, with a reason.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("drafts.review.footnote")}</p>
     </div>
   );
 }

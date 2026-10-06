@@ -10,9 +10,12 @@ import {
   LogIn,
 } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import { plural, type Translator } from "@/common/i18n/translate";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
-import { formatPercent, plural } from "@/modules/matches/ui/format";
+import { formatPercent } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { PlayerBanner } from "@/modules/matches/ui/player-banner";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
@@ -29,17 +32,20 @@ import { PlaysWithCard } from "@/modules/players/ui/plays-with-card";
 import { TrackButton } from "@/modules/players/ui/track-button";
 import { followService, ownerOf, playersService } from "@/modules/players";
 
-function upstreamErrorCopy(error: { type: string }, what: string): string {
+type What = keyof Messages["players"]["profile"]["what"];
+
+function upstreamErrorCopy(t: Translator<Messages>, error: { type: string }, what: What): string {
+  const thing = t(`players.profile.what.${what}`);
   return error.type === "rate_limited"
-    ? `OpenDota is busy right now, so we couldn't load ${what}. Try again in a minute.`
-    : `Couldn't load ${what} from OpenDota right now. Try again shortly.`;
+    ? t("players.profile.upstreamBusy", { what: thing })
+    : t("players.profile.upstreamError", { what: thing });
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/players/[accountId]">): Promise<Metadata> {
   const accountId32 = parseAccountId((await params).accountId);
-  if (accountId32 === null) return { title: "Player not found" };
+  if (accountId32 === null) return { title: (await getT())("players.notFound.title") };
   const profile = await matchesService.playerProfile(accountId32);
   return { title: displayName(profile?.personaName ?? null, accountId32) };
 }
@@ -48,10 +54,11 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
   const accountId32 = parseAccountId((await params).accountId);
   if (accountId32 === null) notFound();
 
-  const [view, heroes, viewer] = await Promise.all([
+  const [view, heroes, viewer, t] = await Promise.all([
     playersService.publicPlayer(accountId32),
     matchesService.heroMap(),
     getCurrentUser({ tolerateErrors: true }),
+    getT(),
   ]);
   if (!view.profile.ok && view.profile.error.type === "not_found") notFound();
 
@@ -83,17 +90,21 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft aria-hidden className="size-4" />
-        All players
+        {t("players.profile.back")}
       </Link>
 
-      <PlayerBanner profile={profile} accountId32={accountId32} kicker="Player profile">
+      <PlayerBanner
+        profile={profile}
+        accountId32={accountId32}
+        kicker={t("players.profile.kicker")}
+      >
         {isSelf ? (
           <Link
             href="/dashboard"
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gold/15 px-3.5 text-sm font-medium text-gold ring-1 ring-gold/30 hover:bg-gold/10"
           >
             <LayoutDashboard aria-hidden className="size-4" />
-            This is you: open your dashboard
+            {t("players.profile.isYou")}
           </Link>
         ) : viewer ? (
           <TrackButton accountId32={accountId32} name={name} tracked={tracked} />
@@ -103,7 +114,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
             className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-sm font-medium text-muted-foreground ring-1 ring-white/10 hover:text-foreground"
           >
             <LogIn aria-hidden className="size-4" />
-            Sign in to track
+            {t("players.profile.signInToTrack")}
           </a>
         )}
         {!isSelf && (
@@ -116,7 +127,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
             className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-sm font-medium text-muted-foreground ring-1 ring-white/10 hover:text-foreground"
           >
             <ArrowLeftRight aria-hidden className="size-4" />
-            {viewer ? "Compare with you" : "Compare"}
+            {viewer ? t("players.profile.compareWithYou") : t("players.profile.compare")}
           </Link>
         )}
       </PlayerBanner>
@@ -124,7 +135,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
       {!view.profile.ok && (
         <p role="alert" className="panel flex items-start gap-3 p-4 text-sm text-muted-foreground">
           <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-loss" />
-          {upstreamErrorCopy(view.profile.error, "this player's name and rank")}
+          {upstreamErrorCopy(t, view.profile.error, "nameRank")}
         </p>
       )}
 
@@ -136,31 +147,30 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
           <EyeOff aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
           <div className="space-y-1">
             <h2 id="limited-history" className="font-semibold">
-              Match history is private or limited
+              {t("players.profile.limitedTitle")}
             </h2>
-            <p className="text-muted-foreground">
-              OpenDota can only see this player&apos;s games once they turn on “Expose Public Match
-              Data” in Dota 2 (Settings → Options → Social). Until then, the stats below may be
-              incomplete or empty.
-            </p>
+            <p className="text-muted-foreground">{t("players.profile.limitedBody")}</p>
           </div>
         </section>
       )}
 
-      <section aria-label="Record" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <section
+        aria-label={t("players.profile.recordLabel")}
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      >
         {record ? (
           <>
             <StatTile
-              label="Win rate"
+              label={t("players.profile.winRate")}
               value={formatPercent(rate)}
               meter={rate}
               tone={rate !== null && rate >= 0.5 ? "win" : "loss"}
-              detail={`${plural(record.wins, "win")} · ${plural(record.losses, "loss")}`}
+              detail={`${plural(t, "players.units.win", record.wins)} · ${plural(t, "players.units.loss", record.losses)}`}
             />
             <StatTile
-              label="Games played"
+              label={t("players.profile.gamesPlayed")}
               value={games.toLocaleString("en-US")}
-              detail="All public matches on OpenDota"
+              detail={t("players.profile.allPublic")}
             />
           </>
         ) : (
@@ -169,18 +179,22 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
             className="panel flex items-center p-4 text-sm text-muted-foreground sm:col-span-2"
           >
             {upstreamErrorCopy(
+              t,
               view.record.ok ? { type: "unavailable" } : view.record.error,
-              "the win/loss record",
+              "record",
             )}
           </p>
         )}
         <StatTile
-          label="Most played hero"
+          label={t("players.profile.mostPlayedHero")}
           value={favourite ? heroName(heroes.get(favourite.heroId), favourite.heroId) : "—"}
           detail={
             favourite
-              ? `${plural(favourite.games, "game")} · ${formatPercent(winRate(favourite.wins, favourite.games))} win rate`
-              : "No hero stats yet"
+              ? t("players.profile.heroDetail", {
+                  games: plural(t, "players.units.game", favourite.games),
+                  rate: formatPercent(winRate(favourite.wins, favourite.games)),
+                })
+              : t("players.profile.noHeroStats")
           }
         />
       </section>
@@ -190,23 +204,23 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
           <PlaysWithCard
             peers={teammates}
             now={now}
-            error={view.peers.ok ? null : upstreamErrorCopy(view.peers.error, "teammates")}
+            error={view.peers.ok ? null : upstreamErrorCopy(t, view.peers.error, "teammates")}
           />
         </div>
         <div className="lg:col-span-2">
           <MostPlayedHeroesCard
             heroes={heroUsage}
             catalog={heroes}
-            error={view.heroes.ok ? null : upstreamErrorCopy(view.heroes.error, "hero stats")}
+            error={view.heroes.ok ? null : upstreamErrorCopy(t, view.heroes.error, "heroStats")}
           />
         </div>
       </div>
 
       <section className="panel overflow-hidden" aria-labelledby="recent-matches">
         <div className="p-5 pb-3">
-          <p className="kicker">Match history</p>
+          <p className="kicker">{t("players.profile.matchesKicker")}</p>
           <h2 id="recent-matches" className="text-lg font-semibold">
-            Recent matches
+            {t("players.profile.matchesTitle")}
           </h2>
         </div>
         {!view.matches.ok ? (
@@ -214,11 +228,11 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
             role="alert"
             className="border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground"
           >
-            {upstreamErrorCopy(view.matches.error, "recent matches")}
+            {upstreamErrorCopy(t, view.matches.error, "recentMatches")}
           </p>
         ) : matches.length === 0 ? (
           <p className="border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground">
-            No public matches to show.
+            {t("players.profile.noMatches")}
           </p>
         ) : (
           <MatchRows matches={matches} heroes={heroes} now={now} />
@@ -226,7 +240,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
       </section>
 
       <p className="text-xs text-muted-foreground">
-        Data from{" "}
+        {t("players.profile.dataFrom")}{" "}
         <a
           href={`https://www.opendota.com/players/${accountId32}`}
           target="_blank"
@@ -235,7 +249,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
         >
           OpenDota
         </a>
-        . Public matches only; stats can lag a few minutes behind.
+        {t("players.profile.dataAfter")}
       </p>
     </div>
   );

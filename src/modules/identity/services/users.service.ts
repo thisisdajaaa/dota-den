@@ -8,6 +8,7 @@ export interface UsersStore {
   findByAccountIds(accountIds: readonly number[]): Promise<User[]>;
   findPublicIds(limit: number): Promise<string[]>;
   setProfileVisibility(id: string, visibility: ProfileVisibility, now: Date): Promise<boolean>;
+  setLanguage(id: string, language: string, now: Date): Promise<boolean>;
   adminRows(): Promise<AdminUserRow[]>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
@@ -45,6 +46,11 @@ export class UsersService {
       visibility,
       this.deps.now?.() ?? new Date(),
     );
+  }
+
+  /** Remember the user's UI language across devices. */
+  setLanguage(userId: string, language: string) {
+    return this.deps.users.setLanguage(userId, language, this.deps.now?.() ?? new Date());
   }
 
   adminRows() {

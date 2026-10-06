@@ -13,7 +13,12 @@ export interface User {
   steamId64: SteamId64;
   accountId32: AccountId32;
   persona: PersonaSnapshot | null;
-  settings: { profileVisibility: ProfileVisibility; timeZone: string | null };
+  settings: {
+    profileVisibility: ProfileVisibility;
+    timeZone: string | null;
+    /** Chosen UI language (en, fil, ceb); null until they pick one. */
+    language?: string | null;
+  };
   roles: ReadonlyArray<"admin">;
   createdAt: Date;
   updatedAt: Date;
@@ -23,4 +28,5 @@ export interface User {
 export const DEFAULT_USER_SETTINGS: User["settings"] = {
   profileVisibility: "private",
   timeZone: null,
+  language: null,
 };

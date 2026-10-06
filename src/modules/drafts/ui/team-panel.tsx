@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import { cn } from "cn";
-import { POSITION_NAMES, type Position } from "../domain/draft-positions";
+import { useT } from "@/common/i18n/client";
+import type { Position } from "../domain/draft-positions";
 import type { DraftSelection, Side } from "../domain/draft-state";
+import { positionName, sideName } from "./i18n";
 import type { DraftHero } from "./types";
 
 function Slot({
@@ -16,6 +20,7 @@ function Slot({
   /** Where this pick plays in the lineup, when known. */
   position?: Position;
 }) {
+  const t = useT();
   const pick = kind === "pick";
   return (
     <div
@@ -43,11 +48,11 @@ function Slot({
       {hero && pick && position && (
         <span
           className="absolute top-1 left-1 rounded bg-black/75 px-1 text-[0.6rem] font-semibold text-gold ring-1 ring-gold/30"
-          title={`Position ${position}: ${POSITION_NAMES[position]}`}
+          title={t("drafts.team.positionTitle", { n: position, name: positionName(t, position) })}
         >
           <span aria-hidden>P{position}</span>
           <span className="sr-only">
-            Position {position}, {POSITION_NAMES[position]}
+            {t("drafts.team.positionSr", { n: position, name: positionName(t, position) })}
           </span>
         </span>
       )}
@@ -90,10 +95,11 @@ export function TeamPanel({
   /** Where each picked hero plays (from the draft outlook), by hero id. */
   positions?: ReadonlyMap<number, Position>;
 }) {
+  const t = useT();
   const radiant = side === "radiant";
   return (
     <section
-      aria-label={`${radiant ? "Radiant" : "Dire"} draft`}
+      aria-label={t("drafts.team.label", { side: sideName(t, side) })}
       className={cn(
         "panel space-y-3 p-4",
         activeAction && (radiant ? "border-win/40" : "border-loss/40"),
@@ -105,9 +111,7 @@ export function TeamPanel({
             aria-hidden
             className={cn("h-5 w-1 rounded-full", radiant ? "bg-win" : "bg-loss")}
           />
-          <h2 className="font-display text-lg font-bold tracking-wider">
-            {radiant ? "Radiant" : "Dire"}
-          </h2>
+          <h2 className="font-display text-lg font-bold tracking-wider">{sideName(t, side)}</h2>
           {controller && (
             <span
               className={cn(
@@ -115,7 +119,7 @@ export function TeamPanel({
                 controller === "you" ? "bg-gold/15 text-gold" : "bg-white/10 text-foreground",
               )}
             >
-              {controller === "you" ? "You" : "AI"}
+              {controller === "you" ? t("drafts.team.you") : t("drafts.team.ai")}
             </span>
           )}
           {captainName && (
@@ -125,19 +129,22 @@ export function TeamPanel({
           )}
           {isFirst && (
             <span className="rounded border border-white/15 px-1.5 text-[0.6rem] tracking-wider text-muted-foreground uppercase">
-              First pick
+              {t("drafts.team.firstPick")}
             </span>
           )}
         </div>
         {reserveLabel && (
-          <span className="text-xs text-muted-foreground tabular-nums" title="Reserve time left">
-            Reserve {reserveLabel}
+          <span
+            className="text-xs text-muted-foreground tabular-nums"
+            title={t("drafts.team.reserveTitle")}
+          >
+            {t("drafts.team.reserve", { time: reserveLabel })}
           </span>
         )}
       </header>
       <div>
         <div className="mb-1 text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-          Picks
+          {t("drafts.team.picks")}
         </div>
         <div className="grid grid-cols-5 gap-1.5">
           {Array.from({ length: totalPicks }, (_, i) => (
@@ -153,7 +160,7 @@ export function TeamPanel({
       </div>
       <div>
         <div className="mb-1 text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-          Bans
+          {t("drafts.team.bans")}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: totalBans }, (_, i) => (

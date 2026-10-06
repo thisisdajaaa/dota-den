@@ -17,6 +17,7 @@ import {
   lineupNeeds,
   lineupRole,
   rankCandidates,
+  rolePhrase,
   SUPPORT_SLOTS,
   type Candidate,
   type HeroMeta,
@@ -24,6 +25,7 @@ import {
   type MatchupTable,
   type ScoringHero,
 } from "./draft-scoring";
+import { phrase, type Phrase } from "./phrase";
 
 export const CHALLENGE_TYPES = [
   "last_pick",
@@ -331,7 +333,9 @@ export interface GradedChoice {
   fitsLineup: boolean;
   /** Plain-language reason for the grade. */
   verdict: string;
+  verdictPhrase: Phrase;
   facts: string[];
+  factPhrases: Phrase[];
 }
 
 export interface Alternative {
@@ -339,6 +343,7 @@ export interface Alternative {
   name: string;
   role: LineupRole;
   facts: string[];
+  factPhrases: Phrase[];
 }
 
 export interface ChallengeResult {
@@ -377,6 +382,18 @@ function needsText(
   if (needs.mustPickSupport) return `${who} needs a support`;
   if (needs.mustPickCore) return `${who} needs a core`;
   return null;
+}
+
+/** What your team is short of, mid-sentence ("your team needs a support"). */
+function needPhrase(team: readonly ScoringHero[], picksLeft: number): Phrase {
+  const needs = lineupNeeds(team, picksLeft);
+  return phrase(
+    needs.mustPickSupport
+      ? "challenge.need.support"
+      : needs.mustPickCore
+        ? "challenge.need.core"
+        : "challenge.need.other",
+  );
 }
 
 /**
@@ -434,7 +451,9 @@ export function gradeAnswer(
       limit: 1,
     });
     const facts = solo?.facts ?? [];
-    const common = { heroId: id, name: hero.name, facts, total: ranked.length };
+    const factPhrases = solo?.factPhrases ?? [];
+    const common = { heroId: id, name: hero.name, facts, factPhrases, total: ranked.length };
+    const named = { hero: hero.name };
 
     if (puzzle.action === "pick" && rank === null) {
       return {
@@ -443,6 +462,11 @@ export function gradeAnswer(
         rank: null,
         fitsLineup: false,
         verdict: `${hero.name} plays as ${lineupRole(hero)}, but ${(needLine ?? "your team needs another role").toLowerCase()}: this breaks the lineup.`,
+        verdictPhrase: phrase("challenge.breaksLineup", {
+          hero: hero.name,
+          role: rolePhrase(lineupRole(hero)),
+          need: needPhrase(own, puzzle.yourPicksLeft),
+        }),
       };
     }
 
@@ -462,6 +486,7 @@ export function gradeAnswer(
           verdict: primaryFit
             ? `${hero.name} fits the role your team needs.`
             : `${hero.name} can fill the role, but it isn't their main one.`,
+          verdictPhrase: phrase(primaryFit ? "challenge.fits" : "challenge.canFill", named),
         };
       }
       const deniesNeed =
@@ -475,6 +500,10 @@ export function gradeAnswer(
         verdict: deniesNeed
           ? `${hero.name} fills the role the enemy still needs.`
           : `Without stats we can't say how much banning ${hero.name} protects your lineup.`,
+        verdictPhrase: phrase(
+          deniesNeed ? "challenge.fillsEnemyNeed" : "challenge.noStatsBan",
+          named,
+        ),
       };
     }
 
@@ -488,7 +517,12 @@ export function gradeAnswer(
           : grade === "playable"
             ? `Playable, but there are clearly stronger options (${place}).`
             : `Near the bottom of the options (${place}).`;
-    return { ...common, grade, rank, fitsLineup: true, verdict };
+    const placePhrase = phrase(
+      puzzle.action === "pick" ? "challenge.placePick" : "challenge.placeBan",
+      { rank: rank!, total: ranked.length },
+    );
+    const verdictPhrase = phrase(`challenge.verdict.${grade}`, { place: placePhrase });
+    return { ...common, grade, rank, fitsLineup: true, verdict, verdictPhrase };
   });
 
   const grade = choices.reduce<Grade>(
@@ -501,6 +535,7 @@ export function gradeAnswer(
         name: c.name,
         role: c.role,
         facts: c.facts,
+        factPhrases: c.factPhrases,
       }))
     : [];
   return {
@@ -513,26 +548,35 @@ export function gradeAnswer(
   };
 }
 
-/** Plain-language summary of what each side needs, shown with the position. */
-export function describePosition(puzzle: Puzzle, catalog: readonly ScoringHero[]): string {
+/**
+ * Plain-language summary of what each side needs, shown with the position, e.g. "Your team
+ * has 2 cores and 1 support. You need a support."
+ */
+export function describePosition(puzzle: Puzzle, catalog: readonly ScoringHero[]): Phrase {
   const byId = new Map(catalog.map((h) => [h.id, h]));
   const team = (ids: readonly number[]) =>
     ids.map((id) => byId.get(id)).filter((h): h is ScoringHero => !!h);
   const own = team(puzzle.yourPicks);
   const needs = lineupNeeds(own, puzzle.yourPicksLeft);
-  const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const lineup = {
+    cores: phrase("count.cores", undefined, needs.cores),
+    supports: phrase("count.supports", undefined, needs.supports),
+  };
   switch (puzzle.type) {
     case "first_phase_bans":
-      return "No heroes are picked yet. Ban the heroes that are strongest in the current meta.";
+      return phrase("challenge.situation.firstPhase");
     case "ban_priority":
-      return `Your team has ${count(needs.cores, "core")} and ${count(needs.supports, "support")}. Ban what threatens them most, or what the enemy still needs.`;
-    default: {
-      const role = needs.mustPickSupport
-        ? "You need a support."
-        : needs.mustPickCore
-          ? "You need a core."
-          : "Any role still fits.";
-      return `Your team has ${count(needs.cores, "core")} and ${count(needs.supports, "support")}. ${role}`;
-    }
+      return phrase("challenge.situation.ban", lineup);
+    default:
+      return phrase("challenge.situation.pick", {
+        ...lineup,
+        role: phrase(
+          needs.mustPickSupport
+            ? "challenge.situation.needSupport"
+            : needs.mustPickCore
+              ? "challenge.situation.needCore"
+              : "challenge.situation.anyRole",
+        ),
+      });
   }
 }

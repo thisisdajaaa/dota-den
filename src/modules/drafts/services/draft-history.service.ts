@@ -196,6 +196,7 @@ export class DraftHistoryService {
     return {
       roomId: record.roomId,
       completedAt: record.completedAt.toISOString(),
+      rulesetId: record.rulesetId,
       rulesetName: ruleset.ok ? ruleset.value.name : record.rulesetId,
       yourSide: side,
       firstSide: record.firstSide,

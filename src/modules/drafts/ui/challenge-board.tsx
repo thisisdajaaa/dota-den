@@ -1,6 +1,7 @@
 "use client";
 
 import { apiRequest, errorMessage } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -9,16 +10,10 @@ import { ArrowRight, Info, Loader2, Share2, Shield, Swords, X } from "lucide-rea
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
-import {
-  GRADE_LABEL,
-  newSeed,
-  type ChallengeInfo,
-  type ChallengeResult,
-  type Grade,
-  type Puzzle,
-} from "../domain/challenges";
+import { newSeed, type ChallengeResult, type Grade, type Puzzle } from "../domain/challenges";
 import { saveResult, useChallengeProgress } from "./challenge-progress";
 import { HeroGrid } from "./hero-grid";
+import { actionName, sayOr } from "./i18n";
 import type { DraftHero } from "./types";
 
 const GRADE_STYLE: Record<Grade, string> = {
@@ -29,6 +24,7 @@ const GRADE_STYLE: Record<Grade, string> = {
 };
 
 export function GradeBadge({ grade, className }: { grade: Grade; className?: string }) {
+  const t = useT();
   return (
     <span
       className={cn(
@@ -37,7 +33,7 @@ export function GradeBadge({ grade, className }: { grade: Grade; className?: str
         className,
       )}
     >
-      {GRADE_LABEL[grade]}
+      {t(`drafts.challenge.grades.${grade}`)}
     </span>
   );
 }
@@ -69,6 +65,7 @@ function Lineup({
   heroes: Map<number, DraftHero>;
   tone: "you" | "enemy";
 }) {
+  const t = useT();
   return (
     <section
       aria-label={title}
@@ -83,24 +80,24 @@ function Lineup({
         {title}
       </h2>
       {ids.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No heroes picked yet.</p>
+        <p className="text-sm text-muted-foreground">{t("drafts.challenge.noPicks")}</p>
       ) : (
         <ul className="flex flex-wrap gap-2">
           {ids.map((id) => (
             <li key={id} className="flex w-[4.44rem] flex-col items-center gap-1">
               <Portrait hero={heroes.get(id)} id={id} />
               <span className="w-full truncate text-center text-[0.65rem] text-muted-foreground">
-                {heroes.get(id)?.name ?? `Hero #${id}`}
+                {heroes.get(id)?.name ?? t("drafts.challenge.hero", { id })}
               </span>
             </li>
           ))}
           {Array.from({ length: Math.max(0, total - ids.length) }, (_, i) => (
             <li
               key={`open-${i}`}
-              aria-label="Open slot"
+              aria-label={t("drafts.challenge.openSlot")}
               className="grid h-10 w-[4.44rem] place-items-center rounded-md border border-dashed border-white/15 text-[0.6rem] text-muted-foreground"
             >
-              open
+              {t("drafts.challenge.open")}
             </li>
           ))}
         </ul>
@@ -124,19 +121,18 @@ export interface SavedStreak {
 /** One draft challenge: the position, a hero picker, and the graded result. */
 export function ChallengeBoard({
   puzzle,
-  info,
   situation,
   heroes,
   saved: savedInitial = null,
 }: {
   puzzle: Puzzle;
-  info: ChallengeInfo;
   /** Plain-language description of the position. */
   situation: string;
   heroes: DraftHero[];
   /** Signed in: the streak saved on your account. */
   saved?: SavedStreak | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const heroMap = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes]);
   const unavailable = useMemo(
@@ -148,8 +144,8 @@ export function ChallengeBoard({
   const local = useChallengeProgress();
   const [saved, setSaved] = useState<SavedStreak | null>(savedInitial);
   const progress = saved ?? local;
-  const verb = puzzle.action === "pick" ? "pick" : "ban";
-  const name = (id: number) => heroMap.get(id)?.name ?? `Hero #${id}`;
+  const verb = actionName(t, puzzle.action);
+  const name = (id: number) => heroMap.get(id)?.name ?? t("drafts.challenge.hero", { id });
 
   function choose(id: number) {
     if (status.kind === "grading" || status.kind === "graded") return;
@@ -174,7 +170,7 @@ export function ChallengeBoard({
       } catch (e) {
         setStatus({
           kind: "error",
-          message: errorMessage(e, "Couldn't grade your answer. Please try again."),
+          message: errorMessage(e, t("drafts.challenge.gradeFailed")),
         });
         return;
       }
@@ -191,7 +187,7 @@ export function ChallengeBoard({
       if (account) setSaved({ streak: account.streak, best: account.best });
       setStatus({ kind: "graded", result, counted: account ? account.counted : countedHere });
     } catch {
-      setStatus({ kind: "error", message: "Network problem. Check your connection and retry." });
+      setStatus({ kind: "error", message: t("drafts.challenge.network") });
     }
   }
 
@@ -203,9 +199,9 @@ export function ChallengeBoard({
     const url = `${window.location.origin}/draft/challenges/${puzzle.type}?seed=${puzzle.seed}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Puzzle link copied");
+      toast.success(t("drafts.challenge.linkCopied"));
     } catch {
-      toast.error("Couldn't copy the link.");
+      toast.error(t("drafts.challenge.copyFailed"));
     }
   }
 
@@ -215,19 +211,28 @@ export function ChallengeBoard({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <p className="text-muted-foreground">
-          Streak <span className="font-semibold text-foreground">{progress.streak}</span>
+          {t("drafts.challenge.streak")}{" "}
+          <span className="font-semibold text-foreground">{progress.streak}</span>
           <span aria-hidden> · </span>
-          Best <span className="font-semibold text-foreground">{progress.best}</span>
+          {t("drafts.challenge.best")}{" "}
+          <span className="font-semibold text-foreground">{progress.best}</span>
         </p>
         <p className="text-xs text-muted-foreground">
-          Puzzle <code className="rounded bg-white/[0.06] px-1">{puzzle.seed}</code>
+          {t("drafts.challenge.puzzle")}{" "}
+          <code className="rounded bg-white/[0.06] px-1">{puzzle.seed}</code>
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Lineup title="Your team" ids={puzzle.yourPicks} total={5} heroes={heroMap} tone="you" />
         <Lineup
-          title="Enemy team"
+          title={t("drafts.challenge.yourTeam")}
+          ids={puzzle.yourPicks}
+          total={5}
+          heroes={heroMap}
+          tone="you"
+        />
+        <Lineup
+          title={t("drafts.challenge.enemyTeam")}
           ids={puzzle.enemyPicks}
           total={5}
           heroes={heroMap}
@@ -236,9 +241,9 @@ export function ChallengeBoard({
       </div>
 
       {puzzle.bans.length > 0 && (
-        <section aria-label="Banned heroes" className="panel space-y-2 p-4">
+        <section aria-label={t("drafts.challenge.bannedLabel")} className="panel space-y-2 p-4">
           <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-            Banned
+            {t("drafts.challenge.banned")}
           </h2>
           <ul className="flex flex-wrap gap-1.5">
             {puzzle.bans.map((id) => (
@@ -252,7 +257,7 @@ export function ChallengeBoard({
       )}
 
       <section
-        aria-label="Your task"
+        aria-label={t("drafts.challenge.task")}
         className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="space-y-1">
@@ -262,20 +267,20 @@ export function ChallengeBoard({
             ) : (
               <Shield aria-hidden className="size-4 text-gold" />
             )}
-            {info.task}
+            {t(`drafts.challenge.types.${puzzle.type}.task`)}
           </h2>
           <p className="text-sm text-muted-foreground">{situation}</p>
         </div>
         {!graded && (
           <div className="flex flex-wrap items-center gap-2">
-            <ul aria-label="Your choice" className="flex flex-wrap gap-1.5">
+            <ul aria-label={t("drafts.challenge.choice")} className="flex flex-wrap gap-1.5">
               {selected.map((id) => (
                 <li key={id}>
                   <button
                     type="button"
                     onClick={() => choose(id)}
                     disabled={status.kind === "grading"}
-                    aria-label={`Remove ${name(id)}`}
+                    aria-label={t("drafts.challenge.remove", { hero: name(id) })}
                     className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2.5 py-1 text-xs font-medium text-gold ring-1 ring-gold/40 hover:bg-gold/25 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {name(id)} <X aria-hidden className="size-3" />
@@ -289,12 +294,15 @@ export function ChallengeBoard({
             >
               {status.kind === "grading" ? (
                 <>
-                  <Loader2 aria-hidden className="size-4 animate-spin" /> Grading…
+                  <Loader2 aria-hidden className="size-4 animate-spin" />{" "}
+                  {t("drafts.challenge.grading")}
                 </>
               ) : puzzle.answerCount === 2 ? (
-                `Lock in ${selected.length}/2 bans`
+                t("drafts.challenge.lockBans", { n: selected.length })
+              ) : puzzle.action === "pick" ? (
+                t("drafts.challenge.lockPick")
               ) : (
-                `Lock in ${verb}`
+                t("drafts.challenge.lockBan")
               )}
             </Button>
           </div>
@@ -341,27 +349,29 @@ function ResultPanel({
   onNext: () => void;
   onShare: () => void;
 }) {
+  const t = useT();
   return (
-    <section aria-label="Result" aria-live="polite" className="space-y-4">
+    <section aria-label={t("drafts.challenge.result")} aria-live="polite" className="space-y-4">
       <div className="panel space-y-4 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <p className="kicker">Your grade</p>
+            <p className="kicker">{t("drafts.challenge.yourGrade")}</p>
             <GradeBadge grade={result.grade} className="px-3 py-1 text-sm" />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={onShare}>
-              <Share2 aria-hidden className="size-4" /> Share this puzzle
+              <Share2 aria-hidden className="size-4" /> {t("drafts.challenge.share")}
             </Button>
             <Button onClick={onNext}>
-              Next puzzle <ArrowRight aria-hidden className="size-4" />
+              {t("drafts.challenge.next")} <ArrowRight aria-hidden className="size-4" />
             </Button>
           </div>
         </div>
 
         {result.notice && (
           <p className="flex items-start gap-2 rounded-lg bg-gold/10 p-3 text-sm text-gold">
-            <Info aria-hidden className="mt-0.5 size-4 shrink-0" /> {result.notice}
+            <Info aria-hidden className="mt-0.5 size-4 shrink-0" />{" "}
+            {result.basis === "role_fit" ? t("drafts.challenge.roleFitNotice") : result.notice}
           </p>
         )}
 
@@ -373,11 +383,11 @@ function ResultPanel({
                 <p className="flex flex-wrap items-center gap-2 font-semibold">
                   {c.name} <GradeBadge grade={c.grade} />
                 </p>
-                <p className="text-sm">{c.verdict}</p>
+                <p className="text-sm">{sayOr(t, c.verdictPhrase, c.verdict)}</p>
                 {c.facts.length > 0 && (
                   <ul className="list-inside list-disc text-xs text-muted-foreground">
-                    {c.facts.map((f) => (
-                      <li key={f}>{f}</li>
+                    {c.facts.map((f, i) => (
+                      <li key={f}>{sayOr(t, c.factPhrases?.[i], f)}</li>
                     ))}
                   </ul>
                 )}
@@ -386,15 +396,16 @@ function ResultPanel({
           ))}
         </ul>
         {!counted && (
-          <p className="text-xs text-muted-foreground">
-            You&apos;ve answered this puzzle before, so this result doesn&apos;t change your streak.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("drafts.challenge.notCounted")}</p>
         )}
       </div>
 
       {result.best.length > 0 && (
-        <section aria-label="Best alternatives" className="panel space-y-3 p-4 sm:p-5">
-          <h2 className="font-semibold">Strongest options by the numbers</h2>
+        <section
+          aria-label={t("drafts.challenge.alternatives")}
+          className="panel space-y-3 p-4 sm:p-5"
+        >
+          <h2 className="font-semibold">{t("drafts.challenge.strongest")}</h2>
           <ol className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {result.best.map((b, i) => (
               <li key={b.heroId} className="flex gap-3 rounded-lg bg-white/[0.03] p-3">
@@ -405,8 +416,8 @@ function ResultPanel({
                     <span className="truncate font-medium">{b.name}</span>
                   </div>
                   <ul className="space-y-0.5 text-xs text-muted-foreground">
-                    {b.facts.map((f) => (
-                      <li key={f}>{f}</li>
+                    {b.facts.map((f, i) => (
+                      <li key={f}>{sayOr(t, b.factPhrases?.[i], f)}</li>
                     ))}
                   </ul>
                 </div>
@@ -417,12 +428,12 @@ function ResultPanel({
       )}
 
       <p className="text-xs text-muted-foreground">
-        {result.disclaimer}{" "}
+        {t("drafts.challenge.disclaimer")}{" "}
         <Link
           href="/draft/challenges"
           className="underline underline-offset-2 hover:text-foreground"
         >
-          All challenges
+          {t("drafts.challenge.all")}
         </Link>
       </p>
     </section>

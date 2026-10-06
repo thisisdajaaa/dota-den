@@ -2,18 +2,21 @@ import Link from "next/link";
 import { Info, Medal, UserPlus } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import { plural, type Translator } from "@/common/i18n/translate";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
-import { formatPercent, plural } from "@/modules/matches/ui/format";
+import { formatPercent } from "@/modules/matches/ui/format";
 import { RankMedal } from "@/modules/matches/ui/rank-medal";
 import { PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import type { BoardView, PlayerView } from "../dtos/responses/leaderboard-views.dto";
 import type { BoardKind } from "../domain/ranking";
-import { BOARD_LABEL, BOARD_RULES } from "./copy";
+type T = Translator<Messages>;
 
-const CTA: Record<BoardKind, { href: string; label: string }> = {
-  drafts: { href: "/draft", label: "Start a draft" },
-  challenges: { href: "/draft/challenges", label: "Try a challenge" },
-  rooms: { href: "/draft/rooms/new", label: "Draft with a friend" },
+const CTA_HREF: Record<BoardKind, string> = {
+  drafts: "/draft",
+  challenges: "/draft/challenges",
+  rooms: "/draft/rooms/new",
 };
 
 interface Stat {
@@ -28,42 +31,52 @@ type Row = BoardView["rows"][number];
 
 const score = (n: number | null) => (n === null ? "—" : n.toFixed(1).replace(/\.0$/, ""));
 
-function statsOf(kind: BoardKind, row: Row): Stat[] {
+function statsOf(t: T, kind: BoardKind, row: Row): Stat[] {
   const s = row.stats as Record<string, unknown>;
   switch (kind) {
     case "drafts": {
       const grade = s.bestGrade as string | null;
       return [
-        { label: "Drafts", value: String(s.drafts) },
+        { label: t("leaderboards.stats.drafts"), value: String(s.drafts) },
         {
-          label: "Best score",
+          label: t("leaderboards.stats.bestScore"),
           value: score(s.bestScore as number | null),
-          detail: grade ? `Grade ${grade}` : undefined,
+          detail: grade ? t("leaderboards.stats.grade", { grade }) : undefined,
         },
-        { label: "Avg score", value: score(s.avgScore as number | null), secondary: true },
+        {
+          label: t("leaderboards.stats.avgScore"),
+          value: score(s.avgScore as number | null),
+          secondary: true,
+        },
       ];
     }
     case "challenges":
       return [
-        { label: "Correct", value: String(s.correct) },
-        { label: "Best streak", value: String(s.bestStreak) },
+        { label: t("leaderboards.stats.correct"), value: String(s.correct) },
+        { label: t("leaderboards.stats.bestStreak"), value: String(s.bestStreak) },
         {
-          label: "Accuracy",
+          label: t("leaderboards.stats.accuracy"),
           value: formatPercent(s.accuracy as number | null),
-          detail: `of ${plural(s.answered as number, "answer")}`,
+          detail: t("leaderboards.stats.ofAnswers", {
+            answers: plural(t, "leaderboards.units.answer", s.answered as number),
+          }),
           secondary: true,
         },
       ];
     case "rooms":
       return [
-        { label: "Drafts", value: String(s.drafts) },
-        { label: "Wins", value: String(s.wins), detail: "self-reported" },
-        { label: "Losses", value: String(s.losses), secondary: true },
+        { label: t("leaderboards.stats.drafts"), value: String(s.drafts) },
+        {
+          label: t("leaderboards.stats.wins"),
+          value: String(s.wins),
+          detail: t("leaderboards.stats.selfReported"),
+        },
+        { label: t("leaderboards.stats.losses"), value: String(s.losses), secondary: true },
       ];
   }
 }
 
-function PlayerCell({ player }: { player: PlayerView }) {
+function PlayerCell({ t, player }: { t: T; player: PlayerView }) {
   const rank = parseRankTier(player.rankTier, player.leaderboardRank);
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -78,22 +91,27 @@ function PlayerCell({ player }: { player: PlayerView }) {
           </Link>
           {player.isYou && (
             <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-[0.65rem] font-semibold text-gold ring-1 ring-gold/40">
-              You
+              {t("leaderboards.board.you")}
             </span>
           )}
         </p>
-        {!rank && <p className="text-xs text-muted-foreground">Rank unknown</p>}
+        {!rank && (
+          <p className="text-xs text-muted-foreground">{t("leaderboards.board.rankUnknown")}</p>
+        )}
       </div>
       {rank && <RankMedal rank={rank} size={36} className="ml-auto sm:ml-0" />}
     </div>
   );
 }
 
-function BoardRow({ kind, row }: { kind: BoardKind; row: Row }) {
+function BoardRow({ t, kind, row }: { t: T; kind: BoardKind; row: Row }) {
   const podium = row.rank <= 3;
   return (
     <li
-      aria-label={`Rank ${row.rank}: ${row.player.name}${row.player.isYou ? " (you)" : ""}`}
+      aria-label={t(
+        row.player.isYou ? "leaderboards.board.rowLabelYou" : "leaderboards.board.rowLabel",
+        { rank: row.rank, name: row.player.name },
+      )}
       aria-current={row.player.isYou ? "true" : undefined}
       className={cn(
         "flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-5",
@@ -108,9 +126,9 @@ function BoardRow({ kind, row }: { kind: BoardKind; row: Row }) {
       >
         {row.rank}
       </span>
-      <PlayerCell player={row.player} />
+      <PlayerCell t={t} player={row.player} />
       <dl className="ml-12 grid w-full grid-cols-2 gap-x-4 gap-y-1 text-right sm:ml-0 sm:w-auto sm:grid-cols-3">
-        {statsOf(kind, row).map((stat) => (
+        {statsOf(t, kind, row).map((stat) => (
           <div
             key={stat.label}
             className={cn(
@@ -136,22 +154,32 @@ function BoardRow({ kind, row }: { kind: BoardKind; row: Row }) {
   );
 }
 
-function InviteHint() {
+function InviteHint({ t }: { t: T }) {
   return (
     <p className="flex items-start gap-2 text-sm text-muted-foreground">
       <UserPlus aria-hidden className="mt-0.5 size-4 shrink-0 text-gold" />
       <span>
-        Invite a friend: create a room at{" "}
+        {t("leaderboards.board.inviteBefore")}{" "}
         <Link href="/draft/rooms/new" className="text-gold hover:underline">
           /draft/rooms/new
         </Link>{" "}
-        and send them the link. Once they sign in and play, they show up here.
+        {t("leaderboards.board.inviteAfter")}
       </span>
     </p>
   );
 }
 
-function Empty({ title, body, board }: { title: string; body?: string; board: BoardKind }) {
+function Empty({
+  t,
+  title,
+  body,
+  board,
+}: {
+  t: T;
+  title: string;
+  body?: string;
+  board: BoardKind;
+}) {
   return (
     <div className="grid place-items-center gap-3 px-6 py-12 text-center">
       <span className="grid size-12 place-items-center rounded-full bg-gold/10 text-gold ring-1 ring-gold/30">
@@ -160,38 +188,52 @@ function Empty({ title, body, board }: { title: string; body?: string; board: Bo
       <h3 className="font-semibold">{title}</h3>
       {body && <p className="max-w-md text-sm text-muted-foreground">{body}</p>}
       <Button asChild size="sm">
-        <Link href={CTA[board].href}>{CTA[board].label}</Link>
+        <Link href={CTA_HREF[board]}>{t(`leaderboards.cta.${board}`)}</Link>
       </Button>
     </div>
   );
 }
 
 /** One leaderboard: ranked rows, your own row highlighted, honest empty states. */
-export function LeaderboardBoard({ view }: { view: BoardView }) {
+export async function LeaderboardBoard({ view }: { view: BoardView }) {
+  const t = await getT();
   const { kind, scope, period } = view;
-  const when = period === "week" ? " this week" : "";
+  const week = period === "week";
   const youOnBoard = view.rows.some((r) => r.player.isYou) || view.youBelowCut !== null;
   const othersOnBoard = view.rows.some((r) => !r.player.isYou);
   const noFriendAccounts = scope === "friends" && view.friendsWithAccounts === 0;
 
   let empty: { title: string; body?: string } | null = null;
   if (view.rows.length === 0) {
-    if (scope === "everyone") empty = { title: `Nobody has played yet${when}.` };
+    if (scope === "everyone")
+      empty = {
+        title: t(week ? "leaderboards.board.nobodyWeek" : "leaderboards.board.nobody"),
+      };
     else if (noFriendAccounts)
       empty = {
-        title: "None of your friends have Dota Den accounts yet",
-        body: "Friends are players you track, your OpenDota teammates and people you've drafted with in rooms, once they sign in here.",
+        title: t("leaderboards.board.noAccountsTitle"),
+        body: t("leaderboards.board.noAccountsBody"),
       };
-    else empty = { title: `None of your friends have played yet${when}.` };
+    else
+      empty = {
+        title: t(
+          week ? "leaderboards.board.friendsNotPlayedWeek" : "leaderboards.board.friendsNotPlayed",
+        ),
+      };
   }
 
   return (
-    <section aria-label={`${BOARD_LABEL[kind]} leaderboard`} className="panel overflow-hidden">
+    <section
+      aria-label={t("leaderboards.board.label", { board: t(`leaderboards.boards.${kind}`) })}
+      className="panel overflow-hidden"
+    >
       <div className="space-y-1 p-5 pb-3">
-        <h2 className="font-display text-xl font-semibold tracking-wide">{BOARD_LABEL[kind]}</h2>
+        <h2 className="font-display text-xl font-semibold tracking-wide">
+          {t(`leaderboards.boards.${kind}`)}
+        </h2>
         <p className="text-xs text-muted-foreground">
-          {BOARD_RULES[kind]}
-          {period === "week" && " The week starts Monday 00:00 UTC."}
+          {t(`leaderboards.rules.${kind}`)}
+          {week && ` ${t("leaderboards.weekStarts")}`}
         </p>
       </div>
 
@@ -201,17 +243,16 @@ export function LeaderboardBoard({ view }: { view: BoardView }) {
           className="flex items-start gap-2 border-t border-white/[0.06] px-5 py-3 text-xs text-muted-foreground"
         >
           <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-          Some of your friends couldn&apos;t be loaded right now (OpenDota may be busy), so this
-          board may be missing people.
+          {t("leaderboards.board.friendsIncomplete")}
         </p>
       )}
 
       {empty ? (
         <div className="border-t border-white/[0.06]">
-          <Empty title={empty.title} body={empty.body} board={kind} />
+          <Empty t={t} title={empty.title} body={empty.body} board={kind} />
           {scope === "friends" && (
             <div className="border-t border-white/[0.06] px-5 py-4">
-              <InviteHint />
+              <InviteHint t={t} />
             </div>
           )}
         </div>
@@ -219,28 +260,32 @@ export function LeaderboardBoard({ view }: { view: BoardView }) {
         <>
           <ol className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
             {view.rows.map((row) => (
-              <BoardRow key={row.player.accountId32} kind={kind} row={row} />
+              <BoardRow key={row.player.accountId32} t={t} kind={kind} row={row} />
             ))}
           </ol>
           {view.youBelowCut && (
             <div className="border-t border-dashed border-white/[0.1]">
               <p className="px-5 pt-3 text-[0.65rem] tracking-wide text-muted-foreground uppercase">
-                Your position
+                {t("leaderboards.board.yourPosition")}
               </p>
               <ol>
-                <BoardRow kind={kind} row={view.youBelowCut} />
+                <BoardRow t={t} kind={kind} row={view.youBelowCut} />
               </ol>
             </div>
           )}
           <div className="space-y-3 border-t border-white/[0.06] px-5 py-4 text-sm text-muted-foreground">
             <p>
-              {plural(view.total, "player")} on this board{when}.
+              {plural(
+                t,
+                week ? "leaderboards.board.totalWeek" : "leaderboards.board.total",
+                view.total,
+              )}
               {!youOnBoard && (
                 <>
                   {" "}
-                  You&apos;re not on it yet{when}.{" "}
-                  <Link href={CTA[kind].href} className="text-gold hover:underline">
-                    {CTA[kind].label}
+                  {t(week ? "leaderboards.board.notOnYetWeek" : "leaderboards.board.notOnYet")}{" "}
+                  <Link href={CTA_HREF[kind]} className="text-gold hover:underline">
+                    {t(`leaderboards.cta.${kind}`)}
                   </Link>
                   .
                 </>
@@ -250,10 +295,14 @@ export function LeaderboardBoard({ view }: { view: BoardView }) {
               <>
                 <p>
                   {noFriendAccounts
-                    ? "None of your friends have Dota Den accounts yet."
-                    : `None of your friends have played yet${when}.`}
+                    ? t("leaderboards.board.noAccounts")
+                    : t(
+                        week
+                          ? "leaderboards.board.friendsNotPlayedWeek"
+                          : "leaderboards.board.friendsNotPlayed",
+                      )}
                 </p>
-                <InviteHint />
+                <InviteHint t={t} />
               </>
             )}
           </div>

@@ -1,8 +1,10 @@
+import { getT } from "@/common/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function PlayersLoading() {
+export default async function PlayersLoading() {
+  const t = await getT();
   return (
-    <div className="space-y-6" aria-busy aria-label="Loading players">
+    <div className="space-y-6" aria-busy aria-label={t("players.page.loading")}>
       <div className="space-y-2">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-9 w-48" />

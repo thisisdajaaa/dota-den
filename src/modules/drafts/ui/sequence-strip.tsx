@@ -1,6 +1,10 @@
+"use client";
+
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 import type { DraftTurnRecord, Side } from "../domain/draft-state";
 import type { DraftStep } from "../domain/rulesets";
+import { actionName, sideName } from "./i18n";
 import type { DraftHero } from "./types";
 
 /** The whole pick/ban order at a glance; done steps show the hero, the current one glows. */
@@ -17,9 +21,10 @@ export function SequenceStrip({
   stepIndex: number;
   heroes: Map<number, DraftHero>;
 }) {
+  const t = useT();
   const other: Side = firstSide === "radiant" ? "dire" : "radiant";
   return (
-    <ol aria-label="Draft order" className="flex gap-1 overflow-x-auto pb-1">
+    <ol aria-label={t("drafts.sequence.label")} className="flex gap-1 overflow-x-auto pb-1">
       {sequence.map((step, i) => {
         const side = step.team === "first" ? firstSide : other;
         const done = turns[i];
@@ -29,7 +34,11 @@ export function SequenceStrip({
           <li
             key={i}
             aria-current={current ? "step" : undefined}
-            title={`${i + 1}. ${side === "radiant" ? "Radiant" : "Dire"} ${step.action}${hero ? `: ${hero.name}` : done ? " (skipped)" : ""}`}
+            title={`${t("drafts.sequence.step", {
+              n: i + 1,
+              side: sideName(t, side),
+              action: actionName(t, step.action),
+            })}${hero ? `: ${hero.name}` : done ? t("drafts.sequence.skipped") : ""}`}
             className={cn(
               "relative flex h-10 w-8 shrink-0 flex-col items-center justify-end overflow-hidden rounded border text-[0.55rem] font-bold uppercase",
               side === "radiant" ? "border-win/40" : "border-loss/40",
@@ -56,7 +65,9 @@ export function SequenceStrip({
                 side === "radiant" ? "text-win" : "text-loss",
               )}
             >
-              {step.action === "ban" ? "B" : "P"}
+              {step.action === "ban"
+                ? t("drafts.sequence.banLetter")
+                : t("drafts.sequence.pickLetter")}
             </span>
           </li>
         );

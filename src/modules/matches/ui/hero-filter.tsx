@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useT } from "@/common/i18n/client";
 
 /** Hero picker that navigates to the matching filter URL. */
 export function HeroFilter({
@@ -20,6 +21,7 @@ export function HeroFilter({
   /** Pre-built URLs keyed by hero id ("all" clears the filter). */
   hrefFor: Record<string, string>;
 }) {
+  const t = useT();
   const router = useRouter();
   return (
     <Select
@@ -29,12 +31,12 @@ export function HeroFilter({
       <SelectTrigger
         size="sm"
         className="h-8 w-48 border-white/[0.07] bg-card/60 text-xs"
-        aria-label="Hero"
+        aria-label={t("matches.filters.hero")}
       >
-        <SelectValue placeholder="All heroes" />
+        <SelectValue placeholder={t("matches.filters.allHeroes")} />
       </SelectTrigger>
       <SelectContent className="max-h-80">
-        <SelectItem value="all">All heroes</SelectItem>
+        <SelectItem value="all">{t("matches.filters.allHeroes")}</SelectItem>
         {options.map((o) => (
           <SelectItem key={o.heroId} value={String(o.heroId)}>
             {o.name} <span className="text-muted-foreground">· {o.games}</span>

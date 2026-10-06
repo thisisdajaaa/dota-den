@@ -1,10 +1,12 @@
+import { getT } from "@/common/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PairAnalysisSkeleton() {
+export async function PairAnalysisSkeleton() {
+  const t = await getT();
   return (
-    <div className="space-y-6" aria-busy aria-label="Analysing your games together">
+    <div className="space-y-6" aria-busy aria-label={t("together.skeleton.label")}>
       <p className="text-sm text-muted-foreground" role="status">
-        Checking your shared matches for party data…
+        {t("together.skeleton.status")}
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }, (_, i) => (
