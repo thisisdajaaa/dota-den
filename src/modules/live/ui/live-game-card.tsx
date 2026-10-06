@@ -27,6 +27,7 @@ export function LineupRow({
             <HeroPortrait hero={heroes.get(p.heroId)} heroId={p.heroId} size="sm" />
           ) : (
             <span
+              role="img"
               className="block aspect-[16/9] rounded bg-white/[0.04]"
               aria-label="Not picked yet"
             />
