@@ -3,8 +3,8 @@ import { OG, OG_SIZE, OgFrame } from "@/components/og/og-frame";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { rankLabel } from "@/modules/matches/ui/rank-medal";
 import { getPlayerProfile } from "@/modules/matches/composition";
-import { getPlayerDirectory } from "@/modules/players/composition";
 import { parseAccountId } from "@/modules/players/domain/player-lookup";
+import { playerDirectory } from "@/modules/players";
 
 export const alt = "Dota 2 player on Dota Den";
 export const size = OG_SIZE;
@@ -14,7 +14,7 @@ export const contentType = "image/png";
 export default async function Image({ params }: { params: Promise<{ accountId: string }> }) {
   const id = parseAccountId((await params).accountId);
   const [profile, record] = id
-    ? await Promise.all([getPlayerProfile(id), getPlayerDirectory().winLoss(id)])
+    ? await Promise.all([getPlayerProfile(id), playerDirectory.winLoss(id)])
     : [null, null];
   const name = profile?.personaName ?? (id ? `Player ${id}` : "Player");
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);

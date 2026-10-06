@@ -7,12 +7,6 @@ import {
   getOpenDotaAdapter,
   getPublicRecentMatches,
 } from "@/modules/matches/composition";
-import { ownerOf } from "@/modules/players/application/follow-service";
-import {
-  getFollowService,
-  getPlayerDirectory,
-  getPublicProfile,
-} from "@/modules/players/composition";
 import { ok, type Result } from "@/common/result";
 import {
   MAX_OVERVIEW_TEAMMATES,
@@ -42,6 +36,7 @@ import {
   type TeammateStat,
 } from "./domain/teammates";
 import * as userData from "./infrastructure/user-data";
+import { followService, ownerOf, playerDirectory, playersService } from "@/modules/players";
 
 /** Shared matches considered per friend (OpenDota's most recent, one upstream call). */
 export const SHARED_MATCH_LIMIT = 100;
@@ -92,8 +87,8 @@ export async function getTogetherCandidates(user: {
 }): Promise<TogetherCandidates> {
   const me = user.accountId32;
   const [peers, follows, overview] = await Promise.all([
-    getPlayerDirectory().peers(me),
-    getFollowService().then((s) => s.list(ownerOf(user))),
+    playerDirectory.peers(me),
+    followService.list(ownerOf(user)),
     getTogetherService().then((s) => s.overview(me)),
   ]);
   if (!peers.ok) logger.warn("together_peers_failed", { reason: peers.error.type });
@@ -118,7 +113,7 @@ export async function getTogetherCandidates(user: {
     .slice(0, MAX_TRACKED_CANDIDATES);
   const fromTracked = await Promise.all(
     extra.map(async (f): Promise<FriendCandidate> => {
-      const profile = await getPublicProfile(f.accountId32);
+      const profile = await playersService.publicProfile(f.accountId32);
       return {
         accountId32: f.accountId32,
         personaName: profile?.personaName ?? null,
@@ -162,7 +157,7 @@ export async function getTeammatesOverview(user: {
   accountId32: number;
 }): Promise<Result<TeammatesOverview, ProviderError>> {
   const me = user.accountId32;
-  const directory = getPlayerDirectory();
+  const directory = playerDirectory;
   const queries = await getMatchQueries();
   const [peers, wl, own, together] = await Promise.all([
     directory.peers(me),
@@ -200,7 +195,7 @@ export async function getTeammatesOverview(user: {
     await mapLimit(
       listed,
       4,
-      async (t) => [t.accountId32, await getPublicProfile(t.accountId32)] as const,
+      async (t) => [t.accountId32, await playersService.publicProfile(t.accountId32)] as const,
     ),
   );
   const view = (t: TeammateStat): TeammateView => {

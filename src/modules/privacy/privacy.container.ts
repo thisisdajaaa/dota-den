@@ -8,7 +8,7 @@ import * as leaderboards from "@/modules/leaderboards/composition";
 import * as matches from "@/modules/matches/composition";
 import * as mmr from "@/modules/mmr/composition";
 import * as patches from "@/modules/patches/composition";
-import * as players from "@/modules/players/composition";
+import { followService } from "@/modules/players";
 import { sessionService } from "@/modules/sessions";
 import * as together from "@/modules/together/composition";
 import { PrivacyController } from "./privacy.controller";
@@ -18,7 +18,7 @@ export const privacyService = new PrivacyService({
   parts: [
     mmr,
     sessionService,
-    players,
+    followService,
     patches,
     leaderboards,
     drafts,

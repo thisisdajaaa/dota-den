@@ -10,7 +10,6 @@ import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
-import { getPublicPlayer } from "@/modules/players/composition";
 import {
   headToHead,
   MIN_SHARED_HERO_GAMES,
@@ -22,12 +21,13 @@ import {
 import { parseAccountId } from "@/modules/players/domain/player-lookup";
 import { topTeammates } from "@/modules/players/domain/public-player";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
+import { playersService, type PublicPlayerView } from "@/modules/players";
 
 export const metadata: Metadata = { title: "Compare players" };
 
 const rate = (t: Tally | null) => (t && t.games ? t.wins / t.games : null);
 
-type Loaded = Awaited<ReturnType<typeof getPublicPlayer>>;
+type Loaded = PublicPlayerView;
 
 export default async function ComparePage({ searchParams }: PageProps<"/players/compare">) {
   const params = await searchParams;
@@ -52,7 +52,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
   );
 
   if (a === null || b === null || a === b) {
-    const aView = a !== null ? await getPublicPlayer(a) : null;
+    const aView = a !== null ? await playersService.publicPlayer(a) : null;
     const suggestions = aView?.peers.ok ? topTeammates(aView.peers.value, 6) : [];
     return (
       <div className="space-y-6">
@@ -115,8 +115,8 @@ export default async function ComparePage({ searchParams }: PageProps<"/players/
   }
 
   const [aView, bView, heroes] = await Promise.all([
-    getPublicPlayer(a),
-    getPublicPlayer(b),
+    playersService.publicPlayer(a),
+    playersService.publicPlayer(b),
     getHeroMap(),
   ]);
   const side = (id: number, v: Loaded) => {

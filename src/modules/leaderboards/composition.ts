@@ -14,12 +14,6 @@ import { getAiOpponent, getDraftHistoryService } from "@/modules/drafts/composit
 import { getCurrentUser, usersService } from "@/modules/identity";
 import type { User } from "@/modules/identity/domain/user";
 import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
-import { ownerOf } from "@/modules/players/application/follow-service";
-import {
-  getFollowService,
-  getPlayerDirectory,
-  getPublicProfile,
-} from "@/modules/players/composition";
 import { err, ok } from "@/common/result";
 import { ActivityService } from "./application/activity-service";
 import { LeaderboardService } from "./application/leaderboard-service";
@@ -37,6 +31,7 @@ import {
 } from "./infrastructure/mongo-activity-repository";
 import { bestHeroThisWeek, rankedWeekFor } from "./infrastructure/opendota-ranked-week";
 import * as userData from "./infrastructure/user-data";
+import { followService, ownerOf, playerDirectory, playersService } from "@/modules/players";
 
 /** OpenDota teammates considered as friends (most games on the same team first). */
 const MAX_PEER_FRIENDS = 200;
@@ -100,8 +95,8 @@ const friends: FriendFinder = {
   async friendAccountIds(viewer) {
     const user = { id: viewer.userId, accountId32: viewer.accountId32 };
     const [tracked, peers, rooms] = await Promise.allSettled([
-      getFollowService().then((s) => s.list(ownerOf(user))),
-      getPlayerDirectory().peers(viewer.accountId32),
+      followService.list(ownerOf(user)),
+      playerDirectory.peers(viewer.accountId32),
       getDraftHistoryService().then((s) => s.opponents(viewer.userId, MAX_ROOM_FRIENDS)),
     ]);
     let incomplete = false;
@@ -161,7 +156,7 @@ export async function getLeaderboardService(): Promise<LeaderboardService> {
     accounts,
     profiles: {
       profile: async (accountId32) => {
-        const p = await getPublicProfile(accountId32);
+        const p = await playersService.publicProfile(accountId32);
         return p
           ? {
               personaName: p.personaName,
@@ -221,7 +216,7 @@ export async function getRankedWeek(viewer: {
   // OpenDota reports 0–0 for private match data too: only call it "didn't play" when the
   // profile says the history is fully public.
   const idleProfiles = await mapLimit(idle, RANKED_WEEK_CONCURRENCY, (id) =>
-    getPublicProfile(id).catch(() => null),
+    playersService.publicProfile(id).catch(() => null),
   );
   const reallyIdle = idleProfiles.filter((p) => p?.matchHistory === "full").length;
   // Best heroes for the top of the board only: each is one more OpenDota call.
@@ -230,7 +225,7 @@ export async function getRankedWeek(viewer: {
   );
   best.forEach((b, i) => (rows[i].bestHero = b));
   const profiles = await mapLimit(rows, RANKED_WEEK_CONCURRENCY, (r) =>
-    getPublicProfile(r.accountId32).catch(() => null),
+    playersService.publicProfile(r.accountId32).catch(() => null),
   );
   return {
     rows: rows.map((r, i) => ({

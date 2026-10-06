@@ -16,8 +16,6 @@ import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { PlayerBanner } from "@/modules/matches/ui/player-banner";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
-import { ownerOf } from "@/modules/players/application/follow-service";
-import { getFollowService, getPublicPlayer } from "@/modules/players/composition";
 import { parseAccountId } from "@/modules/players/domain/player-lookup";
 import {
   topHeroes,
@@ -29,6 +27,7 @@ import { MostPlayedHeroesCard } from "@/modules/players/ui/most-played-heroes-ca
 import { displayName } from "@/modules/players/ui/player-avatar";
 import { PlaysWithCard } from "@/modules/players/ui/plays-with-card";
 import { TrackButton } from "@/modules/players/ui/track-button";
+import { followService, ownerOf, playersService } from "@/modules/players";
 
 function upstreamErrorCopy(error: { type: string }, what: string): string {
   return error.type === "rate_limited"
@@ -50,7 +49,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
   if (accountId32 === null) notFound();
 
   const [view, heroes, viewer] = await Promise.all([
-    getPublicPlayer(accountId32),
+    playersService.publicPlayer(accountId32),
     getHeroMap(),
     getCurrentUser({ tolerateErrors: true }),
   ]);
@@ -59,11 +58,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
   const isSelf = viewer?.accountId32 === accountId32;
   const tracked =
     viewer && !isSelf
-      ? await (
-          await getFollowService()
-        )
-          .isFollowing(ownerOf(viewer), accountId32)
-          .catch(() => false)
+      ? await followService.isFollowing(ownerOf(viewer), accountId32).catch(() => false)
       : false;
 
   const profile = view.profile.ok ? view.profile.value : null;

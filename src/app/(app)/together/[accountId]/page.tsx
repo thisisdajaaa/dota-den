@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
-import { getPublicProfile } from "@/modules/players/composition";
 import { parseAccountId } from "@/modules/players/domain/player-lookup";
 import { displayName } from "@/modules/players/ui/player-avatar";
 import { getPairAnalysis } from "@/modules/together/composition";
@@ -19,13 +18,14 @@ import {
   PendingNotice,
 } from "@/modules/together/ui/pair-sections";
 import { PairAnalysisSkeleton } from "@/modules/together/ui/pair-skeleton";
+import { playersService } from "@/modules/players";
 
 export async function generateMetadata({
   params,
 }: PageProps<"/together/[accountId]">): Promise<Metadata> {
   const accountId32 = parseAccountId((await params).accountId);
   if (accountId32 === null) return { title: "Player not found" };
-  const profile = await getPublicProfile(accountId32);
+  const profile = await playersService.publicProfile(accountId32);
   return { title: `Together with ${displayName(profile?.personaName ?? null, accountId32)}` };
 }
 
@@ -37,8 +37,8 @@ export default async function TogetherPairPage({ params }: PageProps<"/together/
   if (friendId === user.accountId32) redirect("/together");
 
   const [myProfile, friendProfile] = await Promise.all([
-    getPublicProfile(user.accountId32),
-    getPublicProfile(friendId),
+    playersService.publicProfile(user.accountId32),
+    playersService.publicProfile(friendId),
   ]);
   const me = {
     accountId32: user.accountId32,

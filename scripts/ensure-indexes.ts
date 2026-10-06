@@ -20,7 +20,7 @@ import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match
 import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-medal-history";
 import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
 import { ensurePatchIndexes } from "@/modules/patches/infrastructure/mongo-patch-repositories";
-import { ensurePlayerIndexes } from "@/modules/players/infrastructure/mongo-follow-repository";
+import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
 import {
   SessionNotesRepository,
   SessionSettingsRepository,
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
   await ensureMmrIndexes(db);
   await ensureMedalHistoryIndexes(db);
   await ensurePatchIndexes(db);
-  await ensurePlayerIndexes(db);
+  await new FollowsRepository(async () => db).ensureIndexes();
   await Promise.all([
     new SessionNotesRepository(async () => db).ensureIndexes(),
     new SessionSettingsRepository(async () => db).ensureIndexes(),

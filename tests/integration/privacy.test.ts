@@ -13,7 +13,8 @@ import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
 import * as matches from "@/modules/matches/infrastructure/user-data";
 import * as mmr from "@/modules/mmr/infrastructure/user-data";
 import * as patches from "@/modules/patches/infrastructure/user-data";
-import * as players from "@/modules/players/infrastructure/user-data";
+import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
+import { FollowService } from "@/modules/players/services/follow.service";
 import {
   SessionNotesRepository,
   SessionSettingsRepository,
@@ -69,6 +70,11 @@ const sessions = servicePart((getDb) => {
     settings,
     data: { notes, settings },
   });
+});
+
+const players = servicePart((getDb) => {
+  const repo = new FollowsRepository(getDb);
+  return new FollowService(repo, { data: repo });
 });
 
 const PARTS = [

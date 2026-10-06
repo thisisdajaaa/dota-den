@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { Check, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,29 +26,26 @@ export function TrackButton({
 
   async function toggle() {
     setBusy(true);
-    const res = await fetch(
+    const status = await apiRequest(
       tracked ? `/api/v1/me/follows/${accountId32}` : "/api/v1/me/follows",
-      tracked
-        ? { method: "DELETE" }
-        : {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ accountId32 }),
-          },
-    ).catch(() => null);
+      tracked ? { method: "DELETE" } : { method: "POST", body: { accountId32 } },
+    ).then(
+      () => 200,
+      (e: unknown) => (e instanceof ApiClientError ? e.status : 0),
+    );
     setBusy(false);
-    if (res?.ok) {
+    if (status === 200) {
       setTracked(!tracked);
       toast.success(tracked ? `Stopped tracking ${name}` : `Tracking ${name}`);
       router.refresh();
       return;
     }
     const message =
-      res?.status === 409
+      status === 409
         ? "You're tracking the maximum number of players. Untrack someone first."
-        : res?.status === 429
+        : status === 429
           ? "Too many changes. Try again in a minute."
-          : res?.status === 401
+          : status === 401
             ? "Your session ended. Sign in again to track players."
             : "Couldn't update your tracked players. Try again.";
     toast.error(message);

@@ -1,29 +1,29 @@
 import { err, ok, type Result } from "@/common/result";
 import { MAX_FOLLOWS_PER_USER, type PlayerFollow } from "../domain/follow";
 import { parseAccountId } from "../domain/player-lookup";
-import type { FollowRepository } from "./ports";
-
-/** The signed-in user. Every command is scoped to this owner; nobody can touch another's list. */
-export interface FollowOwner {
-  userId: string;
-  accountId32: number;
-}
+import type { FollowsPort } from "../players.ports";
+import type { FollowError, FollowOwner } from "../dtos/responses/players.dto";
 
 /** The owner for a signed-in user (any object with the user's id and account). */
 export function ownerOf(user: { id: string; accountId32: number }): FollowOwner {
   return { userId: user.id, accountId32: user.accountId32 };
 }
 
-export type FollowError =
-  { type: "invalid_account" } | { type: "self" } | { type: "limit_reached"; limit: number };
-
 export class FollowService {
   private readonly now: () => Date;
   private readonly limit: number;
 
   constructor(
-    private readonly repo: FollowRepository,
-    opts: { now?: () => Date; limit?: number } = {},
+    private readonly repo: FollowsPort,
+    private readonly opts: {
+      now?: () => Date;
+      limit?: number;
+      /** Needed for "Download your data" and account deletion only. */
+      data?: {
+        exportForOwner(owner: FollowOwner): Promise<Record<string, unknown>[]>;
+        deleteForOwner(owner: FollowOwner): Promise<number>;
+      };
+    } = {},
   ) {
     this.now = opts.now ?? (() => new Date());
     this.limit = opts.limit ?? MAX_FOLLOWS_PER_USER;
@@ -69,5 +69,13 @@ export class FollowService {
 
   async isFollowing(owner: FollowOwner, accountId32: number): Promise<boolean> {
     return (await this.repo.find(owner.userId, accountId32)) !== null;
+  }
+
+  async exportMyData(owner: FollowOwner) {
+    return { trackedPlayers: (await this.opts.data?.exportForOwner(owner)) ?? [] };
+  }
+
+  async deleteMyData(owner: FollowOwner) {
+    return { trackedPlayers: (await this.opts.data?.deleteForOwner(owner)) ?? 0 };
   }
 }

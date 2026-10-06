@@ -1,6 +1,6 @@
 import type { Result } from "@/common/result";
-import type { PlayerFollow } from "../domain/follow";
-import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
+import type { PlayerFollow } from "./domain/follow";
+import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "./domain/public-player";
 
 export type ProviderError =
   | { type: "rate_limited"; retryAfterMs: number | null }
@@ -19,7 +19,7 @@ export interface PlayerDirectory {
   lastMatchAt(accountId32: number): Promise<Result<Date | null, ProviderError>>;
 }
 
-export interface FollowRepository {
+export interface FollowsPort {
   /** Idempotent: `false` when the follow already existed. */
   add(follow: PlayerFollow): Promise<boolean>;
   /** Scoped by owner; `false` when there was nothing to remove. */

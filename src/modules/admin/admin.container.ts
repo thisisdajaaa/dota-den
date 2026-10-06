@@ -6,8 +6,8 @@ import { cronRunsRepository, jobRunsRepository } from "@/modules/jobs";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { getMatchStatsByAccount } from "@/modules/matches/composition";
 import { getMmrEntryCounts } from "@/modules/mmr/composition";
-import { getPublicProfile } from "@/modules/players/composition";
 import { AdminService } from "./admin.service";
+import { playersService } from "@/modules/players";
 
 export const adminService = new AdminService({
   users: { userRows: () => usersService.adminRows() },
@@ -17,7 +17,7 @@ export const adminService = new AdminService({
     activityCounts: getActivityCounts,
     roomDraftCounts: getRoomDraftCounts,
   },
-  profiles: { publicProfile: getPublicProfile },
+  profiles: { publicProfile: (id) => playersService.publicProfile(id) },
   ops: {
     jobFailures: () => jobRunsRepository.recentFailures(),
     cronRuns: (limit) => cronRunsRepository.recent(limit),

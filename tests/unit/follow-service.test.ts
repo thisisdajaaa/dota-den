@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { FollowService, ownerOf } from "@/modules/players/application/follow-service";
-import type { FollowRepository } from "@/modules/players/application/ports";
+import { FollowService, ownerOf } from "@/modules/players/services/follow.service";
+import type { FollowsPort } from "@/modules/players/players.ports";
 import type { PlayerFollow } from "@/modules/players/domain/follow";
 
 /** In-memory repository with the same owner scoping as the Mongo one. */
-class FakeFollowRepository implements FollowRepository {
+class FakeFollowRepository implements FollowsPort {
   rows: PlayerFollow[] = [];
   async add(f: PlayerFollow) {
     if (this.rows.some((r) => r.userId === f.userId && r.accountId32 === f.accountId32))
