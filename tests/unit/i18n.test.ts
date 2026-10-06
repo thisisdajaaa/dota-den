@@ -16,17 +16,17 @@ describe("i18n", () => {
   it("translates, fills placeholders and falls back to English, then the key", () => {
     const t = translator(MESSAGES.ceb, englishMessages);
     expect(t("common.nav.matches")).toBe("Mga duwa");
-    const fill = translator(
+    const fill = translator<typeof englishMessages>(
       {
         common: { ...MESSAGES.en.common, nav: { ...MESSAGES.en.common.nav, matches: "{n} games" } },
       } as never,
       englishMessages,
     );
     expect(fill("common.nav.matches", { n: 3 })).toBe("3 games");
-    expect(translator({} as never, englishMessages)("common.nav.matches")).toBe("Matches");
-    expect(translator({} as never, {} as never)("common.nav.matches" as never)).toBe(
-      "common.nav.matches",
-    );
+    const fallsBack = translator<typeof englishMessages>({} as never, englishMessages);
+    expect(fallsBack("common.nav.matches")).toBe("Matches");
+    const bare = translator<typeof englishMessages>({} as never, {} as never);
+    expect(bare("common.nav.matches")).toBe("common.nav.matches");
   });
 
   it("every language has every key (no English left by accident in leaves that differ)", () => {
