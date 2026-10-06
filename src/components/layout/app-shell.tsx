@@ -9,6 +9,7 @@ import { matchesService } from "@/modules/matches";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { getViewerTimeZone } from "@/common/http/request-context";
+import { getT } from "@/common/i18n/server";
 import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
 import { MobileTabBar, PublicNav, SidebarNav, type NavKey } from "./app-nav";
 import { BrandMark } from "./brand-mark";
@@ -37,9 +38,10 @@ const ENABLED: readonly NavKey[] = [
 const navFor = (user: { roles: readonly string[] }): readonly NavKey[] =>
   user.roles.includes("admin") ? [...ENABLED, "admin"] : ENABLED;
 
-function Brand() {
+async function Brand() {
+  const t = await getT();
   return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label="Dota Den home">
+    <Link href="/" className="flex items-center gap-2.5" aria-label={t("common.brand.home")}>
       <BrandMark className="size-8 drop-shadow-[0_0_12px_oklch(0.8_0.13_80/0.35)]" />
       <span className="font-display text-lg font-bold tracking-wider">
         Dota <span className="text-gold">Den</span>
@@ -48,10 +50,11 @@ function Brand() {
   );
 }
 
-function SignOutButton({ className }: { className?: string }) {
+async function SignOutButton({ className }: { className?: string }) {
+  const t = await getT();
   return (
     <form action="/api/v1/auth/sign-out" method="post" className={className}>
-      <Button type="submit" variant="ghost" size="icon" aria-label="Sign out">
+      <Button type="submit" variant="ghost" size="icon" aria-label={t("common.auth.signOut")}>
         <LogOut className="size-4" />
       </Button>
     </form>
@@ -74,6 +77,7 @@ function SkipLink() {
  * Guests: a simple top header. Same content area for both.
  */
 export async function AppShell({ children }: { children: React.ReactNode }) {
+  const t = await getT();
   const user = await getCurrentUser({ tolerateErrors: true });
 
   if (!user) {
@@ -86,10 +90,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             <PublicNav enabled={ENABLED} />
             <Button asChild size="sm" className="ml-auto gap-2">
               {/* Full navigation, not client-side: the route redirects to Steam. */}
-              <a href="/api/v1/auth/steam/login" aria-label="Sign in through Steam">
+              <a href="/api/v1/auth/steam/login" aria-label={t("common.auth.signInSteam")}>
                 <SteamIcon className="size-4" />
-                <span className="hidden md:inline">Sign in through Steam</span>
-                <span className="md:hidden">Sign in</span>
+                <span className="hidden md:inline">{t("common.auth.signInSteam")}</span>
+                <span className="md:hidden">{t("common.auth.signIn")}</span>
               </a>
             </Button>
           </div>

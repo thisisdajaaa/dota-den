@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/common/i18n/client";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import {
   BookOpenText,
   CalendarRange,
@@ -74,16 +77,20 @@ function useActive(): (href: string) => boolean {
   return (href) => pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function visible(enabled: readonly NavKey[], signedIn: boolean) {
-  return ITEMS.filter((i) => enabled.includes(i.key) && (signedIn || !i.auth));
+function visible(enabled: readonly NavKey[], signedIn: boolean, t: Translator<Messages>) {
+  return ITEMS.filter((i) => enabled.includes(i.key) && (signedIn || !i.auth)).map((i) => ({
+    ...i,
+    label: t(`common.nav.${i.key}`),
+  }));
 }
 
 /** Vertical nav for the desktop sidebar. */
 export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
+  const t = useT();
   const isActive = useActive();
   return (
     <nav aria-label="Main" className="flex flex-col gap-1">
-      {visible(enabled, true).map(({ href, label, icon: Icon }) => {
+      {visible(enabled, true, t).map(({ href, label, icon: Icon }) => {
         const active = isActive(href);
         return (
           <Link
@@ -129,12 +136,13 @@ export function MobileTabBar({
   enabled: readonly NavKey[];
   signedIn: boolean;
 }) {
+  const t = useT();
   const isActive = useActive();
   const pathname = usePathname();
   const [open, setOpen] = useState<string | null>(null);
   // Close the sheet on navigation: it's only open for the path it was opened on.
   const moreOpen = open === pathname;
-  const items = visible(enabled, signedIn);
+  const items = visible(enabled, signedIn, t);
   // Guests only have the public sections, which all fit without a "More" sheet.
   const primary = signedIn ? items.filter((i) => MOBILE_PRIMARY.includes(i.key)) : items;
   const more = signedIn ? items.filter((i) => !MOBILE_PRIMARY.includes(i.key)) : [];
@@ -202,7 +210,7 @@ export function MobileTabBar({
               className={cn(tab, moreActive || moreOpen ? "text-gold" : "text-muted-foreground")}
             >
               <Ellipsis aria-hidden className="size-5" />
-              More
+              {t("common.nav.more")}
             </button>
           </li>
         )}
@@ -213,10 +221,11 @@ export function MobileTabBar({
 
 /** Horizontal links for the guest header. */
 export function PublicNav({ enabled }: { enabled: readonly NavKey[] }) {
+  const t = useT();
   const isActive = useActive();
   return (
     <nav aria-label="Main" className="hidden items-center gap-6 sm:flex">
-      {visible(enabled, false).map(({ href, label }) => {
+      {visible(enabled, false, t).map(({ href, label }) => {
         const active = isActive(href);
         return (
           <Link
