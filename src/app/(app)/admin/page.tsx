@@ -4,18 +4,11 @@ import { notFound } from "next/navigation";
 import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { StatTile } from "@/components/stat-tile";
-import { adminTotals } from "@/modules/admin/domain/overview";
-import { getRoomDraftCounts } from "@/modules/drafts/composition";
-import { getAdminUserRows, getCurrentUser } from "@/modules/identity/composition";
-import { errorsService } from "@/modules/errors";
-import { getCronRuns, getRecentJobFailures } from "@/modules/jobs/composition";
-import { getActivityCounts } from "@/modules/leaderboards/composition";
+import { adminService } from "@/modules/admin";
+import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
-import { getMatchStatsByAccount } from "@/modules/matches/composition";
 import { formatAgo } from "@/modules/matches/ui/format";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
-import { getMmrEntryCounts } from "@/modules/mmr/composition";
-import { getPublicProfile } from "@/modules/players/composition";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import { RunSyncButton } from "./run-sync-button";
 
@@ -30,40 +23,14 @@ export default async function AdminPage() {
   const viewer = await getCurrentUser();
   if (!viewer?.roles.includes("admin")) notFound();
 
-  const users = await getAdminUserRows();
-  const userIds = users.map((u) => u.userId);
-  const accountIds = users.map((u) => u.accountId32);
-  const [matches, mmr, activity, rooms, failures, errors, cronRuns, profiles] = await Promise.all([
-    getMatchStatsByAccount(accountIds),
-    getMmrEntryCounts(userIds),
-    getActivityCounts(userIds),
-    getRoomDraftCounts(userIds),
-    getRecentJobFailures().catch(() => []),
-    errorsService.recentGroups(7).catch(() => null),
-    getCronRuns(10).catch(() => null),
-    Promise.all(accountIds.map((id) => getPublicProfile(id).catch(() => null))),
-  ]);
   const now = new Date();
-  const rows = users
-    .map((u, i) => ({
-      ...u,
-      profile: profiles[i],
-      stats: matches.get(u.accountId32),
-      mmrEntries: mmr.get(u.userId) ?? 0,
-      drafts: activity.get(u.userId)?.drafts ?? 0,
-      challenges: activity.get(u.userId)?.challenges ?? 0,
-      roomDrafts: rooms.get(u.userId) ?? 0,
-    }))
-    .sort((a, b) => (b.lastSeenAt?.getTime() ?? 0) - (a.lastSeenAt?.getTime() ?? 0));
-  const totals = adminTotals(
-    rows.map((r) => ({
-      createdAt: r.createdAt,
-      lastSeenAt: r.lastSeenAt,
-      matches: r.stats?.matches ?? 0,
-      profileVisibility: r.profileVisibility,
-    })),
-    now,
-  );
+  const {
+    totals,
+    users: rows,
+    jobFailures: failures,
+    errors,
+    cronRuns,
+  } = await adminService.overview(now);
 
   return (
     <div className="space-y-6">

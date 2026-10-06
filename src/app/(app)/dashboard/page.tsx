@@ -214,7 +214,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       </Suspense>
 
       <Suspense fallback={null}>
-        <AchievementsSection user={user} />
+        <AchievementsSection user={user} timeZone={tz.timeZone} />
       </Suspense>
     </div>
   );
