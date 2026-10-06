@@ -1,10 +1,7 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DraftHistoryRecord } from "@/modules/drafts/domain/draft-history";
-import {
-  ensureDraftHistoryIndexes,
-  MongoDraftHistoryRepository,
-} from "@/modules/drafts/infrastructure/mongo-draft-history";
+import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import type { ChallengeAttempt, DraftResult } from "@/modules/leaderboards/domain/activity";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { LEADERBOARD_COLLECTIONS } from "@/modules/leaderboards/leaderboards.model";
@@ -15,7 +12,7 @@ let teardown: () => Promise<void>;
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
   await new ActivityRepository(async () => db).ensureIndexes();
-  await ensureDraftHistoryIndexes(db);
+  await new DraftHistoryRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -205,7 +202,7 @@ describe("room draft totals from draft history", () => {
   };
 
   it("counts drafts per captain and only self-reported winners as wins or losses", async () => {
-    const repo = new MongoDraftHistoryRepository(db);
+    const repo = new DraftHistoryRepository(async () => db);
     await repo.insertOnce(record("room0001", "c1", "c2", "radiant"));
     await repo.insertOnce(record("room0002", "c2", "c1", "radiant"));
     await repo.insertOnce(record("room0003", "c1", "c3", null));

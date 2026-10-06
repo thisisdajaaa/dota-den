@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest } from "@/common/http/api-client";
 import { Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,17 +29,10 @@ export function NewRoomForm() {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await fetch("/api/v1/drafts/rooms", {
+      const body = await apiRequest<{ roomId: string }>("/api/v1/drafts/rooms", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rulesetId, hostSide, firstSide, timerEnabled }),
+        body: { rulesetId, hostSide, firstSide, timerEnabled },
       });
-      const body = (await res.json().catch(() => null)) as {
-        roomId?: string;
-        error?: { message?: string };
-      } | null;
-      if (!res.ok || !body?.roomId)
-        throw new Error(body?.error?.message ?? "Couldn't create the room.");
       router.push(`/draft/rooms/${body.roomId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't create the room.");

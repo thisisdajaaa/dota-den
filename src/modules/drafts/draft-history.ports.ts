@@ -1,4 +1,4 @@
-import type { DraftHistoryRecord, ReportedResult } from "../domain/draft-history";
+import type { DraftHistoryRecord, ReportedResult } from "./domain/draft-history";
 
 export interface HistoryOpponent {
   accountId32: number;
@@ -16,7 +16,7 @@ export interface CaptainTotals {
   losses: number;
 }
 
-export interface DraftHistoryRepository {
+export interface DraftHistoryPort {
   /**
    * Store the record unless one already exists for this room (unique on roomId).
    * Safe to call any number of times, concurrently.

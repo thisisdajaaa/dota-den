@@ -1,9 +1,7 @@
-import type { Collection, Db, Filter } from "mongodb";
-import type {
-  CaptainTotals,
-  DraftHistoryRepository,
-  HistoryOpponent,
-} from "../application/draft-history-ports";
+import "server-only";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
+import type { Db, Filter } from "mongodb";
+import type { CaptainTotals, DraftHistoryPort, HistoryOpponent } from "../draft-history.ports";
 import type { DraftHistoryRecord, ReportedResult } from "../domain/draft-history";
 
 const SCHEMA_VERSION = 1;
@@ -21,18 +19,6 @@ interface HistoryDoc extends DraftHistoryRecord {
   captainAccountIds: number[];
 }
 
-export async function ensureDraftHistoryIndexes(db: Db): Promise<void> {
-  const history = db.collection(DRAFT_HISTORY_COLLECTION);
-  // One multikey array per index (MongoDB can't index two arrays together), so the friend
-  // filter narrows the per-captain index scan.
-  await Promise.all([
-    history.createIndex({ roomId: 1 }, { unique: true, name: "uniq_roomId" }),
-    history.createIndex({ captainUserIds: 1, completedAt: -1 }, { name: "by_captain_completedAt" }),
-    // Weekly leaderboards across everyone.
-    history.createIndex({ completedAt: -1 }, { name: "by_completedAt" }),
-  ]);
-}
-
 function isDuplicateKey(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === 11000;
 }
@@ -42,11 +28,11 @@ function toRecord(doc: HistoryDoc): DraftHistoryRecord {
   return record;
 }
 
-export class MongoDraftHistoryRepository implements DraftHistoryRepository {
-  private readonly history: Collection<HistoryDoc>;
+export class DraftHistoryRepository implements DraftHistoryPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.history = db.collection<HistoryDoc>(DRAFT_HISTORY_COLLECTION);
+  private async history() {
+    return (await this.getDb()).collection<HistoryDoc>(DRAFT_HISTORY_COLLECTION);
   }
 
   async insertOnce(record: DraftHistoryRecord): Promise<"inserted" | "duplicate"> {
@@ -59,11 +45,9 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
     };
     try {
       // $setOnInsert never overwrites an existing record (or its reported result).
-      const res = await this.history.updateOne(
-        { roomId: record.roomId },
-        { $setOnInsert: doc },
-        { upsert: true },
-      );
+      const res = await (
+        await this.history()
+      ).updateOne({ roomId: record.roomId }, { $setOnInsert: doc }, { upsert: true });
       return res.upsertedCount === 1 ? "inserted" : "duplicate";
     } catch (e) {
       // Two concurrent upserts: the unique index lets exactly one insert win.
@@ -73,15 +57,14 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
   }
 
   async get(roomId: string): Promise<DraftHistoryRecord | null> {
-    const doc = await this.history.findOne({ roomId });
+    const doc = await (await this.history()).findOne({ roomId });
     return doc ? toRecord(doc) : null;
   }
 
   async setResult(roomId: string, captainUserId: string, result: ReportedResult): Promise<boolean> {
-    const res = await this.history.updateOne(
-      { roomId, captainUserIds: captainUserId },
-      { $set: { result } },
-    );
+    const res = await (
+      await this.history()
+    ).updateOne({ roomId, captainUserIds: captainUserId }, { $set: { result } });
     return res.matchedCount === 1;
   }
 
@@ -92,19 +75,21 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
     const filter: Filter<HistoryDoc> = { captainUserIds: userId };
     if (opts.friendAccountId !== null) filter.captainAccountIds = opts.friendAccountId;
     const [docs, total] = await Promise.all([
-      this.history
+      (await this.history())
         .find(filter)
         .sort({ completedAt: -1, roomId: 1 })
         .skip(opts.skip)
         .limit(opts.limit)
         .toArray(),
-      this.history.countDocuments(filter),
+      (await this.history()).countDocuments(filter),
     ]);
     return { items: docs.map(toRecord), total };
   }
 
   async opponents(userId: string, limit: number): Promise<HistoryOpponent[]> {
-    const rows = await this.history
+    const rows = await (
+      await this.history()
+    )
       .aggregate<HistoryOpponent>([
         { $match: { captainUserIds: userId } },
         { $sort: { completedAt: -1 } },
@@ -145,7 +130,9 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
     if (query.since) match.completedAt = { $gte: query.since };
     if (query.userIds) match.captainUserIds = { $in: [...query.userIds] };
     const seat = (side: "radiant" | "dire") => ({ userId: `$captains.${side}.userId`, side });
-    const rows = await this.history
+    const rows = await (
+      await this.history()
+    )
       .aggregate<CaptainTotals>([
         { $match: match },
         // One row per captain: the draft from each side.
@@ -178,21 +165,62 @@ export class MongoDraftHistoryRepository implements DraftHistoryRepository {
       .toArray();
     return rows;
   }
-}
 
-/** Admin overview: finished room drafts per captain. */
-export async function roomDraftCountsByUser(
-  db: Db,
-  userIds: readonly string[],
-): Promise<Map<string, number>> {
-  const rows = await db
-    .collection(DRAFT_HISTORY_COLLECTION)
-    .aggregate<{ _id: string; n: number }>([
-      { $match: { captainUserIds: { $in: [...userIds] } } },
-      { $unwind: "$captainUserIds" },
-      { $match: { captainUserIds: { $in: [...userIds] } } },
-      { $group: { _id: "$captainUserIds", n: { $sum: 1 } } },
-    ])
-    .toArray();
-  return new Map(rows.map((r) => [String(r._id), r.n]));
+  async ensureIndexes(): Promise<void> {
+    const db = await this.getDb();
+    const history = db.collection(DRAFT_HISTORY_COLLECTION);
+    // One multikey array per index (MongoDB can't index two arrays together), so the friend
+    // filter narrows the per-captain index scan.
+    await Promise.all([
+      history.createIndex({ roomId: 1 }, { unique: true, name: "uniq_roomId" }),
+      history.createIndex(
+        { captainUserIds: 1, completedAt: -1 },
+        { name: "by_captain_completedAt" },
+      ),
+      // Weekly leaderboards across everyone.
+      history.createIndex({ completedAt: -1 }, { name: "by_completedAt" }),
+    ]);
+  }
+
+  /** Admin overview: finished room drafts per captain. */
+  async countsByUser(userIds: readonly string[]): Promise<Map<string, number>> {
+    const db = await this.getDb();
+    const rows = await db
+      .collection(DRAFT_HISTORY_COLLECTION)
+      .aggregate<{ _id: string; n: number }>([
+        { $match: { captainUserIds: { $in: [...userIds] } } },
+        { $unwind: "$captainUserIds" },
+        { $match: { captainUserIds: { $in: [...userIds] } } },
+        { $group: { _id: "$captainUserIds", n: { $sum: 1 } } },
+      ])
+      .toArray();
+    return new Map(rows.map((r) => [String(r._id), r.n]));
+  }
+
+  /** Friend-room drafts you captained, for "Download your data". */
+  async exportForOwner(owner: DataOwner) {
+    return forExport(await (await this.history()).find({ captainUserIds: owner.userId }).toArray());
+  }
+
+  /**
+   * Friend-room drafts are shared with the other captain, so they stay in their history: only
+   * this player's name, picture and ids are removed.
+   */
+  async anonymiseOwner(owner: DataOwner): Promise<number> {
+    const col = await this.history();
+    let anonymised = 0;
+    for (const side of ["radiant", "dire"] as const) {
+      const r = await col.updateMany({ [`captains.${side}.userId`]: owner.userId }, {
+        $set: {
+          [`captains.${side}.userId`]: "deleted",
+          [`captains.${side}.accountId32`]: 0,
+          [`captains.${side}.name`]: "Deleted player",
+          [`captains.${side}.avatarUrl`]: null,
+        },
+        $pull: { captainUserIds: owner.userId, captainAccountIds: owner.accountId32 },
+      } as never);
+      anonymised += r.modifiedCount;
+    }
+    return anonymised;
+  }
 }

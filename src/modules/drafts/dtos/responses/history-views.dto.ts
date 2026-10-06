@@ -1,5 +1,5 @@
-import type { HeadToHead, ReportedWinner, ViewerOutcome } from "../domain/draft-history";
-import type { Side } from "../domain/draft-state";
+import type { HeadToHead, ReportedWinner, ViewerOutcome } from "../../domain/draft-history";
+import type { Side } from "../../domain/draft-state";
 
 /** Captain details any participant may see. User ids stay server-side. */
 export interface PublicCaptain {

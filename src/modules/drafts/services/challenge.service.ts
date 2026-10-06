@@ -4,17 +4,16 @@ import {
   gradeAnswer,
   matchupHeroes,
   validateAnswer,
-  type AnswerError,
   type ChallengeResult,
   type Puzzle,
   type PuzzleError,
 } from "../domain/challenges";
 import type { MatchupTable, ScoringHero } from "../domain/draft-scoring";
-import type { DraftInsights } from "./ports";
-
-export type GradeError = PuzzleError | { type: "illegal_answer"; cause: AnswerError };
+import type { DraftInsights } from "../drafts.ports";
+import type { GradeError } from "../dtos/responses/drafts.dto";
 
 /** Builds challenge positions and referees answers. The server re-derives every position. */
+
 export class ChallengeService {
   constructor(
     private readonly deps: { insights: DraftInsights | null; heroes: readonly ScoringHero[] },

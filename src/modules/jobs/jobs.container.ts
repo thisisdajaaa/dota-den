@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
-import { draftInsights } from "@/modules/drafts/composition";
+import { draftInsights } from "@/modules/drafts";
 import { BACKFILL_COOLDOWN_MS, matchesService, matchSyncService } from "@/modules/matches";
 import { metaService } from "@/modules/meta";
 import { medalService } from "@/modules/mmr";
@@ -46,7 +46,7 @@ function jobQueue(): JobQueue {
   });
 }
 
-const warmDraftData = async () => (await draftInsights()).warm();
+const warmDraftData = () => draftInsights().warm();
 
 export const jobsService = new JobsService({
   queue: jobQueue,

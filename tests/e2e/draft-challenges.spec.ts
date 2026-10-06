@@ -90,11 +90,11 @@ test("the grade endpoint referees answers and rejects cross-origin calls", async
 
   const unavailable = await post({ type: "last_pick", seed: "e2eapi", heroIds: [9999] });
   expect(unavailable.status()).toBe(400);
-  expect((await unavailable.json()).error.details.reason).toBe("unavailable");
+  expect((await unavailable.json()).details.reason).toBe("unavailable");
 
   const wrongCount = await post({ type: "first_phase_bans", seed: "e2eapi", heroIds: [1] });
   expect(wrongCount.status()).toBe(400);
-  expect((await wrongCount.json()).error.details.reason).toBe("wrong_count");
+  expect((await wrongCount.json()).details.reason).toBe("wrong_count");
 
   expect((await post({ type: "mid_only", seed: "e2eapi", heroIds: [1] })).status()).toBe(400);
   expect((await post({ type: "last_pick", seed: "../x", heroIds: [1] })).status()).toBe(400);

@@ -8,27 +8,20 @@ import {
 } from "../domain/draft-history";
 import { otherSide, type DraftRoom, type RoomCaptain } from "../domain/draft-room";
 import { getRuleset } from "../domain/rulesets";
-import type { CaptainTotals, DraftHistoryRepository, HistoryOpponent } from "./draft-history-ports";
+import type { CaptainTotals, DraftHistoryPort, HistoryOpponent } from "../draft-history.ports";
 import type {
   HeadToHeadView,
   HistoryEntryView,
   HistoryPageView,
   PublicCaptain,
   RoomResultView,
-} from "./history-views";
-import { encodeSnapshot, snapshotOf } from "./snapshot";
+} from "../dtos/responses/history-views.dto";
+import { encodeSnapshot, snapshotOf } from "../domain/snapshot";
+import type { HistoryActor, HistoryError } from "../dtos/responses/drafts.dto";
 
 export const HISTORY_PAGE_SIZE = 20;
 /** The head-to-head summary reads at most this many of the newest drafts with one friend. */
 export const HEAD_TO_HEAD_CAP = 500;
-
-export type HistoryError =
-  { type: "not_found" } | { type: "not_captain" } | { type: "not_completed" };
-
-export interface HistoryActor {
-  userId: string;
-  name: string;
-}
 
 const pub = (c: RoomCaptain): PublicCaptain => ({
   name: c.name,
@@ -37,12 +30,13 @@ const pub = (c: RoomCaptain): PublicCaptain => ({
 });
 
 /** Permanent draft history for rooms, plus the captains' self-reported game results. */
+
 export class DraftHistoryService {
   private readonly now: () => number;
 
   constructor(
     private readonly deps: {
-      history: DraftHistoryRepository;
+      history: DraftHistoryPort;
       /** Reads a live room (for recording a finished draft the first write missed). */
       getRoom: (roomId: string) => Promise<DraftRoom | null>;
       /** Which of these room ids still exist (rooms expire). */

@@ -1,8 +1,8 @@
 import type { Result } from "@/common/result";
-import type { LaneTable } from "../domain/draft-lanes";
-import type { AbilityBrief, HeroKit } from "../domain/draft-review";
-import type { PositionTable } from "../domain/draft-positions";
-import type { HeroMeta, MatchupTable, ProMeta, SynergyTable } from "../domain/draft-scoring";
+import type { LaneTable } from "./domain/draft-lanes";
+import type { AbilityBrief, HeroKit } from "./domain/draft-review";
+import type { PositionTable } from "./domain/draft-positions";
+import type { HeroMeta, MatchupTable, ProMeta, SynergyTable } from "./domain/draft-scoring";
 
 export interface AdvisorHero {
   id: number;
@@ -81,4 +81,13 @@ export interface ReviewRequest {
 export interface DraftReviewer {
   readonly model: string;
   review(req: ReviewRequest): Promise<Result<unknown, AdvisorError>>;
+}
+
+/** One of a player's ranked games with both lineups (for grading drafts). */
+export interface RankedLineup {
+  matchId: string;
+  yourSide: "radiant" | "dire";
+  won: boolean;
+  radiant: number[];
+  dire: number[];
 }

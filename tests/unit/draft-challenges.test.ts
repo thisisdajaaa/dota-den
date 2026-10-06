@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { ChallengeService } from "@/modules/drafts/application/challenge-service";
-import type { DraftInsights } from "@/modules/drafts/application/ports";
+import { ChallengeService } from "@/modules/drafts/services/challenge.service";
+import type { DraftInsights } from "@/modules/drafts/drafts.ports";
 import {
   availableIds,
   CHALLENGE_TYPES,

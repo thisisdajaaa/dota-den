@@ -1,17 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type {
-  CommitResult,
-  DraftRoomRepository,
-} from "@/modules/drafts/application/draft-room-ports";
-import {
-  DraftRoomService,
-  MAX_ACTIVE_ROOMS,
-  type Actor,
-} from "@/modules/drafts/application/draft-room-service";
+import type { CommitResult, DraftRoomsPort } from "@/modules/drafts/draft-room.ports";
+import { DraftRoomService, MAX_ACTIVE_ROOMS } from "@/modules/drafts/services/draft-room.service";
+import { type Actor } from "@/modules/drafts/dtos/responses/drafts.dto";
 import type { DraftRoom, RoomEvent } from "@/modules/drafts/domain/draft-room";
 import { currentTurn } from "@/modules/drafts/domain/draft-state";
 
-class MemoryRooms implements DraftRoomRepository {
+class MemoryRooms implements DraftRoomsPort {
   rooms = new Map<string, DraftRoom>();
   events: RoomEvent[] = [];
   active = 0;

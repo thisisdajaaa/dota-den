@@ -7,7 +7,7 @@ import {
   type DraftEvent,
   type DraftState,
   type Side,
-} from "../domain/draft-state";
+} from "./draft-state";
 
 /**
  * A shareable, read-only draft: ruleset, first side and the hero chosen at each step

@@ -97,7 +97,10 @@ server instance, with constructor injection (`new GoalsService({ repository, ses
 Repositories take `getDb` (a function), so containers are synchronous.
 When building an object reads the environment or opens a client (OpenDota, Groq, Twitch),
 the container wraps it in `lazy()` (`src/common/utils/lazy.ts`). Importing a container then has
-no side effects, but call sites still read naturally (`liveService.overview()`). Other features are
+no side effects, but call sites still read naturally (`liveService.overview()`).
+A service that needs data fetched per request to be built (the drafts AI captain holds the
+current hero catalog) is exposed as an async factory (`getAiOpponent()`), so a failed lookup
+never sticks for the life of the server. Other features are
 reached through their `index.ts` and passed in as port implementations.
 
 ### Import rules (enforced by `tests/unit/architecture.test.ts`)

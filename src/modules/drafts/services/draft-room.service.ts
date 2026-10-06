@@ -4,7 +4,6 @@ import {
   seatOf,
   timeoutSeed,
   type DraftRoom,
-  type RoomCaptain,
   type RoomEvent,
 } from "../domain/draft-room";
 import {
@@ -13,12 +12,12 @@ import {
   currentTurn,
   isComplete,
   resolveTime,
-  type DraftError,
   type DraftEvent,
   type Side,
 } from "../domain/draft-state";
 import { listRulesets } from "../domain/rulesets";
-import type { DraftRoomRepository } from "./draft-room-ports";
+import type { DraftRoomsPort } from "../draft-room.ports";
+import type { Actor, CreateRoomOptions, RoomAction, RoomError } from "../dtos/responses/drafts.dto";
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 /** An engine event before the room stamps its version and time. */
@@ -31,43 +30,12 @@ type DraftInput = DistributiveOmit<DraftEvent, "expectedVersion" | "at">;
 export const MAX_ACTIVE_ROOMS = 50;
 export const ACTIVE_WINDOW_MS = 2 * 60 * 60 * 1000;
 
-export type RoomError =
-  | { type: "not_found" }
-  | { type: "disabled" }
-  | { type: "too_many_rooms" }
-  | { type: "invalid_options" }
-  | { type: "seat_taken" }
-  | { type: "already_seated" }
-  | { type: "not_host" }
-  | { type: "not_captain" }
-  | { type: "not_your_turn" }
-  | { type: "wrong_status"; status: DraftRoom["status"] }
-  | { type: "seats_empty" }
-  | { type: "stale"; room: DraftRoom }
-  | { type: "illegal"; reason: DraftError["type"] };
-
-export interface Actor {
-  userId: string;
-  captain: RoomCaptain;
-}
-
-export interface CreateRoomOptions {
-  rulesetId: string;
-  firstSide: Side;
-  timerEnabled: boolean;
-  /** The side the host sits on. */
-  hostSide: Side;
-}
-
-export type RoomAction =
-  { type: "pick" | "ban"; heroId: number } | { type: "pause" } | { type: "resume" };
-
 export class DraftRoomService {
   private readonly now: () => number;
 
   constructor(
     private readonly deps: {
-      rooms: DraftRoomRepository;
+      rooms: DraftRoomsPort;
       heroPool: () => Promise<number[]>;
       newId: () => string;
       enabled: boolean;
@@ -329,5 +297,10 @@ export class DraftRoomService {
       idempotencyKey,
       at: new Date(this.now()),
     };
+  }
+
+  /** Events after `after` (oldest first, at most 100), for polling and the first render. */
+  events(roomId: string, after: number) {
+    return this.deps.rooms.eventsSince(roomId, after, 100);
   }
 }

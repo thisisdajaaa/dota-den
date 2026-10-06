@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { AiOpponentService, type AiHero } from "@/modules/drafts/application/ai-opponent-service";
-import type {
-  AdvisorRequest,
-  DraftAdvisor,
-  DraftInsights,
-} from "@/modules/drafts/application/ports";
-import type { DraftSnapshot } from "@/modules/drafts/application/snapshot";
+import { AiOpponentService } from "@/modules/drafts/services/ai-opponent.service";
+import { type AiHero } from "@/modules/drafts/dtos/responses/drafts.dto";
+import type { AdvisorRequest, DraftAdvisor, DraftInsights } from "@/modules/drafts/drafts.ports";
+import type { DraftSnapshot } from "@/modules/drafts/domain/snapshot";
+import { GroqClient } from "@/common/llm/groq-client";
 import { GroqDraftAdvisor } from "@/modules/drafts/infrastructure/groq-draft-advisor";
 import { err, ok } from "@/common/result";
 
@@ -174,7 +172,9 @@ describe("GroqDraftAdvisor", () => {
 
   it("labels teams explicitly and sends the scored shortlist", async () => {
     const fetch = reply('{"heroId": 2, "reason": "Counters their Magnus."}');
-    const adv = new GroqDraftAdvisor({ apiKey: "k", model: "openai/gpt-oss-120b", fetch });
+    const adv = new GroqDraftAdvisor(new GroqClient({ apiKey: "k", fetch, retryDelayMs: 0 }), {
+      model: "openai/gpt-oss-120b",
+    });
     expect(await adv.suggest(req)).toEqual({
       ok: true,
       value: { heroId: 2, reason: "Counters their Magnus." },
@@ -194,7 +194,9 @@ describe("GroqDraftAdvisor", () => {
 
   it("reports non-JSON, wrong shapes and HTTP errors as typed errors", async () => {
     const make = (f: (url: string, init: RequestInit) => Promise<Response>) =>
-      new GroqDraftAdvisor({ apiKey: "k", model: "m", fetch: f });
+      new GroqDraftAdvisor(new GroqClient({ apiKey: "k", fetch: f, retryDelayMs: 0 }), {
+        model: "m",
+      });
     expect(await make(reply("not json")).suggest(req)).toMatchObject({
       ok: false,
       error: { type: "invalid_response" },

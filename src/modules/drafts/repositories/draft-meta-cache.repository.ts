@@ -1,4 +1,4 @@
-import type { Collection, Db } from "mongodb";
+import type { Db } from "mongodb";
 
 /** A cached upstream payload: fresh for a while, then served stale while it refreshes. */
 export interface CachedJson {
@@ -26,29 +26,32 @@ const COLLECTION = "draft_meta_cache";
  * Tournament queries take seconds upstream, and serverless instances forget in-memory
  * caches, so results are kept in MongoDB and shared by every instance.
  */
-export class MongoDraftMetaCache implements DraftMetaCache {
-  private readonly docs: Collection<CacheDoc>;
+export class DraftMetaCacheRepository implements DraftMetaCache {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.docs = db.collection<CacheDoc>(COLLECTION);
+  private async docs() {
+    return (await this.getDb()).collection<CacheDoc>(COLLECTION);
   }
 
   async get(key: string): Promise<CachedJson | null> {
-    const doc = await this.docs.findOne({ _id: key });
+    const doc = await (await this.docs()).findOne({ _id: key });
     return doc ? { body: doc.body, fetchedAt: doc.fetchedAt } : null;
   }
 
   async put(key: string, body: unknown, now: Date): Promise<void> {
-    await this.docs.replaceOne(
+    await (
+      await this.docs()
+    ).replaceOne(
       { _id: key },
       { body, fetchedAt: now, expiresAt: new Date(now.getTime() + KEEP_MS) },
       { upsert: true },
     );
   }
-}
 
-export async function ensureDraftMetaCacheIndexes(db: Db): Promise<void> {
-  await db
-    .collection<CacheDoc>(COLLECTION)
-    .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, name: "ttl_expiresAt" });
+  async ensureIndexes(): Promise<void> {
+    const db = await this.getDb();
+    await db
+      .collection<CacheDoc>(COLLECTION)
+      .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, name: "ttl_expiresAt" });
+  }
 }

@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { AnnotationsService } from "@/modules/annotations/annotations.service";
 import type { DataOwner } from "@/common/privacy/user-data";
-import * as drafts from "@/modules/drafts/infrastructure/user-data";
+import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
@@ -118,6 +118,16 @@ const matches = servicePart((getDb) => {
   return {
     exportMyData: (o: DataOwner) => repo.exportForOwner(o),
     deleteMyData: (o: DataOwner) => repo.deleteForOwner(o),
+  };
+});
+
+const drafts = servicePart((getDb) => {
+  const repo = new DraftHistoryRepository(getDb);
+  return {
+    exportMyData: async (o: DataOwner) => ({ friendRoomDrafts: await repo.exportForOwner(o) }),
+    deleteMyData: async (o: DataOwner) => ({
+      friendRoomDraftsAnonymised: await repo.anonymiseOwner(o),
+    }),
   };
 });
 

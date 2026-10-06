@@ -1,8 +1,8 @@
-import type { DraftRoom, RoomEvent } from "../domain/draft-room";
+import type { DraftRoom, RoomEvent } from "./domain/draft-room";
 
 export type CommitResult = "committed" | "conflict";
 
-export interface DraftRoomRepository {
+export interface DraftRoomsPort {
   insert(room: DraftRoom, created: RoomEvent): Promise<void>;
   get(roomId: string): Promise<DraftRoom | null>;
   /**

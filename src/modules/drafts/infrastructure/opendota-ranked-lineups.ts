@@ -1,48 +1,6 @@
 import { z } from "zod";
-import type { Db } from "mongodb";
 import type { ProviderGateway } from "@/common/providers/provider-gateway";
-
-const COLLECTION = "match_draft_reads";
-const KEEP_S = 180 * 24 * 3600;
-
-interface ReadDoc {
-  _id: string;
-  radiantPct: number;
-  computedAt: Date;
-}
-
-export async function ensureMatchDraftReadIndexes(db: Db): Promise<void> {
-  await db
-    .collection(COLLECTION)
-    .createIndex({ computedAt: 1 }, { expireAfterSeconds: KEEP_S, name: "ttl_180d" });
-}
-
-/** Saved draft estimates by match id (a match's lineups never change). */
-export async function findDraftReads(db: Db, matchIds: readonly string[]) {
-  const docs = await db
-    .collection<ReadDoc>(COLLECTION)
-    .find({ _id: { $in: [...matchIds] } })
-    .toArray();
-  return new Map(docs.map((d) => [d._id, d.radiantPct]));
-}
-
-export async function saveDraftRead(db: Db, matchId: string, radiantPct: number) {
-  await db
-    .collection<ReadDoc>(COLLECTION)
-    .updateOne(
-      { _id: matchId },
-      { $set: { radiantPct, computedAt: new Date() } },
-      { upsert: true },
-    );
-}
-
-export interface RankedLineup {
-  matchId: string;
-  yourSide: "radiant" | "dire";
-  won: boolean;
-  radiant: number[];
-  dire: number[];
-}
+import type { RankedLineup } from "../drafts.ports";
 
 const Row = z.object({
   match_id: z.union([z.number(), z.string()]).transform(String),

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Radio } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { getAiOpponent } from "@/modules/drafts/composition";
+import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { liveService } from "@/modules/live";
 import { clock, draftComplete, leadText, sideHeroes } from "@/modules/live/domain/live-game";

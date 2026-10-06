@@ -4,7 +4,7 @@ import { AlertTriangle, Eye, History, Puzzle, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { matchesService } from "@/modules/matches";
-import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/application/snapshot";
+import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/domain/snapshot";
 import { getRuleset } from "@/modules/drafts/domain/rulesets";
 import { DraftBoard } from "@/modules/drafts/ui/draft-board";
 import { FeedbackPanel } from "@/modules/drafts/ui/feedback-panel";

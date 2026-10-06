@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import Link from "next/link";
 import { History, Trophy } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -7,8 +8,8 @@ import { toast } from "sonner";
 import { cn } from "cn";
 import { LocalTime } from "@/components/local-time";
 import { Button } from "@/components/ui/button";
-import type { RoomResultView } from "../application/history-views";
-import type { RoomView } from "../application/room-views";
+import type { RoomResultView } from "../dtos/responses/history-views.dto";
+import type { RoomView } from "../dtos/responses/room-views.dto";
 import type { ReportedWinner } from "../domain/draft-history";
 
 const POLL_MS = 5_000;
@@ -35,9 +36,10 @@ export function RoomResultPanel({ room }: { room: RoomView }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/drafts/rooms/${room.id}/result`, { cache: "no-store" });
-      if (!res.ok) return;
-      const body = (await res.json()) as { result: RoomResultView };
+      const body = await apiRequest<{ result: RoomResultView }>(
+        `/api/v1/drafts/rooms/${room.id}/result`,
+        { cache: "no-store" },
+      );
       setResult(body.result);
     } catch {
       // The room poll already shows the connection state.
@@ -58,23 +60,16 @@ export function RoomResultPanel({ room }: { room: RoomView }) {
   async function report(winner: ReportedWinner) {
     setBusy(true);
     try {
-      const res = await fetch(`/api/v1/drafts/rooms/${room.id}/result`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ winner }),
-      });
-      const body = (await res.json().catch(() => null)) as {
-        result?: RoomResultView;
-        error?: { message?: string };
-      } | null;
-      if (!res.ok || !body?.result) {
-        toast.error(body?.error?.message ?? "Couldn't save the result.");
-        return;
-      }
+      const body = await apiRequest<{ result: RoomResultView }>(
+        `/api/v1/drafts/rooms/${room.id}/result`,
+        { method: "POST", body: { winner } },
+      );
       setResult(body.result);
       toast.success("Result saved");
-    } catch {
-      toast.error("Network error. Check your connection.");
+    } catch (e) {
+      toast.error(
+        e instanceof ApiClientError ? e.message : "Network error. Check your connection.",
+      );
     } finally {
       setBusy(false);
     }

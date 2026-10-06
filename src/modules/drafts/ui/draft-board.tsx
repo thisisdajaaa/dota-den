@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { Bot, Link2, Pause, Play, RotateCcw, Save, Undo2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { encodeSnapshot, snapshotOf } from "../application/snapshot";
+import { encodeSnapshot, snapshotOf } from "../domain/snapshot";
 import {
   applyEvent,
   availableHeroes,
@@ -187,15 +188,14 @@ export function DraftBoard({
     const controller = new AbortController();
     (async () => {
       try {
-        const res = await fetch("/api/v1/drafts/ai-move", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), aiSide }),
-          signal: controller.signal,
-        });
-        const body = (await res.json().catch(() => null)) as
-          (Omit<AiLogEntry, "step"> & { side: Side; error?: { message?: string } }) | null;
-        if (!res.ok || !body) throw new Error(body?.error?.message ?? "The AI couldn't move.");
+        const body = await apiRequest<Omit<AiLogEntry, "step"> & { side: Side }>(
+          "/api/v1/drafts/ai-move",
+          {
+            method: "POST",
+            body: { snapshot: encodeSnapshot(snapshotOf(state)), aiSide },
+            signal: controller.signal,
+          },
+        );
         if (stateRef.current.stateVersion !== version) return;
         const step = stateRef.current.stepIndex;
         if (dispatch({ type: body.action, side: body.side, heroId: body.heroId })) {
@@ -230,12 +230,11 @@ export function DraftBoard({
     const snapshot = encodeSnapshot(snapshotOf(state));
     if (savedDraft.current === snapshot) return;
     savedDraft.current = snapshot;
-    fetch("/api/v1/drafts/results", {
+    apiRequest<{ counted: boolean }>("/api/v1/drafts/results", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ snapshot, aiSide }),
+      body: { snapshot, aiSide },
     })
-      .then((res) => res.status === 201 && toast.success("Draft saved to your leaderboards"))
+      .then((res) => res.counted && toast.success("Draft saved to your leaderboards"))
       .catch(() => {}); // Optional: the draft itself is unaffected.
   }, [signedIn, state, initial, aiSide]);
 
@@ -249,11 +248,11 @@ export function DraftBoard({
     const version = state.stateVersion;
     const controller = new AbortController();
     // Positions you set by hand decide which positions are still open.
-    const body = JSON.stringify({
+    const body = {
       snapshot: encodeSnapshot(snapshotOf(state)),
       side: turn.side,
       roles: outlook.roles,
-    });
+    };
     const current = () => !controller.signal.aborted && stateRef.current.stateVersion === version;
     (async () => {
       // Busy (rate limited, server or network error): back off and retry, then say so.
@@ -261,20 +260,16 @@ export function DraftBoard({
       for (let attempt = 0; attempt <= SUGGESTION_RETRY_MS.length; attempt++) {
         let retryable = true;
         try {
-          const res = await fetch("/api/v1/drafts/suggestions", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body,
-            signal: controller.signal,
-          });
-          if (res.ok) {
-            const set = (await res.json()) as Omit<SuggestionSet, "version">;
-            if (current()) setSuggestions({ ...set, version });
-            return;
-          }
-          retryable = res.status === 429 || res.status >= 500;
-        } catch {
+          const set = await apiRequest<Omit<SuggestionSet, "version">>(
+            "/api/v1/drafts/suggestions",
+            { method: "POST", body, signal: controller.signal },
+          );
+          if (current()) setSuggestions({ ...set, version });
+          return;
+        } catch (e) {
           if (controller.signal.aborted) return;
+          // Network errors and busy servers are worth retrying; a bad request isn't.
+          if (e instanceof ApiClientError) retryable = e.status === 429 || e.status >= 500;
         }
         if (!retryable || attempt === SUGGESTION_RETRY_MS.length) break;
         if (current()) setSuggestionIssue({ version, kind: "retrying" });

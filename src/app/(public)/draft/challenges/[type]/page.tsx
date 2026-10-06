@@ -5,7 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { matchesService } from "@/modules/matches";
-import { getChallengeService } from "@/modules/drafts/composition";
+import { getChallengeService } from "@/modules/drafts";
 import {
   CHALLENGE_INFO,
   describePosition,

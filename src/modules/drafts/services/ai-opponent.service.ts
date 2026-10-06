@@ -1,5 +1,5 @@
 import { err, ok, type Result } from "@/common/result";
-import type { RoleMaps } from "./roles-contract";
+import type { RoleMaps } from "../schemas/roles.schema";
 import { draftOutlook, type DraftOutlook } from "../domain/draft-outlook";
 import {
   assignPositions,
@@ -17,37 +17,22 @@ import {
   type HeroMeta,
   type MatchupTable,
   type ProMeta,
-  type ScoringHero,
   type SynergyTable,
 } from "../domain/draft-scoring";
 import { availableHeroes, currentTurn, type DraftState, type Side } from "../domain/draft-state";
 import { getRuleset } from "../domain/rulesets";
 import type { LaneTable } from "../domain/draft-lanes";
 import { applyAdjustments, validateReview, type DraftReview } from "../domain/draft-review";
-import type { DraftReport } from "../domain/draft-report";
-import type { AbilityCatalog, DraftAdvisor, DraftInsights, DraftReviewer } from "./ports";
-import { replaySnapshot, type DraftSnapshot } from "./snapshot";
-
-export type AiHero = ScoringHero;
-
-export type ReviewError =
-  | { type: "invalid_snapshot" }
-  | { type: "draft_incomplete" }
-  | { type: "not_configured" }
-  | { type: "unavailable" };
-
-export interface ReviewResult {
-  review: DraftReview;
-  model: string;
-  /** The data report card, and the same card with the AI's nudges applied. */
-  report: DraftReport;
-  adjusted: DraftReport;
-}
-
-export interface ReviewCache {
-  get(key: string): Promise<unknown>;
-  put(key: string, value: unknown): Promise<void>;
-}
+import type { AbilityCatalog, DraftAdvisor, DraftInsights, DraftReviewer } from "../drafts.ports";
+import { replaySnapshot, type DraftSnapshot } from "../domain/snapshot";
+import type {
+  AiHero,
+  AiMove,
+  AiMoveError,
+  ReviewCache,
+  ReviewError,
+  ReviewResult,
+} from "../dtos/responses/drafts.dto";
 
 /** Cache key: the draft, any positions set by hand, and the model. */
 function reviewKey(
@@ -93,22 +78,6 @@ function reviewEvidence(o: DraftOutlook): string[] {
   }
   lines.push(...o.notes);
   return lines;
-}
-
-export type AiMoveError =
-  | { type: "invalid_snapshot" }
-  | { type: "not_ai_turn" }
-  | { type: "draft_complete" }
-  | { type: "no_heroes" };
-
-export interface AiMove {
-  action: "pick" | "ban";
-  side: Side;
-  heroId: number;
-  reason: string;
-  /** "model" = language model chose from the shortlist; "heuristic" = top-scored candidate. */
-  source: "model" | "heuristic";
-  model: string | null;
 }
 
 const SHORTLIST = 12;
@@ -192,6 +161,7 @@ function situation(
 }
 
 /** Decide the AI captain's move for the current turn of a (client-held) draft. */
+
 export class AiOpponentService {
   constructor(
     private readonly deps: {

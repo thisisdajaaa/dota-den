@@ -1,7 +1,7 @@
 import "server-only";
 import { logger } from "@/common/logging/logger";
 import { annotationsService } from "@/modules/annotations";
-import * as drafts from "@/modules/drafts/composition";
+import { draftsPrivacy } from "@/modules/drafts";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
@@ -21,7 +21,7 @@ export const privacyService = new PrivacyService({
     followService,
     patchWatchlistService,
     activityService,
-    drafts,
+    draftsPrivacy,
     matchesService,
     togetherService,
     annotationsService,

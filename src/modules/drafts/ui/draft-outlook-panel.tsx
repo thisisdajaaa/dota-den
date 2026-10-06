@@ -1,10 +1,11 @@
 "use client";
 
+import { apiRequest } from "@/common/http/api-client";
 import { ChevronDown, Gauge, Info } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { encodeSnapshot, snapshotOf } from "../application/snapshot";
+import { encodeSnapshot, snapshotOf } from "../domain/snapshot";
 import type {
   DraftOutlook,
   LaneMatchup,
@@ -67,13 +68,14 @@ export function useDraftOutlook(state: DraftState | null): OutlookData {
     const controller = new AbortController();
     (async () => {
       try {
-        const res = await fetch("/api/v1/drafts/outlook", {
+        const outlook = await apiRequest<DraftOutlook>("/api/v1/drafts/outlook", {
           method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ snapshot: encodeSnapshot(snapshotOf(state)), roles }),
+          body: { snapshot: encodeSnapshot(snapshotOf(state)), roles },
           signal: controller.signal,
+        }).catch((e: unknown) => {
+          if (controller.signal.aborted) throw e;
+          return null;
         });
-        const outlook = res.ok ? ((await res.json()) as DraftOutlook) : null;
         setResult({ key, outlook });
       } catch {
         if (!controller.signal.aborted) setResult({ key, outlook: null });

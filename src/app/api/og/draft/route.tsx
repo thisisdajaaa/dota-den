@@ -1,8 +1,8 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 import { OG, OG_SIZE, OgFrame, OgHero } from "@/components/og/og-frame";
-import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/application/snapshot";
-import { getAiOpponent } from "@/modules/drafts/composition";
+import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/domain/snapshot";
+import { getAiOpponent } from "@/modules/drafts";
 import { matchesService } from "@/modules/matches";
 
 /** Link preview for a shared draft: both lineups, and the report card when it's finished. */

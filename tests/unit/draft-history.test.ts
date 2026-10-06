@@ -1,15 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type {
-  DraftHistoryRepository,
-  HistoryOpponent,
-} from "@/modules/drafts/application/draft-history-ports";
-import { DraftHistoryService } from "@/modules/drafts/application/draft-history-service";
-import type {
-  CommitResult,
-  DraftRoomRepository,
-} from "@/modules/drafts/application/draft-room-ports";
-import { DraftRoomService, type Actor } from "@/modules/drafts/application/draft-room-service";
-import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
+import type { DraftHistoryPort, HistoryOpponent } from "@/modules/drafts/draft-history.ports";
+import { DraftHistoryService } from "@/modules/drafts/services/draft-history.service";
+import type { CommitResult, DraftRoomsPort } from "@/modules/drafts/draft-room.ports";
+import { DraftRoomService } from "@/modules/drafts/services/draft-room.service";
+import { type Actor } from "@/modules/drafts/dtos/responses/drafts.dto";
+import { decodeSnapshot } from "@/modules/drafts/domain/snapshot";
 import {
   headToHead,
   type DraftHistoryRecord,
@@ -18,7 +13,7 @@ import {
 import type { DraftRoom, RoomEvent } from "@/modules/drafts/domain/draft-room";
 import { availableHeroes, currentTurn } from "@/modules/drafts/domain/draft-state";
 
-class MemoryRooms implements DraftRoomRepository {
+class MemoryRooms implements DraftRoomsPort {
   rooms = new Map<string, DraftRoom>();
   events: RoomEvent[] = [];
   async insert(room: DraftRoom, created: RoomEvent) {
@@ -47,7 +42,7 @@ class MemoryRooms implements DraftRoomRepository {
   }
 }
 
-class MemoryHistory implements DraftHistoryRepository {
+class MemoryHistory implements DraftHistoryPort {
   records = new Map<string, DraftHistoryRecord>();
   inserts = 0;
   async insertOnce(record: DraftHistoryRecord) {

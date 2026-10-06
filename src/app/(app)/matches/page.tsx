@@ -6,7 +6,7 @@ import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { annotationsService } from "@/modules/annotations";
-import { getDraftRecord } from "@/modules/drafts/composition";
+import { draftRecordService } from "@/modules/drafts";
 import { DraftRecordCard } from "@/modules/drafts/ui/draft-record-card";
 import { getCurrentUser } from "@/modules/identity";
 import {
@@ -231,7 +231,7 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
 }
 
 async function DraftRecordSection({ accountId32 }: { accountId32: number }) {
-  const view = await getDraftRecord(accountId32).catch(() => null);
+  const view = await draftRecordService.forPlayer(accountId32).catch(() => null);
   if (!view || view.record.graded === 0) return null;
   return <DraftRecordCard view={view} />;
 }

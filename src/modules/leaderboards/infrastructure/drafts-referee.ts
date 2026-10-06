@@ -5,8 +5,8 @@ import {
   encodeSnapshot,
   replaySnapshot,
   snapshotOf,
-} from "@/modules/drafts/application/snapshot";
-import { getAiOpponent } from "@/modules/drafts/composition";
+} from "@/modules/drafts/domain/snapshot";
+import { getAiOpponent } from "@/modules/drafts";
 import { matchesService } from "@/modules/matches";
 import type { DraftReferee } from "../leaderboards.ports";
 

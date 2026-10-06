@@ -1,5 +1,5 @@
 import "server-only";
-import { getRoomDraftCounts } from "@/modules/drafts/composition";
+import { draftHistoryRepository } from "@/modules/drafts";
 import { errorsService } from "@/modules/errors";
 import { usersService } from "@/modules/identity";
 import { cronRunsRepository, jobRunsRepository } from "@/modules/jobs";
@@ -15,7 +15,7 @@ export const adminService = new AdminService({
     matchStats: (ids) => matchesService.statsByAccount(ids),
     mmrEntryCounts: (ids) => mmrEntriesRepository.countsByUser(ids),
     activityCounts: (ids) => activityRepository.countsByUser(ids),
-    roomDraftCounts: getRoomDraftCounts,
+    roomDraftCounts: (ids) => draftHistoryRepository.countsByUser(ids),
   },
   profiles: { publicProfile: (id) => playersService.publicProfile(id) },
   ops: {

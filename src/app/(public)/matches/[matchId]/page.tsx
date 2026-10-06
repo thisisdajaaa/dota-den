@@ -7,7 +7,7 @@ import { cn } from "cn";
 import { LocalTime } from "@/components/local-time";
 import { annotationsService } from "@/modules/annotations";
 import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
-import { getAiOpponent } from "@/modules/drafts/composition";
+import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
