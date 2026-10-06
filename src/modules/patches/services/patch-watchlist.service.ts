@@ -1,3 +1,4 @@
+import type { DataOwner } from "@/common/privacy/user-data";
 import { ok, type Result } from "@/common/result";
 import {
   checkWatchlistLimits,
@@ -5,18 +6,25 @@ import {
   type PatchWatchlist,
   type WatchlistError,
 } from "../domain/watchlist";
-import type { PatchWatchlistRepository } from "./ports";
-
-export interface WatchlistIds {
-  heroIds?: readonly number[];
-  itemIds?: readonly number[];
-}
+import type { PatchWatchlistsPort } from "../patches.ports";
+import type { WatchlistIds } from "../dtos/responses/patches.dto";
 
 /** Commands and query for a user's patch watchlist (its own aggregate, keyed by userId). */
+
 export class PatchWatchlistService {
   private readonly now: () => Date;
 
-  constructor(private readonly deps: { watchlists: PatchWatchlistRepository; now?: () => Date }) {
+  constructor(
+    private readonly deps: {
+      watchlists: PatchWatchlistsPort;
+      now?: () => Date;
+      /** Needed for "Download your data" and account deletion only. */
+      data?: {
+        exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+        deleteForOwner(owner: DataOwner): Promise<number>;
+      };
+    },
+  ) {
     this.now = deps.now ?? (() => new Date());
   }
 
@@ -57,5 +65,13 @@ export class PatchWatchlistService {
     const checked = checkWatchlistLimits(ids);
     if (!checked.ok) return checked;
     return ok(await this.deps.watchlists.save(userId, checked.value, this.now()));
+  }
+
+  async exportMyData(owner: DataOwner) {
+    return { patchWatchlist: (await this.deps.data?.exportForOwner(owner)) ?? [] };
+  }
+
+  async deleteMyData(owner: DataOwner) {
+    return { patchWatchlist: (await this.deps.data?.deleteForOwner(owner)) ?? 0 };
   }
 }

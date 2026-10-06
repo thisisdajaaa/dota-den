@@ -2,7 +2,6 @@ import { err, ok, type Result } from "@/common/result";
 import {
   EMPTY_SECTIONS,
   resolveReferences,
-  type ParseStatus,
   type Patch,
   type PatchReferences,
 } from "../domain/patch";
@@ -16,12 +15,13 @@ import type {
   FetchedPatch,
   PatchListEntry,
   PatchReferenceCatalog,
-  PatchRefreshStateRepository,
-  PatchRepository,
+  PatchRefreshStatePort,
+  PatchesPort,
   PatchSource,
   ProviderError,
   StoredPatchState,
-} from "./ports";
+} from "../patches.ports";
+import type { ImportError, ImportOutcome, RefreshResult } from "../dtos/responses/patches.dto";
 
 export const DEFAULT_IMPORT_COUNT = 3;
 export const MAX_IMPORT_COUNT = 20;
@@ -29,24 +29,6 @@ export const MAX_IMPORT_COUNT = 20;
 export const PATCH_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 /** Minimum gap between refresh attempts, so failures don't retry on every page load. */
 export const PATCH_RETRY_AFTER_MS = 10 * 60 * 1000;
-
-export type ImportOutcomeKind = "inserted" | "updated" | "unchanged" | "failed";
-
-export interface ImportOutcome {
-  version: string;
-  outcome: ImportOutcomeKind;
-  /** Status of the stored document after the import; null when nothing is stored. */
-  parseStatus: ParseStatus | null;
-  parseRevision: number | null;
-  /** Why the import failed or kept the previous content. */
-  reason?: string;
-}
-
-export type ImportError = { type: "provider"; error: ProviderError };
-
-export type RefreshResult =
-  | { ran: false; reason: "fresh" | "recently_attempted" }
-  | { ran: true; result: Result<ImportOutcome[], ImportError> };
 
 const describe = (e: ProviderError): string =>
   e.type === "unavailable" || e.type === "invalid_payload" ? `${e.type}: ${e.cause}` : e.type;
@@ -58,8 +40,8 @@ export class PatchImportService {
     private readonly deps: {
       source: PatchSource;
       references: PatchReferenceCatalog;
-      patches: PatchRepository;
-      refreshState: PatchRefreshStateRepository;
+      patches: PatchesPort;
+      refreshState: PatchRefreshStatePort;
       now?: () => Date;
     },
   ) {

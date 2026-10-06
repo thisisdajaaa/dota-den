@@ -1,11 +1,9 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PatchWatchlistService } from "@/modules/patches/application/patch-watchlist-service";
-import {
-  ensurePatchIndexes,
-  MongoPatchWatchlistRepository,
-  PATCH_COLLECTIONS,
-} from "@/modules/patches/infrastructure/mongo-patch-repositories";
+import { PatchWatchlistService } from "@/modules/patches/services/patch-watchlist.service";
+import { PatchWatchlistsRepository } from "@/modules/patches/repositories/patches.repository";
+import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
+import { PATCH_COLLECTIONS } from "@/modules/patches/repositories/patches.repository";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -13,12 +11,12 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensurePatchIndexes(db);
+  await new PatchesRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
 const service = () =>
-  new PatchWatchlistService({ watchlists: new MongoPatchWatchlistRepository(db) });
+  new PatchWatchlistService({ watchlists: new PatchWatchlistsRepository(async () => db) });
 
 describe("patch watchlists", () => {
   it("returns an empty watchlist for a new user", async () => {

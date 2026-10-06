@@ -4,7 +4,7 @@ import {
   PATCH_STALE_AFTER_MS,
   PatchImportService,
   sortNewestFirst,
-} from "@/modules/patches/application/patch-import-service";
+} from "@/modules/patches/services/patch-import.service";
 import { patchDetail } from "../fixtures/valve-patches";
 import {
   fakeReferences,

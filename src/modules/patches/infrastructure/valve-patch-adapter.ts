@@ -13,12 +13,7 @@ import {
   type PatchSections,
 } from "../domain/patch";
 import { parsePatchVersion } from "../domain/patch-version";
-import type {
-  FetchedPatch,
-  PatchListEntry,
-  PatchSource,
-  ProviderError,
-} from "../application/ports";
+import type { FetchedPatch, PatchListEntry, PatchSource, ProviderError } from "../patches.ports";
 import { contentHash } from "./content-hash";
 
 export const VALVE_DATAFEED_BASE_URL = "https://www.dota2.com/datafeed";

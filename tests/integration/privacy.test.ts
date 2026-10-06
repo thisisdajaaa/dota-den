@@ -12,7 +12,8 @@ import { UsersService } from "@/modules/identity/services/users.service";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import * as matches from "@/modules/matches/infrastructure/user-data";
 import * as mmr from "@/modules/mmr/infrastructure/user-data";
-import * as patches from "@/modules/patches/infrastructure/user-data";
+import { PatchWatchlistsRepository } from "@/modules/patches/repositories/patches.repository";
+import { PatchWatchlistService } from "@/modules/patches/services/patch-watchlist.service";
 import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
 import { FollowService } from "@/modules/players/services/follow.service";
 import {
@@ -95,6 +96,11 @@ const leaderboards = servicePart((getDb) => {
     exportMyData: (o: DataOwner) => repo.exportForOwner(o),
     deleteMyData: (o: DataOwner) => repo.deleteForOwner(o),
   };
+});
+
+const patches = servicePart((getDb) => {
+  const repo = new PatchWatchlistsRepository(getDb);
+  return new PatchWatchlistService({ watchlists: repo, data: repo });
 });
 
 const PARTS = [

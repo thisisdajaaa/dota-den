@@ -42,7 +42,7 @@ test("signed-in users see their changed heroes and can star one", async ({ page 
 
   // The watchlist persisted server-side.
   const saved = await page.request.get("/api/v1/me/patch-watchlist");
-  expect((await saved.json()).heroIds).toContain(14);
+  expect((await saved.json()).data.heroIds).toContain(14);
 
   // The overview sums up how the latest patch touched your heroes.
   await page.goto("/dashboard");

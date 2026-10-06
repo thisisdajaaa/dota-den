@@ -1,4 +1,6 @@
-import type { Collection, Db } from "mongodb";
+import "server-only";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
+import type { Db } from "mongodb";
 import { diffSummary, type Patch, type PatchDiffSummary } from "../domain/patch";
 import { parsePatchVersion, patchVersionSortKey } from "../domain/patch-version";
 import type { PatchWatchlist } from "../domain/watchlist";
@@ -7,13 +9,13 @@ import {
   PATCH_PAGE_MAX,
   type PatchListItem,
   type PatchPage,
-  type PatchQueries,
+  type PatchQueriesPort,
   type PatchRefreshState,
-  type PatchRefreshStateRepository,
-  type PatchRepository,
-  type PatchWatchlistRepository,
+  type PatchRefreshStatePort,
+  type PatchesPort,
+  type PatchWatchlistsPort,
   type StoredPatchState,
-} from "../application/ports";
+} from "../patches.ports";
 
 const SCHEMA_VERSION = 1;
 
@@ -49,19 +51,6 @@ interface RefreshStateDoc {
 
 const REFRESH_STATE_ID = "valve";
 
-export async function ensurePatchIndexes(db: Db): Promise<void> {
-  const patches = db.collection(PATCH_COLLECTIONS.patches);
-  await Promise.all([
-    patches.createIndex({ version: 1 }, { unique: true, name: "uniq_version" }),
-    patches.createIndex({ sourceUrl: 1 }, { unique: true, name: "uniq_sourceUrl" }),
-    patches.createIndex({ publishedAt: -1 }, { name: "by_publishedAt" }),
-    patches.createIndex({ sortKey: -1 }, { name: "by_sortKey" }),
-    db
-      .collection(PATCH_COLLECTIONS.watchlists)
-      .createIndex({ userId: 1 }, { unique: true, name: "uniq_userId" }),
-  ]);
-}
-
 function sortKeyOf(version: string): number {
   const v = parsePatchVersion(version);
   if (!v.ok) throw new Error(`Refusing to store invalid patch version "${version}"`);
@@ -91,11 +80,26 @@ function toPatch(doc: PatchDoc): Patch {
   };
 }
 
-export class MongoPatchRepository implements PatchRepository {
-  private readonly col: Collection<PatchDoc>;
+export class PatchesRepository implements PatchesPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.col = db.collection<PatchDoc>(PATCH_COLLECTIONS.patches);
+  /** Patches, and the watchlists collection (one per user). */
+  async ensureIndexes(): Promise<void> {
+    const db = await this.getDb();
+    const patches = db.collection(PATCH_COLLECTIONS.patches);
+    await Promise.all([
+      patches.createIndex({ version: 1 }, { unique: true, name: "uniq_version" }),
+      patches.createIndex({ sourceUrl: 1 }, { unique: true, name: "uniq_sourceUrl" }),
+      patches.createIndex({ publishedAt: -1 }, { name: "by_publishedAt" }),
+      patches.createIndex({ sortKey: -1 }, { name: "by_sortKey" }),
+      db
+        .collection(PATCH_COLLECTIONS.watchlists)
+        .createIndex({ userId: 1 }, { unique: true, name: "uniq_userId" }),
+    ]);
+  }
+
+  private async col() {
+    return (await this.getDb()).collection<PatchDoc>(PATCH_COLLECTIONS.patches);
   }
 
   private fields(patch: Patch) {
@@ -108,7 +112,9 @@ export class MongoPatchRepository implements PatchRepository {
   }
 
   async getState(version: string): Promise<StoredPatchState | null> {
-    const doc = await this.col.findOne(
+    const doc = await (
+      await this.col()
+    ).findOne(
       { version },
       {
         projection: {
@@ -137,7 +143,7 @@ export class MongoPatchRepository implements PatchRepository {
   async insert(patch: Patch): Promise<"inserted" | "conflict"> {
     const now = new Date();
     try {
-      await this.col.insertOne({ ...this.fields(patch), createdAt: now, updatedAt: now });
+      await (await this.col()).insertOne({ ...this.fields(patch), createdAt: now, updatedAt: now });
       return "inserted";
     } catch (e) {
       if (isDuplicateKey(e)) return "conflict";
@@ -146,7 +152,9 @@ export class MongoPatchRepository implements PatchRepository {
   }
 
   async replace(patch: Patch, expectedRevision: number): Promise<"updated" | "conflict"> {
-    const res = await this.col.updateOne(
+    const res = await (
+      await this.col()
+    ).updateOne(
       { version: patch.version, parseRevision: expectedRevision },
       { $set: { ...this.fields(patch), updatedAt: new Date() } },
     );
@@ -154,7 +162,7 @@ export class MongoPatchRepository implements PatchRepository {
   }
 
   async count(): Promise<number> {
-    return this.col.estimatedDocumentCount();
+    return (await this.col()).estimatedDocumentCount();
   }
 }
 
@@ -183,11 +191,11 @@ function toListItem(doc: ListDoc): PatchListItem {
   };
 }
 
-export class MongoPatchQueries implements PatchQueries {
-  private readonly col: Collection<PatchDoc>;
+export class PatchReadRepository implements PatchQueriesPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.col = db.collection<PatchDoc>(PATCH_COLLECTIONS.patches);
+  private async col() {
+    return (await this.getDb()).collection<PatchDoc>(PATCH_COLLECTIONS.patches);
   }
 
   async list(opts: { cursor?: string | null; limit?: number } = {}): Promise<PatchPage> {
@@ -202,7 +210,9 @@ export class MongoPatchQueries implements PatchQueries {
       if (!v.ok) return { items: [], nextCursor: null };
       filter.sortKey = { $lt: patchVersionSortKey(v.value) };
     }
-    const docs = await this.col
+    const docs = await (
+      await this.col()
+    )
       .find<ListDoc>(filter, {
         sort: { sortKey: -1 },
         limit: limit + 1,
@@ -219,28 +229,27 @@ export class MongoPatchQueries implements PatchQueries {
   async getByVersion(version: string): Promise<Patch | null> {
     const v = parsePatchVersion(version);
     if (!v.ok) return null;
-    const doc = await this.col.findOne({ version: v.value.value });
+    const doc = await (await this.col()).findOne({ version: v.value.value });
     return doc ? toPatch(doc) : null;
   }
 
   async latest(): Promise<PatchListItem | null> {
-    const doc = await this.col.findOne<ListDoc>(
-      {},
-      { sort: { sortKey: -1 }, projection: LIST_PROJECTION },
-    );
+    const doc = await (
+      await this.col()
+    ).findOne<ListDoc>({}, { sort: { sortKey: -1 }, projection: LIST_PROJECTION });
     return doc ? toListItem(doc) : null;
   }
 }
 
-export class MongoPatchWatchlistRepository implements PatchWatchlistRepository {
-  private readonly col: Collection<WatchlistDoc>;
+export class PatchWatchlistsRepository implements PatchWatchlistsPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.col = db.collection<WatchlistDoc>(PATCH_COLLECTIONS.watchlists);
+  private async col() {
+    return (await this.getDb()).collection<WatchlistDoc>(PATCH_COLLECTIONS.watchlists);
   }
 
   async get(userId: string): Promise<PatchWatchlist | null> {
-    const doc = await this.col.findOne({ userId });
+    const doc = await (await this.col()).findOne({ userId });
     return doc
       ? { userId: doc.userId, heroIds: doc.heroIds, itemIds: doc.itemIds, updatedAt: doc.updatedAt }
       : null;
@@ -251,7 +260,9 @@ export class MongoPatchWatchlistRepository implements PatchWatchlistRepository {
     ids: { heroIds: number[]; itemIds: number[] },
     now: Date,
   ): Promise<PatchWatchlist> {
-    await this.col.updateOne(
+    await (
+      await this.col()
+    ).updateOne(
       { userId },
       {
         $set: {
@@ -266,23 +277,33 @@ export class MongoPatchWatchlistRepository implements PatchWatchlistRepository {
     );
     return { userId, heroIds: ids.heroIds, itemIds: ids.itemIds, updatedAt: now };
   }
+
+  async exportForOwner(owner: DataOwner) {
+    return forExport(await (await this.col()).find({ userId: owner.userId }).toArray());
+  }
+
+  async deleteForOwner(owner: DataOwner): Promise<number> {
+    return (await (await this.col()).deleteMany({ userId: owner.userId })).deletedCount;
+  }
 }
 
-export class MongoPatchRefreshStateRepository implements PatchRefreshStateRepository {
-  private readonly col: Collection<RefreshStateDoc>;
+export class PatchRefreshStateRepository implements PatchRefreshStatePort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.col = db.collection<RefreshStateDoc>(PATCH_COLLECTIONS.refreshState);
+  private async col() {
+    return (await this.getDb()).collection<RefreshStateDoc>(PATCH_COLLECTIONS.refreshState);
   }
 
   async get(): Promise<PatchRefreshState | null> {
-    const doc = await this.col.findOne({ _id: REFRESH_STATE_ID });
+    const doc = await (await this.col()).findOne({ _id: REFRESH_STATE_ID });
     return doc ? { lastAttemptAt: doc.lastAttemptAt, lastSuccessAt: doc.lastSuccessAt } : null;
   }
 
   async tryClaim(now: Date, minIntervalMs: number): Promise<boolean> {
     try {
-      const doc = await this.col.findOneAndUpdate(
+      const doc = await (
+        await this.col()
+      ).findOneAndUpdate(
         {
           _id: REFRESH_STATE_ID,
           $or: [
@@ -302,7 +323,9 @@ export class MongoPatchRefreshStateRepository implements PatchRefreshStateReposi
   }
 
   async recordSuccess(now: Date): Promise<void> {
-    await this.col.updateOne(
+    await (
+      await this.col()
+    ).updateOne(
       { _id: REFRESH_STATE_ID },
       { $set: { lastSuccessAt: now }, $setOnInsert: { lastAttemptAt: now } },
       { upsert: true },

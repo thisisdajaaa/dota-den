@@ -9,7 +9,7 @@ import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/application/match-sync-s
 import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
 import { metaService } from "@/modules/meta";
 import { recordMedal } from "@/modules/mmr/composition";
-import { getPatchImportService } from "@/modules/patches/composition";
+import { patchImportService } from "@/modules/patches";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
 import { JobsController } from "./jobs.controller";
@@ -72,7 +72,7 @@ export const cronService = new CronService({
     },
     record: recordMedal,
   },
-  patches: { importLatest: async () => (await getPatchImportService()).importLatest() },
+  patches: { importLatest: () => patchImportService.importLatest() },
   caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
   queue: jobQueue,
   logger,

@@ -5,8 +5,8 @@ import type {
   PatchDiffSummary,
   PatchReferences,
   PatchSections,
-} from "../domain/patch";
-import type { PatchWatchlist } from "../domain/watchlist";
+} from "./domain/patch";
+import type { PatchWatchlist } from "./domain/watchlist";
 
 export type ProviderError =
   | { type: "rate_limited"; retryAfterMs: number | null }
@@ -58,7 +58,7 @@ export interface StoredPatchState {
   referencesResolved: boolean;
 }
 
-export interface PatchRepository {
+export interface PatchesPort {
   getState(version: string): Promise<StoredPatchState | null>;
   /** `conflict` when the version already exists (a concurrent import won). */
   insert(patch: Patch): Promise<"inserted" | "conflict">;
@@ -73,7 +73,7 @@ export interface PatchRefreshState {
 }
 
 /** Tracks scheduled/lazy refresh runs so page loads don't hammer upstream. */
-export interface PatchRefreshStateRepository {
+export interface PatchRefreshStatePort {
   get(): Promise<PatchRefreshState | null>;
   /** Atomically claim a run unless one was attempted within `minIntervalMs`. */
   tryClaim(now: Date, minIntervalMs: number): Promise<boolean>;
@@ -100,14 +100,14 @@ export const PATCH_PAGE_DEFAULT = 20;
 export const PATCH_PAGE_MAX = 50;
 
 /** Read models for the patch hub (query side). */
-export interface PatchQueries {
+export interface PatchQueriesPort {
   /** Newest version first. `cursor` is the last version of the previous page. */
   list(opts?: { cursor?: string | null; limit?: number }): Promise<PatchPage>;
   getByVersion(version: string): Promise<Patch | null>;
   latest(): Promise<PatchListItem | null>;
 }
 
-export interface PatchWatchlistRepository {
+export interface PatchWatchlistsPort {
   get(userId: string): Promise<PatchWatchlist | null>;
   save(
     userId: string,

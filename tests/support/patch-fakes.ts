@@ -1,10 +1,10 @@
 import type {
   PatchReferenceCatalog,
   PatchRefreshState,
-  PatchRefreshStateRepository,
-  PatchRepository,
+  PatchRefreshStatePort,
+  PatchesPort,
   StoredPatchState,
-} from "@/modules/patches/application/ports";
+} from "@/modules/patches/patches.ports";
 import type { Patch } from "@/modules/patches/domain/patch";
 import { ValvePatchAdapter } from "@/modules/patches/infrastructure/valve-patch-adapter";
 import { ProviderGateway } from "@/common/providers/provider-gateway";
@@ -64,7 +64,7 @@ export function fakeReferences(available = true): PatchReferenceCatalog & { avai
   };
 }
 
-export class InMemoryPatchRepository implements PatchRepository {
+export class InMemoryPatchRepository implements PatchesPort {
   readonly docs = new Map<string, Patch>();
   writes = 0;
 
@@ -101,7 +101,7 @@ export class InMemoryPatchRepository implements PatchRepository {
   }
 }
 
-export class InMemoryRefreshState implements PatchRefreshStateRepository {
+export class InMemoryRefreshState implements PatchRefreshStatePort {
   state: PatchRefreshState | null = null;
 
   async get(): Promise<PatchRefreshState | null> {
