@@ -2,14 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiError, isSameOrigin, requestId } from "@/common/http/http";
 import { logger } from "@/common/logging/logger";
 import { errorsService } from "@/modules/errors";
-import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
+import { authService, SESSION_COOKIE } from "@/modules/identity";
 import { jobsService } from "@/modules/jobs";
 import { getMatchSyncService } from "@/modules/matches/composition";
 
 /** Sync the signed-in user's own matches from OpenDota. Cooldown and per-account lock apply. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  const auth = await getAuthService();
+  const auth = authService;
   const session = await auth.resolveSession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return apiError("unauthorized", "Not signed in");
 

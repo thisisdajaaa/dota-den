@@ -6,7 +6,7 @@ import { LocalTime } from "@/components/local-time";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { toMmrEntryDto } from "@/modules/mmr/application/contracts";

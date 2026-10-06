@@ -6,7 +6,7 @@ import { apiLimitArgs } from "@/common/http/api-limits";
 import { clientKey, rateLimit } from "@/common/http/rate-limit";
 import { CHALLENGE_TYPES, SEED_PATTERN, type Grade } from "@/modules/drafts/domain/challenges";
 import { getChallengeService } from "@/modules/drafts/composition";
-import { getRouteUser } from "@/modules/identity/composition";
+import { getRouteUser } from "@/modules/identity";
 import type { ChallengeProgressDto } from "@/modules/leaderboards/application/contracts";
 import { getActivityService } from "@/modules/leaderboards/composition";
 

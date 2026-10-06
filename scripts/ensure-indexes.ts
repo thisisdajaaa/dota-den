@@ -12,7 +12,9 @@ import { ensureDraftRoomIndexes } from "@/modules/drafts/infrastructure/mongo-dr
 import { ErrorsRepository } from "@/modules/errors/errors.repository";
 import { CronRunsRepository } from "@/modules/jobs/repositories/cron-runs.repository";
 import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
-import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
+import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
+import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
 import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-medal-history";
@@ -27,7 +29,11 @@ async function main(): Promise<void> {
   await ensureDraftMetaCacheIndexes(db);
   await new AnnotationsRepository(async () => db).ensureIndexes();
   await new GoalsRepository(async () => db).ensureIndexes();
-  await ensureIdentityIndexes(db);
+  await Promise.all([
+    new UsersRepository(async () => db).ensureIndexes(),
+    new SessionsRepository(async () => db).ensureIndexes(),
+    new NoncesRepository(async () => db).ensureIndexes(),
+  ]);
   await new ErrorsRepository(async () => db).ensureIndexes();
   await new JobRunsRepository(async () => db).ensureIndexes();
   await new CronRunsRepository(async () => db).ensureIndexes();

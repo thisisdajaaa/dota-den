@@ -12,7 +12,7 @@ import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { getHeroMap } from "@/modules/matches/composition";
 import { plural } from "@/modules/matches/ui/format";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
 
 export const metadata: Metadata = { title: "Heroes" };

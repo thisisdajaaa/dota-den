@@ -10,7 +10,7 @@ import {
   historyHref,
   HistoryList,
 } from "@/modules/drafts/ui/draft-history";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 
 export const metadata: Metadata = { title: "Your draft history" };
 

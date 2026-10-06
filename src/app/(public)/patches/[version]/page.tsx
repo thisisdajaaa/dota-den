@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { getPatchImportService, getPatchQueries } from "@/modules/patches/composition";

@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import {
   BACKFILL_COOLDOWN_MS,
   MatchSyncService,

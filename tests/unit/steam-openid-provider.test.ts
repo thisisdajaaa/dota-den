@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { NonceStore } from "@/modules/identity/application/ports";
+import type { NonceStore } from "@/modules/identity/identity.ports";
 import {
   parseNonceTime,
   STEAM_OPENID_ENDPOINT,

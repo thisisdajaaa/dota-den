@@ -8,7 +8,7 @@ import { SegmentedLinks } from "@/components/segmented-links";
 import { annotationsService } from "@/modules/annotations";
 import { getDraftRecord } from "@/modules/drafts/composition";
 import { DraftRecordCard } from "@/modules/drafts/ui/draft-record-card";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import {
   matchListHref,
   parseMatchListFilter,

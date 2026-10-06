@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Info, ThumbsDown, Trophy } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
 import { PageHeader } from "@/components/page-header";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent } from "@/modules/matches/ui/format";

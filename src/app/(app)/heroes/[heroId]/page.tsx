@@ -22,7 +22,7 @@ import {
 import { BuildCard } from "@/modules/heroes/ui/build-card";
 import { ProgressCard } from "@/modules/heroes/ui/progress-card";
 import { guideService } from "@/modules/guides";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
 import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";

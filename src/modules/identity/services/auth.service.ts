@@ -6,8 +6,8 @@ import type {
   SessionRecord,
   SessionRepository,
   UserRepository,
-} from "./ports";
-import { generateToken, hashToken, safeEqual } from "./session-tokens";
+} from "../identity.ports";
+import { generateToken, hashToken, safeEqual } from "../domain/session-tokens";
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_ROTATE_AFTER_MS = 24 * 60 * 60 * 1000;

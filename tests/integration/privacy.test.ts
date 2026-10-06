@@ -6,7 +6,9 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
-import * as identity from "@/modules/identity/infrastructure/user-data";
+import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { UsersRepository } from "@/modules/identity/repositories/users.repository";
+import { UsersService } from "@/modules/identity/services/users.service";
 import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
 import * as matches from "@/modules/matches/infrastructure/user-data";
 import * as mmr from "@/modules/mmr/infrastructure/user-data";
@@ -43,6 +45,14 @@ const goalsPart = servicePart(
 );
 const annotationsPart = servicePart(
   (getDb) => new AnnotationsService({ repository: new AnnotationsRepository(getDb) }),
+);
+
+const identity = servicePart(
+  (getDb) =>
+    new UsersService({
+      users: new UsersRepository(getDb),
+      sessions: new SessionsRepository(getDb),
+    }),
 );
 
 const PARTS = [

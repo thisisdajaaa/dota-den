@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, isSameOrigin } from "@/common/http/http";
 import { rateLimit } from "@/common/http/rate-limit";
-import { getRouteUser } from "@/modules/identity/composition";
+import { getRouteUser } from "@/modules/identity";
 import {
   NOTE_SAVES_PER_MINUTE,
   SessionNoteInputSchema,

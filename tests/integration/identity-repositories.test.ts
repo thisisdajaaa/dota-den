@@ -1,13 +1,10 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SteamId64 } from "@/modules/identity/domain/steam-id";
-import {
-  ensureIdentityIndexes,
-  IDENTITY_COLLECTIONS,
-  MongoNonceStore,
-  MongoSessionRepository,
-  MongoUserRepository,
-} from "@/modules/identity/infrastructure/mongo-identity-repositories";
+import { IDENTITY_COLLECTIONS } from "@/modules/identity/identity.model";
+import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
+import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -15,13 +12,18 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensureIdentityIndexes(db);
+  const getDb = async () => db;
+  await Promise.all([
+    new UsersRepository(getDb).ensureIndexes(),
+    new SessionsRepository(getDb).ensureIndexes(),
+    new NoncesRepository(getDb).ensureIndexes(),
+  ]);
 });
 afterAll(async () => teardown?.());
 
-describe("MongoUserRepository", () => {
+describe("UsersRepository", () => {
   it("upserts idempotently by SteamID64 and keeps createdAt", async () => {
-    const users = new MongoUserRepository(db);
+    const users = new UsersRepository(async () => db);
     const steamId64 = "76561197960287930" as SteamId64;
     const t1 = new Date("2026-09-01T00:00:00Z");
     const t2 = new Date("2026-09-02T00:00:00Z");
@@ -46,9 +48,9 @@ describe("MongoUserRepository", () => {
   });
 });
 
-describe("MongoSessionRepository", () => {
+describe("SessionsRepository", () => {
   it("creates, replaces and deletes by token hash", async () => {
-    const sessions = new MongoSessionRepository(db);
+    const sessions = new SessionsRepository(async () => db);
     const now = new Date();
     const record = {
       tokenHash: "h1",
@@ -69,7 +71,7 @@ describe("MongoSessionRepository", () => {
   });
 
   it("rejects duplicate token hashes and has a TTL index", async () => {
-    const sessions = new MongoSessionRepository(db);
+    const sessions = new SessionsRepository(async () => db);
     const now = new Date();
     const record = {
       tokenHash: "dup",
@@ -86,9 +88,9 @@ describe("MongoSessionRepository", () => {
   });
 });
 
-describe("MongoNonceStore", () => {
+describe("NoncesRepository", () => {
   it("accepts a nonce once and rejects replays, including concurrent ones", async () => {
-    const nonces = new MongoNonceStore(db);
+    const nonces = new NoncesRepository(async () => db);
     const expires = new Date(Date.now() + 60_000);
     const results = await Promise.all([
       nonces.consume("steam:n1", expires),

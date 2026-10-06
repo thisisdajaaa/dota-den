@@ -1,6 +1,6 @@
 import type { Result } from "@/common/result";
-import type { SteamId64 } from "../domain/steam-id";
-import type { User } from "../domain/user";
+import type { SteamId64 } from "./domain/steam-id";
+import type { User } from "./domain/user";
 
 export type IdentityVerificationError =
   | { type: "not_positive_assertion"; mode: string | null }

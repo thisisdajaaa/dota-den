@@ -11,12 +11,7 @@ import {
   snapshotOf,
 } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent, getDraftHistoryService } from "@/modules/drafts/composition";
-import {
-  findUsersByAccountIds,
-  findPublicUserIds,
-  findUsersByIds,
-  getCurrentUser,
-} from "@/modules/identity/composition";
+import { getCurrentUser, usersService } from "@/modules/identity";
 import type { User } from "@/modules/identity/domain/user";
 import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ownerOf } from "@/modules/players/application/follow-service";
@@ -92,9 +87,9 @@ const toAccount = (u: User): PlayerAccount => ({
 });
 
 const accounts: AccountDirectory = {
-  byUserIds: async (ids) => (await findUsersByIds(ids)).map(toAccount),
-  byAccountIds: async (ids) => (await findUsersByAccountIds(ids)).map(toAccount),
-  publicUserIds: () => findPublicUserIds(env().LEADERBOARD_EVERYONE_MAX_PLAYERS),
+  byUserIds: async (ids) => (await usersService.findByIds(ids)).map(toAccount),
+  byAccountIds: async (ids) => (await usersService.findByAccountIds(ids)).map(toAccount),
+  publicUserIds: () => usersService.findPublicIds(env().LEADERBOARD_EVERYONE_MAX_PLAYERS),
 };
 
 /**

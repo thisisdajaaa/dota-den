@@ -3,14 +3,14 @@ import {
   AuthService,
   SESSION_ROTATE_AFTER_MS,
   SESSION_TTL_MS,
-} from "@/modules/identity/application/auth-service";
+} from "@/modules/identity/services/auth.service";
 import type {
   IdentityProvider,
   SessionRecord,
   SessionRepository,
   UserRepository,
-} from "@/modules/identity/application/ports";
-import { hashToken } from "@/modules/identity/application/session-tokens";
+} from "@/modules/identity/identity.ports";
+import { hashToken } from "@/modules/identity/domain/session-tokens";
 import { toAccountId32, type SteamId64 } from "@/modules/identity/domain/steam-id";
 import { DEFAULT_USER_SETTINGS, type User } from "@/modules/identity/domain/user";
 import { err, ok } from "@/common/result";

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/common/logging/logger";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { getHeroMap } from "@/modules/matches/composition";
 import { plural } from "@/modules/matches/ui/format";

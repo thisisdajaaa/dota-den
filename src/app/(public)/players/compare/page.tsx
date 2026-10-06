@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { ArrowLeft, ArrowLeftRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent, plural } from "@/modules/matches/ui/format";

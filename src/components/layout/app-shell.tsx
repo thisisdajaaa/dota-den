@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { InstallButton } from "@/components/pwa";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getPlayerProfile } from "@/modules/matches/composition";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";

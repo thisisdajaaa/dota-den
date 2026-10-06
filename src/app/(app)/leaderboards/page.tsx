@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/common/logging/logger";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import type { BoardView } from "@/modules/leaderboards/application/contracts";
 import { getLeaderboardService, getRankedWeek } from "@/modules/leaderboards/composition";
 import { isPeriod, PERIODS, type Period } from "@/modules/leaderboards/domain/period";

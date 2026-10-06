@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, isSameOrigin } from "@/common/http/http";
 import { clientKey, rateLimit } from "@/common/http/rate-limit";
-import { getRouteUser } from "@/modules/identity/composition";
+import { getRouteUser } from "@/modules/identity";
 import {
   FOLLOW_MUTATIONS_PER_MINUTE,
   FollowInputSchema,

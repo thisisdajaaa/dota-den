@@ -1,7 +1,7 @@
 import "server-only";
 import { getRoomDraftCounts } from "@/modules/drafts/composition";
 import { errorsService } from "@/modules/errors";
-import { getAdminUserRows } from "@/modules/identity/composition";
+import { usersService } from "@/modules/identity";
 import { cronRunsRepository, jobRunsRepository } from "@/modules/jobs";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { getMatchStatsByAccount } from "@/modules/matches/composition";
@@ -10,7 +10,7 @@ import { getPublicProfile } from "@/modules/players/composition";
 import { AdminService } from "./admin.service";
 
 export const adminService = new AdminService({
-  users: { userRows: getAdminUserRows },
+  users: { userRows: () => usersService.adminRows() },
   stats: {
     matchStats: getMatchStatsByAccount,
     mmrEntryCounts: getMmrEntryCounts,

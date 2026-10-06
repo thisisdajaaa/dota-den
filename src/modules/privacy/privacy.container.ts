@@ -3,7 +3,7 @@ import { logger } from "@/common/logging/logger";
 import { annotationsService } from "@/modules/annotations";
 import * as drafts from "@/modules/drafts/composition";
 import { goalsService } from "@/modules/goals";
-import * as identity from "@/modules/identity/composition";
+import { usersService } from "@/modules/identity";
 import * as leaderboards from "@/modules/leaderboards/composition";
 import * as matches from "@/modules/matches/composition";
 import * as mmr from "@/modules/mmr/composition";
@@ -27,7 +27,7 @@ export const privacyService = new PrivacyService({
     annotationsService,
     goalsService,
   ],
-  identity,
+  identity: usersService,
   logger,
 });
 
