@@ -2,6 +2,7 @@ import { ObjectId, type Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as annotations from "@/modules/annotations/infrastructure/mongo-annotations";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
+import * as goals from "@/modules/goals/infrastructure/mongo-goals";
 import * as identity from "@/modules/identity/infrastructure/user-data";
 import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
 import * as matches from "@/modules/matches/infrastructure/user-data";
@@ -29,6 +30,7 @@ const PARTS = [
   matches,
   together,
   annotations,
+  goals,
   identity,
 ];
 
@@ -47,6 +49,7 @@ async function seed(userId: ObjectId, accountId32: number, friendAccount: number
   await db.collection("challenge_attempts").insertOne({ userId: u, type: "last_pick" });
   await db.collection<{ _id: string }>("challenge_streaks").insertOne({ _id: u });
   await db.collection("draft_results").insertOne({ userId: u, score: 70 });
+  await goals.saveGoals(db, u, "2026-10-05", [{ type: "logAfterSessions" }]);
   await db.collection("player_match_facts").insertOne({ accountId32, matchId: `m${accountId32}` });
   await db.collection("match_sync_state").insertOne({ accountId32 });
   await db
@@ -77,6 +80,7 @@ describe("deleting your data", () => {
     );
     expect(exported.mmrEntries).toHaveLength(1);
     expect(exported.friendRoomDrafts).toHaveLength(1);
+    expect(exported.weeklyGoals).toHaveLength(1);
     expect(JSON.stringify(exported)).not.toContain("tokenHash");
 
     for (const p of PARTS) await p.deleteUserData(db, owner);

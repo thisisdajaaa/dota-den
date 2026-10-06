@@ -4,6 +4,7 @@
  */
 import { getDb, getMongoClient } from "@/lib/db/mongo";
 import { ensureAnnotationIndexes } from "@/modules/annotations/infrastructure/mongo-annotations";
+import { ensureGoalIndexes } from "@/modules/goals/infrastructure/mongo-goals";
 import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo-draft-history";
 import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import { ensureMatchDraftReadIndexes } from "@/modules/drafts/infrastructure/match-draft-reads";
@@ -25,6 +26,7 @@ async function main(): Promise<void> {
   const db = await getDb();
   await ensureDraftMetaCacheIndexes(db);
   await ensureAnnotationIndexes(db);
+  await ensureGoalIndexes(db);
   await ensureIdentityIndexes(db);
   await ensureErrorIndexes(db);
   await ensureJobIndexes(db);
