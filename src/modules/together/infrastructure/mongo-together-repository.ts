@@ -87,6 +87,14 @@ export class MongoTogetherRepository implements TogetherRepository {
     }
   }
 
+  async unknownPartyMatchIdsOf(accountId32: number): Promise<string[]> {
+    const ids = await this.col.distinct("matchId", {
+      relation: "same_team_unknown",
+      $or: [{ accountIdA: accountId32 }, { accountIdB: accountId32 }],
+    });
+    return ids.map(String);
+  }
+
   async partyMatchesOf(accountId32: number): Promise<PairClassification[]> {
     const docs = await this.col
       .find({

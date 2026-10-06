@@ -87,4 +87,14 @@ describe("together_matches (Mongo)", () => {
     const party = await repo.partyMatchesOf(500);
     expect(party.map((p) => p.matchId).sort()).toEqual(["200", "201"]);
   });
+
+  it("lists distinct unknown-party match ids for an account", async () => {
+    const repo = new MongoTogetherRepository(db);
+    await repo.saveMany([
+      row("300", 600, 14, { relation: "same_team_unknown" }),
+      row("300", 600, 9100, { relation: "same_team_unknown" }),
+      row("301", 600, 15, { relation: "party" }),
+    ]);
+    expect(await repo.unknownPartyMatchIdsOf(600)).toEqual(["300"]);
+  });
 });

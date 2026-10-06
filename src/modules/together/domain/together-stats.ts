@@ -191,3 +191,43 @@ export function topTrios(links: readonly PartyLink[], limit = 5): Trio[] {
   }
   return [...trios.values()].sort((a, b) => b.games - a.games || b.wins - a.wins).slice(0, limit);
 }
+
+export interface Stack extends WinRecord {
+  /** Friends in the party with you (ascending): 1 for a duo, 2 for a trio, up to 4. */
+  friends: number[];
+  /** Win rate pulled toward 50% by STACK_SHRINK_GAMES games, for ranking small samples. */
+  adjustedRate: number;
+}
+
+/** Stacks need this many games to be ranked. */
+export const MIN_STACK_GAMES = 3;
+export const STACK_SHRINK_GAMES = 10;
+
+/**
+ * Your parties by exactly who was in them (among friends whose games have been analysed),
+ * ranked by a win rate pulled toward 50%. Only confirmed parties: the links come from party
+ * matches.
+ */
+export function bestStacks(links: readonly PartyLink[], limit = 8): Stack[] {
+  const byMatch = new Map<string, PartyLink[]>();
+  for (const l of links) byMatch.set(l.matchId, [...(byMatch.get(l.matchId) ?? []), l]);
+  const stacks = new Map<string, Stack>();
+  for (const rows of byMatch.values()) {
+    const result = rows.find((r) => r.result !== null)?.result ?? null;
+    if (result === null) continue;
+    const friends = [...new Set(rows.map((r) => r.friendId))].sort((a, b) => a - b);
+    const key = friends.join(":");
+    const s = stacks.get(key) ?? { friends, games: 0, wins: 0, adjustedRate: 0 };
+    s.games++;
+    if (result === "win") s.wins++;
+    stacks.set(key, s);
+  }
+  return [...stacks.values()]
+    .filter((s) => s.games >= MIN_STACK_GAMES)
+    .map((s) => ({
+      ...s,
+      adjustedRate: (s.wins + STACK_SHRINK_GAMES * 0.5) / (s.games + STACK_SHRINK_GAMES),
+    }))
+    .sort((a, b) => b.adjustedRate - a.adjustedRate || b.games - a.games)
+    .slice(0, limit);
+}
