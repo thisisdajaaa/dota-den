@@ -180,6 +180,37 @@ describe("OpenDotaAdapter.fetchMatch", () => {
     expect(res.value.players[1].laning).toBeNull();
   });
 
+  it("reads wards (with removals) and team fight deaths for parsed players", async () => {
+    const { adapter } = adapterWith({
+      ...base,
+      players: [
+        p(0, {
+          lh_t: [0, 5],
+          obs_log: [{ time: -26, x: 130, y: 118.3, ehandle: 7 }],
+          obs_left_log: [{ time: 334, x: 130, y: 118.3, ehandle: 7 }],
+          sen_log: [{ time: 400, x: 90, y: 100 }, { time: 410 }],
+        }),
+        p(128),
+      ],
+      teamfights: [
+        { start: 370, players: [{ deaths_pos: { "169": { "126": 1 } } }, { deaths_pos: {} }] },
+        { start: 900, players: [{}, { deaths_pos: { "100": { "100": 2 } } }] },
+      ],
+    });
+    const res = await adapter.fetchMatch("123");
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.players[0].map).toEqual({
+      wards: [
+        { kind: "observer", placedAt: -26, removedAt: 334, x: 130, y: 118.3 },
+        { kind: "sentry", placedAt: 400, removedAt: null, x: 90, y: 100 },
+      ],
+      teamfightDeaths: [{ time: 370, x: 169, y: 126 }],
+    });
+    // Unparsed: no map, even when the match has team fights.
+    expect(res.value.players[1].map).toBeNull();
+  });
+
   it("keeps complete benchmarks for shown stats and tolerates odd ones", async () => {
     const { adapter } = adapterWith({
       ...base,

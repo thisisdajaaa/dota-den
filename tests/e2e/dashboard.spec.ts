@@ -215,7 +215,17 @@ test("parsed matches show laning and item timings; others can request a parse", 
   await expect(laning).not.toContainText("Tango");
   await expect(laning).toContainText("2 obs");
 
+  const map = page.getByRole("region", { name: /Wards and deaths/ });
+  await expect(map.getByRole("img", { name: /Map:/ })).toHaveAccessibleName(
+    "Map: 2 observer wards, 1 sentry ward, 1 team fight death",
+  );
+  await map.getByRole("radio", { name: "Laning (0–10)" }).click();
+  await expect(map.getByRole("img", { name: /Map:/ })).toHaveAccessibleName(
+    "Map: 1 observer ward, 1 sentry ward, 0 team fight deaths",
+  );
+
   await page.goto("/matches/7000000011");
+  await expect(page.getByRole("region", { name: /Wards and deaths/ })).toHaveCount(0);
   const unparsed = page.getByRole("region", { name: "Laning & items" });
   await unparsed.getByRole("button", { name: "Get detailed stats" }).click();
   await expect(unparsed.getByRole("status")).toContainText("Requested");

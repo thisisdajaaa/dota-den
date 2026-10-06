@@ -19,6 +19,7 @@ import { AdvantageChart } from "@/modules/matches/ui/advantage-chart";
 import { formatDuration, gameModeLabel, regionLabel } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { LaningCard } from "@/modules/matches/ui/laning-card";
+import { WardMapCard } from "@/modules/matches/ui/ward-map-card";
 import { PerformanceCard } from "@/modules/matches/ui/performance-card";
 import { Scoreboard } from "@/modules/matches/ui/scoreboard";
 
@@ -223,6 +224,13 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         heroes={heroes}
         items={items}
       />
+
+      {perfPlayer?.map && (
+        <WardMapCard
+          map={perfPlayer.map}
+          heroLabel={heroName(heroes.get(perfPlayer.heroId), perfPlayer.heroId)}
+        />
+      )}
 
       {match.goldAdvantage && (
         <section className="panel p-5" aria-labelledby="advantage">
