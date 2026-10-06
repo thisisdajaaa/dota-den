@@ -1,3 +1,4 @@
+import type { DataOwner } from "@/common/privacy/user-data";
 import { err, ok, type Result } from "@/common/result";
 import {
   isCorrectGrade,
@@ -6,39 +7,33 @@ import {
   type ChallengeStreak,
   type DraftMode,
 } from "../domain/activity";
-import { draftScoreFor, type DraftGrade, type DraftScore } from "../domain/draft-score";
-import type { ActivityRepository, DraftReferee, RefereeError } from "./ports";
-
-export interface ChallengeRecord {
-  /** False when the player had already answered this puzzle: nothing changed. */
-  counted: boolean;
-  streak: ChallengeStreak;
-}
-
-export type DraftRecordError = RefereeError | { type: "not_completed" };
-
-export interface DraftRecord {
-  /** False when this player already submitted the same finished draft. */
-  counted: boolean;
-  mode: DraftMode;
-  side: ActivitySide | null;
-  score: number | null;
-  grade: DraftGrade | null;
-}
+import { draftScoreFor, type DraftScore } from "../domain/draft-score";
+import type { ActivityPort, DraftReferee } from "../leaderboards.ports";
+import type {
+  ChallengeRecord,
+  DraftRecord,
+  DraftRecordError,
+} from "../dtos/responses/leaderboards.dto";
 
 /** Records what signed-in players do, for the leaderboards. */
+
 export class ActivityService {
   private readonly now: () => Date;
 
   constructor(
     private readonly deps: {
-      repo: ActivityRepository;
+      repo: ActivityPort;
       referee: DraftReferee;
       /** Hex digest of a string (SHA-256 in production). */
       hash: (text: string) => string;
       now?: () => Date;
       /** Called when the draft score can't be computed; the draft still counts. */
       onScoreError?: (error: unknown) => void;
+      /** Needed for "Download your data" and account deletion only. */
+      data?: {
+        exportForOwner(owner: DataOwner): Promise<Record<string, unknown>>;
+        deleteForOwner(owner: DataOwner): Promise<Record<string, number>>;
+      };
     },
   ) {
     this.now = deps.now ?? (() => new Date());
@@ -109,5 +104,13 @@ export class ActivityService {
       score: scored?.score ?? null,
       grade: scored?.grade ?? null,
     });
+  }
+
+  async exportMyData(owner: DataOwner) {
+    return (await this.deps.data?.exportForOwner(owner)) ?? {};
+  }
+
+  async deleteMyData(owner: DataOwner) {
+    return (await this.deps.data?.deleteForOwner(owner)) ?? {};
   }
 }

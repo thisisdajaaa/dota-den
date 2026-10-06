@@ -15,7 +15,7 @@ import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.reposito
 import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
-import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
+import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
 import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-medal-history";
 import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
   await ensureDraftRoomIndexes(db);
   await ensureMatchDraftReadIndexes(db);
   await ensureDraftHistoryIndexes(db);
-  await ensureLeaderboardIndexes(db);
+  await new ActivityRepository(async () => db).ensureIndexes();
   await ensureMatchIndexes(db);
   await ensureMmrIndexes(db);
   await ensureMedalHistoryIndexes(db);

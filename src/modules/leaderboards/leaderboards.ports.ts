@@ -1,7 +1,7 @@
 import type { Result } from "@/common/result";
-import type { ChallengeAttempt, ChallengeStreak, DraftResult } from "../domain/activity";
-import type { OutlookLike } from "../domain/draft-score";
-import type { ChallengeTotals, DraftTotals, RoomTotals } from "../domain/ranking";
+import type { ChallengeAttempt, ChallengeStreak, DraftResult } from "./domain/activity";
+import type { OutlookLike } from "./domain/draft-score";
+import type { ChallengeTotals, DraftTotals, RoomTotals } from "./domain/ranking";
 
 /** Which activity to total: since a date (null = all time), for some players (null = all). */
 export interface TotalsQuery {
@@ -10,7 +10,7 @@ export interface TotalsQuery {
 }
 
 /** This context's own records (collections `challenge_attempts`, `challenge_streaks`, `draft_results`). */
-export interface ActivityRepository {
+export interface ActivityPort {
   /** Keep the first answer to a puzzle per player (unique on user, type and seed). */
   insertAttempt(attempt: ChallengeAttempt): Promise<"inserted" | "duplicate">;
   /** Apply one counted answer to the player's streak, atomically. Returns the new streak. */

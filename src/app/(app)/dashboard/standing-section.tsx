@@ -1,6 +1,6 @@
 import { logger } from "@/common/logging/logger";
-import type { StandingView } from "@/modules/leaderboards/application/contracts";
-import { getLeaderboardService } from "@/modules/leaderboards/composition";
+import type { StandingView } from "@/modules/leaderboards/dtos/responses/leaderboard-views.dto";
+import { leaderboardService } from "@/modules/leaderboards";
 import { StandingCard, StandingUnavailable } from "@/modules/leaderboards/ui/standing-card";
 
 /**
@@ -10,9 +10,10 @@ import { StandingCard, StandingUnavailable } from "@/modules/leaderboards/ui/sta
 export async function StandingSection({ user }: { user: { id: string; accountId32: number } }) {
   let standings: StandingView[] | null = null;
   try {
-    standings = await (
-      await getLeaderboardService()
-    ).standing({ userId: user.id, accountId32: user.accountId32 });
+    standings = await leaderboardService.standing({
+      userId: user.id,
+      accountId32: user.accountId32,
+    });
   } catch (error) {
     logger.error("standing_section_failed", { error });
   }

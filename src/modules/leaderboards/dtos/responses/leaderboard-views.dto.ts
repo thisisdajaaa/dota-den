@@ -1,25 +1,12 @@
-import type { RankedWeekRow } from "../domain/ranked-week";
-import { z } from "zod";
-import type { Period } from "../domain/period";
+import type { Period } from "../../domain/period";
+import type { RankedWeekRow } from "../../domain/ranked-week";
 import type {
   BoardKind,
   ChallengeStanding,
   DraftStanding,
   RoomStanding,
   Scope,
-} from "../domain/ranking";
-
-/** POST /api/v1/drafts/results */
-export const DraftResultInputSchema = z
-  .object({
-    snapshot: z.string().min(1).max(2_000),
-    aiSide: z.enum(["radiant", "dire"]).nullable(),
-  })
-  .strict();
-
-/** Draft results a player may submit per window (a real draft takes minutes). */
-export const DRAFT_RESULTS_PER_WINDOW = 10;
-export const DRAFT_RESULTS_WINDOW_MS = 10 * 60_000;
+} from "../../domain/ranking";
 
 /** The saved streak returned with a graded answer when signed in. */
 export interface ChallengeProgressDto {

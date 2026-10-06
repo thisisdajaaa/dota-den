@@ -6,7 +6,7 @@ import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { RankMedal } from "@/modules/matches/ui/rank-medal";
 import { PlayerAvatar } from "@/modules/players/ui/player-avatar";
-import type { BoardView, PlayerView } from "../application/contracts";
+import type { BoardView, PlayerView } from "../dtos/responses/leaderboard-views.dto";
 import type { BoardKind } from "../domain/ranking";
 import { BOARD_LABEL, BOARD_RULES } from "./copy";
 

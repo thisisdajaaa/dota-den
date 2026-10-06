@@ -4,7 +4,7 @@ import type { HeroInfo } from "@/modules/matches/application/ports";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
-import type { RankedWeekView } from "../application/contracts";
+import type { RankedWeekView } from "../dtos/responses/leaderboard-views.dto";
 
 const signed = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v)}`;
 

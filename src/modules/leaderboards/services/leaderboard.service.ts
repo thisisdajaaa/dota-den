@@ -23,21 +23,17 @@ import {
   type PlayerView,
   type RowView,
   type StandingView,
-} from "./contracts";
+} from "../dtos/responses/leaderboard-views.dto";
 import type {
   AccountDirectory,
-  ActivityRepository,
+  ActivityPort,
   FriendFinder,
   PlayerAccount,
   ProfileLookup,
   RoomActivitySource,
   TotalsQuery,
-} from "./ports";
-
-export interface Viewer {
-  userId: string;
-  accountId32: number;
-}
+} from "../leaderboards.ports";
+import type { Viewer } from "../dtos/responses/leaderboards.dto";
 
 type AnyStanding = DraftStanding | ChallengeStanding | RoomStanding;
 
@@ -63,10 +59,11 @@ async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => 
 }
 
 /** Leaderboards for draft practice, draft challenges and friend rooms. */
+
 export class LeaderboardService {
   constructor(
     private readonly deps: {
-      activity: ActivityRepository;
+      activity: ActivityPort;
       rooms: RoomActivitySource;
       accounts: AccountDirectory;
       profiles: ProfileLookup;

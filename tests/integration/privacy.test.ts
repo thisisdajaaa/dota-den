@@ -9,7 +9,7 @@ import { GoalsService } from "@/modules/goals/goals.service";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { UsersService } from "@/modules/identity/services/users.service";
-import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
+import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import * as matches from "@/modules/matches/infrastructure/user-data";
 import * as mmr from "@/modules/mmr/infrastructure/user-data";
 import * as patches from "@/modules/patches/infrastructure/user-data";
@@ -87,6 +87,14 @@ const together = servicePart((getDb) => {
     ownGames: { ownGames: async () => [] },
     data: repo,
   });
+});
+
+const leaderboards = servicePart((getDb) => {
+  const repo = new ActivityRepository(getDb);
+  return {
+    exportMyData: (o: DataOwner) => repo.exportForOwner(o),
+    deleteMyData: (o: DataOwner) => repo.deleteForOwner(o),
+  };
 });
 
 const PARTS = [

@@ -1,5 +1,14 @@
-import type { Collection, Db, Document, Filter } from "mongodb";
-import type { ActivityRepository, TotalsQuery } from "../application/ports";
+import "server-only";
+import type { Db, Document, Filter } from "mongodb";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
+import {
+  LEADERBOARD_COLLECTIONS,
+  LEADERBOARDS_SCHEMA_VERSION as SCHEMA_VERSION,
+  type AttemptDoc,
+  type DraftDoc,
+  type StreakDoc,
+} from "../leaderboards.model";
+import type { ActivityPort, TotalsQuery } from "../leaderboards.ports";
 import {
   NO_STREAK,
   type ChallengeAttempt,
@@ -7,56 +16,6 @@ import {
   type DraftResult,
 } from "../domain/activity";
 import type { ChallengeTotals, DraftTotals } from "../domain/ranking";
-
-const SCHEMA_VERSION = 1;
-
-export const LEADERBOARD_COLLECTIONS = {
-  attempts: "challenge_attempts",
-  streaks: "challenge_streaks",
-  drafts: "draft_results",
-} as const;
-
-interface AttemptDoc extends ChallengeAttempt {
-  /** `user:type:seed`, so uniqueness holds even before `ensureLeaderboardIndexes` runs. */
-  _id: string;
-  schemaVersion: number;
-}
-
-interface StreakDoc {
-  /** The user id: one streak per player. */
-  _id: string;
-  schemaVersion: number;
-  current: number;
-  best: number;
-  updatedAt: Date;
-}
-
-interface DraftDoc extends DraftResult {
-  /** `user:snapshotHash`, so uniqueness holds even before `ensureLeaderboardIndexes` runs. */
-  _id: string;
-  schemaVersion: number;
-}
-
-export async function ensureLeaderboardIndexes(db: Db): Promise<void> {
-  const attempts = db.collection(LEADERBOARD_COLLECTIONS.attempts);
-  const drafts = db.collection(LEADERBOARD_COLLECTIONS.drafts);
-  await Promise.all([
-    // The first answer to a puzzle is the one that counts.
-    attempts.createIndex(
-      { userId: 1, type: 1, seed: 1 },
-      { unique: true, name: "uniq_user_puzzle" },
-    ),
-    attempts.createIndex({ at: 1 }, { name: "by_at" }),
-    attempts.createIndex({ userId: 1, at: 1 }, { name: "by_user_at" }),
-    // The same finished draft counts once per player.
-    drafts.createIndex(
-      { userId: 1, snapshotHash: 1 },
-      { unique: true, name: "uniq_user_snapshot" },
-    ),
-    drafts.createIndex({ completedAt: 1 }, { name: "by_completedAt" }),
-    drafts.createIndex({ userId: 1, completedAt: 1 }, { name: "by_user_completedAt" }),
-  ]);
-}
 
 function isDuplicateKey(e: unknown): boolean {
   return typeof e === "object" && e !== null && "code" in e && e.code === 11000;
@@ -69,20 +28,26 @@ function totalsMatch(query: TotalsQuery, dateField: string): Filter<Document> {
   return match;
 }
 
-export class MongoActivityRepository implements ActivityRepository {
-  private readonly attempts: Collection<AttemptDoc>;
-  private readonly streaks: Collection<StreakDoc>;
-  private readonly drafts: Collection<DraftDoc>;
+export class ActivityRepository implements ActivityPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
 
-  constructor(db: Db) {
-    this.attempts = db.collection<AttemptDoc>(LEADERBOARD_COLLECTIONS.attempts);
-    this.streaks = db.collection<StreakDoc>(LEADERBOARD_COLLECTIONS.streaks);
-    this.drafts = db.collection<DraftDoc>(LEADERBOARD_COLLECTIONS.drafts);
+  private async attempts() {
+    return (await this.getDb()).collection<AttemptDoc>(LEADERBOARD_COLLECTIONS.attempts);
+  }
+
+  private async streaks() {
+    return (await this.getDb()).collection<StreakDoc>(LEADERBOARD_COLLECTIONS.streaks);
+  }
+
+  private async drafts() {
+    return (await this.getDb()).collection<DraftDoc>(LEADERBOARD_COLLECTIONS.drafts);
   }
 
   async insertAttempt(attempt: ChallengeAttempt): Promise<"inserted" | "duplicate"> {
     try {
-      await this.attempts.insertOne({
+      await (
+        await this.attempts()
+      ).insertOne({
         _id: `${attempt.userId}:${attempt.type}:${attempt.seed}`,
         ...attempt,
         schemaVersion: SCHEMA_VERSION,
@@ -97,8 +62,9 @@ export class MongoActivityRepository implements ActivityRepository {
   async applyToStreak(userId: string, correct: boolean, at: Date): Promise<ChallengeStreak> {
     // One atomic pipeline update, so concurrent answers can't lose an increment.
     const current = correct ? { $add: [{ $ifNull: ["$current", 0] }, 1] } : 0;
+    const streaks = await this.streaks();
     const update = () =>
-      this.streaks.findOneAndUpdate(
+      streaks.findOneAndUpdate(
         { _id: userId },
         [
           {
@@ -124,13 +90,15 @@ export class MongoActivityRepository implements ActivityRepository {
   }
 
   async streakOf(userId: string): Promise<ChallengeStreak> {
-    const doc = await this.streaks.findOne({ _id: userId });
+    const doc = await (await this.streaks()).findOne({ _id: userId });
     return doc ? { current: doc.current, best: doc.best } : NO_STREAK;
   }
 
   async insertDraft(result: DraftResult): Promise<"inserted" | "duplicate"> {
     try {
-      await this.drafts.insertOne({
+      await (
+        await this.drafts()
+      ).insertOne({
         _id: `${result.userId}:${result.snapshotHash}`,
         ...result,
         schemaVersion: SCHEMA_VERSION,
@@ -143,7 +111,7 @@ export class MongoActivityRepository implements ActivityRepository {
   }
 
   async draftTotals(query: TotalsQuery): Promise<DraftTotals[]> {
-    return this.drafts
+    return (await this.drafts())
       .aggregate<DraftTotals>([
         { $match: totalsMatch(query, "completedAt") },
         // Best score first (numbers sort above null descending), so $first is the best draft.
@@ -175,7 +143,7 @@ export class MongoActivityRepository implements ActivityRepository {
   }
 
   async challengeTotals(query: TotalsQuery): Promise<ChallengeTotals[]> {
-    return this.attempts
+    return (await this.attempts())
       .aggregate<ChallengeTotals>(
         [
           { $match: totalsMatch(query, "at") },
@@ -229,28 +197,75 @@ export class MongoActivityRepository implements ActivityRepository {
       )
       .toArray();
   }
-}
 
-/** Admin overview: finished drafts and challenge answers per user. */
-export async function activityCountsByUser(
-  db: Db,
-  userIds: readonly string[],
-): Promise<Map<string, { drafts: number; challenges: number }>> {
-  const count = (name: string) =>
-    db
-      .collection(name)
-      .aggregate<{ _id: string; n: number }>([
-        { $match: { userId: { $in: [...userIds] } } },
-        { $group: { _id: "$userId", n: { $sum: 1 } } },
-      ])
-      .toArray();
-  const [drafts, challenges] = await Promise.all([
-    count(LEADERBOARD_COLLECTIONS.drafts),
-    count(LEADERBOARD_COLLECTIONS.attempts),
-  ]);
-  const out = new Map<string, { drafts: number; challenges: number }>();
-  for (const id of userIds) out.set(id, { drafts: 0, challenges: 0 });
-  for (const d of drafts) out.get(String(d._id))!.drafts = d.n;
-  for (const c of challenges) out.get(String(c._id))!.challenges = c.n;
-  return out;
+  async ensureIndexes(): Promise<void> {
+    const [attempts, drafts] = await Promise.all([this.attempts(), this.drafts()]);
+    await Promise.all([
+      // The first answer to a puzzle is the one that counts.
+      attempts.createIndex(
+        { userId: 1, type: 1, seed: 1 },
+        { unique: true, name: "uniq_user_puzzle" },
+      ),
+      attempts.createIndex({ at: 1 }, { name: "by_at" }),
+      attempts.createIndex({ userId: 1, at: 1 }, { name: "by_user_at" }),
+      // The same finished draft counts once per player.
+      drafts.createIndex(
+        { userId: 1, snapshotHash: 1 },
+        { unique: true, name: "uniq_user_snapshot" },
+      ),
+      drafts.createIndex({ completedAt: 1 }, { name: "by_completedAt" }),
+      drafts.createIndex({ userId: 1, completedAt: 1 }, { name: "by_user_completedAt" }),
+    ]);
+  }
+
+  /** Admin overview: finished drafts and challenge answers per user. */
+  async countsByUser(
+    userIds: readonly string[],
+  ): Promise<Map<string, { drafts: number; challenges: number }>> {
+    const db = await this.getDb();
+    const count = (name: string) =>
+      db
+        .collection(name)
+        .aggregate<{ _id: string; n: number }>([
+          { $match: { userId: { $in: [...userIds] } } },
+          { $group: { _id: "$userId", n: { $sum: 1 } } },
+        ])
+        .toArray();
+    const [drafts, challenges] = await Promise.all([
+      count(LEADERBOARD_COLLECTIONS.drafts),
+      count(LEADERBOARD_COLLECTIONS.attempts),
+    ]);
+    const out = new Map<string, { drafts: number; challenges: number }>();
+    for (const id of userIds) out.set(id, { drafts: 0, challenges: 0 });
+    for (const d of drafts) out.get(String(d._id))!.drafts = d.n;
+    for (const c of challenges) out.get(String(c._id))!.challenges = c.n;
+    return out;
+  }
+
+  /** Your challenge answers, streak and finished drafts, for "Download your data". */
+  async exportForOwner(owner: DataOwner) {
+    const [attempts, streaks, drafts] = await Promise.all([
+      (await this.attempts()).find({ userId: owner.userId }).toArray(),
+      (await this.streaks()).find({ _id: owner.userId }).toArray(),
+      (await this.drafts()).find({ userId: owner.userId }).toArray(),
+    ]);
+    return {
+      challengeAttempts: forExport(attempts),
+      challengeStreak: forExport(streaks),
+      draftResults: forExport(drafts),
+    };
+  }
+
+  async deleteForOwner(owner: DataOwner) {
+    const [attempts, streaks, drafts] = await Promise.all([
+      (await this.attempts()).deleteMany({ userId: owner.userId }),
+      (await this.streaks()).deleteMany({ _id: owner.userId }),
+      (await this.drafts()).deleteMany({ userId: owner.userId }),
+    ]);
+    return {
+      challengeAttempts: attempts.deletedCount,
+      challengeStreak: streaks.deletedCount,
+      draftResults: drafts.deletedCount,
+    };
+  }
 }

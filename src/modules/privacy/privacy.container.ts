@@ -4,7 +4,7 @@ import { annotationsService } from "@/modules/annotations";
 import * as drafts from "@/modules/drafts/composition";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
-import * as leaderboards from "@/modules/leaderboards/composition";
+import { activityService } from "@/modules/leaderboards";
 import * as matches from "@/modules/matches/composition";
 import * as mmr from "@/modules/mmr/composition";
 import * as patches from "@/modules/patches/composition";
@@ -20,7 +20,7 @@ export const privacyService = new PrivacyService({
     sessionService,
     followService,
     patches,
-    leaderboards,
+    activityService,
     drafts,
     matches,
     togetherService,

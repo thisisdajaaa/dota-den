@@ -6,18 +6,15 @@ import {
   MongoDraftHistoryRepository,
 } from "@/modules/drafts/infrastructure/mongo-draft-history";
 import type { ChallengeAttempt, DraftResult } from "@/modules/leaderboards/domain/activity";
-import {
-  ensureLeaderboardIndexes,
-  LEADERBOARD_COLLECTIONS,
-  MongoActivityRepository,
-} from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
+import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
+import { LEADERBOARD_COLLECTIONS } from "@/modules/leaderboards/leaderboards.model";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
 let teardown: () => Promise<void>;
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensureLeaderboardIndexes(db);
+  await new ActivityRepository(async () => db).ensureIndexes();
   await ensureDraftHistoryIndexes(db);
 });
 afterAll(async () => teardown?.());
@@ -48,9 +45,9 @@ const draft = (over: Partial<DraftResult>): DraftResult => ({
   ...over,
 });
 
-describe("MongoActivityRepository", () => {
+describe("ActivityRepository", () => {
   it("keeps one answer per player and puzzle, even when sent concurrently", async () => {
-    const repo = new MongoActivityRepository(db);
+    const repo = new ActivityRepository(async () => db);
     const results = await Promise.all(
       Array.from({ length: 5 }, (_, i) =>
         repo.insertAttempt(attempt({ userId: "dup", grade: i ? "risky" : "good" })),
@@ -66,7 +63,7 @@ describe("MongoActivityRepository", () => {
   });
 
   it("keeps one copy of the same finished draft per player", async () => {
-    const repo = new MongoActivityRepository(db);
+    const repo = new ActivityRepository(async () => db);
     const results = await Promise.all(
       Array.from({ length: 4 }, () => repo.insertDraft(draft({ userId: "d1" }))),
     );
@@ -90,7 +87,7 @@ describe("MongoActivityRepository", () => {
   });
 
   it("keeps the streak: extends on correct, resets on a miss, never loses the best", async () => {
-    const repo = new MongoActivityRepository(db);
+    const repo = new ActivityRepository(async () => db);
     expect(await repo.streakOf("s1")).toEqual({ current: 0, best: 0 });
     const now = new Date();
     await repo.applyToStreak("s1", true, now);
@@ -103,7 +100,7 @@ describe("MongoActivityRepository", () => {
   });
 
   it("totals challenges by player and period, with the best streak in order", async () => {
-    const repo = new MongoActivityRepository(db);
+    const repo = new ActivityRepository(async () => db);
     const seq: Array<[string, boolean]> = [
       ["2026-09-20T10:00:00Z", true], // last week
       ["2026-09-21T10:00:00Z", true], // last week
@@ -134,7 +131,7 @@ describe("MongoActivityRepository", () => {
   });
 
   it("totals drafts with the average and best score (and the best draft's grade)", async () => {
-    const repo = new MongoActivityRepository(db);
+    const repo = new ActivityRepository(async () => db);
     await repo.insertDraft(draft({ userId: "p1", snapshotHash: "a", score: 40, grade: "C" }));
     await repo.insertDraft(draft({ userId: "p1", snapshotHash: "b", score: 80, grade: "A" }));
     await repo.insertDraft(
