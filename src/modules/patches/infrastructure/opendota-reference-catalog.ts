@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { err, ok, type Result } from "@/common/result";
-import type {
-  GatewayResponse,
-  ProviderGateway,
-} from "@/common/providers/provider-gateway";
+import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
 import type { PatchReferences, ReferenceEntry } from "../domain/patch";
 import type { PatchReferenceCatalog, ProviderError } from "../application/ports";
 

@@ -2,7 +2,8 @@ import { ObjectId, type Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as annotations from "@/modules/annotations/infrastructure/mongo-annotations";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
-import * as goals from "@/modules/goals/infrastructure/mongo-goals";
+import { GoalsRepository } from "@/modules/goals/goals.repository";
+import { GoalsService } from "@/modules/goals/goals.service";
 import * as identity from "@/modules/identity/infrastructure/user-data";
 import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
 import * as matches from "@/modules/matches/infrastructure/user-data";
@@ -20,6 +21,22 @@ beforeAll(async () => {
 });
 afterAll(async () => teardown?.());
 
+// Goals in the new module anatomy (ADR 0009): the service exports and deletes.
+const goalsPart = {
+  exportUserData: (_db: Db, owner: { userId: string; accountId32: number }) =>
+    new GoalsService({
+      repository: new GoalsRepository(async () => db),
+      sessions: { rankedSessions: async () => [] },
+      mmr: { entryTimes: async () => [] },
+    }).exportMyData(owner),
+  deleteUserData: (_db: Db, owner: { userId: string; accountId32: number }) =>
+    new GoalsService({
+      repository: new GoalsRepository(async () => db),
+      sessions: { rankedSessions: async () => [] },
+      mmr: { entryTimes: async () => [] },
+    }).deleteMyData(owner),
+};
+
 const PARTS = [
   mmr,
   sessions,
@@ -30,7 +47,7 @@ const PARTS = [
   matches,
   together,
   annotations,
-  goals,
+  goalsPart,
   identity,
 ];
 
@@ -49,7 +66,9 @@ async function seed(userId: ObjectId, accountId32: number, friendAccount: number
   await db.collection("challenge_attempts").insertOne({ userId: u, type: "last_pick" });
   await db.collection<{ _id: string }>("challenge_streaks").insertOne({ _id: u });
   await db.collection("draft_results").insertOne({ userId: u, score: 70 });
-  await goals.saveGoals(db, u, "2026-10-05", [{ type: "logAfterSessions" }]);
+  await new GoalsRepository(async () => db).saveGoals(u, "2026-10-05", [
+    { type: "logAfterSessions" },
+  ]);
   await db.collection("player_match_facts").insertOne({ accountId32, matchId: `m${accountId32}` });
   await db.collection("match_sync_state").insertOne({ accountId32 });
   await db

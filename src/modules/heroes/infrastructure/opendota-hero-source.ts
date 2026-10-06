@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { err, ok } from "@/common/result";
-import type {
-  GatewayResponse,
-  ProviderGateway,
-} from "@/common/providers/provider-gateway";
+import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
 import type { MatchupRow } from "../domain/hero-stats";
 import type {
   HeroGameExtras,

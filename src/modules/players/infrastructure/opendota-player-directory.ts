@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { err, ok, type Result } from "@/common/result";
-import type {
-  GatewayResponse,
-  ProviderGateway,
-} from "@/common/providers/provider-gateway";
+import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
 import { ACCOUNT_ID_MAX } from "../domain/player-lookup";
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
 import type { PlayerDirectory, ProviderError } from "../application/ports";

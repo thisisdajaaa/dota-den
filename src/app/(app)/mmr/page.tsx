@@ -22,7 +22,7 @@ import {
   ESTIMATE_PER_GAME,
   type QueueScope,
 } from "@/modules/mmr/domain/calendar";
-import { dayKeyFormatter, type DayKey } from "@/modules/mmr/domain/day-key";
+import { dayKeyFormatter, type DayKey } from "@/common/time/day-key";
 import { climbByHero } from "@/modules/mmr/domain/hero-climb";
 import { isDayKey, periodFor, type CalendarView } from "@/modules/mmr/domain/periods";
 import { CalendarLegend } from "@/modules/mmr/ui/calendar-legend";

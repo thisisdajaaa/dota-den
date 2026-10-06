@@ -2,7 +2,7 @@ import "server-only";
 import { logger } from "@/common/logging/logger";
 import * as annotations from "@/modules/annotations/composition";
 import * as drafts from "@/modules/drafts/composition";
-import * as goals from "@/modules/goals/composition";
+import { goalsService } from "@/modules/goals";
 import * as identity from "@/modules/identity/composition";
 import * as leaderboards from "@/modules/leaderboards/composition";
 import * as matches from "@/modules/matches/composition";
@@ -24,7 +24,7 @@ const PARTS = [
   matches,
   together,
   annotations,
-  goals,
+  goalsService,
 ];
 
 /** Everything Dota Den keeps about you, as one JSON-ready object. */

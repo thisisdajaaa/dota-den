@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, History, Info } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity/composition";
 import { getHeroMap } from "@/modules/matches/composition";
-import { ESTIMATE_PER_GAME } from "@/modules/mmr";
+import { ESTIMATE_PER_GAME } from "@/modules/mmr/domain/calendar";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
 import { getSessionService } from "@/modules/sessions/composition";
 import { EarlierNotes } from "@/modules/sessions/ui/earlier-notes";

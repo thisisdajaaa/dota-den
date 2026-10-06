@@ -1,7 +1,7 @@
 import "server-only";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { getMmrJournal, getViewerTimeZone } from "@/modules/mmr/composition";
-import { dayKeyFormatter } from "@/modules/mmr/domain/day-key";
+import { dayKeyFormatter } from "@/common/time/day-key";
 import { getSessionService } from "@/modules/sessions/composition";
 import { achievements, type Achievement } from "./domain/achievements";
 

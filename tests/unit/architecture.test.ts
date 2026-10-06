@@ -1,10 +1,15 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
-/** Enforces the layer rules in docs/adr/0004-module-boundaries.md. */
+/**
+ * Enforces docs/adr/0009-feature-module-anatomy.md. A feature with `<name>.container.ts` is
+ * migrated and gets the role rules (controller / service / repository / model / ui …);
+ * features not yet migrated keep the ADR 0004 layer rules until they move.
+ */
 const ROOT = join(process.cwd(), "src");
 const MODULES = join(ROOT, "modules");
+const APP = join(ROOT, "app");
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -21,107 +26,290 @@ function importsOf(file: string): string[] {
   return [...src.matchAll(re)].map((m) => m[1] ?? m[2] ?? m[3]);
 }
 
-type Layer = "domain" | "application" | "infrastructure" | "ui";
-function classify(file: string): { context: string; layer: Layer | "root" } {
-  const [context, layer] = relative(MODULES, file).split(sep);
-  const known = ["domain", "application", "infrastructure", "ui"];
-  return { context, layer: known.includes(layer) ? (layer as Layer) : "root" };
+const isClient = (file: string) =>
+  /^["']use client["']/.test(readFileSync(file, "utf8").trimStart());
+
+const FRAMEWORK = [/^next(\/|$)/, /^react(-dom)?(\/|$)/, /^mongodb$/, /^server-only$/];
+const isFramework = (spec: string) => FRAMEWORK.some((re) => re.test(spec));
+/** Pure shared code that domain logic may use. */
+const isPureCommon = (spec: string) =>
+  spec === "@/common/result" ||
+  spec.startsWith("@/common/time/") ||
+  spec.startsWith("@/common/utils/");
+
+const features = readdirSync(MODULES).filter((n) => statSync(join(MODULES, n)).isDirectory());
+const migrated = new Set(features.filter((f) => existsSync(join(MODULES, f, `${f}.container.ts`))));
+
+type Role =
+  | "domain"
+  | "model"
+  | "ports"
+  | "schema"
+  | "dto"
+  | "service"
+  | "repository"
+  | "controller"
+  | "container"
+  | "index"
+  | "infrastructure"
+  | "ui"
+  | "application"
+  | "composition"
+  | "other";
+
+/** A file's role from its path inside its feature folder. */
+function roleOf(rest: string[]): Role {
+  const [first] = rest;
+  const name = rest[rest.length - 1];
+  if (first === "domain") return "domain";
+  if (first === "ui") return "ui";
+  if (first === "infrastructure") return "infrastructure";
+  if (first === "application") return "application";
+  if (first === "schemas") return "schema";
+  if (first === "dtos") return "dto";
+  if (/^index\.tsx?$/.test(name)) return "index";
+  if (/^composition\.tsx?$/.test(name)) return "composition";
+  for (const role of [
+    "model",
+    "ports",
+    "service",
+    "repository",
+    "controller",
+    "container",
+  ] as const)
+    if (name.endsWith(`.${role}.ts`)) return role;
+  return "other";
 }
 
-/** Resolve relative/aliased imports to "context/layer" when they point into src/modules. */
-function target(file: string, spec: string): { context: string; layer: string } | null {
+/** Where an import points inside src/modules, if it does. */
+function target(file: string, spec: string): { feature: string; role: Role } | null {
   let abs: string | null = null;
   if (spec.startsWith("@/modules/")) abs = join(MODULES, spec.slice("@/modules/".length));
   else if (spec.startsWith(".")) abs = join(file, "..", spec);
   if (!abs || !abs.startsWith(MODULES)) return null;
-  const [context, layer = "root"] = relative(MODULES, abs).split(sep);
-  return { context, layer };
+  const [feature, ...rest] = relative(MODULES, abs).split(sep);
+  if (rest.length === 0) return { feature, role: "index" };
+  // Import specifiers have no extension.
+  rest[rest.length - 1] = `${rest[rest.length - 1].replace(/\.tsx?$/, "")}.ts`;
+  return { feature, role: roleOf(rest) };
 }
 
-const FRAMEWORK = [/^next(\/|$)/, /^react(-dom)?(\/|$)/, /^mongodb$/, /^server-only$/];
+const moduleFiles = walk(MODULES).map((file) => {
+  const [feature, ...rest] = relative(MODULES, file).split(sep);
+  return { file, feature, role: roleOf(rest), imports: importsOf(file) };
+});
+type ModuleFile = (typeof moduleFiles)[number];
 
-const files = walk(MODULES).map((f) => ({ file: f, ...classify(f), imports: importsOf(f) }));
-
-function violations(check: (f: (typeof files)[number], spec: string) => string | null): string[] {
+function violations(
+  files: readonly ModuleFile[],
+  check: (f: ModuleFile, spec: string) => boolean,
+): string[] {
   return files.flatMap((f) =>
-    f.imports.map((spec) => check(f, spec)).filter((v): v is string => v !== null),
+    f.imports.filter((spec) => check(f, spec)).map((s) => `${relative(ROOT, f.file)} → ${s}`),
   );
 }
 
-describe("architecture boundaries", () => {
-  it("finds module files to check", () => {
-    expect(files.length).toBeGreaterThan(0);
+const inMigrated = moduleFiles.filter((f) => migrated.has(f.feature));
+const inLegacy = moduleFiles.filter((f) => !migrated.has(f.feature));
+/** The role of an import into the file's own feature, or null for anything else. */
+const ownRole = (f: ModuleFile, spec: string): Role | null => {
+  const t = target(f.file, spec);
+  return t && t.feature === f.feature ? t.role : null;
+};
+
+describe("architecture: shared code", () => {
+  it("finds files to check", () => {
+    expect(moduleFiles.length).toBeGreaterThan(0);
+    expect(migrated.has("goals")).toBe(true);
   });
 
-  it("domain imports no framework, database, lib or outer layers", () => {
-    const found = violations((f, spec) => {
-      if (f.layer !== "domain") return null;
-      const rel = relative(ROOT, f.file);
-      // Pure code only: the shared Result type is the one common import allowed.
-      if (
-        FRAMEWORK.some((re) => re.test(spec)) ||
-        (spec.startsWith("@/common/") && spec !== "@/common/result")
-      )
-        return `${rel} → ${spec}`;
+  it("src/common never depends on a feature or the app", () => {
+    const found = walk(join(ROOT, "common")).flatMap((f) =>
+      importsOf(f)
+        .filter((s) => s.startsWith("@/modules/") || s.startsWith("@/app/"))
+        .map((s) => `${relative(ROOT, f)} → ${s}`),
+    );
+    expect(found).toEqual([]);
+  });
+
+  it("pure common code (result, time, utils, errors) has no framework or I/O imports", () => {
+    const pure = ["result.ts", "time", "utils", "errors"].flatMap((p) => {
+      const full = join(ROOT, "common", p);
+      return statSync(full).isDirectory() ? walk(full) : [full];
+    });
+    const found = pure.flatMap((f) =>
+      importsOf(f)
+        .filter((s) => isFramework(s) || /^@\/common\/(db|config|cache|http|providers)/.test(s))
+        .map((s) => `${relative(ROOT, f)} → ${s}`),
+    );
+    expect(found).toEqual([]);
+  });
+});
+
+describe("architecture: all features", () => {
+  it("domain code is pure: no framework, I/O or outer layers", () => {
+    const found = violations(moduleFiles, (f, spec) => {
+      if (f.role !== "domain") return false;
+      if (isFramework(spec)) return true;
+      if (spec.startsWith("@/common/")) return !isPureCommon(spec);
       const t = target(f.file, spec);
-      if (!t) return null;
-      const allowed = t.context === f.context && t.layer === "domain";
-      return allowed ? null : `${rel} → ${spec}`;
+      // Its own domain, or another feature's (pure) domain.
+      return t !== null && t.role !== "domain";
     });
     expect(found).toEqual([]);
   });
 
-  it("application imports no framework, database or infrastructure", () => {
-    const found = violations((f, spec) => {
-      if (f.layer !== "application") return null;
-      const rel = relative(ROOT, f.file);
-      if (FRAMEWORK.some((re) => re.test(spec)) || spec.startsWith("@/common/db"))
-        return `${rel} → ${spec}`;
+  it("features reach each other only through index, domain or ui", () => {
+    const found = violations(moduleFiles, (f, spec) => {
       const t = target(f.file, spec);
-      if (!t) return null;
-      if (t.layer === "infrastructure" || t.layer === "ui") return `${rel} → ${spec}`;
-      // Other contexts only through their public index.
-      if (t.context !== f.context && t.layer !== "root") return `${rel} → ${spec}`;
-      return null;
+      if (!t || t.feature === f.feature) return false;
+      if (t.role === "index" || t.role === "domain" || t.role === "ui") return false;
+      // Features not yet migrated still expose composition.ts and application/ (ADR 0004).
+      return !(!migrated.has(t.feature) && (t.role === "composition" || t.role === "application"));
+    });
+    expect(found).toEqual([]);
+  });
+
+  it("client components never import server code", () => {
+    const found = walk(ROOT)
+      .filter(isClient)
+      .flatMap((f) =>
+        importsOf(f)
+          .filter((s) => {
+            if (s === "mongodb" || s === "server-only") return true;
+            if (/^@\/common\/(db|config|cache|providers)/.test(s)) return true;
+            if (s === "@/common/http/controller" || s === "@/common/http/request-context")
+              return true;
+            if (s.includes("/infrastructure/")) return true;
+            const t = target(f, s);
+            return (
+              t !== null &&
+              ["index", "composition", "container", "repository", "service", "controller"].includes(
+                t.role,
+              )
+            );
+          })
+          .map((s) => `${relative(ROOT, f)} → ${s}`),
+      );
+    expect(found).toEqual([]);
+  });
+});
+
+describe("architecture: migrated features (ADR 0009 roles)", () => {
+  const rule = (roles: Role[], bad: (spec: string, own: Role | null) => boolean) =>
+    violations(inMigrated, (f, spec) => roles.includes(f.role) && bad(spec, ownRole(f, spec)));
+
+  it("models, ports, schemas and DTOs are plain types and validation", () => {
+    expect(
+      rule(
+        ["model", "ports", "schema", "dto"],
+        (spec, own) =>
+          (isFramework(spec) && spec !== "mongodb") ||
+          spec.startsWith("@/common/db") ||
+          (own !== null && !["domain", "model", "ports", "schema", "dto"].includes(own)),
+      ),
+    ).toEqual([]);
+  });
+
+  it("services hold use cases: no HTTP, database or concrete repositories", () => {
+    expect(
+      rule(
+        ["service"],
+        (spec, own) =>
+          isFramework(spec) ||
+          /^@\/common\/(db|http|config|cache|providers)/.test(spec) ||
+          (own !== null &&
+            ["repository", "controller", "container", "ui", "infrastructure"].includes(own)),
+      ),
+    ).toEqual([]);
+  });
+
+  it("repositories only persist: no HTTP, services or controllers", () => {
+    expect(
+      rule(
+        ["repository"],
+        (spec, own) =>
+          /^next(\/|$)/.test(spec) ||
+          spec.startsWith("@/common/http") ||
+          (own !== null && ["service", "controller", "container", "ui"].includes(own)),
+      ),
+    ).toEqual([]);
+  });
+
+  it("controllers do HTTP only: no database or repositories", () => {
+    expect(
+      rule(
+        ["controller"],
+        (spec, own) =>
+          spec === "mongodb" ||
+          spec.startsWith("@/common/db") ||
+          (own !== null && ["repository", "container", "ui", "infrastructure"].includes(own)),
+      ),
+    ).toEqual([]);
+  });
+
+  it("ui never imports server code from its own feature", () => {
+    expect(
+      rule(
+        ["ui"],
+        (spec, own) =>
+          spec === "mongodb" ||
+          /^@\/common\/(db|config|cache|providers)/.test(spec) ||
+          (own !== null &&
+            [
+              "service",
+              "repository",
+              "controller",
+              "container",
+              "index",
+              "infrastructure",
+            ].includes(own)),
+      ),
+    ).toEqual([]);
+  });
+
+  it("have no leftover ADR 0004 application layer or composition.ts", () => {
+    const found = inMigrated
+      .filter((f) => f.role === "application" || f.role === "composition")
+      .map((f) => relative(ROOT, f.file));
+    expect(found).toEqual([]);
+  });
+});
+
+describe("architecture: features not yet migrated (ADR 0004 layers)", () => {
+  it("application imports no framework, database or infrastructure", () => {
+    const found = violations(inLegacy, (f, spec) => {
+      if (f.role !== "application") return false;
+      if (isFramework(spec) || spec.startsWith("@/common/db")) return true;
+      const own = ownRole(f, spec);
+      return own === "infrastructure" || own === "ui";
     });
     expect(found).toEqual([]);
   });
 
   it("ui never imports mongodb, infrastructure, db or env", () => {
-    const found = violations((f, spec) => {
-      if (f.layer !== "ui") return null;
-      const rel = relative(ROOT, f.file);
+    const found = violations(inLegacy, (f, spec) => {
+      if (f.role !== "ui") return false;
       if (spec === "mongodb" || spec.startsWith("@/common/db") || spec === "@/common/config/env")
-        return `${rel} → ${spec}`;
-      const t = target(f.file, spec);
-      return t?.layer === "infrastructure" ? `${rel} → ${spec}` : null;
+        return true;
+      return target(f.file, spec)?.role === "infrastructure";
     });
     expect(found).toEqual([]);
   });
+});
 
-  it("modules never read another context's infrastructure", () => {
-    const found = violations((f, spec) => {
-      const t = target(f.file, spec);
-      if (!t || t.context === f.context) return null;
-      return t.layer === "infrastructure" ? `${relative(ROOT, f.file)} → ${spec}` : null;
-    });
-    expect(found).toEqual([]);
-  });
-
-  it("client components never import server-only modules", () => {
-    const clientFiles = walk(ROOT).filter((f) =>
-      /^["']use client["']/.test(readFileSync(f, "utf8").trimStart()),
-    );
-    const found = clientFiles.flatMap((f) =>
+describe("architecture: app routes and pages", () => {
+  it("never touch the database or a migrated feature's internals", () => {
+    const found = walk(APP).flatMap((f) =>
       importsOf(f)
-        .filter(
-          (s) =>
-            s === "mongodb" ||
-            s.startsWith("@/common/db") ||
-            s === "@/common/config/env" ||
-            s.endsWith("/composition") ||
-            s.includes("/infrastructure/"),
-        )
+        .filter((s) => {
+          if (s === "mongodb") return true;
+          // The health check pings the database on purpose.
+          if (s.startsWith("@/common/db")) return !f.endsWith(join("api", "health", "route.ts"));
+          const t = target(f, s);
+          if (!t || !migrated.has(t.feature)) return false;
+          return !["index", "domain", "ui", "dto", "model"].includes(t.role);
+        })
         .map((s) => `${relative(ROOT, f)} → ${s}`),
     );
     expect(found).toEqual([]);

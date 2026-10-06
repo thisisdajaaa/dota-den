@@ -1,5 +1,5 @@
 import { buildCalendar, type Observation } from "./calendar";
-import { addDays, type DayKey } from "./day-key";
+import { addDays, type DayKey } from "@/common/time/day-key";
 
 /** A ranked game, as the recap needs it. */
 export interface RecapGame {

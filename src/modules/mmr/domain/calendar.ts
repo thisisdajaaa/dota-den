@@ -1,4 +1,4 @@
-import { addDays, type DayKey } from "./day-key";
+import { addDays, type DayKey } from "@/common/time/day-key";
 
 /**
  * MMR calendar (spec §2.1). Rules, in order of trust:
