@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { logger } from "@/common/logging/logger";
-import { getAdvisorService } from "@/modules/advisor/composition";
+import { advisorService } from "@/modules/advisor";
 import { PoolAdviceCard } from "@/modules/advisor/ui/pool-advice-card";
 import { getHeroesService } from "@/modules/heroes/composition";
 import { countOf, HeroGrid, unavailableCopy } from "@/modules/heroes/ui/hero-sections";
@@ -94,7 +94,7 @@ async function PoolAdvice({
   accountId32: number;
   heroes: Map<number, HeroInfo>;
 }) {
-  const view = await (await getAdvisorService()).poolAdvice(accountId32).catch((error: unknown) => {
+  const view = await advisorService.poolAdvice(accountId32).catch((error: unknown) => {
     logger.warn("pool_advice_failed", { error });
     return { status: "unavailable" as const };
   });

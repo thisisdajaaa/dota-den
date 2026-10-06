@@ -4,7 +4,7 @@ import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { POSITION_INFO } from "@/modules/meta/domain/position";
 import { MetaSection, Unavailable } from "@/modules/meta/ui/meta-section";
-import type { PoolAdviceView } from "../application/advisor-service";
+import type { PoolAdviceView } from "../dtos/responses/pool-advice.dto";
 
 const MIN_CONTEST = 0.15;
 
