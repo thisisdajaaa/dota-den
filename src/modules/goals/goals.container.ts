@@ -1,6 +1,6 @@
 import "server-only";
 import { getDb } from "@/common/db/mongo";
-import { getMmrJournal } from "@/modules/mmr";
+import { mmrJournalService } from "@/modules/mmr";
 import { sessionService } from "@/modules/sessions";
 import { GoalsController } from "./goals.controller";
 import { GoalsRepository } from "./goals.repository";
@@ -14,8 +14,7 @@ export const goalsService = new GoalsService({
     rankedSessions: async (owner) => sessionService.rankedSessions(owner),
   },
   mmr: {
-    entryTimes: async (owner) =>
-      (await (await getMmrJournal()).list(owner)).map((e) => e.observedAt),
+    entryTimes: async (owner) => (await mmrJournalService.list(owner)).map((e) => e.observedAt),
   },
 });
 

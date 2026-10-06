@@ -5,7 +5,7 @@ import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
 import { formatDuration, formatPercent } from "@/modules/matches/ui/format";
-import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { getViewerTimeZone } from "@/common/http/request-context";
 import { getBattleReport, REPORT_PERIODS, type ReportPeriod } from "@/modules/report/composition";
 import {
   CalendarCard,

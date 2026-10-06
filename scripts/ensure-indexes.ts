@@ -17,8 +17,8 @@ import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-ses
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
-import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-medal-history";
-import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
+import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
+import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
 import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
 import {
@@ -45,8 +45,8 @@ async function main(): Promise<void> {
   await ensureDraftHistoryIndexes(db);
   await new ActivityRepository(async () => db).ensureIndexes();
   await ensureMatchIndexes(db);
-  await ensureMmrIndexes(db);
-  await ensureMedalHistoryIndexes(db);
+  await new MmrEntriesRepository(async () => db).ensureIndexes();
+  await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();
   await new FollowsRepository(async () => db).ensureIndexes();
   await Promise.all([

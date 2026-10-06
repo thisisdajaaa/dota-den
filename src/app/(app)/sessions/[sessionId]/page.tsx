@@ -10,7 +10,7 @@ import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
-import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { getViewerTimeZone } from "@/common/http/request-context";
 import { toSessionNoteDto } from "@/modules/sessions/dtos/responses/session-note.dto";
 import { sessionService } from "@/modules/sessions";
 import { sessionIdFromParam, type GamePick } from "@/modules/sessions/domain/session";

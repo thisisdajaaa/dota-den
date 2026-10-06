@@ -7,24 +7,14 @@ import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
-import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
+import { getHeroMap } from "@/modules/matches/composition";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
-import { toMmrEntryDto } from "@/modules/mmr/application/contracts";
-import {
-  getMedalHistory,
-  getMmrJournal,
-  getScreenshotReader,
-  getViewerTimeZone,
-} from "@/modules/mmr/composition";
-import {
-  buildCalendar,
-  dayValue,
-  ESTIMATE_PER_GAME,
-  type QueueScope,
-} from "@/modules/mmr/domain/calendar";
+import { toMmrEntryDto } from "@/modules/mmr/dtos/responses/mmr-entry.dto";
+import { getViewerTimeZone } from "@/common/http/request-context";
+import { mmrInsightsService, screenshotService } from "@/modules/mmr";
+import { dayValue, ESTIMATE_PER_GAME, type QueueScope } from "@/modules/mmr/domain/calendar";
 import { dayKeyFormatter, type DayKey } from "@/common/time/day-key";
-import { climbByHero } from "@/modules/mmr/domain/hero-climb";
-import { isDayKey, periodFor, type CalendarView } from "@/modules/mmr/domain/periods";
+import { isDayKey, type CalendarView } from "@/modules/mmr/domain/periods";
 import { CalendarLegend } from "@/modules/mmr/ui/calendar-legend";
 import { DayDetail } from "@/modules/mmr/ui/day-detail";
 import { DeleteEntryButton } from "@/modules/mmr/ui/delete-entry-button";
@@ -49,8 +39,6 @@ const SCOPES: ReadonlyArray<{ value: QueueScope; label: string }> = [
   { value: "solo", label: "Solo" },
   { value: "party", label: "Party" },
 ];
-
-const TZ_PAD_MS = 15 * 60 * 60 * 1000; // wider than any UTC offset
 
 function one(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
@@ -83,59 +71,11 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
   const selected = isDayKey(selectedParam) ? selectedParam : null;
 
   const owner = { userId: user.id, accountId32: user.accountId32 };
-  const [journal, queries, heroes] = await Promise.all([
-    getMmrJournal(),
-    getMatchQueries(),
+  const [{ entries, medals, period, calendar, climbs, matches }, heroes] = await Promise.all([
+    mmrInsightsService.calendarView(owner, { view, anchor, scope, timeZone, now }),
     getHeroMap(),
   ]);
-  const [entries, medals] = await Promise.all([
-    journal.list(owner),
-    getMedalHistory(user.accountId32).catch(() => []),
-  ]);
-
-  // All-time starts at the earliest entry or ranked game we know about.
-  const earliestMatch =
-    view === "all"
-      ? await queries.rankedResults(user.accountId32, { from: new Date(0), to: now })
-      : [];
-  const earliestKeys = [
-    ...entries.slice(0, 1).map((e) => dayKey(e.observedAt)),
-    ...earliestMatch.map((m) => dayKey(m.startedAt)),
-  ].sort();
-  const period = periodFor(view, anchor, today, earliestKeys[0] ?? null);
-
-  const rangeFrom = new Date(Date.parse(`${period.from}T00:00:00Z`) - TZ_PAD_MS);
-  const rangeTo = new Date(Date.parse(`${period.to}T23:59:59Z`) + TZ_PAD_MS);
-  // Load games out to the entries either side of the period (entries are oldest first), so
-  // a change between two entries is only called exact when every game between them is known.
-  const before = entries.findLast((e) => e.observedAt < rangeFrom);
-  const after = entries.find((e) => e.observedAt > rangeTo);
-  const loaded =
-    view === "all"
-      ? { from: new Date(0), to: now }
-      : { from: before?.observedAt ?? rangeFrom, to: after?.observedAt ?? rangeTo };
-  const matches =
-    view === "all" ? earliestMatch : await queries.rankedResults(user.accountId32, loaded);
-
-  const calendar = buildCalendar({
-    observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
-    matches,
-    period: { from: period.from, to: period.to },
-    dayKey,
-    scope,
-    loaded,
-  });
   const s = calendar.summary;
-  const climbs = climbByHero({
-    observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
-    matches,
-    scope,
-    loaded,
-    inPeriod: (d) => {
-      const k = dayKey(d);
-      return k >= period.from && k <= period.to;
-    },
-  });
 
   const href = (patch: Record<string, string | null>) => {
     const q = new URLSearchParams();
@@ -179,7 +119,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         kicker="Progression"
         title="MMR journal"
         description="Log the MMR your Dota client shows. We match it against your ranked games to show exactly where you gained and lost it."
-        actions={<MmrEntryDialog canReadScreenshots={getScreenshotReader() !== null} />}
+        actions={<MmrEntryDialog canReadScreenshots={screenshotService.available} />}
       />
 
       <section aria-label="Summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -1,22 +1,22 @@
 import { err, ok, type Result } from "@/common/result";
 import type { MmrEntry } from "../domain/mmr-entry";
-import type { MmrEntryInput } from "./contracts";
-import type { MmrEntryRepository } from "./ports";
-
-export type JournalError = { type: "not_found" };
-
-export interface JournalOwner {
-  userId: string;
-  accountId32: number;
-}
+import type { MmrEntryInput } from "../schemas/mmr-entry.schema";
+import type { MmrEntriesPort } from "../mmr.ports";
+import type { JournalError, JournalOwner } from "../dtos/responses/mmr.dto";
 
 /** Commands for the signed-in user's own MMR journal. Ownership is enforced in the repository filter. */
+
 export class MmrJournalService {
   private readonly now: () => Date;
 
   constructor(
-    private readonly repo: MmrEntryRepository,
+    private readonly repo: MmrEntriesPort,
     now?: () => Date,
+    /** Needed for "Download your data" and account deletion only. */
+    private readonly data?: {
+      entries: PersonalData;
+      medals: PersonalData;
+    },
   ) {
     this.now = now ?? (() => new Date());
   }
@@ -56,4 +56,26 @@ export class MmrJournalService {
   list(owner: JournalOwner, range?: { from?: Date; to?: Date }): Promise<MmrEntry[]> {
     return this.repo.list(owner.userId, owner.accountId32, range);
   }
+
+  /** Your MMR entries and medal history. */
+  async exportMyData(owner: JournalOwner) {
+    const [entries, medals] = await Promise.all([
+      this.data?.entries.exportForOwner(owner) ?? [],
+      this.data?.medals.exportForOwner(owner) ?? [],
+    ]);
+    return { mmrEntries: entries, medalHistory: medals };
+  }
+
+  async deleteMyData(owner: JournalOwner) {
+    const [entries, medals] = await Promise.all([
+      this.data?.entries.deleteForOwner(owner) ?? 0,
+      this.data?.medals.deleteForOwner(owner) ?? 0,
+    ]);
+    return { mmrEntries: entries, medalHistory: medals };
+  }
+}
+
+interface PersonalData {
+  exportForOwner(owner: JournalOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: JournalOwner): Promise<number>;
 }

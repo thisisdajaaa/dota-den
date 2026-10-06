@@ -5,7 +5,7 @@ import { usersService } from "@/modules/identity";
 import { cronRunsRepository, jobRunsRepository } from "@/modules/jobs";
 import { activityRepository } from "@/modules/leaderboards";
 import { getMatchStatsByAccount } from "@/modules/matches/composition";
-import { getMmrEntryCounts } from "@/modules/mmr/composition";
+import { mmrEntriesRepository } from "@/modules/mmr";
 import { AdminService } from "./admin.service";
 import { playersService } from "@/modules/players";
 
@@ -13,7 +13,7 @@ export const adminService = new AdminService({
   users: { userRows: () => usersService.adminRows() },
   stats: {
     matchStats: getMatchStatsByAccount,
-    mmrEntryCounts: getMmrEntryCounts,
+    mmrEntryCounts: (ids) => mmrEntriesRepository.countsByUser(ids),
     activityCounts: (ids) => activityRepository.countsByUser(ids),
     roomDraftCounts: getRoomDraftCounts,
   },

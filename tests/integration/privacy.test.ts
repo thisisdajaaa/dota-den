@@ -11,7 +11,9 @@ import { UsersRepository } from "@/modules/identity/repositories/users.repositor
 import { UsersService } from "@/modules/identity/services/users.service";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import * as matches from "@/modules/matches/infrastructure/user-data";
-import * as mmr from "@/modules/mmr/infrastructure/user-data";
+import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
+import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
+import { MmrJournalService } from "@/modules/mmr/services/mmr-journal.service";
 import { PatchWatchlistsRepository } from "@/modules/patches/repositories/patches.repository";
 import { PatchWatchlistService } from "@/modules/patches/services/patch-watchlist.service";
 import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
@@ -101,6 +103,14 @@ const leaderboards = servicePart((getDb) => {
 const patches = servicePart((getDb) => {
   const repo = new PatchWatchlistsRepository(getDb);
   return new PatchWatchlistService({ watchlists: repo, data: repo });
+});
+
+const mmr = servicePart((getDb) => {
+  const entries = new MmrEntriesRepository(getDb);
+  return new MmrJournalService(entries, undefined, {
+    entries,
+    medals: new MedalHistoryRepository(getDb),
+  });
 });
 
 const PARTS = [

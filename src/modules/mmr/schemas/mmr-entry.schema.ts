@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EARLIEST_OBSERVATION, MMR_MAX, MMR_MIN, type MmrEntry } from "../domain/mmr-entry";
+import { EARLIEST_OBSERVATION, MMR_MAX, MMR_MIN } from "../domain/mmr-entry";
 
 /** Allowed clock skew when checking that an observation isn't in the future. */
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
@@ -28,14 +28,3 @@ export const MmrEntryInputSchema = z.object({
 });
 
 export type MmrEntryInput = z.output<typeof MmrEntryInputSchema>;
-
-export interface MmrEntryDto {
-  id: string;
-  mmr: number;
-  observedAt: string;
-  note: string | null;
-}
-
-export function toMmrEntryDto(e: MmrEntry): MmrEntryDto {
-  return { id: e.id, mmr: e.mmr, observedAt: e.observedAt.toISOString(), note: e.note };
-}

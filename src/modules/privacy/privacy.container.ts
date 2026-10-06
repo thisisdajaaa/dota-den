@@ -6,7 +6,7 @@ import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
 import * as matches from "@/modules/matches/composition";
-import * as mmr from "@/modules/mmr/composition";
+import { mmrJournalService } from "@/modules/mmr";
 import { patchWatchlistService } from "@/modules/patches";
 import { followService } from "@/modules/players";
 import { sessionService } from "@/modules/sessions";
@@ -16,7 +16,7 @@ import { PrivacyService } from "./privacy.service";
 
 export const privacyService = new PrivacyService({
   parts: [
-    mmr,
+    mmrJournalService,
     sessionService,
     followService,
     patchWatchlistService,

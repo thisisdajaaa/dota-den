@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
 import { ESTIMATE_PER_GAME } from "@/modules/mmr/domain/calendar";
-import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { getViewerTimeZone } from "@/common/http/request-context";
 import { sessionService } from "@/modules/sessions";
 import { EarlierNotes } from "@/modules/sessions/ui/earlier-notes";
 import { GapSelector } from "@/modules/sessions/ui/gap-selector";

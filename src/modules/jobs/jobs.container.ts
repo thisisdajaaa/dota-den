@@ -8,7 +8,7 @@ import { draftInsights } from "@/modules/drafts/composition";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/application/match-sync-service";
 import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
 import { metaService } from "@/modules/meta";
-import { recordMedal } from "@/modules/mmr/composition";
+import { medalService } from "@/modules/mmr";
 import { patchImportService } from "@/modules/patches";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
@@ -70,7 +70,7 @@ export const cronService = new CronService({
       const profile = await getPlayerProfile(id);
       return profile ? { rankTier: profile.rankTier } : null;
     },
-    record: recordMedal,
+    record: (id, tier) => medalService.record(id, tier),
   },
   patches: { importLatest: () => patchImportService.importLatest() },
   caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },

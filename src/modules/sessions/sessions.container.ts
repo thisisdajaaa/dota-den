@@ -4,7 +4,7 @@ import { getDb } from "@/common/db/mongo";
 import { lazy } from "@/common/utils/lazy";
 import type { DashboardFact } from "@/modules/matches/application/ports";
 import { getMatchQueries } from "@/modules/matches/composition";
-import { getMmrJournal } from "@/modules/mmr";
+import { mmrJournalService } from "@/modules/mmr";
 import {
   SessionNotesRepository,
   SessionSettingsRepository,
@@ -33,7 +33,7 @@ export const sessionService = lazy(
       },
       observations: {
         async list(owner) {
-          const entries = await (await getMmrJournal()).list(owner);
+          const entries = await mmrJournalService.list(owner);
           return entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr }));
         },
       },
