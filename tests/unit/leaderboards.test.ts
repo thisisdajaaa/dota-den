@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ActivityService } from "@/modules/leaderboards/application/activity-service";
-import { LeaderboardService } from "@/modules/leaderboards/application/leaderboard-service";
+import { ActivityService } from "@/modules/leaderboards/services/activity.service";
+import { LeaderboardService } from "@/modules/leaderboards/services/leaderboard.service";
 import type {
-  ActivityRepository,
+  ActivityPort,
   DraftReferee,
   PlayerAccount,
   TotalsQuery,
-} from "@/modules/leaderboards/application/ports";
+} from "@/modules/leaderboards/leaderboards.ports";
 import {
   bestStreakOf,
   isCorrectGrade,
@@ -168,7 +168,7 @@ describe("ranking", () => {
 });
 
 /** In-memory activity store that applies the query like the Mongo repository does. */
-class MemoryActivity implements ActivityRepository {
+class MemoryActivity implements ActivityPort {
   attempts: ChallengeAttempt[] = [];
   drafts: DraftResult[] = [];
   streaks = new Map<string, ChallengeStreak>();

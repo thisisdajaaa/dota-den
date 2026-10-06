@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest } from "@/common/http/api-client";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,9 +14,12 @@ export function DeleteEntryButton({ id, label }: { id: string; label: string }) 
 
   async function remove() {
     setBusy(true);
-    const res = await fetch(`/api/v1/mmr-entries/${id}`, { method: "DELETE" });
+    const ok = await apiRequest(`/api/v1/mmr-entries/${id}`, { method: "DELETE" }).then(
+      () => true,
+      () => false,
+    );
     setBusy(false);
-    if (res.ok) {
+    if (ok) {
       toast.success("Entry deleted");
       router.refresh();
     } else {

@@ -3,7 +3,7 @@ import { err, ok, type Result } from "@/common/result";
 import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
 import { ACCOUNT_ID_MAX } from "../domain/player-lookup";
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
-import type { PlayerDirectory, ProviderError } from "../application/ports";
+import type { PlayerDirectory, ProviderError } from "../players.ports";
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 

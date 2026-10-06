@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest, errorMessage, fieldErrors } from "@/common/http/api-client";
 import { TrendingUp, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
@@ -64,25 +65,15 @@ export function MmrLogPrompt({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/v1/mmr-entries", {
+      await apiRequest("/api/v1/mmr-entries", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mmr: mmr.trim(), observedAt: new Date().toISOString(), note: null }),
+        body: { mmr: mmr.trim(), observedAt: new Date().toISOString(), note: null },
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as {
-          // The route sends the field errors themselves as details.
-          error?: { message?: string; details?: { mmr?: string[] } };
-        } | null;
-        throw new Error(
-          body?.error?.details?.mmr?.[0] ?? body?.error?.message ?? "Couldn't save that.",
-        );
-      }
       toast.success("MMR logged.");
       setMmr("");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't save that.");
+      setError(fieldErrors(err).mmr?.[0] ?? errorMessage(err, "Couldn't save that."));
     } finally {
       setBusy(false);
     }

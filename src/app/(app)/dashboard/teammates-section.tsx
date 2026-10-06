@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, Users } from "lucide-react";
 import { logger } from "@/common/logging/logger";
-import { getTeammatesOverview } from "@/modules/together/composition";
+import { friendsService } from "@/modules/together";
 import { TeammatesCard } from "@/modules/together/ui/teammates-card";
 import { TeammatesSummary } from "@/modules/together/ui/teammates-summary";
 
@@ -19,9 +19,9 @@ function Heading() {
  * section ("unavailable right now"), never the rest of the dashboard.
  */
 export async function TeammatesSection({ user }: { user: { id: string; accountId32: number } }) {
-  let res: Awaited<ReturnType<typeof getTeammatesOverview>> | null = null;
+  let res: Awaited<ReturnType<typeof friendsService.teammatesOverview>> | null = null;
   try {
-    res = await getTeammatesOverview(user);
+    res = await friendsService.teammatesOverview(user);
   } catch (e) {
     logger.error("teammates_section_failed", { error: e });
   }

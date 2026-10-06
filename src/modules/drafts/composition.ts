@@ -1,4 +1,5 @@
 import "server-only";
+import { openDotaExplorerGateway } from "@/common/providers/opendota";
 import type { DataOwner } from "@/common/privacy/user-data";
 import { randomInt } from "node:crypto";
 import type { Db } from "mongodb";
@@ -6,8 +7,6 @@ import { getDb } from "@/common/db/mongo";
 import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
 import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
-import { ProviderGateway } from "@/common/providers/provider-gateway";
-import { sharedGatewayOptions } from "@/common/providers/shared-gateway-options";
 import { AiOpponentService, type AiHero } from "./application/ai-opponent-service";
 import { ChallengeService } from "./application/challenge-service";
 import { DraftHistoryService } from "./application/draft-history-service";
@@ -34,27 +33,6 @@ async function scoringHeroes(): Promise<AiHero[]> {
   }));
 }
 
-const globalForExplorer = globalThis as typeof globalThis & { __ddExplorer?: ProviderGateway };
-
-/** OpenDota's SQL explorer is slow: its own timeout and circuit breaker. */
-function explorerGateway(): ProviderGateway {
-  const { OPENDOTA_EXPLORER_TIMEOUT_MS, OPENDOTA_EXPLORER_MAX_RETRIES } = env();
-  globalForExplorer.__ddExplorer ??= new ProviderGateway({
-    name: "opendota-explorer",
-    ...sharedGatewayOptions("opendota"),
-    timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
-    maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
-    onRequest: ({ status, durationMs, attempt }) =>
-      logger.info("provider_request", {
-        provider: "opendota-explorer",
-        status,
-        durationMs,
-        attempt,
-      }),
-  });
-  return globalForExplorer.__ddExplorer;
-}
-
 export async function draftInsights(): Promise<OpenDotaDraftInsights> {
   const config = env();
   const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL: baseUrl } = config;
@@ -65,7 +43,7 @@ export async function draftInsights(): Promise<OpenDotaDraftInsights> {
   return new OpenDotaDraftInsights(openDotaGateway(), {
     baseUrl: baseUrl ?? "https://api.opendota.com/api",
     apiKey: OPENDOTA_API_KEY,
-    explorer: explorerGateway(),
+    explorer: openDotaExplorerGateway(),
     cache,
     budgetMs: config.DRAFT_EXPLORER_BUDGET_MS,
     proDays: config.DRAFT_PRO_WINDOW_DAYS,

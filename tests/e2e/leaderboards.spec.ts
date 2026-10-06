@@ -101,7 +101,7 @@ test("a friend sees your challenge answers and finished drafts on the leaderboar
     headers: { origin },
   });
   expect(again.status()).toBe(200);
-  const body = await again.json();
+  const body = (await again.json()).data;
   expect(body).toMatchObject({ counted: false, mode: "ai", side: "radiant" });
   expect(body.score === null || (body.score >= 0 && body.score <= 100)).toBe(true);
 
@@ -183,7 +183,7 @@ test("the draft results API checks origin, sign-in and the draft", async ({ page
   ).toString("base64url");
   const unfinished = await post({ snapshot: empty, aiSide: null });
   expect(unfinished.status()).toBe(400);
-  expect((await unfinished.json()).error.details.reason).toBe("not_completed");
+  expect((await unfinished.json()).details.reason).toBe("not_completed");
 });
 
 test("leaderboards are for signed-in players", async ({ page }) => {

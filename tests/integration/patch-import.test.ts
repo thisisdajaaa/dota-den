@@ -1,14 +1,13 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { PatchImportService } from "@/modules/patches/application/patch-import-service";
+import { PatchImportService } from "@/modules/patches/services/patch-import.service";
 import { EMPTY_SECTIONS, type Patch } from "@/modules/patches/domain/patch";
 import {
-  ensurePatchIndexes,
-  MongoPatchQueries,
-  MongoPatchRefreshStateRepository,
-  MongoPatchRepository,
-  PATCH_COLLECTIONS,
-} from "@/modules/patches/infrastructure/mongo-patch-repositories";
+  PatchReadRepository,
+  PatchRefreshStateRepository,
+  PatchesRepository,
+} from "@/modules/patches/repositories/patches.repository";
+import { PATCH_COLLECTIONS } from "@/modules/patches/repositories/patches.repository";
 import { patchDetail } from "../fixtures/valve-patches";
 import { fakeReferences, scriptedValve } from "../support/patch-fakes";
 import { createTestDb } from "../support/mongo";
@@ -18,7 +17,7 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensurePatchIndexes(db);
+  await new PatchesRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 beforeEach(async () => {
@@ -31,8 +30,8 @@ function service() {
   const svc = new PatchImportService({
     source: valve.adapter,
     references: fakeReferences(),
-    patches: new MongoPatchRepository(db),
-    refreshState: new MongoPatchRefreshStateRepository(db),
+    patches: new PatchesRepository(async () => db),
+    refreshState: new PatchRefreshStateRepository(async () => db),
   });
   return { svc, valve };
 }
@@ -88,7 +87,7 @@ describe("patch import against MongoDB", () => {
   });
 
   it("enforces one document per version", async () => {
-    const repo = new MongoPatchRepository(db);
+    const repo = new PatchesRepository(async () => db);
     const p = patch("7.40", new Date("2025-12-15T00:00:00Z"));
     expect(await repo.insert(p)).toBe("inserted");
     expect(await repo.insert({ ...p, contentHash: "other" })).toBe("conflict");
@@ -98,7 +97,7 @@ describe("patch import against MongoDB", () => {
   });
 
   it("guards replacement with the expected revision", async () => {
-    const repo = new MongoPatchRepository(db);
+    const repo = new PatchesRepository(async () => db);
     const p = patch("7.39", new Date("2025-06-01T00:00:00Z"));
     await repo.insert(p);
     expect(await repo.replace({ ...p, parseRevision: 2 }, 1)).toBe("updated");
@@ -107,11 +106,11 @@ describe("patch import against MongoDB", () => {
   });
 
   it("lists newest version first with cursor pagination", async () => {
-    const repo = new MongoPatchRepository(db);
+    const repo = new PatchesRepository(async () => db);
     const versions = ["7.39", "7.40", "7.41", "7.41a", "7.41b", "7.08"];
     for (const [i, v] of versions.entries())
       await repo.insert(patch(v, new Date(Date.UTC(2025, 0, 1 + i))));
-    const queries = new MongoPatchQueries(db);
+    const queries = new PatchReadRepository(async () => db);
 
     const page1 = await queries.list({ limit: 4 });
     expect(page1.items.map((p) => p.version)).toEqual(["7.41b", "7.41a", "7.41", "7.40"]);
@@ -136,7 +135,7 @@ describe("patch import against MongoDB", () => {
   it("gets a patch by version (case-insensitive) and returns null when unknown", async () => {
     const { svc } = service();
     await svc.importVersion("7.41f");
-    const queries = new MongoPatchQueries(db);
+    const queries = new PatchReadRepository(async () => db);
     const p = await queries.getByVersion("7.41F");
     expect(p).toMatchObject({ version: "7.41f", parseStatus: "parsed", parseRevision: 1 });
     expect(p && "_id" in p).toBe(false);
@@ -145,7 +144,7 @@ describe("patch import against MongoDB", () => {
   });
 
   it("lets only one caller claim a refresh within the retry window", async () => {
-    const repo = new MongoPatchRefreshStateRepository(db);
+    const repo = new PatchRefreshStateRepository(async () => db);
     const now = new Date("2026-09-30T00:00:00Z");
     const claims = await Promise.all(Array.from({ length: 5 }, () => repo.tryClaim(now, 60_000)));
     expect(claims.filter(Boolean)).toHaveLength(1);

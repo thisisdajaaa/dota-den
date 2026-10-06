@@ -7,8 +7,8 @@ import { SegmentedLinks } from "@/components/segmented-links";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
-import type { BoardView } from "@/modules/leaderboards/application/contracts";
-import { getLeaderboardService, getRankedWeek } from "@/modules/leaderboards/composition";
+import type { BoardView } from "@/modules/leaderboards/dtos/responses/leaderboard-views.dto";
+import { leaderboardService, rankedWeekService } from "@/modules/leaderboards";
 import { isPeriod, PERIODS, type Period } from "@/modules/leaderboards/domain/period";
 import {
   BOARDS,
@@ -42,9 +42,7 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
 
   let view: BoardView | null = null;
   try {
-    view = await (
-      await getLeaderboardService()
-    ).board({
+    view = await leaderboardService.board({
       viewer: { userId: user.id, accountId32: user.accountId32 },
       kind: board,
       scope,
@@ -124,7 +122,7 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
 
 async function RankedWeekSection({ viewer }: { viewer: { userId: string; accountId32: number } }) {
   const [view, heroes] = await Promise.all([
-    getRankedWeek(viewer).catch((error: unknown) => {
+    rankedWeekService.forViewer(viewer).catch((error: unknown) => {
       logger.warn("ranked_week_failed", { error });
       return null;
     }),

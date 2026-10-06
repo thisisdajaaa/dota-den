@@ -9,7 +9,7 @@ import {
   type ChallengeType,
 } from "@/modules/drafts/domain/challenges";
 import { ChallengeHistory } from "@/modules/drafts/ui/challenge-history";
-import { getViewerChallengeStreak } from "@/modules/leaderboards/composition";
+import { viewerChallengeStreak } from "@/modules/leaderboards";
 
 export const metadata: Metadata = { title: "Draft challenges" };
 
@@ -22,7 +22,7 @@ const ICONS: Record<ChallengeType, typeof Swords> = {
 
 export default async function DraftChallengesPage() {
   // Signed in: the streak saved on the account; guests keep this device's progress.
-  const saved = await getViewerChallengeStreak();
+  const saved = await viewerChallengeStreak();
   return (
     <div className="space-y-6">
       <PageHeader

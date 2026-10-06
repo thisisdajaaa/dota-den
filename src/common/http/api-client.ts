@@ -33,10 +33,17 @@ export async function apiRequest<T>(
   url: string,
   init: { method?: string; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<T> {
+  const form = typeof FormData !== "undefined" && init.body instanceof FormData;
   const res = await fetch(url, {
     method: init.method ?? (init.body === undefined ? "GET" : "POST"),
-    headers: init.body === undefined ? undefined : { "content-type": "application/json" },
-    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    // FormData sets its own multipart content type.
+    headers: init.body === undefined || form ? undefined : { "content-type": "application/json" },
+    body:
+      init.body === undefined
+        ? undefined
+        : form
+          ? (init.body as FormData)
+          : JSON.stringify(init.body),
     signal: init.signal,
   });
   const body: unknown = res.status === 204 ? null : await res.json().catch(() => null);
@@ -60,4 +67,16 @@ export async function apiRequest<T>(
       retry || undefined,
     );
   return body as T;
+}
+
+/** Per-field validation messages from a failed request (`details.fieldErrors`), if any. */
+export function fieldErrors(e: unknown): Record<string, string[] | undefined> {
+  if (!(e instanceof ApiClientError)) return {};
+  const details = e.details as { fieldErrors?: Record<string, string[] | undefined> } | undefined;
+  return details?.fieldErrors ?? {};
+}
+
+/** The server's message for a failed request, or `fallback` for network errors. */
+export function errorMessage(e: unknown, fallback: string): string {
+  return e instanceof ApiClientError ? e.message : fallback;
 }

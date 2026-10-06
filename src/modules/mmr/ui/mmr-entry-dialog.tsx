@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest, errorMessage, fieldErrors } from "@/common/http/api-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageUp, Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -20,7 +21,8 @@ import {
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MmrEntryInputSchema, type MmrEntryDto } from "../application/contracts";
+import type { MmrEntryDto } from "../dtos/responses/mmr-entry.dto";
+import { MmrEntryInputSchema } from "../schemas/mmr-entry.schema";
 
 type FormInput = z.input<typeof MmrEntryInputSchema>;
 type FormOutput = z.output<typeof MmrEntryInputSchema>;
@@ -72,15 +74,11 @@ export function MmrEntryDialog({
     try {
       const body = new FormData();
       body.append("image", file);
-      const res = await fetch("/api/v1/mmr-entries/read-screenshot", { method: "POST", body });
-      const data = (await res.json().catch(() => null)) as {
-        mmr?: number | null;
-        seen?: string | null;
-        error?: { message?: string };
-      } | null;
-      if (!res.ok) {
-        setReadNote({ ok: false, text: data?.error?.message ?? "Couldn't read that screenshot." });
-      } else if (typeof data?.mmr === "number") {
+      const data = await apiRequest<{ mmr: number | null; seen: string | null }>(
+        "/api/v1/mmr-entries/read-screenshot",
+        { method: "POST", body },
+      );
+      if (typeof data?.mmr === "number") {
         form.setValue("mmr", String(data.mmr), { shouldDirty: true, shouldValidate: true });
         setReadNote({
           ok: true,
@@ -92,8 +90,11 @@ export function MmrEntryDialog({
           text: "Couldn't find your MMR in that screenshot. Type it instead.",
         });
       }
-    } catch {
-      setReadNote({ ok: false, text: "Couldn't read that screenshot. Check your connection." });
+    } catch (e) {
+      setReadNote({
+        ok: false,
+        text: errorMessage(e, "Couldn't read that screenshot. Check your connection."),
+      });
     } finally {
       setReading(false);
     }
@@ -109,32 +110,29 @@ export function MmrEntryDialog({
   }
 
   async function onSubmit(values: FormOutput) {
-    const res = await fetch(editing ? `/api/v1/mmr-entries/${entry.id}` : "/api/v1/mmr-entries", {
-      method: editing ? "PATCH" : "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...values, observedAt: values.observedAt.toISOString() }),
-    });
-    if (res.ok) {
-      toast.success(editing ? "Entry updated" : `Logged ${values.mmr.toLocaleString("en-US")} MMR`);
-      setOpen(false);
-      if (!editing) form.reset({ mmr: "", observedAt: toLocalInput(new Date()), note: "" });
-      router.refresh();
+    try {
+      await apiRequest(editing ? `/api/v1/mmr-entries/${entry.id}` : "/api/v1/mmr-entries", {
+        method: editing ? "PATCH" : "POST",
+        body: { ...values, observedAt: values.observedAt.toISOString() },
+      });
+    } catch (e) {
+      // Surface server-side field errors on the matching inputs.
+      const fields = fieldErrors(e);
+      let mapped = false;
+      for (const key of ["mmr", "observedAt", "note"] as const) {
+        const msg = fields[key]?.[0];
+        if (msg) {
+          form.setError(key, { message: msg });
+          mapped = true;
+        }
+      }
+      if (!mapped) toast.error(errorMessage(e, "Couldn't save. Please try again."));
       return;
     }
-    // Surface server-side field errors on the matching inputs.
-    const body = (await res.json().catch(() => null)) as {
-      error?: { message?: string; details?: Record<string, string[] | undefined> };
-    } | null;
-    const details = body?.error?.details ?? {};
-    let mapped = false;
-    for (const key of ["mmr", "observedAt", "note"] as const) {
-      const msg = details[key]?.[0];
-      if (msg) {
-        form.setError(key, { message: msg });
-        mapped = true;
-      }
-    }
-    if (!mapped) toast.error(body?.error?.message ?? "Couldn't save. Please try again.");
+    toast.success(editing ? "Entry updated" : `Logged ${values.mmr.toLocaleString("en-US")} MMR`);
+    setOpen(false);
+    if (!editing) form.reset({ mmr: "", observedAt: toLocalInput(new Date()), note: "" });
+    router.refresh();
   }
 
   return (

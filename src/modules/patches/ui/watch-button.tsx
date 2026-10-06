@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,21 +28,21 @@ export function WatchButton({
     const next = watched
       ? watchedHeroIds.filter((id) => id !== heroId)
       : [...watchedHeroIds, heroId];
-    const res = await fetch("/api/v1/me/patch-watchlist", {
+    const status = await apiRequest("/api/v1/me/patch-watchlist", {
       method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ heroIds: next, itemIds }),
-    });
+      body: { heroIds: next, itemIds },
+    }).then(
+      () => 200,
+      (e: unknown) => (e instanceof ApiClientError ? e.status : 0),
+    );
     setBusy(false);
-    if (res.ok) {
+    if (status === 200) {
       setWatched(!watched);
       toast.success(watched ? `Stopped watching ${heroName}` : `Watching ${heroName}`);
       router.refresh();
     } else {
       toast.error(
-        res.status === 400
-          ? "Your watchlist is full (50 heroes)."
-          : "Couldn't update your watchlist.",
+        status === 400 ? "Your watchlist is full (50 heroes)." : "Couldn't update your watchlist.",
       );
     }
   }

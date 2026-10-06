@@ -1,6 +1,6 @@
 import "server-only";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
-import { getMetaService } from "@/modules/meta/composition";
+import { metaService } from "@/modules/meta";
 import { lazy } from "@/common/utils/lazy";
 import { AdvisorService } from "./advisor.service";
 import { OpenDotaAdvisorSource } from "./infrastructure/opendota-advisor-source";
@@ -11,11 +11,11 @@ export const advisorService = lazy(() => {
     poolRows: (id, days) => source.poolRows(id, days),
     matchups: (heroId) => source.matchups(heroId),
     role: async (id) => {
-      const res = await (await getMetaService()).userRole(id);
+      const res = await metaService.userRole(id);
       return res.ok ? res.value.derivation.position : null;
     },
     candidates: async (position) => {
-      const res = await (await getMetaService()).topHeroes(position);
+      const res = await metaService.topHeroes(position);
       if (!res.ok) return null;
       return res.value.heroes.map((h) => ({
         heroId: h.heroId,

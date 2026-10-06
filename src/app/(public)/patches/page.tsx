@@ -5,10 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
-import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
 import { changesAffectingPool } from "@/modules/patches/domain/patch";
 import { parsePatchVersion } from "@/modules/patches/domain/patch-version";
-import { getHeroPool } from "@/modules/patches/hero-pool";
+import { patchesService } from "@/modules/patches";
 
 export const metadata: Metadata = { title: "Patch notes" };
 
@@ -25,8 +24,8 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
   const { cursor: raw } = await searchParams;
   const cursor = typeof raw === "string" && parsePatchVersion(raw).ok ? raw : null;
 
-  await ensurePatchesFresh();
-  const queries = await getPatchQueries();
+  await patchesService.ensureFresh();
+  const queries = patchesService;
   const [page, user, heroes] = await Promise.all([
     queries.list({ cursor, limit: 12 }),
     getCurrentUser({ tolerateErrors: true }),
@@ -35,7 +34,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
 
   const latest = !cursor ? page.items[0] : undefined;
   const latestPatch = latest ? await queries.getByVersion(latest.version) : null;
-  const pool = user && latestPatch ? await getHeroPool(user, new Date()) : null;
+  const pool = user && latestPatch ? await patchesService.heroPool(user, new Date()) : null;
   const yourChanges = pool && latestPatch ? changesAffectingPool(latestPatch, pool.heroIds) : [];
 
   return (

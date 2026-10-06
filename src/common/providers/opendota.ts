@@ -39,3 +39,29 @@ export function openDotaGateway(): ProviderGateway {
   });
   return globalForGateway.__ddOpenDota;
 }
+
+const globalForExplorer = globalThis as typeof globalThis & { __ddExplorer?: ProviderGateway };
+
+/**
+ * OpenDota's SQL explorer (pro database): slow (some queries take ~12s) and sometimes down.
+ * Its own gateway has a long timeout and a separate circuit, so explorer trouble never trips
+ * the circuit for the rest of the OpenDota API. Shared by every feature that queries it.
+ */
+export function openDotaExplorerGateway(): ProviderGateway {
+  const { OPENDOTA_EXPLORER_TIMEOUT_MS, OPENDOTA_EXPLORER_MAX_RETRIES } = env();
+  globalForExplorer.__ddExplorer ??= new ProviderGateway({
+    name: "opendota-explorer",
+    ...sharedGatewayOptions("opendota"),
+    timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
+    maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
+    onRequest: ({ status, durationMs, attempt }) =>
+      logger.info("provider_request", {
+        provider: "opendota-explorer",
+        path: "/api/explorer",
+        status,
+        durationMs,
+        attempt,
+      }),
+  });
+  return globalForExplorer.__ddExplorer;
+}

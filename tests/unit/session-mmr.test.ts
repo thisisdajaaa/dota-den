@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ESTIMATE_PER_GAME } from "@/modules/mmr";
+import { ESTIMATE_PER_GAME } from "@/modules/mmr/domain/calendar";
 import { groupSessions, type SessionMatch } from "@/modules/sessions/domain/session";
 import { sessionMmr, type MmrObservation } from "@/modules/sessions/domain/session-mmr";
 

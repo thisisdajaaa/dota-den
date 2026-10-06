@@ -7,9 +7,9 @@ import { logger } from "@/common/logging/logger";
 import { draftInsights } from "@/modules/drafts/composition";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/application/match-sync-service";
 import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
-import { warmMetaCaches } from "@/modules/meta/composition";
-import { recordMedal } from "@/modules/mmr/composition";
-import { getPatchImportService } from "@/modules/patches/composition";
+import { metaService } from "@/modules/meta";
+import { medalService } from "@/modules/mmr";
+import { patchImportService } from "@/modules/patches";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
 import { JobsController } from "./jobs.controller";
@@ -70,10 +70,10 @@ export const cronService = new CronService({
       const profile = await getPlayerProfile(id);
       return profile ? { rankTier: profile.rankTier } : null;
     },
-    record: recordMedal,
+    record: (id, tier) => medalService.record(id, tier),
   },
-  patches: { importLatest: async () => (await getPatchImportService()).importLatest() },
-  caches: { warmDraftData, warmMeta: warmMetaCaches },
+  patches: { importLatest: () => patchImportService.importLatest() },
+  caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
   queue: jobQueue,
   logger,
 });

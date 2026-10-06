@@ -109,9 +109,9 @@ test("signed-in users track and untrack players", async ({ page }) => {
   await expect(tracking).toHaveAttribute("aria-pressed", "true");
 
   const saved = await page.request.get("/api/v1/me/follows");
-  expect((await saved.json()).follows.map((f: { accountId32: number }) => f.accountId32)).toEqual([
-    40001,
-  ]);
+  expect(
+    (await saved.json()).data.follows.map((f: { accountId32: number }) => f.accountId32),
+  ).toEqual([40001]);
 
   await page.goto("/players");
   await expect(tracked.getByRole("link", { name: /Fixture Peer/ })).toHaveAttribute(
@@ -127,7 +127,7 @@ test("signed-in users track and untrack players", async ({ page }) => {
   }).toPass({ timeout: 30_000 });
 
   const after = await page.request.get("/api/v1/me/follows");
-  expect((await after.json()).follows).toEqual([]);
+  expect((await after.json()).data.follows).toEqual([]);
 });
 
 test("follow API rejects cross-origin, guests and bad input", async ({ page, request }) => {

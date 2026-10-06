@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { StandingView } from "../application/contracts";
+import type { StandingView } from "../dtos/responses/leaderboard-views.dto";
 import { BOARD_LABEL, BOARD_UNIT, leaderboardHref } from "./copy";
 
 function Heading() {

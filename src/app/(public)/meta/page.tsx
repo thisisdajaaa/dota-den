@@ -10,9 +10,8 @@ import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { getHeroMap } from "@/modules/matches/composition";
 import { plural } from "@/modules/matches/ui/format";
-import type { RoleView } from "@/modules/meta/application/meta-service";
-import type { SourceError } from "@/modules/meta/application/ports";
-import { getLatestPatchForMeta, getMetaService } from "@/modules/meta/composition";
+import type { RoleView } from "@/modules/meta/dtos/responses/meta.dto";
+import { metaService, type MetaSourceError as SourceError } from "@/modules/meta";
 import {
   MIN_ROLE_GAMES,
   parsePosition,
@@ -31,15 +30,13 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
   const params = await searchParams;
   const picked = parsePosition(params.pos);
 
-  const [user, service] = await Promise.all([
-    getCurrentUser({ tolerateErrors: true }),
-    getMetaService(),
-  ]);
+  const service = metaService;
+  const user = await getCurrentUser({ tolerateErrors: true });
   const role = user ? await settle(service.userRole(user.accountId32), "role") : null;
   const yours = role?.ok ? role.value.derivation.position : null;
   const position = picked ?? yours;
 
-  const patch = getLatestPatchForMeta();
+  const patch = metaService.latestPatch();
   const catalog = getHeroMap().catch((e: unknown): Map<number, HeroInfo> => {
     logger.warn("meta_hero_catalog_failed", { error: e });
     return new Map();
@@ -95,8 +92,8 @@ function RoleSections({
 }: {
   position: Position;
   yours: Position | null;
-  service: Awaited<ReturnType<typeof getMetaService>>;
-  patch: ReturnType<typeof getLatestPatchForMeta>;
+  service: typeof metaService;
+  patch: ReturnType<typeof metaService.latestPatch>;
   catalog: Promise<Map<number, HeroInfo>>;
 }) {
   // Started once and shared: the tips section reuses the hero ranking.

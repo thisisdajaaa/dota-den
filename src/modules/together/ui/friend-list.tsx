@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronRight, UsersRound } from "lucide-react";
 import { formatAgo, plural } from "@/modules/matches/ui/format";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
-import type { FriendCandidate } from "../application/contracts";
+import type { FriendCandidate } from "../dtos/responses/together-views.dto";
 
 /** The people you play with; each links to the pair's page. */
 export function FriendList({

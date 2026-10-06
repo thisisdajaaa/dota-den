@@ -30,6 +30,8 @@ export interface HandlerOptions<U, B, Q, P> {
   body?: ZodType<B>;
   query?: ZodType<Q>;
   params?: ZodType<P>;
+  /** Message for a body that fails validation (field errors go in `details`). */
+  invalidMessage?: string;
 }
 
 export interface HandlerContext<U, B, Q, P> {
@@ -52,10 +54,10 @@ export function toNextResponse(res: ServiceResponse): NextResponse {
   return NextResponse.json(res.body, { status: res.statusCode, headers: res.headers });
 }
 
-function parse<T>(schema: ZodType<T> | undefined, value: unknown, what: string): T {
+function parse<T>(schema: ZodType<T> | undefined, value: unknown, message: string): T {
   if (!schema) return undefined as T;
   const r = schema.safeParse(value);
-  if (!r.success) throw new ValidationError(`Invalid ${what}`, z.flattenError(r.error));
+  if (!r.success) throw new ValidationError(message, z.flattenError(r.error));
   return r.data;
 }
 
@@ -82,14 +84,18 @@ export function handler<U = undefined, B = undefined, Q = undefined, P = undefin
         if (!(await rateLimit(`${name}:${who}`, limit, windowMs)))
           throw new RateLimitedError(undefined, Math.ceil(windowMs / 1000));
       }
-      const params = parse(opts.params, route ? await route.params : {}, "path");
+      const params = parse(opts.params, route ? await route.params : {}, "Invalid path");
       const query = parse(
         opts.query,
         Object.fromEntries(req.nextUrl.searchParams.entries()),
-        "query",
+        "Invalid query",
       );
       const body = opts.body
-        ? parse(opts.body, await req.json().catch(() => null), "request body")
+        ? parse(
+            opts.body,
+            await req.json().catch(() => null),
+            opts.invalidMessage ?? "Invalid request body",
+          )
         : (undefined as B);
       const result = await action({ req, user, body, query, params });
       return result instanceof ServiceResponse ? toNextResponse(result) : result;

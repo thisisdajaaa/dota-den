@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { MetaService, mapLimit } from "@/modules/meta/application/meta-service";
+import { mapLimit } from "@/common/utils/map-limit";
+import { MetaService } from "@/modules/meta/meta.service";
 import {
   DuoRowSchema,
   OpenDotaMetaSource,
@@ -228,7 +229,7 @@ describe("MetaService", () => {
   it("ranks heroes even when tournament data fails, and reports it", async () => {
     const fetchedAt = new Date();
     const service = new MetaService({
-      heroes: [
+      heroes: async () => [
         { id: 1, roles: ["Carry"] },
         { id: 2, roles: ["Carry"] },
       ],

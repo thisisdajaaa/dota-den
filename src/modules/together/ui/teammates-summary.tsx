@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { displayName } from "@/modules/players/ui/player-avatar";
-import type { TeammatesOverview } from "../application/contracts";
+import type { TeammatesOverview } from "../dtos/responses/together-views.dto";
 import {
   MIN_RIVAL_GAMES,
   MIN_TEAMMATE_GAMES,

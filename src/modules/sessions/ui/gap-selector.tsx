@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest } from "@/common/http/api-client";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -16,12 +17,14 @@ export function GapSelector({ value }: { value: GapMinutes }) {
     if (gap === selected || pending) return;
     const previous = selected;
     setSelected(gap);
-    const res = await fetch("/api/v1/me/settings/session-gap", {
+    const saved = await apiRequest("/api/v1/me/settings/session-gap", {
       method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ gapMinutes: gap }),
-    }).catch(() => null);
-    if (!res?.ok) {
+      body: { gapMinutes: gap },
+    }).then(
+      () => true,
+      () => false,
+    );
+    if (!saved) {
       setSelected(previous);
       toast.error("Couldn't change the break length. Please try again.");
       return;

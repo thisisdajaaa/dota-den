@@ -20,8 +20,9 @@ import { QueueSplitCard } from "@/modules/matches/ui/queue-split-card";
 import { RecentMatchesCard } from "@/modules/matches/ui/recent-matches-card";
 import { SyncControl } from "@/modules/matches/ui/sync-control";
 import { HeroPoolCard } from "@/modules/matches/ui/hero-pool-card";
-import { getViewerTimeZone, recordMedal } from "@/modules/mmr/composition";
-import { getSessionService } from "@/modules/sessions/composition";
+import { getViewerTimeZone } from "@/common/http/request-context";
+import { medalService } from "@/modules/mmr";
+import { sessionService } from "@/modules/sessions";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
@@ -59,13 +60,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     getPlayerProfile(user.accountId32),
     getHeroMap(),
     // Optional card: a sessions failure must not take down the dashboard.
-    getSessionService()
-      .then((s) => s.latest({ userId: user.id, accountId32: user.accountId32 }))
-      .catch(() => null),
+    sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
     getViewerTimeZone(),
   ]);
   // Medal history needs no typing: note the medal each visit (after the page is sent).
-  if (profile) after(() => recordMedal(user.accountId32, profile.rankTier));
+  if (profile) after(() => medalService.record(user.accountId32, profile.rankTier));
 
   // Every hero in view (the card sorts and expands client-side).
   const summary = summarizeMatches(facts, { topHeroes: Number.POSITIVE_INFINITY });

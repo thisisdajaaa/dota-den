@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logger } from "@/common/logging/logger";
-import { getHeroesService } from "@/modules/heroes/composition";
+import { heroesService } from "@/modules/heroes";
 import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
 import { unavailableCopy } from "@/modules/heroes/ui/hero-sections";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
@@ -13,9 +13,9 @@ export function LanesSkeleton() {
  * The overview's lane and role card. Streams behind Suspense; a failure blanks only this card.
  */
 export async function LanesSection({ accountId32 }: { accountId32: number }) {
-  let res: Awaited<ReturnType<Awaited<ReturnType<typeof getHeroesService>>["laneBreakdown"]>>;
+  let res: Awaited<ReturnType<(typeof heroesService)["laneBreakdown"]>>;
   try {
-    res = await (await getHeroesService()).laneBreakdown(accountId32);
+    res = await heroesService.laneBreakdown(accountId32);
   } catch (e) {
     logger.error("lanes_section_failed", { error: e });
     res = { ok: false, error: { type: "unavailable", cause: "error" } };

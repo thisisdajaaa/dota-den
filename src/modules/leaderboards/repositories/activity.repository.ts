@@ -1,0 +1,271 @@
+import "server-only";
+import type { Db, Document, Filter } from "mongodb";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
+import {
+  LEADERBOARD_COLLECTIONS,
+  LEADERBOARDS_SCHEMA_VERSION as SCHEMA_VERSION,
+  type AttemptDoc,
+  type DraftDoc,
+  type StreakDoc,
+} from "../leaderboards.model";
+import type { ActivityPort, TotalsQuery } from "../leaderboards.ports";
+import {
+  NO_STREAK,
+  type ChallengeAttempt,
+  type ChallengeStreak,
+  type DraftResult,
+} from "../domain/activity";
+import type { ChallengeTotals, DraftTotals } from "../domain/ranking";
+
+function isDuplicateKey(e: unknown): boolean {
+  return typeof e === "object" && e !== null && "code" in e && e.code === 11000;
+}
+
+function totalsMatch(query: TotalsQuery, dateField: string): Filter<Document> {
+  const match: Filter<Document> = {};
+  if (query.since) match[dateField] = { $gte: query.since };
+  if (query.userIds) match.userId = { $in: [...query.userIds] };
+  return match;
+}
+
+export class ActivityRepository implements ActivityPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
+
+  private async attempts() {
+    return (await this.getDb()).collection<AttemptDoc>(LEADERBOARD_COLLECTIONS.attempts);
+  }
+
+  private async streaks() {
+    return (await this.getDb()).collection<StreakDoc>(LEADERBOARD_COLLECTIONS.streaks);
+  }
+
+  private async drafts() {
+    return (await this.getDb()).collection<DraftDoc>(LEADERBOARD_COLLECTIONS.drafts);
+  }
+
+  async insertAttempt(attempt: ChallengeAttempt): Promise<"inserted" | "duplicate"> {
+    try {
+      await (
+        await this.attempts()
+      ).insertOne({
+        _id: `${attempt.userId}:${attempt.type}:${attempt.seed}`,
+        ...attempt,
+        schemaVersion: SCHEMA_VERSION,
+      });
+      return "inserted";
+    } catch (e) {
+      if (isDuplicateKey(e)) return "duplicate";
+      throw e;
+    }
+  }
+
+  async applyToStreak(userId: string, correct: boolean, at: Date): Promise<ChallengeStreak> {
+    // One atomic pipeline update, so concurrent answers can't lose an increment.
+    const current = correct ? { $add: [{ $ifNull: ["$current", 0] }, 1] } : 0;
+    const streaks = await this.streaks();
+    const update = () =>
+      streaks.findOneAndUpdate(
+        { _id: userId },
+        [
+          {
+            $set: {
+              schemaVersion: SCHEMA_VERSION,
+              current,
+              updatedAt: at,
+            },
+          },
+          { $set: { best: { $max: [{ $ifNull: ["$best", 0] }, "$current"] } } },
+        ],
+        { upsert: true, returnDocument: "after" },
+      );
+    let doc: StreakDoc | null;
+    try {
+      doc = await update();
+    } catch (e) {
+      // Two first-ever answers at once: one upsert inserts, the other retries as an update.
+      if (!isDuplicateKey(e)) throw e;
+      doc = await update();
+    }
+    return doc ? { current: doc.current, best: doc.best } : NO_STREAK;
+  }
+
+  async streakOf(userId: string): Promise<ChallengeStreak> {
+    const doc = await (await this.streaks()).findOne({ _id: userId });
+    return doc ? { current: doc.current, best: doc.best } : NO_STREAK;
+  }
+
+  async insertDraft(result: DraftResult): Promise<"inserted" | "duplicate"> {
+    try {
+      await (
+        await this.drafts()
+      ).insertOne({
+        _id: `${result.userId}:${result.snapshotHash}`,
+        ...result,
+        schemaVersion: SCHEMA_VERSION,
+      });
+      return "inserted";
+    } catch (e) {
+      if (isDuplicateKey(e)) return "duplicate";
+      throw e;
+    }
+  }
+
+  async draftTotals(query: TotalsQuery): Promise<DraftTotals[]> {
+    return (await this.drafts())
+      .aggregate<DraftTotals>([
+        { $match: totalsMatch(query, "completedAt") },
+        // Best score first (numbers sort above null descending), so $first is the best draft.
+        { $sort: { userId: 1, score: -1, completedAt: 1 } },
+        {
+          $group: {
+            _id: "$userId",
+            drafts: { $sum: 1 },
+            scored: { $sum: { $cond: [{ $isNumber: "$score" }, 1, 0] } },
+            scoreSum: { $sum: { $cond: [{ $isNumber: "$score" }, "$score", 0] } },
+            // $max ignores nulls; a group with no score gives null.
+            bestScore: { $max: "$score" },
+            bestGrade: { $first: { $ifNull: ["$grade", null] } },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            userId: "$_id",
+            drafts: 1,
+            scored: 1,
+            scoreSum: 1,
+            bestScore: { $ifNull: ["$bestScore", null] },
+            bestGrade: { $ifNull: ["$bestGrade", null] },
+          },
+        },
+      ])
+      .toArray();
+  }
+
+  async challengeTotals(query: TotalsQuery): Promise<ChallengeTotals[]> {
+    return (await this.attempts())
+      .aggregate<ChallengeTotals>(
+        [
+          { $match: totalsMatch(query, "at") },
+          // Answers in the order they were given, so the streak is replayed in order.
+          { $sort: { userId: 1, at: 1, _id: 1 } },
+          {
+            $group: {
+              _id: "$userId",
+              answered: { $sum: 1 },
+              correct: { $sum: { $cond: ["$correct", 1, 0] } },
+              sequence: { $push: "$correct" },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              userId: "$_id",
+              answered: 1,
+              correct: 1,
+              // The streak rule (see domain/activity.ts) over the answers in the period.
+              bestStreak: {
+                $let: {
+                  vars: {
+                    run: {
+                      $reduce: {
+                        input: "$sequence",
+                        initialValue: { current: 0, best: 0 },
+                        in: {
+                          $let: {
+                            vars: {
+                              next: {
+                                $cond: ["$$this", { $add: ["$$value.current", 1] }, 0],
+                              },
+                            },
+                            in: {
+                              current: "$$next",
+                              best: { $max: ["$$value.best", "$$next"] },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  in: "$$run.best",
+                },
+              },
+            },
+          },
+        ],
+        { allowDiskUse: true },
+      )
+      .toArray();
+  }
+
+  async ensureIndexes(): Promise<void> {
+    const [attempts, drafts] = await Promise.all([this.attempts(), this.drafts()]);
+    await Promise.all([
+      // The first answer to a puzzle is the one that counts.
+      attempts.createIndex(
+        { userId: 1, type: 1, seed: 1 },
+        { unique: true, name: "uniq_user_puzzle" },
+      ),
+      attempts.createIndex({ at: 1 }, { name: "by_at" }),
+      attempts.createIndex({ userId: 1, at: 1 }, { name: "by_user_at" }),
+      // The same finished draft counts once per player.
+      drafts.createIndex(
+        { userId: 1, snapshotHash: 1 },
+        { unique: true, name: "uniq_user_snapshot" },
+      ),
+      drafts.createIndex({ completedAt: 1 }, { name: "by_completedAt" }),
+      drafts.createIndex({ userId: 1, completedAt: 1 }, { name: "by_user_completedAt" }),
+    ]);
+  }
+
+  /** Admin overview: finished drafts and challenge answers per user. */
+  async countsByUser(
+    userIds: readonly string[],
+  ): Promise<Map<string, { drafts: number; challenges: number }>> {
+    const db = await this.getDb();
+    const count = (name: string) =>
+      db
+        .collection(name)
+        .aggregate<{ _id: string; n: number }>([
+          { $match: { userId: { $in: [...userIds] } } },
+          { $group: { _id: "$userId", n: { $sum: 1 } } },
+        ])
+        .toArray();
+    const [drafts, challenges] = await Promise.all([
+      count(LEADERBOARD_COLLECTIONS.drafts),
+      count(LEADERBOARD_COLLECTIONS.attempts),
+    ]);
+    const out = new Map<string, { drafts: number; challenges: number }>();
+    for (const id of userIds) out.set(id, { drafts: 0, challenges: 0 });
+    for (const d of drafts) out.get(String(d._id))!.drafts = d.n;
+    for (const c of challenges) out.get(String(c._id))!.challenges = c.n;
+    return out;
+  }
+
+  /** Your challenge answers, streak and finished drafts, for "Download your data". */
+  async exportForOwner(owner: DataOwner) {
+    const [attempts, streaks, drafts] = await Promise.all([
+      (await this.attempts()).find({ userId: owner.userId }).toArray(),
+      (await this.streaks()).find({ _id: owner.userId }).toArray(),
+      (await this.drafts()).find({ userId: owner.userId }).toArray(),
+    ]);
+    return {
+      challengeAttempts: forExport(attempts),
+      challengeStreak: forExport(streaks),
+      draftResults: forExport(drafts),
+    };
+  }
+
+  async deleteForOwner(owner: DataOwner) {
+    const [attempts, streaks, drafts] = await Promise.all([
+      (await this.attempts()).deleteMany({ userId: owner.userId }),
+      (await this.streaks()).deleteMany({ _id: owner.userId }),
+      (await this.drafts()).deleteMany({ userId: owner.userId }),
+    ]);
+    return {
+      challengeAttempts: attempts.deletedCount,
+      challengeStreak: streaks.deletedCount,
+      draftResults: drafts.deletedCount,
+    };
+  }
+}

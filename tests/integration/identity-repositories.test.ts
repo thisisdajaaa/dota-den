@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SteamId64 } from "@/modules/identity/domain/steam-id";
 import { IDENTITY_COLLECTIONS } from "@/modules/identity/identity.model";
 import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
-import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { createTestDb } from "../support/mongo";
 
@@ -15,7 +15,7 @@ beforeAll(async () => {
   const getDb = async () => db;
   await Promise.all([
     new UsersRepository(getDb).ensureIndexes(),
-    new SessionsRepository(getDb).ensureIndexes(),
+    new AuthSessionsRepository(getDb).ensureIndexes(),
     new NoncesRepository(getDb).ensureIndexes(),
   ]);
 });
@@ -48,9 +48,9 @@ describe("UsersRepository", () => {
   });
 });
 
-describe("SessionsRepository", () => {
+describe("AuthSessionsRepository", () => {
   it("creates, replaces and deletes by token hash", async () => {
-    const sessions = new SessionsRepository(async () => db);
+    const sessions = new AuthSessionsRepository(async () => db);
     const now = new Date();
     const record = {
       tokenHash: "h1",
@@ -71,7 +71,7 @@ describe("SessionsRepository", () => {
   });
 
   it("rejects duplicate token hashes and has a TTL index", async () => {
-    const sessions = new SessionsRepository(async () => db);
+    const sessions = new AuthSessionsRepository(async () => db);
     const now = new Date();
     const record = {
       tokenHash: "dup",

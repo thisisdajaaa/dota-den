@@ -15,7 +15,7 @@ import {
 } from "@/modules/drafts/domain/challenges";
 import { ChallengeBoard } from "@/modules/drafts/ui/challenge-board";
 import type { DraftHero } from "@/modules/drafts/ui/types";
-import { getViewerChallengeStreak } from "@/modules/leaderboards/composition";
+import { viewerChallengeStreak } from "@/modules/leaderboards";
 
 export async function generateMetadata({
   params,
@@ -73,7 +73,7 @@ export default async function DraftChallengePage({
   const [heroMap, service, saved] = await Promise.all([
     getHeroMap(),
     getChallengeService(),
-    getViewerChallengeStreak(),
+    viewerChallengeStreak(),
   ]);
   const heroes: DraftHero[] = [...heroMap.values()]
     .map((h) => ({

@@ -1,3 +1,4 @@
+import type { Patch } from "@/modules/patches/domain/patch";
 import type { RankedHero } from "./meta-stats";
 import { POSITION_INFO, type Position } from "./position";
 
@@ -71,4 +72,22 @@ export function tipsFor(hero: RankedHero, position: Position, patch: LatestPatch
     });
   }
   return tips;
+}
+
+/** Hero notes of a patch as plain lines, in patch order (Valve's wording, never rewritten). */
+export function heroPatchChanges(patch: Pick<Patch, "sections">): Map<number, HeroPatchChange> {
+  const out = new Map<number, HeroPatchChange>();
+  for (const h of patch.sections.heroes) {
+    const lines = [
+      ...h.heroNotes.filter((n) => !n.subtitle).map((n) => n.text),
+      ...h.abilities.flatMap((a) =>
+        a.notes
+          .filter((n) => !n.subtitle)
+          .map((n) => (a.abilityName ? `${a.abilityName}: ${n.text}` : n.text)),
+      ),
+      ...h.talentNotes.filter((n) => !n.subtitle).map((n) => `Talent: ${n.text}`),
+    ].filter((l) => l.trim() !== "");
+    out.set(h.heroId, { heroId: h.heroId, lines });
+  }
+  return out;
 }

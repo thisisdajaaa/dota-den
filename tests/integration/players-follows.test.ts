@@ -1,11 +1,8 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { FollowService } from "@/modules/players/application/follow-service";
-import {
-  ensurePlayerIndexes,
-  MongoFollowRepository,
-  PLAYER_COLLECTIONS,
-} from "@/modules/players/infrastructure/mongo-follow-repository";
+import { FollowService } from "@/modules/players/services/follow.service";
+import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
+import { PLAYER_COLLECTIONS } from "@/modules/players/players.model";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -13,7 +10,7 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensurePlayerIndexes(db);
+  await new FollowsRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -31,7 +28,7 @@ describe("player follows (Mongo)", () => {
   });
 
   it("adds idempotently and keeps one document per (user, account)", async () => {
-    const repo = new MongoFollowRepository(db);
+    const repo = new FollowsRepository(async () => db);
     const follow = { userId: "u-idem", accountId32: 22202, createdAt: at("2026-09-01T00:00:00Z") };
     expect(await repo.add(follow)).toBe(true);
     expect(await repo.add({ ...follow, createdAt: at("2026-09-02T00:00:00Z") })).toBe(false);
@@ -54,7 +51,7 @@ describe("player follows (Mongo)", () => {
   });
 
   it("isolates users: listing, finding and removing are scoped by owner", async () => {
-    const repo = new MongoFollowRepository(db);
+    const repo = new FollowsRepository(async () => db);
     await repo.add({ userId: "alice", accountId32: 10, createdAt: at("2026-09-01T00:00:00Z") });
     await repo.add({ userId: "alice", accountId32: 11, createdAt: at("2026-09-03T00:00:00Z") });
     await repo.add({ userId: "bob", accountId32: 10, createdAt: at("2026-09-02T00:00:00Z") });
@@ -70,7 +67,7 @@ describe("player follows (Mongo)", () => {
   });
 
   it("works end to end with the service limit", async () => {
-    const service = new FollowService(new MongoFollowRepository(db), { limit: 2 });
+    const service = new FollowService(new FollowsRepository(async () => db), { limit: 2 });
     const owner = { userId: "carol", accountId32: 999 };
     expect((await service.follow(owner, 1)).ok).toBe(true);
     expect((await service.follow(owner, 2)).ok).toBe(true);
