@@ -4,9 +4,9 @@ import type { Instrumentation } from "next";
 export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   try {
-    const { recordError } = await import("@/modules/errors/composition");
+    const { errorsService } = await import("@/modules/errors");
     const e = err as { message?: unknown; digest?: unknown; stack?: unknown } | null;
-    await recordError({
+    await errorsService.record({
       source: "server",
       message: typeof e?.message === "string" ? e.message : String(err),
       digest: typeof e?.digest === "string" ? e.digest : null,

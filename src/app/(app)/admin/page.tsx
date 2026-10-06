@@ -7,7 +7,7 @@ import { StatTile } from "@/components/stat-tile";
 import { adminTotals } from "@/modules/admin/domain/overview";
 import { getRoomDraftCounts } from "@/modules/drafts/composition";
 import { getAdminUserRows, getCurrentUser } from "@/modules/identity/composition";
-import { getErrorGroups } from "@/modules/errors/composition";
+import { errorsService } from "@/modules/errors";
 import { getCronRuns, getRecentJobFailures } from "@/modules/jobs/composition";
 import { getActivityCounts } from "@/modules/leaderboards/composition";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
@@ -39,7 +39,7 @@ export default async function AdminPage() {
     getActivityCounts(userIds),
     getRoomDraftCounts(userIds),
     getRecentJobFailures().catch(() => []),
-    getErrorGroups(7).catch(() => null),
+    errorsService.recentGroups(7).catch(() => null),
     getCronRuns(10).catch(() => null),
     Promise.all(accountIds.map((id) => getPublicProfile(id).catch(() => null))),
   ]);

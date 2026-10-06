@@ -9,7 +9,7 @@ import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo
 import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import { ensureMatchDraftReadIndexes } from "@/modules/drafts/infrastructure/match-draft-reads";
 import { ensureDraftRoomIndexes } from "@/modules/drafts/infrastructure/mongo-draft-rooms";
-import { ensureErrorIndexes } from "@/modules/errors/infrastructure/mongo-error-log";
+import { ErrorsRepository } from "@/modules/errors/errors.repository";
 import { ensureCronRunIndexes } from "@/modules/jobs/infrastructure/mongo-cron-runs";
 import { ensureJobIndexes } from "@/modules/jobs/infrastructure/mongo-job-runs";
 import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   await new AnnotationsRepository(async () => db).ensureIndexes();
   await new GoalsRepository(async () => db).ensureIndexes();
   await ensureIdentityIndexes(db);
-  await ensureErrorIndexes(db);
+  await new ErrorsRepository(async () => db).ensureIndexes();
   await ensureJobIndexes(db);
   await ensureCronRunIndexes(db);
   await ensureDraftRoomIndexes(db);

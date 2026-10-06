@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, isSameOrigin, requestId } from "@/common/http/http";
 import { logger } from "@/common/logging/logger";
-import { recordError } from "@/modules/errors/composition";
+import { errorsService } from "@/modules/errors";
 import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
 import { enqueueMatchBackfill } from "@/modules/jobs/composition";
 import { getMatchSyncService } from "@/modules/matches/composition";
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return apiError("conflict", "A sync is already running for this account.");
     case "provider": {
       // Not a bug, but worth seeing on the admin page (logs are short-lived on Vercel).
-      await recordError({
+      await errorsService.record({
         source: "server",
         kind: "sync",
         message: `Match sync failed: ${error.error.type}`,
