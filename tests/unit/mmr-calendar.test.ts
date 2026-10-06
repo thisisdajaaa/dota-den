@@ -11,7 +11,7 @@ import {
   daysBetween,
   isValidTimeZone,
   weekday,
-} from "@/modules/mmr/domain/day-key";
+} from "@/common/time/day-key";
 
 const utc = dayKeyFormatter("UTC");
 const at = (iso: string) => new Date(iso);

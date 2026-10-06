@@ -11,7 +11,7 @@ import {
   validateReview,
 } from "@/modules/drafts/domain/draft-review";
 import { GroqDraftAdvisor } from "@/modules/drafts/infrastructure/groq-draft-advisor";
-import { err, ok } from "@/modules/shared/domain/result";
+import { err, ok } from "@/common/result";
 
 const heroes: AiHero[] = Array.from({ length: 40 }, (_, i) => ({
   id: i + 1,

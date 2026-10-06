@@ -1,5 +1,5 @@
 import type { LaneGame } from "@/modules/meta";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { HeroGame, ItemMeta, MatchupRow } from "../domain/hero-stats";
 
 export type SourceError =

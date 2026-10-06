@@ -10,7 +10,7 @@
  * Grading reuses `rankCandidates` (the same numbers as the AI captain) and reports a band,
  * the evidence behind it and the best alternatives. It never outputs a win probability.
  */
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import {
   canSupport,
   CORE_SLOTS,

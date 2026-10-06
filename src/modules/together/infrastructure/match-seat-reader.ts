@@ -1,4 +1,4 @@
-import { ok, type Result } from "@/modules/shared/domain/result";
+import { ok, type Result } from "@/common/result";
 import type { MatchDetailProvider } from "@/modules/matches/application/ports";
 import type { Seat } from "../domain/relation";
 import type { MatchSeatReader, MatchSeats, ProviderError } from "../application/ports";

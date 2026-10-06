@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { HeroesService } from "@/modules/heroes/application/heroes-service";
 import { getHeroesService } from "@/modules/heroes/composition";
 import { buildVsPros } from "@/modules/heroes/domain/build-vs-pros";
@@ -21,8 +21,8 @@ import {
 } from "@/modules/heroes/ui/hero-sections";
 import { BuildCard } from "@/modules/heroes/ui/build-card";
 import { ProgressCard } from "@/modules/heroes/ui/progress-card";
-import { getProCoreItems } from "@/modules/guides/composition";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { guideService } from "@/modules/guides";
+import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
 import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
@@ -274,9 +274,9 @@ async function BuildSection({
     getItemMap().catch((): Map<number, ItemInfo> => new Map()),
   ]);
   if (!res.ok || !res.value.items?.enough || items.size === 0) return null;
-  const pro = await getProCoreItems(heroId, (id) => items.get(id)?.qual === "consumable").catch(
-    () => null,
-  );
+  const pro = await guideService
+    .proCoreItems(heroId, (id) => items.get(id)?.qual === "consumable")
+    .catch(() => null);
   if (!pro) return null;
   const rows = buildVsPros(pro, (id) => items.get(id)?.key, res.value.items.shares);
   if (rows.length === 0) return null;

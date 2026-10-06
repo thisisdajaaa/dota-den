@@ -1,4 +1,4 @@
-import { ok, type Result } from "@/modules/shared/domain/result";
+import { ok, type Result } from "@/common/result";
 import { otherOf, pairOf, resultFor, type PairClassification } from "../domain/pair";
 import { classifyRelation, type Relation } from "../domain/relation";
 import {

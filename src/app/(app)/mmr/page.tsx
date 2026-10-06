@@ -6,7 +6,7 @@ import { LocalTime } from "@/components/local-time";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { toMmrEntryDto } from "@/modules/mmr/application/contracts";
@@ -22,7 +22,7 @@ import {
   ESTIMATE_PER_GAME,
   type QueueScope,
 } from "@/modules/mmr/domain/calendar";
-import { dayKeyFormatter, type DayKey } from "@/modules/mmr/domain/day-key";
+import { dayKeyFormatter, type DayKey } from "@/common/time/day-key";
 import { climbByHero } from "@/modules/mmr/domain/hero-climb";
 import { isDayKey, periodFor, type CalendarView } from "@/modules/mmr/domain/periods";
 import { CalendarLegend } from "@/modules/mmr/ui/calendar-legend";

@@ -1,5 +1,5 @@
-import { ESTIMATE_PER_GAME } from "@/modules/mmr";
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { ESTIMATE_PER_GAME } from "@/modules/mmr/domain/calendar";
+import { err, ok, type Result } from "@/common/result";
 import {
   DEFAULT_GAP_MINUTES,
   groupSessions,

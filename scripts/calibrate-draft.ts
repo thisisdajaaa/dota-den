@@ -30,7 +30,7 @@ import { draftOutlook } from "@/modules/drafts/domain/draft-outlook";
 import { CRITERIA } from "@/modules/drafts/domain/draft-report";
 import type { MatchupTable, ScoringHero } from "@/modules/drafts/domain/draft-scoring";
 import { OpenDotaDraftInsights } from "@/modules/drafts/infrastructure/opendota-draft-insights";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 
 const BASE = process.env.OPENDOTA_BASE_URL ?? "https://api.opendota.com/api";
 const KEY = process.env.OPENDOTA_API_KEY;

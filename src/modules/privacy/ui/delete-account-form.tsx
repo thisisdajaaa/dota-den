@@ -1,5 +1,6 @@
 "use client";
 
+import { apiRequest } from "@/common/http/api-client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
@@ -21,12 +22,7 @@ export function DeleteAccountForm() {
         setBusy(true);
         setError(null);
         try {
-          const res = await fetch("/api/v1/me/delete", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ confirm: "DELETE" }),
-          });
-          if (!res.ok) throw new Error();
+          await apiRequest("/api/v1/me/delete", { method: "POST", body: { confirm: "DELETE" } });
           // Signed out now: refresh so the app shell drops the account.
           router.replace("/?deleted=1");
           router.refresh();

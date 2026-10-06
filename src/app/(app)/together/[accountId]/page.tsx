@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
 import { getPublicProfile } from "@/modules/players/composition";
 import { parseAccountId } from "@/modules/players/domain/player-lookup";

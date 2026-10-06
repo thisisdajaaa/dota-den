@@ -3,8 +3,8 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { env } from "@/lib/env";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { env } from "@/common/config/env";
+import { getCurrentUser } from "@/modules/identity";
 import { NewRoomForm } from "@/modules/drafts/ui/new-room-form";
 
 export const metadata: Metadata = { title: "New draft room" };

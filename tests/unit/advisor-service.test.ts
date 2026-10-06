@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { AdvisorService, type AdvisorSources } from "@/modules/advisor/application/advisor-service";
+import type { AdvisorSources } from "@/modules/advisor/advisor.ports";
+import { AdvisorService } from "@/modules/advisor/advisor.service";
 
 const sources = (over: Partial<AdvisorSources> = {}): AdvisorSources => ({
   poolRows: async () => [

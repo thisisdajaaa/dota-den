@@ -1,6 +1,6 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import { parseSteamId64, type SteamId64 } from "../domain/steam-id";
-import type { IdentityProvider, IdentityVerificationError, NonceStore } from "../application/ports";
+import type { IdentityProvider, IdentityVerificationError, NonceStore } from "../identity.ports";
 
 export const STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/login";
 const OPENID_NS = "http://specs.openid.net/auth/2.0";

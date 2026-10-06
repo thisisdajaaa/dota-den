@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { User } from "@/modules/identity/domain/user";
 import { getHeroMap } from "@/modules/matches/composition";
 import { formatPercent } from "@/modules/matches/ui/format";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseEnv } from "@/lib/env";
+import { parseEnv } from "@/common/config/env";
 
 const base = { APP_URL: "http://localhost:3000", MONGODB_URI: "mongodb://localhost:27017" };
 

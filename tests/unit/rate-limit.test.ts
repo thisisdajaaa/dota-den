@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/redis", () => ({ getRedis: () => null }));
+vi.mock("@/common/cache/redis", () => ({ getRedis: () => null }));
 
 const { limitWith, memoryRateLimit, rateLimit, UpstashRateLimiter } =
-  await import("@/lib/rate-limit");
+  await import("@/common/http/rate-limit");
 
 describe("rate limiting", () => {
   it("uses the per-instance window without Redis", async () => {

@@ -1,0 +1,97 @@
+import "server-only";
+import { Client, Receiver } from "@upstash/qstash";
+import { after } from "next/server";
+import { env } from "@/common/config/env";
+import { getDb } from "@/common/db/mongo";
+import { logger } from "@/common/logging/logger";
+import { draftInsights } from "@/modules/drafts/composition";
+import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/application/match-sync-service";
+import { getMatchSyncService, getPlayerProfile } from "@/modules/matches/composition";
+import { warmMetaCaches } from "@/modules/meta/composition";
+import { recordMedal } from "@/modules/mmr/composition";
+import { getPatchImportService } from "@/modules/patches/composition";
+import { InlineJobQueue } from "./infrastructure/inline-job-queue";
+import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
+import { JobsController } from "./jobs.controller";
+import type { JobQueue, MatchSyncPort } from "./jobs.ports";
+import { CronRunsRepository } from "./repositories/cron-runs.repository";
+import { JobRunsRepository } from "./repositories/job-runs.repository";
+import { CronService } from "./services/cron.service";
+import { JobRunner } from "./services/job-runner.service";
+import { JobsService } from "./services/jobs.service";
+
+export const jobRunsRepository = new JobRunsRepository(getDb);
+export const cronRunsRepository = new CronRunsRepository(getDb);
+
+const matches: MatchSyncPort = {
+  sync: async (id) => (await getMatchSyncService()).sync(id),
+  syncDue: async (opts) => (await getMatchSyncService()).syncDue(opts),
+};
+
+/** QStash when configured (durable, retried, can wait); otherwise in-process after the response. */
+function jobQueue(): JobQueue {
+  const { QSTASH_TOKEN, QSTASH_URL, APP_URL, VERCEL_AUTOMATION_BYPASS_SECRET: bypass } = env();
+  if (QSTASH_TOKEN) {
+    return new QStashJobQueue(new Client({ token: QSTASH_TOKEN, baseUrl: QSTASH_URL }), {
+      appUrl: APP_URL,
+      // Vercel deployment protection (staging) needs the automation bypass header.
+      headers: bypass ? { "x-vercel-protection-bypass": bypass } : undefined,
+    });
+  }
+  return new InlineJobQueue({
+    run: async (name, payload, dedupKey) => {
+      const outcome = await jobRunner.run(name, payload, dedupKey);
+      if (outcome.status === "failed") logger.warn("job_failed", { name, error: outcome.error });
+    },
+    schedule: (task) => after(task),
+  });
+}
+
+const warmDraftData = async () => (await draftInsights()).warm();
+
+export const jobsService = new JobsService({
+  queue: jobQueue,
+  matches,
+  backfillCooldownMs: BACKFILL_COOLDOWN_MS,
+  warmDraftData,
+  logger,
+});
+
+export const jobRunner = new JobRunner({
+  handlers: jobsService.handlers(),
+  runs: jobRunsRepository,
+});
+
+export const cronService = new CronService({
+  runs: cronRunsRepository,
+  matches,
+  medals: {
+    currentRankTier: async (id) => {
+      const profile = await getPlayerProfile(id);
+      return profile ? { rankTier: profile.rankTier } : null;
+    },
+    record: recordMedal,
+  },
+  patches: { importLatest: async () => (await getPatchImportService()).importLatest() },
+  caches: { warmDraftData, warmMeta: warmMetaCaches },
+  queue: jobQueue,
+  logger,
+});
+
+/** Verifies QStash signatures; null when QStash isn't configured. */
+function qstashReceiver(): Receiver | null {
+  const { QSTASH_TOKEN, QSTASH_CURRENT_SIGNING_KEY, QSTASH_NEXT_SIGNING_KEY } = env();
+  if (!QSTASH_TOKEN || !QSTASH_CURRENT_SIGNING_KEY) return null;
+  return new Receiver({
+    currentSigningKey: QSTASH_CURRENT_SIGNING_KEY,
+    nextSigningKey: QSTASH_NEXT_SIGNING_KEY ?? QSTASH_CURRENT_SIGNING_KEY,
+  });
+}
+
+export const jobsController = new JobsController({
+  runner: () => jobRunner,
+  cron: cronService,
+  verifier: qstashReceiver,
+  appUrl: () => env().APP_URL,
+  logger,
+});

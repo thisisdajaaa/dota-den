@@ -1,13 +1,4 @@
-/** Your tags and note on one of your matches (pure). Private to you, like session notes. */
-
-export interface MatchAnnotation {
-  userId: string;
-  accountId32: number;
-  matchId: string;
-  tags: string[];
-  note: string;
-  updatedAt: Date;
-}
+/** Tag and note rules for your match annotations (pure). Private to you, like session notes. */
 
 export const MAX_TAGS = 6;
 export const MAX_TAG_LENGTH = 20;

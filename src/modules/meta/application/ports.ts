@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { DuoRow } from "../domain/lane-duos";
 import type { HeroPublicStats, LaneStats, ProDrafts } from "../domain/meta-stats";
 import type { LaneGame } from "../domain/position";

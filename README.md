@@ -254,7 +254,7 @@ environment with its own secrets. Details: [docs/operations.md](docs/operations.
 
 ## Configuration
 
-All configuration is environment variables, validated at startup (`src/lib/env.ts`). The required ones are
+All configuration is environment variables, validated at startup (`src/common/config/env.ts`). The required ones are
 `APP_URL` and `MONGODB_URI`; everything else has a safe default or turns a feature off. The full reference, including
 operator tuning (rate limits, room caps, caches, timeouts) and the optional Redis and background-job settings, is in
 [docs/configuration.md](docs/configuration.md). `.env.example` lists every variable with its default.

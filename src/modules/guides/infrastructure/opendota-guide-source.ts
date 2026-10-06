@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
-import type { GuideSource } from "../application/guide-service";
+import type { ProviderGateway } from "@/common/providers/provider-gateway";
+import type { GuideSource } from "../guides.ports";
 import type { MatchupRow, Phase, ProGame } from "../domain/hero-guide";
 
 const HOUR = 3_600_000;

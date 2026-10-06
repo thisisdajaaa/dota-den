@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getHeroMap } from "@/modules/matches/composition";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 
 const AUTH_ERRORS: Record<string, string> = {
   state_mismatch: "Your sign-in session expired or was started in another tab. Please try again.",

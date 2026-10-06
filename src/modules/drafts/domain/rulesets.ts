@@ -6,7 +6,7 @@
  * `getRuleset` (the factory) resolves exactly that version, so changing the live
  * game's order means adding a new version, never editing an old one in place.
  */
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 
 /** Draft-relative team: "first" is whichever side has first pick. */
 export type DraftTeam = "first" | "second";

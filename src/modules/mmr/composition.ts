@@ -1,12 +1,10 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { cookies } from "next/headers";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import { MmrJournalService } from "./application/mmr-journal-service";
 import { GroqScreenshotReader } from "./infrastructure/groq-screenshot-reader";
-import { isValidTimeZone } from "./domain/day-key";
 import { medalHistory, recordMedalSighting } from "./infrastructure/mongo-medal-history";
 import {
   MongoMmrEntryRepository,
@@ -14,18 +12,10 @@ import {
 } from "./infrastructure/mongo-mmr-repository";
 import * as userData from "./infrastructure/user-data";
 
-export const TZ_COOKIE = "dd_tz";
+export { getViewerTimeZone, TZ_COOKIE } from "@/common/http/request-context";
 
 export async function getMmrJournal(): Promise<MmrJournalService> {
   return new MmrJournalService(new MongoMmrEntryRepository(await getDb()));
-}
-
-/** Viewer's IANA time zone from the cookie the browser sets; UTC until it's known. */
-export async function getViewerTimeZone(): Promise<{ timeZone: string; known: boolean }> {
-  const tz = (await cookies()).get(TZ_COOKIE)?.value;
-  return tz && isValidTimeZone(tz)
-    ? { timeZone: tz, known: true }
-    : { timeZone: "UTC", known: false };
 }
 
 /** Admin overview: MMR entries per user. */

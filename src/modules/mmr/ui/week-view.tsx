@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
 import type { Calendar } from "../domain/calendar";
-import { daysBetween, type DayKey } from "../domain/day-key";
+import { daysBetween, type DayKey } from "@/common/time/day-key";
 import { basisOf, dayStyle, deltaLabel, periodScale } from "./day-tone";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

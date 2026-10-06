@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { apiLimitArgs } from "@/lib/api-limits";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { apiLimitArgs } from "@/common/http/api-limits";
+import { clientKey, rateLimit } from "@/common/http/rate-limit";
 import { decodeSnapshot } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent } from "@/modules/drafts/composition";
 

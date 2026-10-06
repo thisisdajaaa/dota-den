@@ -16,7 +16,7 @@ schema versioning. Validation already uses Zod at every trust boundary.
     Zod and domain types and tempt UI or domain code to import models.
   - The driver gives us direct control of `updateOne(..., { upsert })`,
     `findOneAndUpdate` with a `stateVersion` guard, and transactions.
-- `src/lib/db/mongo.ts` exposes `getDb()`. The `MongoClient` is cached on
+- `src/common/db/mongo.ts` exposes `getDb()`. The `MongoClient` is cached on
   `globalThis` per warm instance (and across HMR in dev), with
   `maxPoolSize` set by `MONGODB_MAX_POOL_SIZE` (default 10, suited to
   serverless).

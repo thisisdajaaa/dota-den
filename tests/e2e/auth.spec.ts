@@ -25,7 +25,10 @@ test("sign in with the test identity provider, survive reload, then sign out", a
 
   const me = await page.request.get("/api/v1/me");
   expect(me.status()).toBe(200);
-  expect(await me.json()).toMatchObject({ steamId64: "76561197960287930", accountId32: 22202 });
+  expect(await me.json()).toMatchObject({
+    success: true,
+    data: { steamId64: "76561197960287930", accountId32: 22202 },
+  });
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/\?bye=1$/);

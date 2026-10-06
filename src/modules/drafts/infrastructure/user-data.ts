@@ -1,5 +1,5 @@
 import type { Db } from "mongodb";
-import { forExport, type DataOwner } from "@/modules/shared/infrastructure/user-data";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import { DRAFT_HISTORY_COLLECTION } from "./mongo-draft-history";
 
 export async function exportUserData(db: Db, owner: DataOwner) {

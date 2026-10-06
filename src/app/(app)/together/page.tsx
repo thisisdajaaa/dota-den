@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getTogetherCandidates } from "@/modules/together/composition";
 import { FriendList } from "@/modules/together/ui/friend-list";
 import { StacksCard } from "@/modules/together/ui/stacks-card";

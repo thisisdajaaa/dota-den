@@ -1,6 +1,6 @@
 # ADR 0004 — Modular monolith boundaries
 
-- Status: Accepted
+- Status: Superseded in part by ADR 0009 (layout and import rules)
 - Date: 2026-09-29
 
 ## Decision

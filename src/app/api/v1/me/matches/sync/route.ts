@@ -1,15 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError, isSameOrigin, requestId } from "@/lib/http";
-import { logger } from "@/lib/logger";
-import { recordError } from "@/modules/errors/composition";
-import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
-import { enqueueMatchBackfill } from "@/modules/jobs/composition";
+import { apiError, isSameOrigin, requestId } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
+import { errorsService } from "@/modules/errors";
+import { authService, SESSION_COOKIE } from "@/modules/identity";
+import { jobsService } from "@/modules/jobs";
 import { getMatchSyncService } from "@/modules/matches/composition";
 
 /** Sync the signed-in user's own matches from OpenDota. Cooldown and per-account lock apply. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  const auth = await getAuthService();
+  const auth = authService;
   const session = await auth.resolveSession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return apiError("unauthorized", "Not signed in");
 
@@ -23,9 +23,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     logger.info("match_sync_completed", { ...log, ...result.value });
     // With a durable queue, the rest of a long history keeps importing in the background.
     if (!result.value.backfillComplete) {
-      await enqueueMatchBackfill(accountId32).catch((error: unknown) =>
-        logger.warn("match_backfill_enqueue_failed", { ...log, error }),
-      );
+      await jobsService
+        .enqueueMatchBackfill(accountId32)
+        .catch((error: unknown) => logger.warn("match_backfill_enqueue_failed", { ...log, error }));
     }
     return NextResponse.json(result.value);
   }
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return apiError("conflict", "A sync is already running for this account.");
     case "provider": {
       // Not a bug, but worth seeing on the admin page (logs are short-lived on Vercel).
-      await recordError({
+      await errorsService.record({
         source: "server",
         kind: "sync",
         message: `Match sync failed: ${error.error.type}`,

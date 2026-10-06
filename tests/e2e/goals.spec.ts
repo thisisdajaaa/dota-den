@@ -50,5 +50,15 @@ test("goals need a session, the same origin and valid goals", async ({ request, 
       })
     ).status(),
   ).toBe(400);
-  expect((await put({ goals: [{ type: "winRate", target: 55 }] })).status()).toBe(200);
+  const bad = await put({ goals: [{ type: "winRate", target: 101 }] });
+  expect(await bad.json()).toMatchObject({ success: false, code: "bad_request", data: null });
+  const ok = await put({ goals: [{ type: "winRate", target: 55 }] });
+  expect(ok.status()).toBe(200);
+  // The ServiceResponse envelope (ADR 0009).
+  expect(await ok.json()).toMatchObject({
+    success: true,
+    message: "Goals saved",
+    statusCode: 200,
+    data: { goals: [{ type: "winRate", target: 55 }] },
+  });
 });

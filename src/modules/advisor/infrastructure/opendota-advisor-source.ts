@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import type { ProviderGateway } from "@/common/providers/provider-gateway";
 import type { MatchupTable, PoolRow } from "../domain/pool-advice";
 
 const HOUR = 3_600_000;

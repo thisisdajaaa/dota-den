@@ -4,7 +4,9 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { Button } from "@/components/ui/button";
+import type { AnnotationDto } from "../dtos/responses/annotation.dto";
 import { MAX_NOTE_LENGTH, MAX_TAGS, normalizeTag, SUGGESTED_TAGS } from "../domain/annotation";
 
 /** Tag your match and leave yourself a note. Private to you. */
@@ -34,19 +36,16 @@ export function MatchNotesCard({
   async function save() {
     setBusy(true);
     try {
-      const res = await fetch(`/api/v1/me/matches/${matchId}/annotation`, {
+      const body = await apiRequest<AnnotationDto>(`/api/v1/me/matches/${matchId}/annotation`, {
         method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tags, note }),
+        body: { tags, note },
       });
-      if (!res.ok) throw new Error();
-      const body = (await res.json()) as { tags: string[]; note: string };
       setTags(body.tags);
       setNote(body.note);
       setSaved(body);
       toast.success("Saved");
-    } catch {
-      toast.error("Couldn't save. Try again.");
+    } catch (e) {
+      toast.error(e instanceof ApiClientError ? e.message : "Couldn't save. Try again.");
     } finally {
       setBusy(false);
     }

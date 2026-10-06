@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import { assignPatch, type PatchTimelineEntry } from "../domain/patch-assignment";
 import type { PlayerMatchFact } from "../domain/player-match-fact";
 import { classifyQueue, isRanked } from "../domain/queue-classification";

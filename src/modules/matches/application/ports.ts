@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { MatchDetail } from "../domain/match-detail";
 import type { MatchListFilter } from "./match-list-filter";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";

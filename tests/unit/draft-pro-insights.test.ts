@@ -6,7 +6,7 @@ import {
   toProMeta,
   toSynergy,
 } from "@/modules/drafts/infrastructure/opendota-draft-insights";
-import type { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import type { ProviderGateway } from "@/common/providers/provider-gateway";
 
 const HOUR = 3_600_000;
 const heroRows = { rows: [{ hero_id: 5, picks: "10", bans: 4, wins: 6 }], err: null };

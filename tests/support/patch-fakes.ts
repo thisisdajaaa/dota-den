@@ -7,8 +7,8 @@ import type {
 } from "@/modules/patches/application/ports";
 import type { Patch } from "@/modules/patches/domain/patch";
 import { ValvePatchAdapter } from "@/modules/patches/infrastructure/valve-patch-adapter";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
-import { err, ok } from "@/modules/shared/domain/result";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
+import { err, ok } from "@/common/result";
 import { PATCH_LIST, patchDetail } from "../fixtures/valve-patches";
 
 /**

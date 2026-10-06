@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { LiveService, type LiveSource } from "@/modules/live/application/live-service";
+import { LiveService } from "@/modules/live/live.service";
+import { type LiveSource } from "@/modules/live/live.ports";
 import {
   clock,
   draftComplete,

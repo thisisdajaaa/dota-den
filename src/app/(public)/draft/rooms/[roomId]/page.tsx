@@ -7,7 +7,7 @@ import {
 } from "@/modules/drafts/composition";
 import { eventView, roomView } from "@/modules/drafts/room-http";
 import { RoomClient, RoomNotAvailable } from "@/modules/drafts/ui/room-client";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 
 export const metadata: Metadata = { title: "Draft room" };
 

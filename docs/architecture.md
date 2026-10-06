@@ -21,7 +21,7 @@ A module never imports another module's infrastructure. Cross-context reuse goes
 Contexts: `identity`, `matches`, `mmr`, `sessions`, `together`, `players`, `heroes`, `meta`, `patches`, `drafts`,
 `leaderboards`, plus `shared` (result types, the provider gateway).
 
-Configuration is read only in composition roots and infrastructure (`src/lib/env.ts`), and passed into services and
+Configuration is read only in composition roots and infrastructure (`src/common/config/env.ts`), and passed into services and
 adapters through constructors, so domain code stays pure and testable.
 
 ## Routes

@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { ChallengeAttempt, ChallengeStreak, DraftResult } from "../domain/activity";
 import type { OutlookLike } from "../domain/draft-score";
 import type { ChallengeTotals, DraftTotals, RoomTotals } from "../domain/ranking";

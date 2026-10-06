@@ -1,9 +1,9 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
+import type { DataOwner } from "@/common/privacy/user-data";
 import { createHash } from "node:crypto";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import {
   decodeSnapshot,
   encodeSnapshot,
@@ -11,12 +11,7 @@ import {
   snapshotOf,
 } from "@/modules/drafts/application/snapshot";
 import { getAiOpponent, getDraftHistoryService } from "@/modules/drafts/composition";
-import {
-  findUsersByAccountIds,
-  findPublicUserIds,
-  findUsersByIds,
-  getCurrentUser,
-} from "@/modules/identity/composition";
+import { getCurrentUser, usersService } from "@/modules/identity";
 import type { User } from "@/modules/identity/domain/user";
 import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ownerOf } from "@/modules/players/application/follow-service";
@@ -25,7 +20,7 @@ import {
   getPlayerDirectory,
   getPublicProfile,
 } from "@/modules/players/composition";
-import { err, ok } from "@/modules/shared/domain/result";
+import { err, ok } from "@/common/result";
 import { ActivityService } from "./application/activity-service";
 import { LeaderboardService } from "./application/leaderboard-service";
 import type {
@@ -92,9 +87,9 @@ const toAccount = (u: User): PlayerAccount => ({
 });
 
 const accounts: AccountDirectory = {
-  byUserIds: async (ids) => (await findUsersByIds(ids)).map(toAccount),
-  byAccountIds: async (ids) => (await findUsersByAccountIds(ids)).map(toAccount),
-  publicUserIds: () => findPublicUserIds(env().LEADERBOARD_EVERYONE_MAX_PLAYERS),
+  byUserIds: async (ids) => (await usersService.findByIds(ids)).map(toAccount),
+  byAccountIds: async (ids) => (await usersService.findByAccountIds(ids)).map(toAccount),
+  publicUserIds: () => usersService.findPublicIds(env().LEADERBOARD_EVERYONE_MAX_PLAYERS),
 };
 
 /**

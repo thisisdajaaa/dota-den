@@ -1,6 +1,6 @@
 # Configuration
 
-All configuration is environment variables, parsed and validated once at startup by `src/lib/env.ts` (Zod). An invalid
+All configuration is environment variables, parsed and validated once at startup by `src/common/config/env.ts` (Zod). An invalid
 value stops the app with a message that names the variable (never its value). Empty strings count as unset.
 
 Only composition roots and infrastructure read the env; services and domain code receive values through their
@@ -47,7 +47,7 @@ constructors. `.env.example` lists every variable with its default.
 
 All optional; each default is the value the app used before it became configurable.
 
-**Rate limits** (per client IP; per minute unless noted). Read by `src/lib/api-limits.ts` and passed to `rateLimit()`.
+**Rate limits** (per client IP; per minute unless noted). Read by `src/common/http/api-limits.ts` and passed to `rateLimit()`.
 
 | Variable                               | Default | Routes                                            |
 | -------------------------------------- | ------- | ------------------------------------------------- |
