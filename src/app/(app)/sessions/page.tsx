@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap } from "@/modules/matches/composition";
 import { ESTIMATE_PER_GAME } from "@/modules/mmr/domain/calendar";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
-import { getSessionService } from "@/modules/sessions/composition";
+import { sessionService } from "@/modules/sessions";
 import { EarlierNotes } from "@/modules/sessions/ui/earlier-notes";
 import { GapSelector } from "@/modules/sessions/ui/gap-selector";
 import { SessionList } from "@/modules/sessions/ui/session-list";
@@ -28,11 +28,8 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
   const requested = Number.parseInt(one((await searchParams).page) ?? "1", 10);
   const owner = { userId: user.id, accountId32: user.accountId32 };
 
-  const [service, heroes, { timeZone }] = await Promise.all([
-    getSessionService(),
-    getHeroMap(),
-    getViewerTimeZone(),
-  ]);
+  const service = sessionService;
+  const [heroes, { timeZone }] = await Promise.all([getHeroMap(), getViewerTimeZone()]);
   const [page, tilt] = await Promise.all([
     service.list(owner, Number.isFinite(requested) ? requested : 1),
     service.tilt(owner).catch(() => null),

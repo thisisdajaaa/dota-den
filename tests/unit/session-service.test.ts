@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type {
-  SessionNoteRepository,
-  SessionSettingsRepository,
-} from "@/modules/sessions/application/ports";
-import { SessionService } from "@/modules/sessions/application/session-service";
+import type { SessionNotesPort, SessionSettingsPort } from "@/modules/sessions/sessions.ports";
+import { SessionService } from "@/modules/sessions/sessions.service";
 import type { GapMinutes, SessionMatch } from "@/modules/sessions/domain/session";
 import type { SessionNote } from "@/modules/sessions/domain/session-note";
 
@@ -29,7 +26,7 @@ function match(i: number, startMs: number): SessionMatch {
 function build(matches: SessionMatch[]) {
   const notes = new Map<string, SessionNote>();
   let gap: GapMinutes | null = null;
-  const noteRepo: SessionNoteRepository = {
+  const noteRepo: SessionNotesPort = {
     async upsert(n) {
       notes.set(`${n.userId}|${n.sessionId}`, n);
       return n;
@@ -46,7 +43,7 @@ function build(matches: SessionMatch[]) {
       );
     },
   };
-  const settings: SessionSettingsRepository = {
+  const settings: SessionSettingsPort = {
     async getGap() {
       return gap;
     },

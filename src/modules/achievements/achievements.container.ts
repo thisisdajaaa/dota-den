@@ -1,12 +1,12 @@
 import "server-only";
 import { getActivityCounts } from "@/modules/leaderboards";
 import { getMmrJournal } from "@/modules/mmr";
-import { getSessionService } from "@/modules/sessions";
+import { sessionService } from "@/modules/sessions";
 import { AchievementsService } from "./achievements.service";
 
 export const achievementsService = new AchievementsService({
   sessions: {
-    rankedSessions: async (owner) => (await getSessionService()).rankedSessions(owner),
+    rankedSessions: async (owner) => sessionService.rankedSessions(owner),
   },
   mmr: {
     entryTimes: async (owner) =>

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   SessionGapInputSchema,
   SessionNoteInputSchema,
-  toSessionNoteDto,
-} from "@/modules/sessions/application/contracts";
+} from "@/modules/sessions/schemas/sessions.schema";
+import { toSessionNoteDto } from "@/modules/sessions/dtos/responses/session-note.dto";
 
 describe("SessionNoteInputSchema", () => {
   it("trims text and normalises an empty goal-met choice to null", () => {

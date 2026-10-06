@@ -1,13 +1,11 @@
 import { logger } from "@/common/logging/logger";
 import type { User } from "@/modules/identity/domain/user";
-import { getSessionService } from "@/modules/sessions/composition";
+import { sessionService } from "@/modules/sessions";
 import { TiltWarningCard } from "@/modules/sessions/ui/tilt-cards";
 
 async function warningFor(user: User) {
   try {
-    const tilt = await (
-      await getSessionService()
-    ).tilt({ userId: user.id, accountId32: user.accountId32 });
+    const tilt = await sessionService.tilt({ userId: user.id, accountId32: user.accountId32 });
     return tilt.warning;
   } catch (error) {
     logger.warn("tilt_check_failed", { error });

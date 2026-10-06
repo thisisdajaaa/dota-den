@@ -11,8 +11,8 @@ import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MatchRows } from "@/modules/matches/ui/recent-matches-card";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
-import { toSessionNoteDto } from "@/modules/sessions/application/contracts";
-import { getSessionService } from "@/modules/sessions/composition";
+import { toSessionNoteDto } from "@/modules/sessions/dtos/responses/session-note.dto";
+import { sessionService } from "@/modules/sessions";
 import { sessionIdFromParam, type GamePick } from "@/modules/sessions/domain/session";
 import {
   formatSpan,
@@ -33,11 +33,8 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
   const sessionId = sessionIdFromParam((await params).sessionId);
   if (!sessionId) notFound();
 
-  const [service, heroes, { timeZone }] = await Promise.all([
-    getSessionService(),
-    getHeroMap(),
-    getViewerTimeZone(),
-  ]);
+  const service = sessionService;
+  const [heroes, { timeZone }] = await Promise.all([getHeroMap(), getViewerTimeZone()]);
   const detail = await service.detail(
     { userId: user.id, accountId32: user.accountId32 },
     sessionId,

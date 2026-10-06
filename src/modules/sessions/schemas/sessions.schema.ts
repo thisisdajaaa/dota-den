@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { GAP_OPTIONS, isGapMinutes, type GapMinutes } from "../domain/session";
-import { GOAL_MAX, GOAL_MET_VALUES, NOTE_MAX, type SessionNote } from "../domain/session-note";
-
-/** Note saves allowed per user per minute. */
-export const NOTE_SAVES_PER_MINUTE = 30;
-/** Gap setting changes allowed per user per minute. */
-export const GAP_CHANGES_PER_MINUTE = 20;
+import { GOAL_MAX, GOAL_MET_VALUES, NOTE_MAX } from "../domain/session-note";
 
 /**
  * PUT /api/v1/sessions/[sessionId]/notes. Shared by the browser form (instant feedback)
@@ -51,22 +46,3 @@ export const SessionGapInputSchema = z
   .strict();
 
 export type SessionGapInput = z.output<typeof SessionGapInputSchema>;
-
-export interface SessionNoteDto {
-  sessionId: string;
-  note: string;
-  goal: string;
-  goalMet: SessionNote["goalMet"];
-  updatedAt: string;
-}
-
-/** Never exposes the owner's user id. */
-export function toSessionNoteDto(n: SessionNote): SessionNoteDto {
-  return {
-    sessionId: n.sessionId,
-    note: n.note,
-    goal: n.goal,
-    goalMet: n.goalMet,
-    updatedAt: n.updatedAt.toISOString(),
-  };
-}

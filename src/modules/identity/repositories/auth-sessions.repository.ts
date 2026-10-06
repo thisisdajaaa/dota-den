@@ -8,7 +8,7 @@ import {
 } from "../identity.model";
 import type { SessionRecord, SessionRepository } from "../identity.ports";
 
-export class SessionsRepository implements SessionRepository {
+export class AuthSessionsRepository implements SessionRepository {
   constructor(private readonly getDb: () => Promise<Db>) {}
 
   private async col() {

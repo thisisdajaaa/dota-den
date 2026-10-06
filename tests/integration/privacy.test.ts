@@ -6,7 +6,7 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
-import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { UsersService } from "@/modules/identity/services/users.service";
 import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
@@ -14,7 +14,11 @@ import * as matches from "@/modules/matches/infrastructure/user-data";
 import * as mmr from "@/modules/mmr/infrastructure/user-data";
 import * as patches from "@/modules/patches/infrastructure/user-data";
 import * as players from "@/modules/players/infrastructure/user-data";
-import * as sessions from "@/modules/sessions/infrastructure/user-data";
+import {
+  SessionNotesRepository,
+  SessionSettingsRepository,
+} from "@/modules/sessions/repositories/sessions.repository";
+import { SessionService } from "@/modules/sessions/sessions.service";
 import * as together from "@/modules/together/infrastructure/user-data";
 import { createTestDb } from "../support/mongo";
 
@@ -51,9 +55,21 @@ const identity = servicePart(
   (getDb) =>
     new UsersService({
       users: new UsersRepository(getDb),
-      sessions: new SessionsRepository(getDb),
+      sessions: new AuthSessionsRepository(getDb),
     }),
 );
+
+const sessions = servicePart((getDb) => {
+  const notes = new SessionNotesRepository(getDb);
+  const settings = new SessionSettingsRepository(getDb);
+  return new SessionService({
+    matches: { listMatches: async () => [] },
+    observations: { list: async () => [] },
+    notes,
+    settings,
+    data: { notes, settings },
+  });
+});
 
 const PARTS = [
   mmr,

@@ -7,66 +7,41 @@ import {
   type GapMinutes,
   type PlaySession,
   type SessionMatch,
-} from "../domain/session";
-import {
-  sessionMmr,
-  type MmrObservation,
-  type RankedGame,
-  type SessionMmr,
-} from "../domain/session-mmr";
-import { placeEarlierNotes, type EarlierNote, type SessionNote } from "../domain/session-note";
-import { currentLossStreak, tiltStats, tiltWarning } from "../domain/tilt";
-import type { SessionNoteInput } from "./contracts";
+} from "./domain/session";
+import { sessionMmr, type MmrObservation, type RankedGame } from "./domain/session-mmr";
+import { placeEarlierNotes, type EarlierNote, type SessionNote } from "./domain/session-note";
+import { currentLossStreak, tiltStats, tiltWarning } from "./domain/tilt";
+import type { SessionNoteInput } from "./schemas/sessions.schema";
 import type {
   MmrObservationSource,
   SessionMatchSource,
-  SessionNoteRepository,
+  SessionNotesPort,
   SessionOwner,
-  SessionSettingsRepository,
-} from "./ports";
+  SessionSettingsPort,
+  PersonalDataStore,
+} from "./sessions.ports";
+import type {
+  SessionDetail,
+  SessionError,
+  SessionView,
+  SessionsPage,
+} from "./dtos/responses/sessions.dto";
 
 export const SESSIONS_PAGE_SIZE = 10;
 /** How many recent notes are checked for ones left behind by a regrouping. */
 const RECENT_NOTES_SCAN = 200;
-
-export interface SessionView<M extends SessionMatch = SessionMatch> {
-  session: PlaySession<M>;
-  mmr: SessionMmr;
-}
-
-export interface SessionsPage<M extends SessionMatch = SessionMatch> {
-  gapMinutes: GapMinutes;
-  /** Imported matches on the account (0 means nothing synced yet). */
-  totalMatches: number;
-  items: Array<SessionView<M> & { note: SessionNote | null }>;
-  totalSessions: number;
-  page: number;
-  pageCount: number;
-  /** Notes whose session no longer exists under the current break length (newest first). */
-  earlierNotes: EarlierNote[];
-}
-
-export interface SessionDetail<M extends SessionMatch = SessionMatch> extends SessionView<M> {
-  gapMinutes: GapMinutes;
-  note: SessionNote | null;
-  /** Notes saved when this session's games were grouped differently (read-only). */
-  earlierNotes: SessionNote[];
-  /** Neighbouring sessions for prev/next navigation. */
-  olderId: string | null;
-  newerId: string | null;
-}
-
-export type SessionError = { type: "not_found" };
 
 export class SessionService<M extends SessionMatch = SessionMatch> {
   constructor(
     private readonly deps: {
       matches: SessionMatchSource<M>;
       observations: MmrObservationSource;
-      notes: SessionNoteRepository;
-      settings: SessionSettingsRepository;
+      notes: SessionNotesPort;
+      settings: SessionSettingsPort;
       /** The gap for users who haven't chosen one (SESSION_DEFAULT_GAP_MINUTES). */
       defaultGapMinutes?: GapMinutes;
+      /** Needed for "Download your data" and account deletion only. */
+      data?: { notes: PersonalDataStore; settings: PersonalDataStore };
     },
   ) {}
 
@@ -219,5 +194,28 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
       updatedAt: now,
     });
     return ok(saved);
+  }
+
+  async exportMyData(owner: SessionOwner) {
+    const data = this.requireData();
+    const [notes, settings] = await Promise.all([
+      data.notes.exportForOwner(owner),
+      data.settings.exportForOwner(owner),
+    ]);
+    return { sessionNotes: notes, sessionSettings: settings };
+  }
+
+  async deleteMyData(owner: SessionOwner) {
+    const data = this.requireData();
+    const [notes, settings] = await Promise.all([
+      data.notes.deleteForOwner(owner),
+      data.settings.deleteForOwner(owner),
+    ]);
+    return { sessionNotes: notes, sessionSettings: settings };
+  }
+
+  private requireData() {
+    if (!this.deps.data) throw new Error("SessionService was built without its data stores");
+    return this.deps.data;
   }
 }

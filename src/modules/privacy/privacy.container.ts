@@ -9,7 +9,7 @@ import * as matches from "@/modules/matches/composition";
 import * as mmr from "@/modules/mmr/composition";
 import * as patches from "@/modules/patches/composition";
 import * as players from "@/modules/players/composition";
-import * as sessions from "@/modules/sessions/composition";
+import { sessionService } from "@/modules/sessions";
 import * as together from "@/modules/together/composition";
 import { PrivacyController } from "./privacy.controller";
 import { PrivacyService } from "./privacy.service";
@@ -17,7 +17,7 @@ import { PrivacyService } from "./privacy.service";
 export const privacyService = new PrivacyService({
   parts: [
     mmr,
-    sessions,
+    sessionService,
     players,
     patches,
     leaderboards,

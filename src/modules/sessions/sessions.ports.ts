@@ -1,6 +1,6 @@
-import type { GapMinutes, SessionMatch } from "../domain/session";
-import type { MmrObservation } from "../domain/session-mmr";
-import type { SessionNote } from "../domain/session-note";
+import type { GapMinutes, SessionMatch } from "./domain/session";
+import type { MmrObservation } from "./domain/session-mmr";
+import type { SessionNote } from "./domain/session-note";
 
 export interface SessionOwner {
   userId: string;
@@ -17,7 +17,7 @@ export interface MmrObservationSource {
   list(owner: SessionOwner): Promise<MmrObservation[]>;
 }
 
-export interface SessionNoteRepository {
+export interface SessionNotesPort {
   /** Insert or replace the owner's note for one session. Unique on (userId, sessionId). */
   upsert(note: SessionNote): Promise<SessionNote>;
   /** Scoped by owner: another user's note is never returned. */
@@ -28,7 +28,13 @@ export interface SessionNoteRepository {
   listRecent(userId: string, accountId32: number, limit: number): Promise<SessionNote[]>;
 }
 
-export interface SessionSettingsRepository {
+export interface SessionSettingsPort {
   getGap(userId: string): Promise<GapMinutes | null>;
   setGap(userId: string, gapMinutes: GapMinutes, now: Date): Promise<void>;
+}
+
+/** A store of the player's own data, for "Download your data" and account deletion. */
+export interface PersonalDataStore {
+  exportForOwner(owner: SessionOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: SessionOwner): Promise<number>;
 }

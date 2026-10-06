@@ -13,7 +13,7 @@ import { ErrorsRepository } from "@/modules/errors/errors.repository";
 import { CronRunsRepository } from "@/modules/jobs/repositories/cron-runs.repository";
 import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
 import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
-import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
@@ -21,7 +21,10 @@ import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-me
 import { ensureMmrIndexes } from "@/modules/mmr/infrastructure/mongo-mmr-repository";
 import { ensurePatchIndexes } from "@/modules/patches/infrastructure/mongo-patch-repositories";
 import { ensurePlayerIndexes } from "@/modules/players/infrastructure/mongo-follow-repository";
-import { ensureSessionIndexes } from "@/modules/sessions/infrastructure/mongo-session-repositories";
+import {
+  SessionNotesRepository,
+  SessionSettingsRepository,
+} from "@/modules/sessions/repositories/sessions.repository";
 import { ensureTogetherIndexes } from "@/modules/together/infrastructure/mongo-together-repository";
 
 async function main(): Promise<void> {
@@ -31,7 +34,7 @@ async function main(): Promise<void> {
   await new GoalsRepository(async () => db).ensureIndexes();
   await Promise.all([
     new UsersRepository(async () => db).ensureIndexes(),
-    new SessionsRepository(async () => db).ensureIndexes(),
+    new AuthSessionsRepository(async () => db).ensureIndexes(),
     new NoncesRepository(async () => db).ensureIndexes(),
   ]);
   await new ErrorsRepository(async () => db).ensureIndexes();
@@ -46,7 +49,10 @@ async function main(): Promise<void> {
   await ensureMedalHistoryIndexes(db);
   await ensurePatchIndexes(db);
   await ensurePlayerIndexes(db);
-  await ensureSessionIndexes(db);
+  await Promise.all([
+    new SessionNotesRepository(async () => db).ensureIndexes(),
+    new SessionSettingsRepository(async () => db).ensureIndexes(),
+  ]);
   await ensureTogetherIndexes(db);
   console.log(`Indexes ensured on ${db.databaseName}`);
   await (await getMongoClient()).close();
