@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import { Bot, Link2, Pause, Play, RotateCcw, Save, Undo2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -25,11 +26,23 @@ import {
   type DraftState,
   type Side,
 } from "../domain/draft-state";
-import { POSITION_NAMES, type Position } from "../domain/draft-positions";
+import type { Position } from "../domain/draft-positions";
+import type { Phrase } from "../domain/phrase";
 import { getRuleset, listRulesets } from "../domain/rulesets";
 import { DraftOutlookPanel, positionsFrom, useDraftOutlook } from "./draft-outlook-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { HeroGrid } from "./hero-grid";
+import {
+  actionName,
+  positionName,
+  roleName,
+  rulesetDescription,
+  rulesetName,
+  sayOr,
+  seconds,
+  sideName,
+  type T,
+} from "./i18n";
 import { SequenceStrip } from "./sequence-strip";
 import { TeamPanel } from "./team-panel";
 import type { DraftHero } from "./types";
@@ -79,11 +92,6 @@ function readSavesRaw(): string {
   }
 }
 
-function seconds(ms: number): string {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
-}
-
 function newDraft(rulesetId: string, firstSide: Side, timer: boolean): DraftState {
   const ruleset = listRulesets().find((r) => r.id === rulesetId) ?? listRulesets()[0];
   const res = createDraft({
@@ -108,6 +116,7 @@ export function DraftBoard({
   /** Signed in: each draft finished here is saved for the leaderboards. */
   signedIn?: boolean;
 }) {
+  const t = useT();
   const heroMap = useMemo(() => new Map(heroes.map((h) => [h.id, h])), [heroes]);
   const pool = useMemo(() => heroes.map((h) => h.id), [heroes]);
   const [rulesetId, setRulesetId] = useState(initial?.rulesetId ?? "cm-2026");
@@ -157,7 +166,7 @@ export function DraftBoard({
     } as DraftEvent;
     const res = applyEvent(s, event, { mode: "local", heroPool: pool });
     if (!res.ok) {
-      toast.error(`That move isn't allowed (${res.error.type.replaceAll("_", " ")}).`);
+      toast.error(t("drafts.board.invalidMove", { reason: res.error.type.replaceAll("_", " ") }));
       return false;
     }
     stateRef.current = res.value;
@@ -169,9 +178,9 @@ export function DraftBoard({
   useEffect(() => {
     if (!state.timer.enabled || state.status !== "in_progress") return;
     const id = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      const r = resolveTime(stateRef.current, t);
+      const at = Date.now();
+      setNow(at);
+      const r = resolveTime(stateRef.current, at);
       if (r.timed && r.expired && !r.paused) {
         dispatch({ type: "timeout", seed: Math.floor(Math.random() * 2 ** 31) });
       }
@@ -214,7 +223,7 @@ export function DraftBoard({
         }
       } catch (e) {
         if (controller.signal.aborted) return;
-        setAiError(e instanceof Error ? e.message : "The AI couldn't move.");
+        setAiError(e instanceof Error ? e.message : t("drafts.board.aiFailed"));
       }
     })();
     return () => controller.abort();
@@ -234,9 +243,9 @@ export function DraftBoard({
       method: "POST",
       body: { snapshot, aiSide },
     })
-      .then((res) => res.counted && toast.success("Draft saved to your leaderboards"))
+      .then((res) => res.counted && toast.success(t("drafts.board.savedLeaderboards")))
       .catch(() => {}); // Optional: the draft itself is unaffected.
-  }, [signedIn, state, initial, aiSide]);
+  }, [signedIn, state, initial, aiSide, t]);
 
   const humanTurn =
     state.status === "in_progress" && turn !== null && (!aiSide || turn.side !== aiSide);
@@ -285,9 +294,9 @@ export function DraftBoard({
 
   function chooseSuggested(heroId: number) {
     const step = stateRef.current.stepIndex;
-    const t = currentTurn(stateRef.current);
-    if (!t) return;
-    if (dispatch({ type: t.action, side: t.side, heroId })) {
+    const next = currentTurn(stateRef.current);
+    if (!next) return;
+    if (dispatch({ type: next.action, side: next.side, heroId })) {
       setFollowed((prev) => new Set(prev).add(step));
     }
   }
@@ -316,24 +325,24 @@ export function DraftBoard({
   }) {
     const r = next.rulesetId ?? rulesetId;
     const f = next.firstSide ?? firstSide;
-    const t = next.timer ?? timerOn;
+    const timer = next.timer ?? timerOn;
     setRulesetId(r);
     setFirstSide(f);
-    setTimerOn(t);
+    setTimerOn(timer);
     if (next.opponent) setOpponent(next.opponent);
     setAiLog([]);
     setAiError(null);
     setFollowed(new Set());
     setSuggestions(null);
-    const fresh = newDraft(r, f, t);
+    const fresh = newDraft(r, f, timer);
     stateRef.current = fresh;
     setState(fresh);
   }
 
   function choose(heroId: number) {
-    const t = currentTurn(stateRef.current);
-    if (!t) return;
-    dispatch({ type: t.action, side: t.side, heroId });
+    const next = currentTurn(stateRef.current);
+    if (!next) return;
+    dispatch({ type: next.action, side: next.side, heroId });
   }
 
   const shareUrl = () =>
@@ -342,15 +351,15 @@ export function DraftBoard({
   async function share() {
     try {
       await navigator.clipboard.writeText(shareUrl());
-      toast.success("Link copied. Anyone with it can view this draft.");
+      toast.success(t("drafts.board.linkCopied"));
     } catch {
-      toast.error("Couldn't copy the link.");
+      toast.error(t("drafts.board.copyFailed"));
     }
   }
 
   function save() {
     const entry: SavedDraft = {
-      name: `${ruleset.name.split(" (")[0]} · ${new Date().toLocaleString()}`,
+      name: `${rulesetName(t, ruleset).split(" (")[0]} · ${new Date().toLocaleString()}`,
       savedAt: new Date().toISOString(),
       snapshot: encodeSnapshot(snapshotOf(state)),
     };
@@ -359,9 +368,9 @@ export function DraftBoard({
       localStorage.setItem(SAVES_KEY, JSON.stringify(next));
       // Same-tab writes don't fire "storage"; notify the store ourselves.
       window.dispatchEvent(new StorageEvent("storage", { key: SAVES_KEY }));
-      toast.success("Draft saved on this device");
+      toast.success(t("drafts.board.savedDevice"));
     } catch {
-      toast.error("Couldn't save in this browser.");
+      toast.error(t("drafts.board.saveFailed"));
     }
   }
 
@@ -372,17 +381,22 @@ export function DraftBoard({
 
   const picksPerSide = ruleset.sequence.filter((s) => s.action === "pick").length / 2;
   const bansPerSide = ruleset.sequence.filter((s) => s.action === "ban").length / 2;
-  const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
   const announcement =
     state.status === "completed"
-      ? "Draft complete."
+      ? t("drafts.board.announceComplete")
       : turn && started
-        ? `${sideName(turn.side)} to ${turn.action}. Step ${turn.stepIndex + 1} of ${ruleset.sequence.length}.`
-        : "Draft not started.";
+        ? t("drafts.board.announceTurn", {
+            side: sideName(t, turn.side),
+            action: actionName(t, turn.action),
+            step: turn.stepIndex + 1,
+            total: ruleset.sequence.length,
+          })
+        : t("drafts.board.announceNotStarted");
 
   const reserve = (side: Side) =>
     state.timer.enabled
       ? seconds(
+          t,
           time.timed && time.side === side
             ? time.reserveRemainingMs
             : state.timer.reserveRemainingMs[side],
@@ -401,13 +415,17 @@ export function DraftBoard({
           onValueChange={(v) => reconfigure({ opponent: v as Opponent })}
           disabled={started}
         >
-          <SelectTrigger size="sm" className="h-8 w-56 text-xs" aria-label="Opponent">
+          <SelectTrigger
+            size="sm"
+            className="h-8 w-56 text-xs"
+            aria-label={t("drafts.board.opponent")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="dire">You: Radiant · vs AI captain</SelectItem>
-            <SelectItem value="radiant">You: Dire · vs AI captain</SelectItem>
-            <SelectItem value="none">Practice both sides</SelectItem>
+            <SelectItem value="dire">{t("drafts.board.vsAiRadiant")}</SelectItem>
+            <SelectItem value="radiant">{t("drafts.board.vsAiDire")}</SelectItem>
+            <SelectItem value="none">{t("drafts.board.bothSides")}</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -415,13 +433,17 @@ export function DraftBoard({
           onValueChange={(v) => reconfigure({ rulesetId: v })}
           disabled={started}
         >
-          <SelectTrigger size="sm" className="h-8 w-56 text-xs" aria-label="Ruleset">
+          <SelectTrigger
+            size="sm"
+            className="h-8 w-56 text-xs"
+            aria-label={t("drafts.board.ruleset")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {listRulesets().map((r) => (
               <SelectItem key={r.id} value={r.id}>
-                {r.name}
+                {rulesetName(t, r)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -431,12 +453,16 @@ export function DraftBoard({
           onValueChange={(v) => reconfigure({ firstSide: v as Side })}
           disabled={started}
         >
-          <SelectTrigger size="sm" className="h-8 w-40 text-xs" aria-label="First pick">
+          <SelectTrigger
+            size="sm"
+            className="h-8 w-40 text-xs"
+            aria-label={t("drafts.board.firstPick")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="radiant">Radiant first pick</SelectItem>
-            <SelectItem value="dire">Dire first pick</SelectItem>
+            <SelectItem value="radiant">{t("drafts.board.radiantFirst")}</SelectItem>
+            <SelectItem value="dire">{t("drafts.board.direFirst")}</SelectItem>
           </SelectContent>
         </Select>
         <label className={cn("flex items-center gap-2 px-2 text-xs", started && "opacity-50")}>
@@ -447,13 +473,13 @@ export function DraftBoard({
             onChange={(e) => reconfigure({ timer: e.target.checked })}
             className="accent-[var(--gold)]"
           />
-          Timer
+          {t("drafts.board.timer")}
         </label>
 
         <div className="ml-auto flex flex-wrap items-center gap-1.5">
           {!started ? (
             <Button size="sm" onClick={() => dispatch({ type: "start" })} className="gap-1.5">
-              <Play className="size-3.5" /> Start draft
+              <Play className="size-3.5" /> {t("drafts.board.start")}
             </Button>
           ) : (
             <>
@@ -464,7 +490,7 @@ export function DraftBoard({
                 disabled={state.turns.length === 0}
                 className="gap-1.5"
               >
-                <Undo2 className="size-3.5" /> Undo
+                <Undo2 className="size-3.5" /> {t("drafts.board.undo")}
               </Button>
               {state.timer.enabled && state.status !== "completed" && (
                 <Button
@@ -478,24 +504,28 @@ export function DraftBoard({
                   ) : (
                     <Pause className="size-3.5" />
                   )}
-                  {state.status === "paused" ? "Resume" : "Pause"}
+                  {state.status === "paused" ? t("drafts.board.resume") : t("drafts.board.pause")}
                 </Button>
               )}
               <Button size="sm" variant="ghost" onClick={() => reconfigure({})} className="gap-1.5">
-                <RotateCcw className="size-3.5" /> Reset
+                <RotateCcw className="size-3.5" /> {t("drafts.board.reset")}
               </Button>
               <Button size="sm" variant="ghost" onClick={save} className="gap-1.5">
-                <Save className="size-3.5" /> Save
+                <Save className="size-3.5" /> {t("drafts.board.save")}
               </Button>
               <Button size="sm" variant="ghost" onClick={share} className="gap-1.5">
-                <Link2 className="size-3.5" /> Share
+                <Link2 className="size-3.5" /> {t("drafts.board.share")}
               </Button>
             </>
           )}
           {saves.length > 0 && !started && (
             <Select onValueChange={(v) => router.push(`/draft?snapshot=${v}`)}>
-              <SelectTrigger size="sm" className="h-8 w-40 text-xs" aria-label="Saved drafts">
-                <SelectValue placeholder="Saved drafts" />
+              <SelectTrigger
+                size="sm"
+                className="h-8 w-40 text-xs"
+                aria-label={t("drafts.board.savedDrafts")}
+              >
+                <SelectValue placeholder={t("drafts.board.savedDrafts")} />
               </SelectTrigger>
               <SelectContent>
                 {saves.map((s) => (
@@ -521,44 +551,53 @@ export function DraftBoard({
         <div>
           <p className="kicker">
             {state.status === "completed"
-              ? "Draft complete"
+              ? t("drafts.board.complete")
               : started
-                ? `Step ${state.stepIndex + 1} of ${ruleset.sequence.length}`
-                : "Ready"}
+                ? t("drafts.board.step", {
+                    step: state.stepIndex + 1,
+                    total: ruleset.sequence.length,
+                  })
+                : t("drafts.board.ready")}
           </p>
           <p className="text-xl font-semibold">
             {state.status === "completed" ? (
-              "Both lineups are locked in"
+              t("drafts.board.lockedIn")
             ) : turn && started ? (
               <>
                 <span className={turn.side === "radiant" ? "text-win" : "text-loss"}>
-                  {aiSide ? (turn.side === aiSide ? "AI captain" : "Your") : sideName(turn.side)}
+                  {aiSide
+                    ? turn.side === aiSide
+                      ? t("drafts.board.aiCaptain")
+                      : t("drafts.board.your")
+                    : sideName(t, turn.side)}
                 </span>{" "}
                 {aiSide
                   ? turn.side === aiSide
                     ? turn.action === "pick"
-                      ? "is picking…"
-                      : "is banning…"
+                      ? t("drafts.board.isPicking")
+                      : t("drafts.board.isBanning")
                     : turn.action === "pick"
-                      ? "pick"
-                      : "ban"
+                      ? t("drafts.board.yourPick")
+                      : t("drafts.board.yourBan")
                   : turn.action === "pick"
-                    ? "picks"
-                    : "bans"}
+                    ? t("drafts.board.sidePicks")
+                    : t("drafts.board.sideBans")}
                 {state.status === "paused" && (
-                  <span className="text-muted-foreground"> (paused)</span>
+                  <span className="text-muted-foreground">{t("drafts.board.paused")}</span>
                 )}
               </>
             ) : (
-              `${ruleset.name}`
+              rulesetName(t, ruleset)
             )}
           </p>
           {!started && (
-            <p className="max-w-xl text-xs text-muted-foreground">{ruleset.description}</p>
+            <p className="max-w-xl text-xs text-muted-foreground">
+              {rulesetDescription(t, ruleset)}
+            </p>
           )}
         </div>
         {time.timed && started && state.status !== "completed" && (
-          <div className="text-right" aria-label="Turn timer">
+          <div className="text-right" aria-label={t("drafts.board.turnTimer")}>
             <div
               className={cn(
                 "text-3xl font-semibold tabular-nums",
@@ -566,11 +605,13 @@ export function DraftBoard({
               )}
             >
               {time.turnRemainingMs > 0
-                ? seconds(time.turnRemainingMs)
-                : `+${seconds(time.reserveRemainingMs)}`}
+                ? seconds(t, time.turnRemainingMs)
+                : `+${seconds(t, time.reserveRemainingMs)}`}
             </div>
             <div className="text-xs text-muted-foreground">
-              {time.turnRemainingMs > 0 ? "turn time" : "using reserve"}
+              {time.turnRemainingMs > 0
+                ? t("drafts.board.turnTime")
+                : t("drafts.board.usingReserve")}
             </div>
           </div>
         )}
@@ -629,7 +670,7 @@ export function DraftBoard({
           heroes={heroes}
           unavailable={unavailable}
           disabled={!started || state.status === "paused" || aiTurn}
-          actionLabel={turn?.action ?? "pick"}
+          actionLabel={actionName(t, turn?.action ?? "pick")}
           onChoose={choose}
         />
       )}
@@ -665,9 +706,7 @@ export function DraftBoard({
           />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Lineup feedback is rule-based from hero role tags, with the reasons shown.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("drafts.board.feedbackNote")}</p>
     </div>
   );
 }
@@ -679,12 +718,14 @@ interface SuggestionSet {
   version: number;
   action: "pick" | "ban";
   situation: string;
+  situationPhrase?: Phrase;
   candidates: Array<{
     heroId: number;
     name: string;
     role: "core" | "support";
     position: Position | null;
     facts: string[];
+    factPhrases?: Phrase[];
   }>;
 }
 
@@ -721,26 +762,28 @@ function SuggestionsPanel({
   disabled: boolean;
   onChoose: (heroId: number) => void;
 }) {
+  const t = useT();
   return (
-    <section className="panel p-4" aria-label="Suggestions">
+    <section className="panel p-4" aria-label={t("drafts.suggestions.label")}>
       <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold">
-          Suggested {action === "pick" ? "picks" : "bans"} for you
+          {action === "pick"
+            ? t("drafts.suggestions.titlePicks")
+            : t("drafts.suggestions.titleBans")}
         </h2>
         <span className="text-xs text-muted-foreground">
           {set
-            ? set.situation
+            ? sayOr(t, set.situationPhrase, set.situation)
             : issue === "retrying"
-              ? "Busy right now, trying again…"
+              ? t("drafts.suggestions.retrying")
               : issue === "unavailable"
                 ? null
-                : "Looking at the draft…"}
+                : t("drafts.suggestions.looking")}
         </span>
       </header>
       {!set && issue === "unavailable" ? (
         <p role="status" className="text-sm text-muted-foreground">
-          Suggestions are unavailable right now. Pick from the hero list below; they&apos;ll be back
-          on your next turn.
+          {t("drafts.suggestions.unavailable")}
         </p>
       ) : !set ? (
         <div className="flex gap-2" aria-busy>
@@ -753,13 +796,18 @@ function SuggestionsPanel({
           {set.candidates.map((c) => {
             const hero = heroes.get(c.heroId);
             const taken = unavailable.has(c.heroId);
+            const facts = factsOf(t, c);
             return (
               <li key={c.heroId}>
                 <button
                   type="button"
                   disabled={disabled || taken}
                   onClick={() => onChoose(c.heroId)}
-                  aria-label={`${action} ${c.name}: ${c.facts.join("; ")}`}
+                  aria-label={t("drafts.suggestions.choose", {
+                    action: actionName(t, action),
+                    hero: c.name,
+                    facts: facts.join("; "),
+                  })}
                   className="group flex h-full w-full flex-col gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5 text-left transition hover:border-gold/40 hover:bg-gold/[0.05] focus-visible:border-gold disabled:opacity-40"
                 >
                   <span className="flex items-center gap-2">
@@ -767,12 +815,17 @@ function SuggestionsPanel({
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium">{c.name}</span>
                       <span className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-                        {c.position ? `Pos ${c.position} · ${POSITION_NAMES[c.position]}` : c.role}
+                        {c.position
+                          ? t("drafts.suggestions.pos", {
+                              n: c.position,
+                              name: positionName(t, c.position),
+                            })
+                          : roleName(t, c.role)}
                       </span>
                     </span>
                   </span>
                   <span className="text-[0.7rem] leading-snug text-muted-foreground">
-                    {c.facts.slice(0, 2).join(" · ")}
+                    {facts.slice(0, 2).join(" · ")}
                   </span>
                 </button>
               </li>
@@ -782,6 +835,13 @@ function SuggestionsPanel({
       )}
     </section>
   );
+}
+
+/** A candidate's evidence in the viewer's language (English when the data has no phrases). */
+function factsOf(t: T, c: { facts: string[]; factPhrases?: Phrase[] }): string[] {
+  return c.factPhrases && c.factPhrases.length === c.facts.length
+    ? c.factPhrases.map((p, i) => sayOr(t, p, c.facts[i]))
+    : c.facts;
 }
 
 /** Every pick and ban in order (newest first), for both teams, with the AI's reasoning. */
@@ -804,79 +864,83 @@ function DraftLogPanel({
   error: string | null;
   onRetry: () => void;
 }) {
+  const t = useT();
   const reasons = new Map(aiLog.map((e) => [e.step, e]));
   const model = aiLog.find((e) => e.source === "model")?.model;
   const who = (side: Side) =>
-    aiSide ? (side === aiSide ? "AI" : "You") : side === "radiant" ? "Radiant" : "Dire";
+    aiSide ? (side === aiSide ? t("drafts.log.ai") : t("drafts.log.you")) : sideName(t, side);
   return (
-    <section className="panel p-4" aria-label="Draft log">
+    <section className="panel p-4" aria-label={t("drafts.log.label")}>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Bot aria-hidden className="size-4 text-gold" /> Draft log
+          <Bot aria-hidden className="size-4 text-gold" /> {t("drafts.log.title")}
         </h2>
         {aiSide && (
           <span className="text-xs text-muted-foreground">
-            {model ? `AI drafting with ${model} via Groq` : "AI captain ready"}
+            {model ? t("drafts.log.model", { model }) : t("drafts.log.ready")}
           </span>
         )}
       </header>
       {thinking && (
         <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground" role="status">
           <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-gold" />
-          AI captain is thinking about its next move…
+          {t("drafts.log.thinking")}
         </p>
       )}
       {error && (
         <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-loss" role="alert">
           {error}
           <Button size="sm" variant="outline" onClick={onRetry}>
-            Try again
+            {t("drafts.log.retry")}
           </Button>
         </p>
       )}
       {turns.length === 0 ? (
-        !thinking && <p className="text-sm text-muted-foreground">Picks and bans will show here.</p>
+        !thinking && <p className="text-sm text-muted-foreground">{t("drafts.log.empty")}</p>
       ) : (
         <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">
-          {[...turns].reverse().map((t) => {
-            const hero = t.heroId !== null ? heroes.get(t.heroId) : undefined;
-            const ai = reasons.get(t.stepIndex);
-            const label = who(t.side);
+          {[...turns].reverse().map((turn) => {
+            const hero = turn.heroId !== null ? heroes.get(turn.heroId) : undefined;
+            const ai = reasons.get(turn.stepIndex);
+            const label = who(turn.side);
+            const heroName = hero?.name ?? t("drafts.log.hero", { id: turn.heroId ?? "" });
             return (
-              <li key={t.stepIndex} className="flex gap-3 text-sm">
+              <li key={turn.stepIndex} className="flex gap-3 text-sm">
                 <span className="w-6 shrink-0 pt-0.5 text-right text-[0.65rem] text-muted-foreground tabular-nums">
-                  {t.stepIndex + 1}
+                  {turn.stepIndex + 1}
                 </span>
-                <HeroThumb hero={hero} dim={t.action === "ban"} />
+                <HeroThumb hero={hero} dim={turn.action === "ban"} />
                 <span className="min-w-0">
                   <span
                     className={cn(
                       "mr-1.5 rounded px-1 text-[0.6rem] font-semibold tracking-wider uppercase",
-                      t.side === "radiant" ? "bg-win/15 text-win" : "bg-loss/15 text-loss",
+                      turn.side === "radiant" ? "bg-win/15 text-win" : "bg-loss/15 text-loss",
                     )}
                   >
                     {label}
                   </span>
                   <span className="font-medium">
-                    {t.heroId === null
-                      ? "Ban skipped (time ran out)"
-                      : `${t.action === "ban" ? "Banned" : "Picked"} ${hero?.name ?? `Hero #${t.heroId}`}`}
+                    {turn.heroId === null
+                      ? t("drafts.log.skipped")
+                      : turn.action === "ban"
+                        ? t("drafts.log.banned", { hero: heroName })
+                        : t("drafts.log.picked", { hero: heroName })}
                   </span>
-                  {t.resolution === "timeout" && t.heroId !== null && (
-                    <span className="text-muted-foreground"> (random, time ran out)</span>
+                  {turn.resolution === "timeout" && turn.heroId !== null && (
+                    <span className="text-muted-foreground">{t("drafts.log.random")}</span>
                   )}
                   {ai && <span className="text-muted-foreground">: {ai.reason}</span>}
                   {ai?.source === "heuristic" && (
                     <span
                       className="ml-1.5 rounded border border-white/15 px-1 text-[0.6rem] text-muted-foreground"
-                      title="The language model was unavailable, so the top-scored option was used"
+                      title={t("drafts.log.ruleBasedTitle")}
                     >
-                      rule-based
+                      {t("drafts.log.ruleBased")}
                     </span>
                   )}
-                  {followed.has(t.stepIndex) && (
+                  {followed.has(turn.stepIndex) && (
                     <span className="ml-1.5 rounded border border-gold/30 px-1 text-[0.6rem] text-gold">
-                      suggested
+                      {t("drafts.log.suggested")}
                     </span>
                   )}
                 </span>

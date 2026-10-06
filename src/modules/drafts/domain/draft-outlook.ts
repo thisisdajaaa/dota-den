@@ -18,6 +18,7 @@ import {
   assignPositions,
   POSITION_NAMES,
   positionOdds,
+  positionPhrase,
   type Position,
   type PositionTable,
 } from "./draft-positions";
@@ -38,6 +39,7 @@ import {
   matchupAdvantage,
   metaEdge,
   proSource,
+  proSourcePhrase,
   proWinEdge,
   synergyAdvantage,
   type HeroMeta,
@@ -46,6 +48,7 @@ import {
   type ScoringHero,
   type SynergyTable,
 } from "./draft-scoring";
+import { phrase, type Phrase } from "./phrase";
 
 export const OUTLOOK_FLOOR = 30;
 export const OUTLOOK_CEILING = 70;
@@ -88,6 +91,8 @@ export interface SideBreakdown {
   open: Position[];
   /** Plain-language warnings about the lineup, e.g. "4 cores and no support". */
   warnings: string[];
+  /** The same warnings for the UI to translate. */
+  warningPhrases: Phrase[];
 }
 
 export interface LaneMatchup {
@@ -120,8 +125,11 @@ export interface DraftOutlook {
   positionsFrom: "pro" | "tags";
   /** Plain-language takeaways, strongest first. */
   notes: string[];
+  /** The same takeaways for the UI to translate. */
+  notePhrases: Phrase[];
   /** Where the tournament numbers come from, e.g. "PGL Wallachia and 6 more tournaments, last 21 days". */
   tournaments: string | null;
+  tournamentsPhrase: Phrase | null;
   /** The rubric: each side graded on lanes, counters, composition, strength, positions, combos. */
   report: DraftReport;
   /** How well the estimate predicted real games it wasn't fitted on. */
@@ -136,15 +144,28 @@ export interface DraftOutlook {
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
 
-function lineupWarnings(team: readonly ScoringHero[]): string[] {
+interface Warning {
+  text: string;
+  phrase: Phrase;
+}
+
+function lineupWarnings(team: readonly ScoringHero[]): Warning[] {
   const supports = team.filter((h) => lineupRole(h) === "support").length;
   const cores = team.length - supports;
   const flex = team.filter((h) => lineupRole(h) === "core" && canSupport(h)).length;
-  const warnings: string[] = [];
+  const warnings: Warning[] = [];
   if (cores > 3 && supports + flex < 2) {
-    warnings.push(`${cores} cores and only ${supports} support${supports === 1 ? "" : "s"}`);
+    warnings.push({
+      text: `${cores} cores and only ${supports} support${supports === 1 ? "" : "s"}`,
+      phrase: phrase("warnings.fewSupports", { cores }, supports),
+    });
   }
-  if (supports > 2) warnings.push(`${supports} supports: short on farm-dependent damage`);
+  if (supports > 2) {
+    warnings.push({
+      text: `${supports} supports: short on farm-dependent damage`,
+      phrase: phrase("warnings.manySupports", { supports }),
+    });
+  }
   return warnings;
 }
 
@@ -196,7 +217,12 @@ export function draftOutlook(input: {
   // Lanes count for about a third of their edge: laning is only the first ten minutes.
   const laneTotal = sum(lanes.map((l) => (l.source === "pro_lanes" ? (l.edge ?? 0) : 0))) * 0.3;
 
+  const warningsOf = (side: Side) =>
+    positions
+      ? positionWarnings(teams[side], assigned[side].heroes, positions)
+      : lineupWarnings(teams[side]);
   const breakdown = (side: Side): SideBreakdown => {
+    const warnings = warningsOf(side);
     const team = teams[side];
     const matchupSum = sum(
       team.map((h) => {
@@ -221,9 +247,8 @@ export function draftOutlook(input: {
       cores: team.length - supports,
       supports,
       open: assigned[side].open,
-      warnings: positions
-        ? positionWarnings(team, assigned[side].heroes, positions)
-        : lineupWarnings(team),
+      warnings: warnings.map((w) => w.text),
+      warningPhrases: warnings.map((w) => w.phrase),
     };
   };
   const sides = { radiant: breakdown("radiant"), dire: breakdown("dire") };
@@ -320,7 +345,7 @@ export function draftOutlook(input: {
         : null,
       offRole: known
         .filter((x) => x.share! < 0.1)
-        .map((x) => `${x.hero.name} at ${POSITION_NAMES[x.slot.position]}`),
+        .map((x) => ({ hero: x.hero.name, position: x.slot.position })),
       comboEdge: combos.length ? sum(combos) / combos.length : null,
       comboPairs: combos.length,
       composition: compositionChecks(team, carry),
@@ -340,8 +365,9 @@ export function draftOutlook(input: {
     heroes,
     lanes,
     positionsFrom: positions ? "pro" : "tags",
-    notes: [...outlookNotes(sides, heroes, pro), ...laneNotes(lanes, heroes)],
+    ...notesOf([...outlookNotes(sides, heroes, pro), ...laneNotes(lanes, heroes)]),
     tournaments: pro ? proSource(pro) : null,
+    tournamentsPhrase: pro ? proSourcePhrase(pro) : null,
     report,
     accuracy: {
       fitted: calibration.holdout.fitted.accuracy,
@@ -353,14 +379,25 @@ export function draftOutlook(input: {
 }
 
 const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
+const sidePhrase = (s: Side) => phrase(`side.${s}`);
+
+interface Note {
+  text: string;
+  phrase: Phrase;
+}
+
+const notesOf = (notes: readonly Note[]) => ({
+  notes: notes.map((n) => n.text),
+  notePhrases: notes.map((n) => n.phrase),
+});
 
 /** A hero pushed off its usual positions: "Juggernaut would have to play Offlane (2% of ...)". */
 function positionWarnings(
   team: readonly ScoringHero[],
   lineup: readonly { heroId: number; position: Position; fit: number }[],
   positions: PositionTable,
-): string[] {
-  const warnings: string[] = [];
+): Warning[] {
+  const warnings: Warning[] = [];
   for (const slot of lineup) {
     const hero = team.find((h) => h.id === slot.heroId);
     if (!hero) continue;
@@ -368,9 +405,16 @@ function positionWarnings(
     if (odds.source !== "pro" || !odds.proShare) continue;
     const share = odds.proShare[slot.position - 1];
     if (share < 0.1) {
-      warnings.push(
-        `${hero.name} would have to play ${POSITION_NAMES[slot.position]} (pros play it there in ${Math.round(share * 100)}% of ${odds.games} games)`,
-      );
+      const pct = Math.round(share * 100);
+      warnings.push({
+        text: `${hero.name} would have to play ${POSITION_NAMES[slot.position]} (pros play it there in ${pct}% of ${odds.games} games)`,
+        phrase: phrase("warnings.offRole", {
+          hero: hero.name,
+          position: positionPhrase(slot.position),
+          share: pct,
+          games: odds.games,
+        }),
+      });
     }
   }
   return warnings;
@@ -451,29 +495,41 @@ function outlookNotes(
   sides: Record<Side, SideBreakdown>,
   heroes: readonly OutlookHero[],
   pro: ProMeta | undefined,
-): string[] {
-  const notes: { weight: number; text: string }[] = [];
+): Note[] {
+  const notes: (Note & { weight: number })[] = [];
   const md = sides.radiant.meta - sides.dire.meta;
   if (Math.abs(md) >= 1) {
+    const side: Side = md > 0 ? "radiant" : "dire";
+    const points = Math.abs(md).toFixed(1);
     notes.push({
       weight: Math.abs(md),
-      text: `${sideName(md > 0 ? "radiant" : "dire")} has the stronger heroes this patch (${Math.abs(md).toFixed(1)} points of win rate).`,
+      text: `${sideName(side)} has the stronger heroes this patch (${points} points of win rate).`,
+      phrase: phrase("notes.strongerHeroes", { side: sidePhrase(side), points }),
     });
   }
   const mu = sides.radiant.matchups - sides.dire.matchups;
   if (Math.abs(mu) >= 1) {
+    const side: Side = mu > 0 ? "radiant" : "dire";
+    const points = Math.abs(mu).toFixed(1);
     notes.push({
       weight: Math.abs(mu),
-      text: `${sideName(mu > 0 ? "radiant" : "dire")} wins the head-to-head matchups (${Math.abs(mu).toFixed(1)} points).`,
+      text: `${sideName(side)} wins the head-to-head matchups (${points} points).`,
+      phrase: phrase("notes.winsMatchups", { side: sidePhrase(side), points }),
     });
   }
   const best = [...heroes]
     .filter((h) => h.bestMatchup && h.bestMatchup.edge >= 3)
     .sort((a, b) => b.bestMatchup!.edge - a.bestMatchup!.edge)[0];
   if (best?.bestMatchup) {
+    const points = best.bestMatchup.edge.toFixed(1);
     notes.push({
       weight: best.bestMatchup.edge / 2,
-      text: `${best.name} is a strong answer to ${best.bestMatchup.name} (+${best.bestMatchup.edge.toFixed(1)} points).`,
+      text: `${best.name} is a strong answer to ${best.bestMatchup.name} (+${points} points).`,
+      phrase: phrase("notes.strongAnswer", {
+        hero: best.name,
+        foe: best.bestMatchup.name,
+        points,
+      }),
     });
   }
   if (pro) {
@@ -481,30 +537,50 @@ function outlookNotes(
       .filter((h) => (h.contest ?? 0) >= 0.4)
       .sort((a, b) => (b.contest ?? 0) - (a.contest ?? 0))[0];
     if (hot) {
+      const share = Math.round((hot.contest ?? 0) * 100);
       notes.push({
         weight: 1,
-        text: `${hot.name} is a tournament priority: picked or banned in ${Math.round((hot.contest ?? 0) * 100)}% of recent pro drafts.`,
+        text: `${hot.name} is a tournament priority: picked or banned in ${share}% of recent pro drafts.`,
+        phrase: phrase("notes.tournamentPriority", { hero: hot.name, share }),
       });
     }
   }
   for (const side of ["radiant", "dire"] as const) {
-    for (const w of sides[side].warnings) {
-      notes.push({ weight: 3, text: `${sideName(side)}: ${w}.` });
-    }
+    sides[side].warnings.forEach((w, i) => {
+      notes.push({
+        weight: 3,
+        text: `${sideName(side)}: ${w}.`,
+        phrase: phrase("notes.warning", {
+          side: sidePhrase(side),
+          warning: sides[side].warningPhrases[i],
+        }),
+      });
+    });
   }
-  return notes.sort((a, b) => b.weight - a.weight).map((n) => n.text);
+  return notes.sort((a, b) => b.weight - a.weight).map(({ text, phrase }) => ({ text, phrase }));
 }
 
 /** "Mid lane favours Radiant: Lina vs Ember Spirit (+3.1 points)." Only clear edges. */
-function laneNotes(lanes: readonly LaneMatchup[], heroes: readonly OutlookHero[]): string[] {
+function laneNotes(lanes: readonly LaneMatchup[], heroes: readonly OutlookHero[]): Note[] {
   const name = (id: number) => heroes.find((h) => h.heroId === id)?.name ?? `Hero ${id}`;
   return lanes
     .filter((l) => l.edge !== null && Math.abs(l.edge) >= 2)
     .sort((a, b) => Math.abs(b.edge!) - Math.abs(a.edge!))
     .map((l) => {
-      const who = l.edge! > 0 ? "Radiant" : "Dire";
-      const matchup = `${l.radiant.map(name).join(" + ")} vs ${l.dire.map(name).join(" + ")}`;
+      const side: Side = l.edge! > 0 ? "radiant" : "dire";
+      const radiant = l.radiant.map(name).join(" + ");
+      const dire = l.dire.map(name).join(" + ");
       const lane = l.lane === "mid" ? "Mid lane" : l.label;
-      return `${lane} favours ${who}: ${matchup} (${Math.abs(l.edge!).toFixed(1)} points).`;
+      const points = Math.abs(l.edge!).toFixed(1);
+      return {
+        text: `${lane} favours ${sideName(side)}: ${radiant} vs ${dire} (${points} points).`,
+        phrase: phrase("notes.laneFavours", {
+          lane: phrase(`lanes.${l.lane}`),
+          side: sidePhrase(side),
+          radiant,
+          dire,
+          points,
+        }),
+      };
     });
 }

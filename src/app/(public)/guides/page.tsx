@@ -1,42 +1,42 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
+import { getT } from "@/common/i18n/server";
 import { matchesService } from "@/modules/matches";
 import { HeroPicker } from "@/modules/guides/ui/hero-picker";
 
-export const metadata: Metadata = {
-  title: "Hero guides",
-  description: "What pros buy on every hero, what strong games look like, and pro games to watch.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("guides.title"), description: t("guides.description") };
+}
 
-const ATTRS = [
-  { key: "str", label: "Strength" },
-  { key: "agi", label: "Agility" },
-  { key: "int", label: "Intelligence" },
-  { key: "all", label: "Universal" },
-] as const;
+const ATTRS = ["str", "agi", "int", "all"] as const;
 
 export default async function GuidesPage() {
+  const t = await getT();
   const heroes = [...(await matchesService.heroMap()).values()].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
   const groups = [
-    ...ATTRS.map((a) => ({
-      label: a.label,
-      heroes: heroes.filter((h) => h.primaryAttr === a.key),
+    ...ATTRS.map((key) => ({
+      label: t(`guides.index.attrs.${key}`),
+      heroes: heroes.filter((h) => h.primaryAttr === key),
     })),
-    { label: "Other", heroes: heroes.filter((h) => !ATTRS.some((a) => a.key === h.primaryAttr)) },
+    {
+      label: t("guides.index.attrs.other"),
+      heroes: heroes.filter((h) => !ATTRS.some((key) => key === h.primaryAttr)),
+    },
   ].filter((g) => g.heroes.length > 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Guides"
-        title="Hero guides"
-        description="Pick a hero to see what pros buy in each phase, what strong games on it look like, and recent pro games to watch."
+        kicker={t("guides.index.kicker")}
+        title={t("guides.index.title")}
+        description={t("guides.index.description")}
       />
       {heroes.length === 0 ? (
         <p className="panel p-5 text-sm text-muted-foreground">
-          The hero list is unavailable right now. Try again in a minute.
+          {t("guides.index.heroesUnavailable")}
         </p>
       ) : (
         <HeroPicker groups={groups} />

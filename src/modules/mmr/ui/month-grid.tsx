@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { Calendar } from "../domain/calendar";
 import { addDays, weekday, type DayKey } from "@/common/time/day-key";
 import { basisOf, dayStyle, deltaLabel, periodScale } from "./day-tone";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function MonthGrid({
+export async function MonthGrid({
   from,
   to,
   calendar,
@@ -21,6 +23,7 @@ export function MonthGrid({
   selected: DayKey | null;
   hrefForDay: (key: DayKey) => string;
 }) {
+  const t = await getT();
   const scale = periodScale(calendar.days.values());
   const start = addDays(from, -weekday(from));
   const cells: Array<DayKey | null> = [];
@@ -28,7 +31,7 @@ export function MonthGrid({
     cells.push(k < from || k > to ? null : k);
 
   return (
-    <div role="grid" aria-label="Month calendar" className="space-y-1.5">
+    <div role="grid" aria-label={t("mmr.calendar.monthLabel")} className="space-y-1.5">
       <div role="row" className="grid grid-cols-7 gap-1.5">
         {WEEKDAYS.map((d) => (
           <div
@@ -52,9 +55,11 @@ export function MonthGrid({
             const describe = [
               key,
               label
-                ? `${basis === "estimate" ? "estimated " : ""}${label.replace("≈ ", "")} MMR`
-                : "no ranked games",
-              day?.games ? `${day.games} ranked game${day.games === 1 ? "" : "s"}` : null,
+                ? t(basis === "estimate" ? "mmr.calendar.estimatedValue" : "mmr.calendar.value", {
+                    value: label.replace("≈ ", ""),
+                  })
+                : t("mmr.calendar.noRanked"),
+              day?.games ? plural(t, "mmr.calendar.rankedGames", day.games) : null,
             ]
               .filter(Boolean)
               .join(", ");
@@ -106,14 +111,14 @@ export function MonthGrid({
                 )}
                 {day && day.games > 0 && (
                   <span className="hidden text-[0.65rem] text-muted-foreground sm:block">
-                    {day.wins}W {day.losses}L
+                    {t("mmr.calendar.wl", { wins: day.wins, losses: day.losses })}
                   </span>
                 )}
                 {day && day.observations.length > 0 && (
                   <span
                     aria-hidden
                     className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-gold"
-                    title="MMR logged this day"
+                    title={t("mmr.calendar.loggedDot")}
                   />
                 )}
               </Link>

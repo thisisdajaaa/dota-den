@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Eye, Radio, UserRound } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { LocalTime } from "@/components/local-time";
 import type { HistoryOpponent } from "../draft-history.ports";
 import type {
@@ -12,14 +14,13 @@ import type {
 } from "../dtos/responses/history-views.dto";
 import type { HeroCount, ReportedWinner } from "../domain/draft-history";
 import type { Side } from "../domain/draft-state";
+import { rulesetName, sideName, type T } from "./i18n";
 import type { DraftHero } from "./types";
 
-const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const WINNER: Record<ReportedWinner, string> = {
-  radiant: "Radiant won",
-  dire: "Dire won",
-  not_played: "Not played",
+const WINNER: Record<ReportedWinner, "radiantWon" | "direWon" | "notPlayed"> = {
+  radiant: "radiantWon",
+  dire: "direWon",
+  not_played: "notPlayed",
 };
 
 export function historyHref(opts: { friend?: number | null; page?: number }): string {
@@ -52,18 +53,20 @@ function Avatar({ captain, size = 40 }: { captain: PublicCaptain; size?: number 
 }
 
 function HeroThumb({
+  t,
   hero,
   heroId,
   banned = false,
 }: {
+  t: T;
   hero: DraftHero | undefined;
   heroId: number;
   banned?: boolean;
 }) {
-  const name = hero?.name ?? `Hero #${heroId}`;
+  const name = hero?.name ?? t("drafts.history.hero", { id: heroId });
   return (
     <span
-      title={banned ? `${name} (banned)` : name}
+      title={banned ? t("drafts.history.banned", { hero: name }) : name}
       className={cn(
         "relative inline-block h-7 w-[3.1rem] shrink-0 overflow-hidden rounded bg-muted ring-1 ring-white/10",
         banned && "opacity-50 grayscale",
@@ -87,12 +90,14 @@ function HeroThumb({
 }
 
 function Lineup({
+  t,
   label,
   side,
   picks,
   bans,
   heroes,
 }: {
+  t: T;
   label: string;
   side: Side;
   picks: number[];
@@ -104,17 +109,19 @@ function Lineup({
       <p className={cn("text-xs font-medium", side === "radiant" ? "text-win" : "text-loss")}>
         {label}
       </p>
-      <div className="flex flex-wrap gap-1" aria-label={`${label} picks`}>
+      <div className="flex flex-wrap gap-1" aria-label={t("drafts.history.picks", { label })}>
         {picks.map((id) => (
-          <HeroThumb key={id} hero={heroes.get(id)} heroId={id} />
+          <HeroThumb key={id} t={t} hero={heroes.get(id)} heroId={id} />
         ))}
       </div>
       {bans.length > 0 && (
         <details className="text-xs text-muted-foreground">
-          <summary className="cursor-pointer select-none">{plural(bans.length, "ban")}</summary>
+          <summary className="cursor-pointer select-none">
+            {plural(t, "drafts.history.bans", bans.length)}
+          </summary>
           <div className="mt-1 flex flex-wrap gap-1">
             {bans.map((id) => (
-              <HeroThumb key={id} hero={heroes.get(id)} heroId={id} banned />
+              <HeroThumb key={id} t={t} hero={heroes.get(id)} heroId={id} banned />
             ))}
           </div>
         </details>
@@ -123,10 +130,10 @@ function Lineup({
   );
 }
 
-function ResultBadge({ entry }: { entry: HistoryEntryView }) {
+function ResultBadge({ t, entry }: { t: T; entry: HistoryEntryView }) {
   const r = entry.result;
   if (!r) {
-    return <span className="text-xs text-muted-foreground">No result reported</span>;
+    return <span className="text-xs text-muted-foreground">{t("drafts.history.noResult")}</span>;
   }
   const tone =
     r.outcome === "won"
@@ -134,64 +141,81 @@ function ResultBadge({ entry }: { entry: HistoryEntryView }) {
       : r.outcome === "lost"
         ? "border-loss/40 bg-loss/10 text-loss"
         : "border-white/15 bg-white/[0.04] text-muted-foreground";
-  const text = r.outcome === "won" ? "You won" : r.outcome === "lost" ? "You lost" : "Not played";
+  const text =
+    r.outcome === "won"
+      ? t("drafts.history.youWon")
+      : r.outcome === "lost"
+        ? t("drafts.history.youLost")
+        : t("drafts.history.notPlayed");
   return (
     <span className="flex flex-wrap items-center gap-1.5 text-xs">
       <span className={cn("rounded border px-1.5 py-0.5 font-medium", tone)}>{text}</span>
       <span className="text-muted-foreground">
-        {r.winner !== "not_played" && `${WINNER[r.winner]} · `}self-reported by{" "}
-        {r.setByYou ? "you" : r.setByName}
+        {r.winner !== "not_played" && `${t(`drafts.history.${WINNER[r.winner]}`)} · `}
+        {t("drafts.history.selfReported", {
+          who: r.setByYou ? t("drafts.history.you") : r.setByName,
+        })}
       </span>
     </span>
   );
 }
 
 function HistoryRow({
+  t,
   entry,
   heroes,
 }: {
+  t: T;
   entry: HistoryEntryView;
   heroes: Map<number, DraftHero>;
 }) {
   const theirSide: Side = entry.yourSide === "radiant" ? "dire" : "radiant";
   return (
-    <li className="space-y-3 px-4 py-4 sm:px-5" aria-label={`Draft against ${entry.opponent.name}`}>
+    <li
+      className="space-y-3 px-4 py-4 sm:px-5"
+      aria-label={t("drafts.history.against", { name: entry.opponent.name })}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar captain={entry.opponent} />
           <div className="min-w-0">
             <p className="truncate font-medium">
-              vs {entry.opponent.name}
+              {t("drafts.history.vs", { name: entry.opponent.name })}
               {entry.isRematch && (
                 <span className="ml-2 rounded bg-white/[0.06] px-1.5 text-xs text-muted-foreground">
-                  Rematch
+                  {t("drafts.history.rematch")}
                 </span>
               )}
             </p>
             <p className="text-xs text-muted-foreground">
-              You were{" "}
+              {t("drafts.history.youWere")}{" "}
               <span className={entry.yourSide === "radiant" ? "text-win" : "text-loss"}>
-                {sideName(entry.yourSide)}
+                {sideName(t, entry.yourSide)}
               </span>
               {" · "}
-              {entry.rulesetName}
+              {rulesetName(t, { id: entry.rulesetId, name: entry.rulesetName })}
               {" · "}
               <LocalTime iso={entry.completedAt} />
             </p>
           </div>
         </div>
-        <ResultBadge entry={entry} />
+        <ResultBadge t={t} entry={entry} />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Lineup
-          label={`You (${sideName(entry.yourSide)})`}
+          t={t}
+          label={t("drafts.history.youSide", { side: sideName(t, entry.yourSide) })}
           side={entry.yourSide}
           picks={entry.sides[entry.yourSide].picks}
           bans={entry.sides[entry.yourSide].bans}
           heroes={heroes}
         />
         <Lineup
-          label={`${entry.opponent.name} (${sideName(theirSide)})`}
+          t={t}
+          label={t("drafts.history.theirSide", {
+            name: entry.opponent.name,
+            side: sideName(t, theirSide),
+          })}
           side={theirSide}
           picks={entry.sides[theirSide].picks}
           bans={entry.sides[theirSide].bans}
@@ -203,14 +227,14 @@ function HistoryRow({
           href={`/draft?snapshot=${entry.snapshot}`}
           className="inline-flex items-center gap-1.5 text-gold hover:underline"
         >
-          <Eye aria-hidden className="size-3.5" /> View draft
+          <Eye aria-hidden className="size-3.5" /> {t("drafts.history.view")}
         </Link>
         {entry.roomAvailable && (
           <Link
             href={`/draft/rooms/${entry.roomId}`}
             className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
           >
-            <Radio aria-hidden className="size-3.5" /> Open room
+            <Radio aria-hidden className="size-3.5" /> {t("drafts.history.openRoom")}
           </Link>
         )}
       </div>
@@ -218,7 +242,7 @@ function HistoryRow({
   );
 }
 
-export function HistoryList({
+export async function HistoryList({
   page,
   heroes,
   friend,
@@ -227,11 +251,12 @@ export function HistoryList({
   heroes: Map<number, DraftHero>;
   friend: number | null;
 }) {
+  const t = await getT();
   return (
-    <section className="panel overflow-hidden" aria-label="Recorded drafts">
+    <section className="panel overflow-hidden" aria-label={t("drafts.history.listLabel")}>
       <ol className="divide-y divide-white/[0.06]">
         {page.items.map((e) => (
-          <HistoryRow key={e.roomId} entry={e} heroes={heroes} />
+          <HistoryRow key={e.roomId} t={t} entry={e} heroes={heroes} />
         ))}
       </ol>
       <div className="flex items-center justify-between border-t border-white/[0.06] px-5 py-3 text-sm">
@@ -240,20 +265,20 @@ export function HistoryList({
             href={historyHref({ friend, page: page.page - 1 })}
             className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
           >
-            <ChevronLeft aria-hidden className="size-4" /> Newer drafts
+            <ChevronLeft aria-hidden className="size-4" /> {t("drafts.history.newer")}
           </Link>
         ) : (
-          <span className="text-xs text-muted-foreground">Newest first</span>
+          <span className="text-xs text-muted-foreground">{t("drafts.history.newestFirst")}</span>
         )}
         <span className="text-xs text-muted-foreground">
-          Page {page.page} of {page.pageCount}
+          {t("drafts.history.page", { page: page.page, count: page.pageCount })}
         </span>
         {page.page < page.pageCount ? (
           <Link
             href={historyHref({ friend, page: page.page + 1 })}
             className="inline-flex items-center gap-1 font-medium text-gold hover:underline"
           >
-            Older drafts <ChevronRight aria-hidden className="size-4" />
+            {t("drafts.history.older")} <ChevronRight aria-hidden className="size-4" />
           </Link>
         ) : (
           <span />
@@ -263,13 +288,14 @@ export function HistoryList({
   );
 }
 
-export function FriendFilter({
+export async function FriendFilter({
   opponents,
   active,
 }: {
   opponents: HistoryOpponent[];
   active: number | null;
 }) {
+  const t = await getT();
   const chip = (isActive: boolean) =>
     cn(
       "inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
@@ -279,7 +305,7 @@ export function FriendFilter({
     );
   return (
     <nav
-      aria-label="Filter by friend"
+      aria-label={t("drafts.history.filter")}
       className="flex max-w-full flex-wrap gap-0.5 rounded-lg border border-white/[0.07] bg-card/60 p-0.5"
     >
       <Link
@@ -287,7 +313,7 @@ export function FriendFilter({
         aria-current={active === null ? "page" : undefined}
         className={chip(active === null)}
       >
-        Everyone
+        {t("drafts.history.everyone")}
       </Link>
       {opponents.map((o) => (
         <Link
@@ -306,11 +332,13 @@ export function FriendFilter({
 }
 
 function HeroCounts({
+  t,
   title,
   counts,
   heroes,
   empty,
 }: {
+  t: T;
   title: string;
   counts: HeroCount[];
   heroes: Map<number, DraftHero>;
@@ -325,9 +353,9 @@ function HeroCounts({
         <ol className="space-y-1.5">
           {counts.map((c) => (
             <li key={c.heroId} className="flex items-center gap-2 text-sm">
-              <HeroThumb hero={heroes.get(c.heroId)} heroId={c.heroId} />
+              <HeroThumb t={t} hero={heroes.get(c.heroId)} heroId={c.heroId} />
               <span className="min-w-0 flex-1 truncate">
-                {heroes.get(c.heroId)?.name ?? `Hero #${c.heroId}`}
+                {heroes.get(c.heroId)?.name ?? t("drafts.history.hero", { id: c.heroId })}
               </span>
               <span className="text-xs text-muted-foreground tabular-nums">× {c.count}</span>
             </li>
@@ -338,37 +366,40 @@ function HeroCounts({
   );
 }
 
-export function HeadToHeadSummary({
+export async function HeadToHeadSummary({
   summary,
   heroes,
 }: {
   summary: HeadToHeadView;
   heroes: Map<number, DraftHero>;
 }) {
+  const t = await getT();
   const reported = summary.wins + summary.losses;
   const notes = [
-    summary.unreported > 0 && `${plural(summary.unreported, "draft")} with no result reported`,
-    summary.notPlayed > 0 && `${summary.notPlayed} not played`,
+    summary.unreported > 0 && plural(t, "drafts.history.unreported", summary.unreported),
+    summary.notPlayed > 0 && t("drafts.history.notPlayedCount", { n: summary.notPlayed }),
   ].filter(Boolean);
   return (
-    <section className="panel space-y-5 p-5" aria-label="Head to head">
+    <section className="panel space-y-5 p-5" aria-label={t("drafts.history.h2hLabel")}>
       <div className="flex flex-wrap items-center gap-4">
         <Avatar captain={summary.friend} size={48} />
         <div className="min-w-0">
-          <p className="kicker">Head to head</p>
-          <h2 className="truncate text-xl font-semibold">You vs {summary.friend.name}</h2>
+          <p className="kicker">{t("drafts.history.h2h")}</p>
+          <h2 className="truncate text-xl font-semibold">
+            {t("drafts.history.youVs", { name: summary.friend.name })}
+          </h2>
         </div>
       </div>
       <div className="flex flex-wrap items-baseline gap-x-8 gap-y-3">
         <div>
-          <div className="kicker">Drafts together</div>
+          <div className="kicker">{t("drafts.history.together")}</div>
           <div className="text-2xl font-semibold sm:text-3xl">{summary.drafts}</div>
         </div>
         <div>
-          <div className="kicker">Record</div>
+          <div className="kicker">{t("drafts.history.record")}</div>
           <div className="text-2xl font-semibold whitespace-nowrap sm:text-3xl">
             {reported === 0 ? (
-              <span className="text-muted-foreground">No results yet</span>
+              <span className="text-muted-foreground">{t("drafts.history.noResults")}</span>
             ) : (
               <>
                 <span className="text-win">{summary.wins}</span>
@@ -380,29 +411,33 @@ export function HeadToHeadSummary({
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        The record counts only the {plural(reported, "game")} where a captain reported which side
-        won. Results are self-reported, not checked against match data
-        {notes.length > 0 ? `. Not counted: ${notes.join(", ")}.` : "."}
-        {summary.truncated && " Based on your newest drafts together."}
+        {t("drafts.history.recordNote", { games: plural(t, "drafts.history.games", reported) })}
+        {notes.length > 0
+          ? t("drafts.history.notCounted", { notes: notes.join(", ") })
+          : t("drafts.history.period")}
+        {summary.truncated && t("drafts.history.truncated")}
       </p>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <HeroCounts
-          title="Your most-picked heroes"
+          t={t}
+          title={t("drafts.history.yourPicks")}
           counts={summary.yourPicks}
           heroes={heroes}
-          empty="No picks yet."
+          empty={t("drafts.history.noPicks")}
         />
         <HeroCounts
-          title={`${summary.friend.name}'s most-picked heroes`}
+          t={t}
+          title={t("drafts.history.friendPicks", { name: summary.friend.name })}
           counts={summary.friendPicks}
           heroes={heroes}
-          empty="No picks yet."
+          empty={t("drafts.history.noPicks")}
         />
         <HeroCounts
-          title="Most banned against you"
+          t={t}
+          title={t("drafts.history.bannedAgainst")}
           counts={summary.bannedAgainstYou}
           heroes={heroes}
-          empty="No bans yet."
+          empty={t("drafts.history.noBans")}
         />
       </div>
     </section>

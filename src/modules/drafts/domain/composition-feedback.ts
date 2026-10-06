@@ -7,6 +7,8 @@
  * and drops to "low" while the lineup is incomplete.
  */
 
+import { phrase, type Phrase } from "./phrase";
+
 export type HeroRole =
   | "Carry"
   | "Support"
@@ -43,6 +45,8 @@ export interface CompositionFinding {
   category: FeedbackCategory;
   level: FeedbackLevel;
   reason: string;
+  /** The reason for the UI to translate (without the "based on n of 5 picks" note). */
+  phrase: Phrase;
   confidence: "low" | "medium";
 }
 
@@ -56,6 +60,27 @@ const withRole = (heroes: readonly FeedbackHero[], role: HeroRole): FeedbackHero
 const evidence = (label: string, heroes: readonly FeedbackHero[]): string =>
   heroes.length === 0 ? `No ${label} picked` : `${label} from ${names(heroes)}`;
 
+/** Evidence labels as message ids (`feedback.evidence.<id>`). */
+type EvidenceId =
+  | "disables"
+  | "initiation"
+  | "frontline"
+  | "push"
+  | "support"
+  | "carry"
+  | "magical"
+  | "physical"
+  | "ranged"
+  | "melee";
+
+const evidencePhrase = (id: EvidenceId, heroes: readonly FeedbackHero[]): Phrase =>
+  heroes.length === 0
+    ? phrase(`feedback.evidence.${id}.none`)
+    : phrase(`feedback.evidence.${id}.some`, { heroes: names(heroes) });
+
+const notePhrase = (category: FeedbackCategory, variant: string) =>
+  phrase(`feedback.notes.${category}.${variant}`);
+
 /**
  * Count-based rule for a single role tag.
  * `strongAt`: count at or above which the category is strong; one tag below that is ok;
@@ -66,13 +91,22 @@ function roleRule(
   category: FeedbackCategory,
   role: HeroRole,
   label: string,
+  id: EvidenceId,
   strongAt: number,
   notes: { strong: string; ok: string; weak: string },
 ): Omit<CompositionFinding, "confidence"> {
   const contributors = withRole(heroes, role);
   const n = contributors.length;
   const level: FeedbackLevel = n >= strongAt ? "strong" : n >= 1 ? "ok" : "weak";
-  return { category, level, reason: `${evidence(label, contributors)}. ${notes[level]}` };
+  return {
+    category,
+    level,
+    reason: `${evidence(label, contributors)}. ${notes[level]}`,
+    phrase: phrase("feedback.reason", {
+      evidence: evidencePhrase(id, contributors),
+      note: notePhrase(category, level),
+    }),
+  };
 }
 
 /**
@@ -96,28 +130,28 @@ export function compositionFeedback(heroes: readonly FeedbackHero[]): Compositio
   const partial = heroes.length < FULL_TEAM_SIZE ? ` (based on ${heroes.length} of 5 picks)` : "";
 
   const findings: Omit<CompositionFinding, "confidence">[] = [
-    roleRule(heroes, "control", "Disabler", "Disables", 3, {
+    roleRule(heroes, "control", "Disabler", "Disables", "disables", 3, {
       strong: "Plenty of lockdown to catch and hold targets.",
       ok: "Some lockdown, but catches may rely on a single spell landing.",
       weak: "Little reliable lockdown; enemies can escape or channel freely.",
     }),
-    roleRule(heroes, "initiation", "Initiator", "Initiation", 2, {
+    roleRule(heroes, "initiation", "Initiator", "Initiation", "initiation", 2, {
       strong: "Multiple ways to start fights.",
       ok: "One initiator; fights may stall if that hero is caught or out of position.",
       weak: "No dedicated initiator; the team may struggle to start fights on its terms.",
     }),
-    roleRule(heroes, "durability", "Durable", "Frontline", 2, {
+    roleRule(heroes, "durability", "Durable", "Frontline", "frontline", 2, {
       strong: "Several heroes can absorb damage.",
       ok: "One durable hero carries the frontline.",
       weak: "No durable hero; fights may be decided by who gets focused first.",
     }),
-    roleRule(heroes, "push", "Pusher", "Push", 2, {
+    roleRule(heroes, "push", "Pusher", "Push", "push", 2, {
       strong: "Good tools to take towers and end.",
       ok: "Some push, but sieging high ground may be slow.",
       weak: "No dedicated pushers; closing the game may take time.",
     }),
     carryRule(heroes),
-    roleRule(heroes, "support", "Support", "Support", 2, {
+    roleRule(heroes, "support", "Support", "Support", "support", 2, {
       strong: "Enough support heroes to cover lanes, vision and saves.",
       ok: "Only one support-tagged hero; vision and saves may be thin.",
       weak: "No support-tagged heroes; lanes and vision may suffer.",
@@ -141,6 +175,10 @@ function carryRule(heroes: readonly FeedbackHero[]): Omit<CompositionFinding, "c
     category: "carry_core",
     level,
     reason: `${evidence("Carry potential", carries)}. ${note}`,
+    phrase: phrase("feedback.reason", {
+      evidence: evidencePhrase("carry", carries),
+      note: notePhrase("carry_core", level),
+    }),
   };
 }
 
@@ -148,28 +186,46 @@ function damageRule(heroes: readonly FeedbackHero[]): Omit<CompositionFinding, "
   const magical = withRole(heroes, "Nuker");
   const physical = withRole(heroes, "Carry");
   const parts = [evidence("Magical burst", magical), evidence("physical damage", physical)];
-  const [level, note]: [FeedbackLevel, string] =
+  const [level, note, variant]: [FeedbackLevel, string, string] =
     magical.length > 0 && physical.length > 0
-      ? ["strong", "Mixed damage is harder to itemize against."]
+      ? ["strong", "Mixed damage is harder to itemize against.", "mixed"]
       : magical.length > 0
-        ? ["ok", "Leans magical; enemy magic resistance and spell immunity hurt more."]
+        ? ["ok", "Leans magical; enemy magic resistance and spell immunity hurt more.", "magical"]
         : physical.length > 0
-          ? ["ok", "Leans physical; enemy armor and evasion hurt more."]
-          : ["weak", "No nuker or carry tags; damage output is unclear."];
-  return { category: "damage_profile", level, reason: `${parts.join("; ")}. ${note}` };
+          ? ["ok", "Leans physical; enemy armor and evasion hurt more.", "physical"]
+          : ["weak", "No nuker or carry tags; damage output is unclear.", "none"];
+  return {
+    category: "damage_profile",
+    level,
+    reason: `${parts.join("; ")}. ${note}`,
+    phrase: phrase("feedback.reason2", {
+      a: evidencePhrase("magical", magical),
+      b: evidencePhrase("physical", physical),
+      note: notePhrase("damage_profile", variant),
+    }),
+  };
 }
 
 function rangeRule(heroes: readonly FeedbackHero[]): Omit<CompositionFinding, "confidence"> {
   const ranged = heroes.filter((h) => h.attackType === "Ranged");
   const melee = heroes.filter((h) => h.attackType === "Melee");
   const parts = [evidence("Ranged", ranged), evidence("melee", melee)];
-  const [level, note]: [FeedbackLevel, string] =
+  const [level, note, variant]: [FeedbackLevel, string, string] =
     melee.length === 0
-      ? ["ok", "All ranged: good poke, but no one naturally stands in front."]
+      ? ["ok", "All ranged: good poke, but no one naturally stands in front.", "allRanged"]
       : ranged.length === 0
-        ? ["weak", "All melee: kiting heroes and high ground defense are hard."]
+        ? ["weak", "All melee: kiting heroes and high ground defense are hard.", "allMelee"]
         : ranged.length === 1
-          ? ["ok", "Only one ranged hero; limited poke and siege."]
-          : ["strong", "A mix of ranged and melee attackers."];
-  return { category: "range", level, reason: `${parts.join("; ")}. ${note}` };
+          ? ["ok", "Only one ranged hero; limited poke and siege.", "oneRanged"]
+          : ["strong", "A mix of ranged and melee attackers.", "mixed"];
+  return {
+    category: "range",
+    level,
+    reason: `${parts.join("; ")}. ${note}`,
+    phrase: phrase("feedback.reason2", {
+      a: evidencePhrase("ranged", ranged),
+      b: evidencePhrase("melee", melee),
+      note: notePhrase("range", variant),
+    }),
+  };
 }

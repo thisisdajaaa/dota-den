@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +17,7 @@ import { getRuleset } from "../domain/rulesets";
 import { DraftOutlookPanel, positionsFrom, useDraftOutlook } from "./draft-outlook-panel";
 import { FeedbackPanel } from "./feedback-panel";
 import { HeroGrid } from "./hero-grid";
+import { actionName, rulesetName, seconds, sideName } from "./i18n";
 import { RoomResultPanel } from "./room-result-panel";
 import { SequenceStrip } from "./sequence-strip";
 import { TeamPanel } from "./team-panel";
@@ -23,12 +25,6 @@ import type { DraftHero } from "./types";
 
 const POLL_VISIBLE_MS = 1_000;
 const POLL_HIDDEN_MS = 5_000;
-const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
-
-function seconds(ms: number): string {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
-}
 
 /** A live multiplayer draft room. The server is authoritative; this view polls and resyncs. */
 export function RoomClient({
@@ -40,6 +36,7 @@ export function RoomClient({
   initialEvents: EventView[];
   heroes: DraftHero[];
 }) {
+  const t = useT();
   const router = useRouter();
   const [room, setRoom] = useState(initialRoom);
   const [events, setEvents] = useState(initialEvents);
@@ -131,7 +128,7 @@ export function RoomClient({
       return json?.room ?? null;
     } catch (e) {
       if (!(e instanceof ApiClientError)) {
-        toast.error("Network error. Check your connection.");
+        toast.error(t("drafts.room.network"));
         return null;
       }
       // A stale move comes back with the current room so the screen can resync.
@@ -176,17 +173,20 @@ export function RoomClient({
       await navigator.clipboard.writeText(text);
       toast.success(msg);
     } catch {
-      toast.error("Couldn't copy.");
+      toast.error(t("drafts.room.copyFailed"));
     }
   };
 
   const announcement =
     room.status === "lobby"
-      ? "Waiting in the lobby."
+      ? t("drafts.room.announceLobby")
       : room.status === "completed"
-        ? "Draft complete."
+        ? t("drafts.room.announceComplete")
         : turn
-          ? `${sideName(turn.side)} to ${turn.action}${myTurn ? ", your turn" : ""}.`
+          ? t(myTurn ? "drafts.room.announceYourTurn" : "drafts.room.announceTurn", {
+              side: sideName(t, turn.side),
+              action: actionName(t, turn.action),
+            })
           : "";
 
   return (
@@ -202,20 +202,22 @@ export function RoomClient({
           ) : (
             <WifiOff aria-hidden className="size-3.5 text-loss" />
           )}
-          <span role="status">{connected ? "Live" : "Reconnecting…"}</span>
+          <span role="status">
+            {connected ? t("drafts.room.live") : t("drafts.room.reconnecting")}
+          </span>
           <span aria-hidden>·</span>
-          <span>{rulesetRes.ok ? rulesetRes.value.name : state.rulesetId}</span>
-          {state.timer.enabled && <span>· Timer on</span>}
-          {!mySeat && <span>· You&apos;re watching</span>}
+          <span>{rulesetRes.ok ? rulesetName(t, rulesetRes.value) : state.rulesetId}</span>
+          {state.timer.enabled && <span>{t("drafts.room.timerOn")}</span>}
+          {!mySeat && <span>{t("drafts.room.watching")}</span>}
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button
             size="sm"
             variant="ghost"
             className="gap-1.5"
-            onClick={() => copy(shareUrl, "Room link copied")}
+            onClick={() => copy(shareUrl, t("drafts.room.roomCopied"))}
           >
-            <Link2 className="size-3.5" /> Copy room link
+            <Link2 className="size-3.5" /> {t("drafts.room.copyRoom")}
           </Button>
           {room.viewer.isHost && state.timer.enabled && room.status === "in_progress" && (
             <Button
@@ -236,7 +238,7 @@ export function RoomClient({
               ) : (
                 <Pause className="size-3.5" />
               )}
-              {state.status === "paused" ? "Resume" : "Pause"}
+              {state.status === "paused" ? t("drafts.room.resume") : t("drafts.room.pause")}
             </Button>
           )}
         </div>
@@ -255,33 +257,39 @@ export function RoomClient({
             <div>
               <p className="kicker">
                 {room.status === "completed"
-                  ? "Draft complete"
-                  : `Step ${state.stepIndex + 1} of ${sequence.length}`}
+                  ? t("drafts.room.complete")
+                  : t("drafts.room.step", { step: state.stepIndex + 1, total: sequence.length })}
               </p>
               <p className="text-xl font-semibold">
                 {room.status === "completed" ? (
-                  "Both lineups are locked in"
+                  t("drafts.room.lockedIn")
                 ) : turn ? (
                   <>
                     {myTurn ? (
-                      <span className="text-gold">Your {turn.action}</span>
+                      <span className="text-gold">
+                        {turn.action === "pick"
+                          ? t("drafts.room.yourPick")
+                          : t("drafts.room.yourBan")}
+                      </span>
                     ) : (
                       <>
                         <span className={turn.side === "radiant" ? "text-win" : "text-loss"}>
-                          {room.captains[turn.side]?.name ?? sideName(turn.side)}
+                          {room.captains[turn.side]?.name ?? sideName(t, turn.side)}
                         </span>{" "}
-                        {turn.action === "pick" ? "is picking…" : "is banning…"}
+                        {turn.action === "pick"
+                          ? t("drafts.room.isPicking")
+                          : t("drafts.room.isBanning")}
                       </>
                     )}
                     {state.status === "paused" && (
-                      <span className="text-muted-foreground"> (paused)</span>
+                      <span className="text-muted-foreground">{t("drafts.room.paused")}</span>
                     )}
                   </>
                 ) : null}
               </p>
             </div>
             {time.timed && room.status === "in_progress" && (
-              <div className="text-right" aria-label="Turn timer">
+              <div className="text-right" aria-label={t("drafts.room.turnTimer")}>
                 <div
                   className={cn(
                     "text-3xl font-semibold tabular-nums",
@@ -289,11 +297,13 @@ export function RoomClient({
                   )}
                 >
                   {time.turnRemainingMs > 0
-                    ? seconds(time.turnRemainingMs)
-                    : `+${seconds(time.reserveRemainingMs)}`}
+                    ? seconds(t, time.turnRemainingMs)
+                    : `+${seconds(t, time.reserveRemainingMs)}`}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {time.turnRemainingMs > 0 ? "turn time" : "using reserve"}
+                  {time.turnRemainingMs > 0
+                    ? t("drafts.room.turnTime")
+                    : t("drafts.room.usingReserve")}
                 </div>
               </div>
             )}
@@ -314,7 +324,7 @@ export function RoomClient({
                 }
                 isFirst={state.firstSide === side}
                 reserveLabel={
-                  state.timer.enabled ? seconds(state.timer.reserveRemainingMs[side]) : null
+                  state.timer.enabled ? seconds(t, state.timer.reserveRemainingMs[side]) : null
                 }
                 controller={mySeat ? (side === mySeat ? "you" : undefined) : undefined}
                 captainName={room.captains[side]?.name}
@@ -340,12 +350,12 @@ export function RoomClient({
                 heroes={heroes}
                 unavailable={unavailable}
                 disabled={!myTurn || busy || state.status === "paused"}
-                actionLabel={turn?.action ?? "pick"}
+                actionLabel={actionName(t, turn?.action ?? "pick")}
                 onChoose={choose}
               />
             ) : (
               <p className="panel p-4 text-sm text-muted-foreground">
-                You&apos;re watching this draft. Only the two captains can pick and ban.
+                {t("drafts.room.watchingNote")}
               </p>
             ))}
 
@@ -373,11 +383,11 @@ export function RoomClient({
                   onClick={() =>
                     copy(
                       `${window.location.origin}/draft?snapshot=${encodeSnapshot(snapshotOf(state))}`,
-                      "Draft link copied",
+                      t("drafts.room.draftCopied"),
                     )
                   }
                 >
-                  <Link2 className="size-3.5" /> Share this draft
+                  <Link2 className="size-3.5" /> {t("drafts.room.shareDraft")}
                 </Button>
                 {room.viewer.isHost ? (
                   <Button
@@ -386,11 +396,11 @@ export function RoomClient({
                     disabled={busy}
                     onClick={() => post("rematch")}
                   >
-                    <RotateCcw className="size-3.5" /> Rematch (first pick swaps)
+                    <RotateCcw className="size-3.5" /> {t("drafts.room.rematch")}
                   </Button>
                 ) : (
                   <span className="text-xs text-muted-foreground">
-                    If the host starts a rematch, you&apos;ll be taken there automatically.
+                    {t("drafts.room.rematchNote")}
                   </span>
                 )}
               </div>
@@ -415,6 +425,7 @@ function Seat({
   busy: boolean;
   post: (path: string, body?: unknown) => Promise<RoomView | null>;
 }) {
+  const t = useT();
   const captain = room.captains[side];
   const mine = room.viewer.seat === side;
   return (
@@ -439,21 +450,29 @@ function Seat({
       </span>
       <div className="min-w-0 flex-1">
         <p className={cn("kicker", side === "radiant" ? "text-win" : "text-loss")}>
-          {sideName(side)} captain
+          {t("drafts.room.captain", { side: sideName(t, side) })}
         </p>
         <p className="truncate text-lg font-semibold">
-          {captain ? captain.name : <span className="text-muted-foreground">Open seat</span>}
-          {mine && <span className="ml-2 rounded bg-gold/15 px-1.5 text-xs text-gold">You</span>}
+          {captain ? (
+            captain.name
+          ) : (
+            <span className="text-muted-foreground">{t("drafts.room.openSeat")}</span>
+          )}
+          {mine && (
+            <span className="ml-2 rounded bg-gold/15 px-1.5 text-xs text-gold">
+              {t("drafts.room.you")}
+            </span>
+          )}
         </p>
       </div>
       {!captain && room.viewer.signedIn && !room.viewer.seat && (
         <Button size="sm" disabled={busy} onClick={() => post("join", { side })}>
-          Take seat
+          {t("drafts.room.takeSeat")}
         </Button>
       )}
       {mine && !room.viewer.isHost && (
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => post("leave")}>
-          Leave seat
+          {t("drafts.room.leaveSeat")}
         </Button>
       )}
     </div>
@@ -469,9 +488,10 @@ function Lobby({
   busy: boolean;
   post: (path: string, body?: unknown) => Promise<RoomView | null>;
 }) {
+  const t = useT();
   const bothSeated = room.captains.radiant && room.captains.dire;
   return (
-    <section className="space-y-4" aria-label="Lobby">
+    <section className="space-y-4" aria-label={t("drafts.room.lobby")}>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Seat side="radiant" room={room} busy={busy} post={post} />
         <Seat side="dire" room={room} busy={busy} post={post} />
@@ -480,22 +500,22 @@ function Lobby({
         <p className="text-sm text-muted-foreground">
           {bothSeated
             ? room.viewer.isHost
-              ? "Both captains are here. Start when you're ready."
-              : "Both captains are here. Waiting for the host to start."
-            : "Send the room link to a friend so they can take the open seat."}
+              ? t("drafts.room.bothHost")
+              : t("drafts.room.bothWaiting")
+            : t("drafts.room.sendLink")}
           {!room.viewer.signedIn && (
             <>
               {" "}
               <a href="/api/v1/auth/steam/login" className="text-gold hover:underline">
-                Sign in
+                {t("drafts.room.signIn")}
               </a>{" "}
-              to take a seat.
+              {t("drafts.room.toTakeSeat")}
             </>
           )}
         </p>
         {room.viewer.isHost && (
           <Button disabled={!bothSeated || busy} onClick={() => post("start")} className="gap-1.5">
-            <Crown className="size-4" /> Start draft
+            <Crown className="size-4" /> {t("drafts.room.start")}
           </Button>
         )}
       </div>
@@ -504,30 +524,40 @@ function Lobby({
 }
 
 function RoomLog({ events, heroes }: { events: EventView[]; heroes: Map<number, DraftHero> }) {
+  const t = useT();
   const shown = [...events].reverse().slice(0, 60);
   const describe = (e: EventView): string => {
-    const hero = e.heroId !== null ? (heroes.get(e.heroId)?.name ?? `Hero #${e.heroId}`) : null;
+    const hero =
+      e.heroId !== null
+        ? (heroes.get(e.heroId)?.name ?? t("drafts.room.hero", { id: e.heroId }))
+        : "null";
+    const actor = e.actor;
+    const side = e.side ? sideName(t, e.side) : "";
     switch (e.kind) {
       case "created":
-        return `${e.actor} opened the room`;
+        return t("drafts.room.events.created", { actor });
       case "joined":
-        return `${e.actor} took the ${e.side ? sideName(e.side) : ""} seat`;
+        return t("drafts.room.events.joined", { actor, side });
       case "left":
-        return `${e.actor} left the ${e.side ? sideName(e.side) : ""} seat`;
+        return t("drafts.room.events.left", { actor, side });
       case "rematch":
-        return `${e.actor} started a rematch`;
+        return t("drafts.room.events.rematch", { actor });
       case "draft":
-        if (e.type === "start") return `${e.actor} started the draft`;
-        if (e.type === "pause") return `${e.actor} paused`;
-        if (e.type === "resume") return `${e.actor} resumed`;
+        if (e.type === "start") return t("drafts.room.events.start", { actor });
+        if (e.type === "pause") return t("drafts.room.events.pause", { actor });
+        if (e.type === "resume") return t("drafts.room.events.resume", { actor });
         if (e.type === "timeout")
-          return `${e.side ? sideName(e.side) : "A captain"} ran out of time`;
-        return `${e.actor} ${e.type === "ban" ? "banned" : "picked"} ${hero}`;
+          return e.side
+            ? t("drafts.room.events.timeout", { side })
+            : t("drafts.room.events.timeoutUnknown");
+        return e.type === "ban"
+          ? t("drafts.room.events.banned", { actor, hero })
+          : t("drafts.room.events.picked", { actor, hero });
     }
   };
   return (
-    <section className="panel p-4" aria-label="Room log">
-      <h2 className="mb-3 text-sm font-semibold">Room log</h2>
+    <section className="panel p-4" aria-label={t("drafts.room.logLabel")}>
+      <h2 className="mb-3 text-sm font-semibold">{t("drafts.room.logTitle")}</h2>
       <ol className="max-h-64 space-y-1.5 overflow-y-auto text-sm">
         {shown.map((e) => (
           <li key={e.sequence} className="flex gap-3">
@@ -538,22 +568,19 @@ function RoomLog({ events, heroes }: { events: EventView[]; heroes: Map<number, 
           </li>
         ))}
       </ol>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Every move is checked by the server; if two moves arrive at once, only the first counts.
-      </p>
+      <p className="mt-3 text-xs text-muted-foreground">{t("drafts.room.logFootnote")}</p>
     </section>
   );
 }
 
 export function RoomNotAvailable() {
+  const t = useT();
   return (
     <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
-      <h2 className="text-lg font-semibold">Draft room not found</h2>
-      <p className="max-w-md text-sm text-muted-foreground">
-        It may have expired (rooms close a day after the last move) or the link is wrong.
-      </p>
+      <h2 className="text-lg font-semibold">{t("drafts.room.notFoundTitle")}</h2>
+      <p className="max-w-md text-sm text-muted-foreground">{t("drafts.room.notFoundBody")}</p>
       <Link href="/draft/rooms/new" className="text-sm text-gold hover:underline">
-        Open a new room
+        {t("drafts.room.openNew")}
       </Link>
     </section>
   );

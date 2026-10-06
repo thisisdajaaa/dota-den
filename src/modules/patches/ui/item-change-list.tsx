@@ -1,10 +1,12 @@
 import { SafeImage } from "@/components/safe-image";
+import { getT } from "@/common/i18n/server";
 import type { ItemPatchNotes } from "../domain/patch";
 import { steamCdn } from "./cdn";
 import { NoteList } from "./note-list";
 
 /** Items and neutral items, with Valve's section headings ("Basic Items", …) kept in order. */
-export function ItemChangeList({ items }: { items: ItemPatchNotes[] }) {
+export async function ItemChangeList({ items }: { items: ItemPatchNotes[] }) {
+  const t = await getT();
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {items.map((item, i) => {
@@ -27,7 +29,9 @@ export function ItemChangeList({ items }: { items: ItemPatchNotes[] }) {
             </span>
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-semibold">
-                {item.itemName ?? item.title ?? `Item #${item.itemId}`}
+                {item.itemName ??
+                  item.title ??
+                  t("patches.item.fallback", { id: String(item.itemId) })}
               </h3>
               <NoteList notes={item.notes} className="mt-1" />
             </div>

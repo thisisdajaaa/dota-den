@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorPanel } from "@/components/error-panel";
+import { useT } from "@/common/i18n/client";
 
 export default function SessionsError({
   error,
@@ -9,7 +10,6 @@ export default function SessionsError({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
-  return (
-    <ErrorPanel error={error} retry={retry} title="Something went wrong loading your sessions" />
-  );
+  const t = useT();
+  return <ErrorPanel error={error} retry={retry} title={t("sessions.page.error")} />;
 }

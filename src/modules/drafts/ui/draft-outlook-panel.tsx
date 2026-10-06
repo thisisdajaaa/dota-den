@@ -1,6 +1,8 @@
 "use client";
 
 import { apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 import { ChevronDown, Gauge, Info } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "cn";
@@ -12,15 +14,15 @@ import type {
   OutlookHero,
   SideBreakdown,
 } from "../domain/draft-outlook";
-import { POSITIONS, POSITION_NAMES, type Position } from "../domain/draft-positions";
+import { POSITIONS, type Position } from "../domain/draft-positions";
 import type { DraftReport, Grade } from "../domain/draft-report";
 import type { DraftState, Side } from "../domain/draft-state";
 import { DraftReviewPanel } from "./draft-review-panel";
+import { positionName, roleName, sayOr, sideName, type T } from "./i18n";
 import type { DraftHero } from "./types";
 
 const pct = (n: number | null) => (n === null ? "—" : `${(n * 100).toFixed(1)}%`);
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n).toFixed(1)}`;
-const sideName = (s: Side) => (s === "radiant" ? "Radiant" : "Dire");
 
 /** Positions set by hand: hero id -> position, per side. */
 export type RoleChoices = Record<Side, Record<number, Position>>;
@@ -131,6 +133,7 @@ export function DraftOutlookPanel({
   heroes: Map<number, DraftHero>;
   data?: OutlookData;
 }) {
+  const t = useT();
   const own = useDraftOutlook(data ? null : state);
   const ctl = data ?? own;
   const { picks, current } = ctl;
@@ -148,19 +151,21 @@ export function DraftOutlookPanel({
   };
 
   return (
-    <section className="panel p-4" aria-label="Draft outlook">
+    <section className="panel p-4" aria-label={t("drafts.outlook.label")}>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Gauge aria-hidden className="size-4 text-gold" /> Draft outlook
+          <Gauge aria-hidden className="size-4 text-gold" /> {t("drafts.outlook.title")}
           <span className="rounded border border-white/15 px-1.5 text-[0.6rem] font-medium tracking-wider text-muted-foreground uppercase">
-            Estimate
+            {t("drafts.outlook.estimate")}
           </span>
         </h2>
         <span className="flex flex-wrap items-center gap-3">
           {outlook && (
             <span className="text-xs text-muted-foreground">
-              {outlook.confidence === "medium" ? "Medium confidence" : "Low confidence"} ·{" "}
-              {Math.round(outlook.coverage * 100)}% of matchups have enough games
+              {outlook.confidence === "medium"
+                ? t("drafts.outlook.medium")
+                : t("drafts.outlook.low")}{" "}
+              · {t("drafts.outlook.coverage", { pct: Math.round(outlook.coverage * 100) })}
             </span>
           )}
           {outlook && outlook.radiantPct !== null && (
@@ -177,25 +182,21 @@ export function DraftOutlookPanel({
                 aria-hidden
                 className={cn("size-3.5 transition-transform", expanded && "rotate-180")}
               />
-              {expanded ? "Hide details" : "Show details"}
+              {expanded ? t("drafts.outlook.hide") : t("drafts.outlook.show")}
             </Button>
           )}
         </span>
       </header>
 
       {!picks ? (
-        <p className="text-sm text-muted-foreground">
-          Once heroes are picked, this shows which side the draft favours and why.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("drafts.outlook.empty")}</p>
       ) : !current ? (
         <div className="space-y-3" aria-busy>
           <span className="block h-8 animate-pulse rounded-lg bg-white/[0.04]" />
           <span className="block h-24 animate-pulse rounded-lg bg-white/[0.04]" />
         </div>
       ) : !outlook || outlook.radiantPct === null ? (
-        <p className="text-sm text-muted-foreground">
-          The outlook is unavailable right now. The draft works without it.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("drafts.outlook.unavailable")}</p>
       ) : (
         <>
           <OutlookBody outlook={outlook} heroes={heroes} ctl={ctl} details={expanded} />
@@ -242,6 +243,7 @@ function OutlookBody({
   /** Show the evidence (report card, lanes, lineups) under the win-chance bar. */
   details: boolean;
 }) {
+  const t = useT();
   const radiant = outlook.radiantPct ?? 50;
   const dire = 100 - radiant;
   const favoured: Side | null = radiant > 50 ? "radiant" : radiant < 50 ? "dire" : null;
@@ -250,19 +252,21 @@ function OutlookBody({
       <div>
         <div className="mb-1.5 flex items-baseline justify-between text-sm">
           <span className={cn("font-semibold", favoured === "radiant" && "text-win")}>
-            Radiant {radiant}%
+            {t("drafts.outlook.radiantPct", { pct: radiant })}
           </span>
           <span className="text-xs text-muted-foreground">
-            {favoured ? `${sideName(favoured)} favoured by the draft` : "Even draft"}
+            {favoured
+              ? t("drafts.outlook.favoured", { side: sideName(t, favoured) })
+              : t("drafts.outlook.even")}
           </span>
           <span className={cn("font-semibold", favoured === "dire" && "text-loss")}>
-            {dire}% Dire
+            {t("drafts.outlook.direPct", { pct: dire })}
           </span>
         </div>
         <div
           className="flex h-2.5 overflow-hidden rounded-full bg-white/[0.06]"
           role="img"
-          aria-label={`Estimated win chance from the draft: Radiant ${radiant}%, Dire ${dire}%`}
+          aria-label={t("drafts.outlook.barLabel", { radiant, dire })}
         >
           <span className="bg-win/80" style={{ width: `${radiant}%` }} />
           <span className="bg-loss/80" style={{ width: `${dire}%` }} />
@@ -277,10 +281,10 @@ function OutlookBody({
             <Breakdown sides={outlook.sides} />
             {outlook.notes.length > 0 && (
               <ul className="space-y-1.5 text-sm">
-                {outlook.notes.slice(0, 5).map((n) => (
+                {outlook.notes.slice(0, 5).map((n, i) => (
                   <li key={n} className="flex gap-2">
                     <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-gold" />
-                    {n}
+                    {sayOr(t, outlook.notePhrases?.[i], n)}
                   </li>
                 ))}
               </ul>
@@ -295,7 +299,9 @@ function OutlookBody({
           <HeroTable rows={outlook.heroes} heroes={heroes} />
           {outlook.tournaments && (
             <p className="text-xs text-muted-foreground">
-              Tournament numbers: {outlook.tournaments}.
+              {t("drafts.outlook.tournaments", {
+                source: sayOr(t, outlook.tournamentsPhrase, outlook.tournaments),
+              })}
             </p>
           )}
         </div>
@@ -303,31 +309,45 @@ function OutlookBody({
 
       <p className="flex gap-1.5 text-xs text-muted-foreground">
         <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-        An estimate from the draft alone, with weights fitted to {outlook.accuracy.source}. On{" "}
-        {outlook.accuracy.testGames.toLocaleString("en-US")} newer games it hadn&apos;t seen, it
-        picked the winner {Math.round(outlook.accuracy.fitted * 100)}% of the time (always picking
-        Radiant: {Math.round(outlook.accuracy.radiantShare * 100)}%). Players and execution decide
-        most games, so it stays between 30% and 70%.
+        {t("drafts.outlook.footnote", {
+          source: outlook.accuracy.source,
+          games: outlook.accuracy.testGames.toLocaleString("en-US"),
+          fitted: Math.round(outlook.accuracy.fitted * 100),
+          radiant: Math.round(outlook.accuracy.radiantShare * 100),
+        })}
       </p>
     </div>
   );
 }
 
 function Breakdown({ sides }: { sides: Record<Side, SideBreakdown> }) {
+  const t = useT();
   const rows: { label: string; hint: string; key: "meta" | "matchups" | "synergy" | "lanes" }[] = [
-    { label: "Hero strength", hint: "win rates this patch", key: "meta" },
-    { label: "Matchups", hint: "head-to-head records", key: "matchups" },
-    { label: "Lanes", hint: "pro lane results", key: "lanes" },
-    { label: "Pairings", hint: "pro results together", key: "synergy" },
+    {
+      label: t("drafts.breakdown.strength"),
+      hint: t("drafts.breakdown.strengthHint"),
+      key: "meta",
+    },
+    {
+      label: t("drafts.breakdown.matchups"),
+      hint: t("drafts.breakdown.matchupsHint"),
+      key: "matchups",
+    },
+    { label: t("drafts.breakdown.lanes"), hint: t("drafts.breakdown.lanesHint"), key: "lanes" },
+    {
+      label: t("drafts.breakdown.pairings"),
+      hint: t("drafts.breakdown.pairingsHint"),
+      key: "synergy",
+    },
   ];
   return (
     <table className="w-full text-sm">
-      <caption className="sr-only">Where the estimate comes from, in win-rate points</caption>
+      <caption className="sr-only">{t("drafts.breakdown.caption")}</caption>
       <thead>
         <tr className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-          <th className="pb-1 text-left font-medium">Points</th>
-          <th className="pb-1 text-right font-medium text-win">Radiant</th>
-          <th className="pb-1 text-right font-medium text-loss">Dire</th>
+          <th className="pb-1 text-left font-medium">{t("drafts.breakdown.points")}</th>
+          <th className="pb-1 text-right font-medium text-win">{sideName(t, "radiant")}</th>
+          <th className="pb-1 text-right font-medium text-loss">{sideName(t, "dire")}</th>
         </tr>
       </thead>
       <tbody>
@@ -341,10 +361,11 @@ function Breakdown({ sides }: { sides: Record<Side, SideBreakdown> }) {
           </tr>
         ))}
         <tr className="border-t border-white/[0.05] text-xs text-muted-foreground">
-          <td className="py-1.5">Lineup</td>
+          <td className="py-1.5">{t("drafts.breakdown.lineup")}</td>
           {(["radiant", "dire"] as const).map((s) => (
             <td key={s} className="py-1.5 text-right">
-              {sides[s].cores} core{sides[s].cores === 1 ? "" : "s"} · {sides[s].supports} sup
+              {plural(t, "drafts.breakdown.cores", sides[s].cores)} ·{" "}
+              {t("drafts.breakdown.sup", { n: sides[s].supports })}
             </td>
           ))}
         </tr>
@@ -354,17 +375,18 @@ function Breakdown({ sides }: { sides: Record<Side, SideBreakdown> }) {
 }
 
 function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, DraftHero> }) {
+  const t = useT();
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[40rem] text-sm">
-        <caption className="sr-only">Stats for every picked hero</caption>
+        <caption className="sr-only">{t("drafts.heroTable.caption")}</caption>
         <thead>
           <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-            <th className="pb-1.5 font-medium">Hero</th>
-            <th className="pb-1.5 text-right font-medium">Win rate (Ancient+)</th>
-            <th className="pb-1.5 text-right font-medium">Tournaments</th>
-            <th className="pb-1.5 pl-4 font-medium">Best matchup</th>
-            <th className="pb-1.5 font-medium">Worst matchup</th>
+            <th className="pb-1.5 font-medium">{t("drafts.heroTable.hero")}</th>
+            <th className="pb-1.5 text-right font-medium">{t("drafts.heroTable.winRate")}</th>
+            <th className="pb-1.5 text-right font-medium">{t("drafts.heroTable.tournaments")}</th>
+            <th className="pb-1.5 pl-4 font-medium">{t("drafts.heroTable.best")}</th>
+            <th className="pb-1.5 font-medium">{t("drafts.heroTable.worst")}</th>
           </tr>
         </thead>
         <tbody>
@@ -387,7 +409,9 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                     )}
                     <span className="font-medium">{h.name}</span>
                     <span className="text-[0.6rem] tracking-wider text-muted-foreground uppercase">
-                      {h.position ? `Pos ${h.position}` : h.role}
+                      {h.position
+                        ? t("drafts.heroTable.pos", { n: h.position })
+                        : roleName(t, h.role)}
                     </span>
                   </span>
                 </td>
@@ -395,7 +419,7 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                   {pct(h.winRate)}
                   {h.games !== null && (
                     <span className="block text-[0.65rem] text-muted-foreground">
-                      {h.games.toLocaleString("en-US")} games
+                      {t("drafts.heroTable.games", { n: h.games.toLocaleString("en-US") })}
                     </span>
                   )}
                 </td>
@@ -404,11 +428,14 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                     "—"
                   ) : (
                     <>
-                      {Math.round(h.contest * 100)}% of drafts
+                      {t("drafts.heroTable.drafts", { pct: Math.round(h.contest * 100) })}
                       <span className="block text-[0.65rem] text-muted-foreground">
-                        {h.proPicks} picked · {h.proBans} banned
+                        {t("drafts.heroTable.pickedBanned", {
+                          picks: h.proPicks ?? 0,
+                          bans: h.proBans ?? 0,
+                        })}
                         {h.proWinRate !== null && (h.proPicks ?? 0) >= 5
-                          ? ` · won ${pct(h.proWinRate)}`
+                          ? t("drafts.heroTable.won", { pct: pct(h.proWinRate) })
                           : ""}
                       </span>
                     </>
@@ -417,7 +444,10 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                 <td className="py-1.5 pl-4 text-xs">
                   {h.bestMatchup ? (
                     <span className="text-win">
-                      vs {h.bestMatchup.name} {signed(h.bestMatchup.edge)}
+                      {t("drafts.heroTable.vs", {
+                        hero: h.bestMatchup.name,
+                        edge: signed(h.bestMatchup.edge),
+                      })}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -426,7 +456,10 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                 <td className="py-1.5 text-xs">
                   {h.worstMatchup ? (
                     <span className="text-loss">
-                      vs {h.worstMatchup.name} {signed(h.worstMatchup.edge)}
+                      {t("drafts.heroTable.vs", {
+                        hero: h.worstMatchup.name,
+                        edge: signed(h.worstMatchup.edge),
+                      })}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -451,6 +484,7 @@ function Lineups({
   heroes: Map<number, DraftHero>;
   ctl: OutlookData;
 }) {
+  const t = useT();
   const at = (side: Side, p: Position) =>
     outlook.heroes.find((h) => h.side === side && h.position === p) ?? null;
   const cell = (h: OutlookHero | null, side: Side) =>
@@ -468,21 +502,21 @@ function Lineups({
       <span
         className={cn("block text-muted-foreground/70 italic", side === "dire" && "text-right")}
       >
-        Open
+        {t("drafts.lineups.open")}
       </span>
     );
   return (
     <div>
       <h3 className="mb-1.5 text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
-        Lineups by position
+        {t("drafts.lineups.title")}
       </h3>
       <table className="w-full table-fixed text-sm">
-        <caption className="sr-only">Which hero plays each position on each side</caption>
+        <caption className="sr-only">{t("drafts.lineups.caption")}</caption>
         <thead className="sr-only">
           <tr>
-            <th>Radiant</th>
-            <th>Position</th>
-            <th>Dire</th>
+            <th>{sideName(t, "radiant")}</th>
+            <th>{t("drafts.lineups.position")}</th>
+            <th>{sideName(t, "dire")}</th>
           </tr>
         </thead>
         <tbody>
@@ -493,7 +527,7 @@ function Lineups({
                 scope="row"
                 className="w-28 py-1.5 text-center text-[0.7rem] font-medium whitespace-nowrap text-muted-foreground"
               >
-                {p} · {POSITION_NAMES[p]}
+                {p} · {positionName(t, p)}
               </th>
               <td className="py-1.5 pl-2">{cell(at("dire", p), "dire")}</td>
             </tr>
@@ -502,8 +536,8 @@ function Lineups({
       </table>
       <p className="mt-1.5 text-xs text-muted-foreground">
         {outlook.positionsFrom === "pro"
-          ? "Positions from where the pros play each hero (last 60 days); the % is how often."
-          : "Pro position data is unavailable right now, so positions are estimated from hero role tags."}
+          ? t("drafts.lineups.fromPro")
+          : t("drafts.lineups.fromTags")}
       </p>
       <RoleEditor outlook={outlook} ctl={ctl} />
     </div>
@@ -511,6 +545,7 @@ function Lineups({
 }
 
 function Share({ h }: { h: OutlookHero }) {
+  const t = useT();
   if (h.positionShare === null) return null;
   const odd = h.positionShare < 0.1;
   return (
@@ -519,7 +554,10 @@ function Share({ h }: { h: OutlookHero }) {
         "shrink-0 text-[0.65rem] tabular-nums",
         odd ? "text-loss" : "text-muted-foreground",
       )}
-      title={`Pros play ${h.name} here in ${Math.round(h.positionShare * 100)}% of games`}
+      title={t("drafts.lineups.shareTitle", {
+        hero: h.name,
+        pct: Math.round(h.positionShare * 100),
+      })}
     >
       {Math.round(h.positionShare * 100)}%
     </span>
@@ -528,17 +566,16 @@ function Share({ h }: { h: OutlookHero }) {
 
 /** Who meets whom in each lane, with Radiant's head-to-head edge there. */
 function Lanes({ lanes, heroes }: { lanes: LaneMatchup[]; heroes: Map<number, DraftHero> }) {
+  const t = useT();
   const names = (ids: number[]) =>
     ids.map((id) => heroes.get(id)?.name ?? `Hero ${id}`).join(" + ");
   return (
     <div>
       <h3 className="mb-1.5 text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">
-        Lanes
+        {t("drafts.lanes.title")}
       </h3>
       {lanes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Lane matchups appear once both sides have heroes in the same lane.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("drafts.lanes.empty")}</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {lanes.map((l) => (
@@ -547,7 +584,9 @@ function Lanes({ lanes, heroes }: { lanes: LaneMatchup[]; heroes: Map<number, Dr
               className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5"
             >
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs text-muted-foreground">{l.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {t(`drafts.phrases.lanes.${l.lane}`)}
+                </span>
                 <span
                   className={cn(
                     "text-xs font-semibold tabular-nums",
@@ -561,37 +600,36 @@ function Lanes({ lanes, heroes }: { lanes: LaneMatchup[]; heroes: Map<number, Dr
                   )}
                 >
                   {l.edge === null
-                    ? "Not enough games"
+                    ? t("drafts.lanes.notEnough")
                     : l.edge === 0
-                      ? "Even"
-                      : `${l.edge > 0 ? "Radiant" : "Dire"} ${signed(Math.abs(l.edge))}`}
+                      ? t("drafts.lanes.even")
+                      : `${sideName(t, l.edge > 0 ? "radiant" : "dire")} ${signed(Math.abs(l.edge))}`}
                 </span>
               </div>
               <p className="mt-0.5">
                 <span className="text-win">{names(l.radiant)}</span>
-                <span className="text-muted-foreground"> vs </span>
+                <span className="text-muted-foreground">{t("drafts.lanes.vs")}</span>
                 <span className="text-loss">{names(l.dire)}</span>
               </p>
               <p className="text-[0.7rem] text-muted-foreground">
                 {l.source === "pro_lanes"
-                  ? `Radiant's heroes won ${l.wins} of ${l.games} of these pro lane meetings (more gold at 10 minutes).`
+                  ? t("drafts.lanes.proLanes", { wins: l.wins, games: l.games })
                   : l.source === "matchups"
-                    ? "Few pro lane meetings, so this uses whole-game head-to-heads."
-                    : "No games between these heroes yet."}
+                    ? t("drafts.lanes.matchups")
+                    : t("drafts.lanes.none")}
               </p>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        Lane edges in points: from pro lane results where the heroes met often enough.
-      </p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{t("drafts.lanes.footnote")}</p>
     </div>
   );
 }
 
 /** Change who plays where; the whole analysis follows. Swaps keep one hero per position. */
 function RoleEditor({ outlook, ctl }: { outlook: DraftOutlook; ctl: OutlookData }) {
+  const t = useT();
   const sides = (["radiant", "dire"] as const).filter((side) =>
     outlook.heroes.some((h) => h.side === side),
   );
@@ -601,7 +639,7 @@ function RoleEditor({ outlook, ctl }: { outlook: DraftOutlook; ctl: OutlookData 
       className="mt-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5"
       open={!outlook.report.provisional}
     >
-      <summary className="cursor-pointer text-xs font-medium">Change who plays where</summary>
+      <summary className="cursor-pointer text-xs font-medium">{t("drafts.lineups.change")}</summary>
       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {sides.map((side) => {
           const team = outlook.heroes
@@ -616,13 +654,13 @@ function RoleEditor({ outlook, ctl }: { outlook: DraftOutlook; ctl: OutlookData 
                   side === "radiant" ? "text-win" : "text-loss",
                 )}
               >
-                {sideName(side)}
+                {sideName(t, side)}
               </p>
               {team.map((h) => (
                 <label key={h.heroId} className="flex items-center justify-between gap-2 text-sm">
                   <span className="truncate">{h.name}</span>
                   <select
-                    aria-label={`Position for ${h.name}`}
+                    aria-label={t("drafts.lineups.positionFor", { hero: h.name })}
                     value={h.position ?? ""}
                     onChange={(e) =>
                       ctl.setRole(side, h.heroId, Number(e.target.value) as Position)
@@ -631,7 +669,7 @@ function RoleEditor({ outlook, ctl }: { outlook: DraftOutlook; ctl: OutlookData 
                   >
                     {POSITIONS.map((p) => (
                       <option key={p} value={p}>
-                        {p} · {POSITION_NAMES[p]}
+                        {p} · {positionName(t, p)}
                       </option>
                     ))}
                   </select>
@@ -643,16 +681,14 @@ function RoleEditor({ outlook, ctl }: { outlook: DraftOutlook; ctl: OutlookData 
                   onClick={() => ctl.resetRoles(side)}
                   className="text-xs text-gold hover:underline"
                 >
-                  Use the suggested positions
+                  {t("drafts.lineups.useSuggested")}
                 </button>
               )}
             </div>
           );
         })}
       </div>
-      <p className="mt-2 text-[0.7rem] text-muted-foreground">
-        Picking a taken position swaps the two heroes. Lanes, positions and the report card update.
-      </p>
+      <p className="mt-2 text-[0.7rem] text-muted-foreground">{t("drafts.lineups.swapNote")}</p>
     </details>
   );
 }
@@ -665,8 +701,23 @@ const GRADE_TONE: Record<Grade, string> = {
   F: "text-loss",
 };
 
+/** ", in Radiant's favour, then counters (Dire)." after the biggest difference. */
+function deciderRest(t: T, report: DraftReport): string {
+  const [first, second] = report.deciders;
+  return t("drafts.report.deciderAfter", {
+    side: sideName(t, first.favours),
+    then: second
+      ? t("drafts.report.then", {
+          criterion: t(`drafts.report.criteriaLower.${second.key}`),
+          side: sideName(t, second.favours),
+        })
+      : "",
+  });
+}
+
 /** The rubric: each side graded on six criteria, weighted into an overall grade. */
 function ReportCard({ report }: { report: DraftReport }) {
+  const t = useT();
   const overall = (side: Side) => {
     const r = report[side];
     return r.grade ? (
@@ -683,33 +734,32 @@ function ReportCard({ report }: { report: DraftReport }) {
   const decider = report.deciders[0];
   return (
     <section
-      aria-label="Draft report card"
+      aria-label={t("drafts.report.label")}
       className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3"
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">
-          Draft report card
+          {t("drafts.report.title")}
           {report.provisional && (
             <span className="ml-2 text-xs font-normal text-muted-foreground">
-              (provisional until both lineups are complete)
+              {t("drafts.report.provisional")}
             </span>
           )}
         </h3>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-2 text-xs text-win">
-            Radiant {overall("radiant")}
+            {sideName(t, "radiant")} {overall("radiant")}
           </span>
-          <span className="flex items-center gap-2 text-xs text-loss">Dire {overall("dire")}</span>
+          <span className="flex items-center gap-2 text-xs text-loss">
+            {sideName(t, "dire")} {overall("dire")}
+          </span>
         </div>
       </div>
       {decider && (
         <p className="mb-2 text-sm">
-          The biggest difference is <strong>{decider.label.toLowerCase()}</strong>, in{" "}
-          {sideName(decider.favours)}&apos;s favour
-          {report.deciders[1]
-            ? `, then ${report.deciders[1].label.toLowerCase()} (${sideName(report.deciders[1].favours)})`
-            : ""}
-          .
+          {t("drafts.report.deciderBefore")}{" "}
+          <strong>{t(`drafts.report.criteriaLower.${decider.key}`)}</strong>
+          {deciderRest(t, report)}
         </p>
       )}
       <div className="overflow-x-auto">
@@ -717,9 +767,9 @@ function ReportCard({ report }: { report: DraftReport }) {
           <caption className="sr-only">Grades per criterion for each side</caption>
           <thead>
             <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-              <th className="pb-1 font-medium">Criterion</th>
-              <th className="pb-1 font-medium text-win">Radiant</th>
-              <th className="pb-1 font-medium text-loss">Dire</th>
+              <th className="pb-1 font-medium">{t("drafts.report.criterion")}</th>
+              <th className="pb-1 font-medium text-win">{sideName(t, "radiant")}</th>
+              <th className="pb-1 font-medium text-loss">{sideName(t, "dire")}</th>
             </tr>
           </thead>
           <tbody>
@@ -736,7 +786,9 @@ function ReportCard({ report }: { report: DraftReport }) {
                     >
                       {x.grade ?? "—"}
                     </span>
-                    <span className="text-xs text-muted-foreground">{x.summary}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {sayOr(t, x.summaryPhrase, x.summary)}
+                    </span>
                   </span>
                 </td>
               );
@@ -746,9 +798,9 @@ function ReportCard({ report }: { report: DraftReport }) {
                     scope="row"
                     className="py-1.5 pr-3 text-left align-top font-medium whitespace-nowrap"
                   >
-                    {c.label}
+                    {t(`drafts.report.criteria.${c.key}`)}
                     <span className="block text-[0.65rem] font-normal text-muted-foreground">
-                      {Math.round(c.weight * 100)}% of the grade
+                      {t("drafts.report.weight", { pct: Math.round(c.weight * 100) })}
                     </span>
                   </th>
                   {cell(c)}
@@ -759,10 +811,7 @@ function ReportCard({ report }: { report: DraftReport }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-[0.7rem] text-muted-foreground">
-        50 is an average draft. A 75+, B 62+, C 50+, D 38+. Criteria without data are left out of
-        the overall grade. Composition uses hero role tags.
-      </p>
+      <p className="mt-2 text-[0.7rem] text-muted-foreground">{t("drafts.report.footnote")}</p>
     </section>
   );
 }

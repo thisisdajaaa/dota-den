@@ -1,4 +1,174 @@
 import type { MessageTree } from "../../translate";
 import type { players as en } from "../en/players";
 
-export const players: MessageTree<typeof en> = {};
+export const players: MessageTree<typeof en> = {
+  units: {
+    game: { one: "1 ka duwa", other: "{n} ka duwa" },
+    win: { one: "1 ka daog", other: "{n} ka daog" },
+    loss: { one: "1 ka pildi", other: "{n} ka pildi" },
+    player: { one: "1 ka player", other: "{n} ka player" },
+  },
+  searchForm: {
+    label: "Pangitaa ang player",
+    placeholder: "Ngalan, account ID o profile link",
+    submit: "Pangitaa",
+    help: "Sulayi ang Steam name, Dota account ID, o i-paste ang profile link gikan sa Steam, Dotabuff o OpenDota.",
+  },
+  mostPlayed: {
+    kicker: "Mga hero",
+    title: "Kanunay gidula nga mga hero",
+    empty: "Wala pay public nga hero stats.",
+    detail: "{games} · {rate} win rate",
+  },
+  playsWith: {
+    kicker: "Mga kauban",
+    title: "Kaduwa",
+    description: "Mga tawo nga kanunay naa sa samang team sa mga public nga duwa.",
+    empty:
+      "Wala pay regular nga kauban. Mogawas sila dinhi human sa pipila ka public nga duwa nga magkauban.",
+    gamesTogether: "{games} nga magkauban",
+    winRateTogether: "win rate nga magkauban",
+    lastPlayedTitle: "Katapusang nagduwa nga magkauban o magkaatbang",
+  },
+  results: {
+    kicker: "Pagpangita",
+    title: "Mga player nga ginganlag “{q}”",
+    found:
+      "{players} ang nakit-an. Dili talagsaon ang mga ngalan: susiha ang avatar ug kanus-a sila katapusang nagduwa.",
+    account: "Account {id}",
+    lastPlayed: "Katapusang nagduwa {ago}",
+  },
+  track: {
+    stopped: "Wala na gi-track si {name}",
+    started: "Gi-track na si {name}",
+    errorMax: "Naabot na nimo ang kinatas-ang ihap sa gi-track nga player. Pag-untrack una og usa.",
+    errorRate: "Sobra ka daghan nga kausaban. Sulayi pag-usab human sa usa ka minuto.",
+    errorSession:
+      "Natapos na ang imong session. Pag-sign in pag-usab aron mag-track og mga player.",
+    errorGeneric: "Dili ma-update ang imong gi-track nga mga player. Sulayi pag-usab.",
+    labelStop: "Hunonga ang pag-track kang {name}",
+    labelTrack: "I-track si {name}",
+    tracking: "Gi-track",
+    track: "I-track",
+  },
+  tracked: {
+    kicker: "Imong lista",
+    title: "Gi-track nga mga player",
+    count: "{total} sa {limit}",
+    emptyBefore:
+      "Wala ka pay gi-track. Pangitaa ang usa ka higala o pro, ablihi ang ilang profile ug pindota ang",
+    emptyAfter: ". Mogawas sila dinhi aron masusi nimo sila sa usa ka click.",
+    lastMatch: "Katapusang duwa {ago}",
+    noRecent: "Walay bag-ong public nga duwa",
+    pagesLabel: "Mga page sa gi-track nga player",
+    newer: "Mas bag-o",
+    older: "Mas karaan",
+    pageOf: "Page {page} sa {count}",
+  },
+  page: {
+    title: "Mga player",
+    kicker: "Komunidad",
+    description:
+      "Pangitaa ang bisan kinsang Dota 2 player nga adunay public match data: ang ilang record, paboritong hero ug kinsa ilang ka-queue.",
+    lookupEmpty: "Pag-type og ngalan, account ID o profile link aron mangita.",
+    lookupTooShort: "Pag-type og labing menos 2 ka character aron mangita sumala sa ngalan.",
+    lookupTooLong:
+      "Taas ra kaayo kana para sa ngalan sa player. Hangtod 64 ka character ra ang mga ngalan.",
+    searchBusy:
+      "Daghan kaayong request ang nadawat sa OpenDota karon. Sulayi pag-usab human sa usa ka minuto.",
+    searchSlow:
+      "Hinay ang player search sa OpenDota karon. Sulayi pag-usab (kasagaran mas paspas sa ikaduhang higayon), o i-paste ang account ID o profile link aron diretso sa profile.",
+    searchUnavailable:
+      "Dili available ang player search karon. Sulayi pag-usab unya, o i-paste na lang ang account ID o profile link.",
+    tryAgain: "Sulayi pag-usab",
+    trackedError: "Dili ma-load ang imong gi-track nga mga player karon. Sulayi pag-usab unya.",
+    vanity:
+      "Dili direktang mapangita ang custom profile link sa Steam, mao nga among gipangita na lang ang ngalan nga “{q}”. Para sa eksaktong tugma, i-paste ang link nga adunay numero (steamcommunity.com/profiles/…) o ang account ID.",
+    noResultsTitle: "Walay player nga nakit-an para sa “{q}”",
+    noResultsBody:
+      "Susiha ang spelling, o i-paste na lang ang ilang account ID o profile link gikan sa Steam, Dotabuff o OpenDota. Ang mga player ra nga adunay public match data ang makit-an.",
+    intro:
+      "Pangita sumala sa ngalan aron makita ang mga tugmang player, o i-paste ang account ID o profile link aron diretso sa ilang profile. Pag-sign in aron makabaton og lista sa mga player nga imong gi-track.",
+    searchingLabel: "Nangita",
+    searching: "Gipangita sa OpenDota ang “{q}”… mahimong modugay kini og pipila ka segundo.",
+    loading: "Gi-load ang mga player",
+    error: "Adunay sayop sa pag-load sa mga player",
+  },
+  profile: {
+    back: "Tanang player",
+    kicker: "Profile sa player",
+    isYou: "Ikaw kini: ablihi ang imong dashboard",
+    signInToTrack: "Pag-sign in aron mag-track",
+    compareWithYou: "Itandi kanimo",
+    compare: "Itandi",
+    upstreamBusy:
+      "Busy ang OpenDota karon, mao nga wala namo ma-load ang {what}. Sulayi pag-usab human sa usa ka minuto.",
+    upstreamError: "Dili ma-load ang {what} gikan sa OpenDota karon. Sulayi pag-usab unya.",
+    what: {
+      nameRank: "ngalan ug rank niini nga player",
+      record: "win/loss record",
+      teammates: "mga kauban",
+      heroStats: "hero stats",
+      recentMatches: "bag-ong mga duwa",
+    },
+    limitedTitle: "Pribado o limitado ang kasaysayan sa duwa",
+    limitedBody:
+      "Makita ra sa OpenDota ang mga duwa niini nga player kung i-on nila ang “Expose Public Match Data” sa Dota 2 (Settings → Options → Social). Hangtod niana, mahimong kulang o walay sulod ang stats sa ubos.",
+    recordLabel: "Record",
+    winRate: "Win rate",
+    gamesPlayed: "Mga duwa nga gidula",
+    allPublic: "Tanang public nga duwa sa OpenDota",
+    mostPlayedHero: "Kanunay gidula nga hero",
+    heroDetail: "{games} · {rate} win rate",
+    noHeroStats: "Wala pay hero stats",
+    matchesKicker: "Kasaysayan sa duwa",
+    matchesTitle: "Bag-ong mga duwa",
+    noMatches: "Walay public nga duwa nga ipakita.",
+    dataFrom: "Data gikan sa",
+    dataAfter: ". Public nga duwa ra; mahimong pipila ka minuto nga ulahi ang stats.",
+    loading: "Gi-load ang player",
+  },
+  notFound: {
+    title: "Wala makit-i ang player",
+    body: "Walay public nga profile kini nga account sa OpenDota. Susiha ang ID, o pangitaa ang player sumala sa ngalan.",
+    search: "Pangitaa ang mga player",
+  },
+  compare: {
+    title: "Itandi ang mga player",
+    kicker: "Mga player",
+    description:
+      "Duha ka player nga magtupad, gikan sa ilang public nga data sa OpenDota: record, bag-ong porma, mga hero, ug unsaon nila pagduwa nga magkauban ug magkaatbang.",
+    first: "Unang player",
+    second: "Ikaduhang player",
+    placeholder: "Account ID o profile link",
+    submit: "Itandi",
+    different: "Pagpili og duha ka lahi nga player.",
+    suggestYou: "Itandi sa imong mga kaduwa",
+    suggestTheirs: "Itandi sa ilang mga kauban",
+    rankNotPublic: "Dili public ang rank",
+    playerNotFound: "Wala makit-i ang player",
+    playersLabel: "Mga player",
+    sideBySide: "Magtupad",
+    caption: "Magtupad si {a} ug si {b}",
+    winRate: "Win rate",
+    unavailable: "dili available",
+    recentForm: "Bag-ong porma",
+    lastGames: "katapusang {games}",
+    noRecent: "walay bag-ong public nga duwa",
+    kda: "KDA",
+    kdaHint: "(kills + assists) / deaths, bag-ong mga duwa",
+    mostPlayed: "Kanunay gidula",
+    h2hTitle: "Magkauban ug magkaatbang",
+    unavailableNow: "Dili available karon.",
+    noH2h: "Walay public nga duwa nga magkauban o magkaatbang sila.",
+    sameTeam: "Sa samang team",
+    together: "{games} nga magkauban",
+    againstTitle: "Magkaatbang",
+    opposite: "{games} sa magkalahing team",
+    sharedTitle: "Mga hero nga pareho ninyong gidula",
+    sharedNote: "{min}+ ka duwa matag usa, tanang public nga duwa.",
+    noShared: "Wala pay hero nga pareho mo.",
+    footer:
+      "Public nga data sa OpenDota ra. Ang win rate naglakip sa tanang public nga duwa; ang bag-ong porma ug KDA para sa katapusang {games}.",
+  },
+};

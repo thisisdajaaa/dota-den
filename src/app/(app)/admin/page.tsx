@@ -10,9 +10,14 @@ import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { formatAgo } from "@/modules/matches/ui/format";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { RunSyncButton } from "./run-sync-button";
 
-export const metadata: Metadata = { title: "Admin" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("admin.title") };
+}
 // The "Run match sync now" action runs here and can take most of a minute.
 export const maxDuration = 60;
 
@@ -22,6 +27,7 @@ const date = (d: Date) => d.toISOString().slice(0, 16).replace("T", " ");
 export default async function AdminPage() {
   const viewer = await getCurrentUser();
   if (!viewer?.roles.includes("admin")) notFound();
+  const t = await getT();
 
   const now = new Date();
   const {
@@ -35,42 +41,45 @@ export default async function AdminPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        kicker="Admin"
-        title="Users and activity"
-        description="Everyone who has signed in (production and staging share this database). Names and ranks come from their public OpenDota profiles."
+        kicker={t("admin.kicker")}
+        title={t("admin.heading")}
+        description={t("admin.description")}
       />
 
-      <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <StatTile label="Users" value={String(totals.users)} />
-        <StatTile label="New this week" value={String(totals.newThisWeek)} />
-        <StatTile label="Active today" value={String(totals.activeToday)} />
-        <StatTile label="Active this week" value={String(totals.activeThisWeek)} />
+      <section
+        aria-label={t("admin.totals.aria")}
+        className="grid grid-cols-2 gap-3 lg:grid-cols-6"
+      >
+        <StatTile label={t("admin.totals.users")} value={String(totals.users)} />
+        <StatTile label={t("admin.totals.newThisWeek")} value={String(totals.newThisWeek)} />
+        <StatTile label={t("admin.totals.activeToday")} value={String(totals.activeToday)} />
+        <StatTile label={t("admin.totals.activeThisWeek")} value={String(totals.activeThisWeek)} />
         <StatTile
-          label="With matches"
+          label={t("admin.totals.withMatches")}
           value={String(totals.withMatches)}
-          detail="public history imported"
+          detail={t("admin.totals.withMatchesDetail")}
         />
-        <StatTile label="On public boards" value={String(totals.listedPublicly)} />
+        <StatTile label={t("admin.totals.listedPublicly")} value={String(totals.listedPublicly)} />
       </section>
 
       <section aria-labelledby="admin-users" className="panel overflow-hidden">
         <h2 id="admin-users" className="px-5 pt-5 text-lg font-semibold">
-          Users
+          {t("admin.users.title")}
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[56rem] text-sm">
-            <caption className="sr-only">Every user, most recently active first</caption>
+            <caption className="sr-only">{t("admin.users.caption")}</caption>
             <thead>
               <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-                <th className="px-5 py-2 font-medium">Player</th>
-                <th className="py-2 font-medium">Joined (UTC)</th>
-                <th className="py-2 font-medium">Last seen</th>
-                <th className="py-2 text-right font-medium">Matches</th>
-                <th className="py-2 text-right font-medium">MMR entries</th>
-                <th className="py-2 text-right font-medium">Drafts</th>
-                <th className="py-2 text-right font-medium">Room drafts</th>
-                <th className="py-2 text-right font-medium">Challenges</th>
-                <th className="px-5 py-2 font-medium">Profile</th>
+                <th className="px-5 py-2 font-medium">{t("admin.users.player")}</th>
+                <th className="py-2 font-medium">{t("admin.users.joined")}</th>
+                <th className="py-2 font-medium">{t("admin.users.lastSeen")}</th>
+                <th className="py-2 text-right font-medium">{t("admin.users.matches")}</th>
+                <th className="py-2 text-right font-medium">{t("admin.users.mmrEntries")}</th>
+                <th className="py-2 text-right font-medium">{t("admin.users.drafts")}</th>
+                <th className="py-2 text-right font-medium">{t("admin.users.roomDrafts")}</th>
+                <th className="py-2 text-right font-medium">{t("admin.users.challenges")}</th>
+                <th className="px-5 py-2 font-medium">{t("admin.users.profile")}</th>
               </tr>
             </thead>
             <tbody>
@@ -91,8 +100,10 @@ export default async function AdminPage() {
                           </Link>
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             {rank && <RankMedal rank={rank} size={16} />}
-                            {rank ? rankLabel(rank) : "Unranked"} · {r.accountId32}
-                            {r.isAdmin && <span className="text-gold"> · admin</span>}
+                            {rank ? rankLabel(rank) : t("admin.users.unranked")} · {r.accountId32}
+                            {r.isAdmin && (
+                              <span className="text-gold"> · {t("admin.users.admin")}</span>
+                            )}
                           </span>
                         </span>
                       </span>
@@ -102,10 +113,10 @@ export default async function AdminPage() {
                       {r.lastSeenAt ? (
                         formatAgo(r.lastSeenAt, now)
                       ) : (
-                        <span className="text-muted-foreground">signed out</span>
+                        <span className="text-muted-foreground">{t("admin.users.signedOut")}</span>
                       )}
                       <span className="block text-xs text-muted-foreground">
-                        {r.sessions} device{r.sessions === 1 ? "" : "s"}
+                        {plural(t, "admin.users.devices", r.sessions)}
                       </span>
                     </td>
                     <td className="py-2.5 text-right tabular-nums">
@@ -113,9 +124,9 @@ export default async function AdminPage() {
                       <span className="block text-xs text-muted-foreground">
                         {r.stats?.lastSyncAt
                           ? r.stats.backfillComplete
-                            ? `synced ${formatAgo(r.stats.lastSyncAt, now)}`
-                            : "importing"
-                          : "never synced"}
+                            ? t("admin.users.synced", { ago: formatAgo(r.stats.lastSyncAt, now) })
+                            : t("admin.users.importing")
+                          : t("admin.users.neverSynced")}
                       </span>
                     </td>
                     <td className="py-2.5 text-right tabular-nums">{r.mmrEntries}</td>
@@ -134,18 +145,15 @@ export default async function AdminPage() {
       <section aria-labelledby="admin-cron" className="panel space-y-3 p-5">
         <div>
           <h2 id="admin-cron" className="text-lg font-semibold">
-            Daily jobs
+            {t("admin.cron.title")}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            The match sync runs every day at 14:30 (Philippine time) and the patch import at 14:00.
-            A run that started but never finished was cut off (Vercel stops it at 60s).
-          </p>
+          <p className="text-sm text-muted-foreground">{t("admin.cron.body")}</p>
         </div>
         <RunSyncButton />
         {cronRuns === null ? (
-          <p className="text-sm text-muted-foreground">Unavailable right now.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.cron.unavailable")}</p>
         ) : cronRuns.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No recorded runs yet.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.cron.empty")}</p>
         ) : (
           <ul className="divide-y divide-white/[0.05] rounded-lg border border-white/[0.06] text-sm">
             {cronRuns.map((r) => {
@@ -164,12 +172,19 @@ export default async function AdminPage() {
                     )}
                   >
                     {r.ok === true
-                      ? `${sum.synced ?? 0} synced · ${sum.backfilling ?? 0} importing · ${failed} failed · ${Math.round(Number(sum.durationMs ?? 0) / 1000)}s`
+                      ? t("admin.cron.ok", {
+                          synced: String(sum.synced ?? 0),
+                          importing: String(sum.backfilling ?? 0),
+                          failed,
+                          seconds: Math.round(Number(sum.durationMs ?? 0) / 1000),
+                        })
                       : r.ok === false
-                        ? `Failed: ${String(sum.error ?? "unknown")}`
+                        ? t("admin.cron.failed", {
+                            error: String(sum.error ?? t("admin.cron.unknown")),
+                          })
                         : r.finishedAt === null && now.getTime() - r.startedAt.getTime() > 120_000
-                          ? "Started but never finished (cut off)"
-                          : "Running…"}
+                          ? t("admin.cron.cutOff")
+                          : t("admin.cron.running")}
                   </span>
                 </li>
               );
@@ -181,17 +196,14 @@ export default async function AdminPage() {
       <section aria-labelledby="admin-errors" className="panel overflow-hidden">
         <div className="p-5 pb-3">
           <h2 id="admin-errors" className="text-lg font-semibold">
-            Recent errors
+            {t("admin.errors.title")}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Errors users hit in the last 7 days, grouped. Server errors come from page renders and
-            API routes; browser errors from the app&apos;s error pages. Kept for 30 days.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("admin.errors.body")}</p>
         </div>
         {errors === null ? (
-          <p className="px-5 pb-5 text-sm text-muted-foreground">Unavailable right now.</p>
+          <p className="px-5 pb-5 text-sm text-muted-foreground">{t("admin.errors.unavailable")}</p>
         ) : errors.length === 0 ? (
-          <p className="px-5 pb-5 text-sm text-muted-foreground">None.</p>
+          <p className="px-5 pb-5 text-sm text-muted-foreground">{t("admin.errors.none")}</p>
         ) : (
           <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
             {errors.map((e) => (
@@ -206,11 +218,13 @@ export default async function AdminPage() {
                     {e.source}
                   </span>
                   <span className="font-medium break-all">
-                    {e.route ?? e.path ?? "unknown page"}
+                    {e.route ?? e.path ?? t("admin.errors.unknownPage")}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {e.count}× · last {formatAgo(e.lastAt, now)}
-                    {e.count > 1 ? ` · first ${formatAgo(e.firstAt, now)}` : ""}
+                    {e.count}× · {t("admin.errors.last", { ago: formatAgo(e.lastAt, now) })}
+                    {e.count > 1
+                      ? ` · ${t("admin.errors.first", { ago: formatAgo(e.firstAt, now) })}`
+                      : ""}
                   </span>
                 </p>
                 <p className="mt-1 font-mono text-xs break-words text-muted-foreground">
@@ -224,17 +238,17 @@ export default async function AdminPage() {
 
       <section aria-labelledby="admin-jobs" className="panel p-5">
         <h2 id="admin-jobs" className="mb-2 text-lg font-semibold">
-          Recent failed background jobs
+          {t("admin.jobs.title")}
         </h2>
         {failures.length === 0 ? (
-          <p className="text-sm text-muted-foreground">None in the last 14 days.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.jobs.none")}</p>
         ) : (
           <ul className="space-y-1.5 text-sm">
             {failures.map((f, i) => (
               <li key={i}>
                 <span className="font-medium">{f.name}</span>{" "}
                 <span className="text-muted-foreground">{formatAgo(f.at, now)}</span>:{" "}
-                {f.error ?? "unknown error"}
+                {f.error ?? t("admin.jobs.unknownError")}
               </li>
             ))}
           </ul>

@@ -61,13 +61,14 @@ async function SignOutButton({ className }: { className?: string }) {
   );
 }
 
-function SkipLink() {
+async function SkipLink() {
+  const t = await getT();
   return (
     <a
       href="#main"
       className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
     >
-      Skip to content
+      {t("system.shell.skip")}
     </a>
   );
 }
@@ -114,7 +115,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     getViewerTimeZone(),
   ]);
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
-  const name = profile?.personaName ?? `Player ${user.accountId32}`;
+  const name = profile?.personaName ?? t("system.shell.player", { id: user.accountId32 });
   const avatar = (
     <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-gold/40">
       {profile?.avatarUrl && (
@@ -132,7 +133,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <p className="px-3 pb-2 text-[0.65rem] font-semibold tracking-[0.18em] text-muted-foreground/70 uppercase">
-            Menu
+            {t("system.shell.menu")}
           </p>
           <SidebarNav enabled={navFor(user)} />
         </div>
@@ -149,7 +150,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               <span className="text-xs font-semibold text-gold">{rankLabel(rank)}</span>
             </div>
           ) : (
-            <div className="text-xs text-muted-foreground">Account {user.accountId32}</div>
+            <div className="text-xs text-muted-foreground">
+              {t("system.shell.account", { id: user.accountId32 })}
+            </div>
           )}
         </div>
       </aside>

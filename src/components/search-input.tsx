@@ -3,6 +3,7 @@
 import { useRef, useState, type ComponentProps, type Ref } from "react";
 import { Search, X } from "lucide-react";
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 
 /**
  * A search box with a clear (×) button that shows once there's text. Escape also clears.
@@ -15,7 +16,7 @@ export function SearchInput({
   onKeyDown,
   className,
   inputClassName,
-  clearLabel = "Clear search",
+  clearLabel,
   ref,
   ...props
 }: Omit<ComponentProps<"input">, "type" | "value" | "defaultValue" | "ref"> & {
@@ -27,6 +28,7 @@ export function SearchInput({
   clearLabel?: string;
   ref?: Ref<HTMLInputElement>;
 }) {
+  const t = useT();
   const inner = useRef<HTMLInputElement | null>(null);
   const controlled = value !== undefined;
   const [hasText, setHasText] = useState(Boolean(defaultValue));
@@ -83,7 +85,7 @@ export function SearchInput({
         <button
           type="button"
           onClick={clear}
-          aria-label={clearLabel}
+          aria-label={clearLabel ?? t("system.search.clear")}
           className="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <X aria-hidden className="size-3.5" />

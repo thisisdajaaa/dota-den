@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import type { AnnotationDto } from "../dtos/responses/annotation.dto";
 import { MAX_NOTE_LENGTH, MAX_TAGS, normalizeTag, SUGGESTED_TAGS } from "../domain/annotation";
@@ -19,6 +20,7 @@ export function MatchNotesCard({
   initialTags: string[];
   initialNote: string;
 }) {
+  const t = useT();
   const [tags, setTags] = useState(initialTags);
   const [note, setNote] = useState(initialNote);
   const [draft, setDraft] = useState("");
@@ -27,9 +29,9 @@ export function MatchNotesCard({
   const dirty = tags.join("|") !== saved.tags.join("|") || note !== saved.note;
 
   const add = (raw: string) => {
-    const t = normalizeTag(raw);
-    if (!t || tags.includes(t) || tags.length >= MAX_TAGS) return;
-    setTags([...tags, t]);
+    const tag = normalizeTag(raw);
+    if (!tag || tags.includes(tag) || tags.length >= MAX_TAGS) return;
+    setTags([...tags, tag]);
     setDraft("");
   };
 
@@ -43,9 +45,9 @@ export function MatchNotesCard({
       setTags(body.tags);
       setNote(body.note);
       setSaved(body);
-      toast.success("Saved");
+      toast.success(t("annotations.notes.savedToast"));
     } catch (e) {
-      toast.error(e instanceof ApiClientError ? e.message : "Couldn't save. Try again.");
+      toast.error(e instanceof ApiClientError ? e.message : t("annotations.notes.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -54,44 +56,43 @@ export function MatchNotesCard({
   return (
     <section className="panel space-y-3 p-5" aria-labelledby="match-notes-title">
       <div>
-        <p className="kicker">Private</p>
+        <p className="kicker">{t("annotations.notes.kicker")}</p>
         <h2 id="match-notes-title" className="text-lg font-semibold">
-          Your notes
+          {t("annotations.notes.title")}
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Tag this game and remember why it went the way it did. Only you see these; filter your
-          matches by tag later.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("annotations.notes.description")}</p>
       </div>
-      <div className="flex flex-wrap gap-1.5" aria-label="Tags on this match">
-        {tags.map((t) => (
+      <div className="flex flex-wrap gap-1.5" aria-label={t("annotations.notes.tagsLabel")}>
+        {tags.map((tag) => (
           <span
-            key={t}
+            key={tag}
             className="inline-flex items-center gap-1 rounded-full bg-gold/15 py-0.5 pr-1 pl-2.5 text-xs text-gold"
           >
-            {t}
+            {tag}
             <button
               type="button"
-              aria-label={`Remove tag ${t}`}
-              onClick={() => setTags(tags.filter((x) => x !== t))}
+              aria-label={t("annotations.notes.removeTag", { tag })}
+              onClick={() => setTags(tags.filter((x) => x !== tag))}
               className="grid size-4 place-items-center rounded-full hover:bg-gold/20"
             >
               <X aria-hidden className="size-3" />
             </button>
           </span>
         ))}
-        {tags.length === 0 && <span className="text-xs text-muted-foreground">No tags yet.</span>}
+        {tags.length === 0 && (
+          <span className="text-xs text-muted-foreground">{t("annotations.notes.noTags")}</span>
+        )}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {SUGGESTED_TAGS.filter((t) => !tags.includes(t)).map((t) => (
+        {SUGGESTED_TAGS.filter((tag) => !tags.includes(tag)).map((tag) => (
           <button
-            key={t}
+            key={tag}
             type="button"
-            onClick={() => add(t)}
+            onClick={() => add(tag)}
             disabled={tags.length >= MAX_TAGS}
             className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-muted-foreground hover:border-gold/40 hover:text-gold disabled:opacity-40"
           >
-            + {t}
+            + {tag}
           </button>
         ))}
       </div>
@@ -103,14 +104,14 @@ export function MatchNotesCard({
         }}
       >
         <label htmlFor="new-tag" className="sr-only">
-          Add a tag
+          {t("annotations.notes.addLabel")}
         </label>
         <input
           id="new-tag"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={20}
-          placeholder="Add your own tag"
+          placeholder={t("annotations.notes.addPlaceholder")}
           className="h-8 w-48 rounded-md border border-white/10 bg-background px-2.5 text-sm"
         />
         <Button
@@ -119,19 +120,19 @@ export function MatchNotesCard({
           size="sm"
           disabled={!draft.trim() || tags.length >= MAX_TAGS}
         >
-          Add
+          {t("annotations.notes.add")}
         </Button>
       </form>
       <div>
         <label htmlFor="match-note" className="mb-1 block text-sm">
-          Note
+          {t("annotations.notes.note")}
         </label>
         <textarea
           id="match-note"
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, MAX_NOTE_LENGTH))}
           rows={3}
-          placeholder="e.g. Lost mid to Ember; try Mek earlier"
+          placeholder={t("annotations.notes.notePlaceholder")}
           className="w-full rounded-md border border-white/10 bg-background p-2.5 text-sm"
         />
         <p className={cn("text-right text-xs text-muted-foreground tabular-nums")}>
@@ -139,7 +140,11 @@ export function MatchNotesCard({
         </p>
       </div>
       <Button type="button" onClick={() => void save()} disabled={!dirty || busy}>
-        {busy ? "Saving…" : dirty ? "Save" : "Saved"}
+        {busy
+          ? t("annotations.notes.saving")
+          : dirty
+            ? t("annotations.notes.save")
+            : t("annotations.notes.saved")}
       </Button>
     </section>
   );

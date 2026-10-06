@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChevronRight, ExternalLink } from "lucide-react";
+import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
@@ -9,7 +10,10 @@ import { changesAffectingPool } from "@/modules/patches/domain/patch";
 import { parsePatchVersion } from "@/modules/patches/domain/patch-version";
 import { patchesService } from "@/modules/patches";
 
-export const metadata: Metadata = { title: "Patch notes" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("patches.title") };
+}
 
 function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -23,6 +27,7 @@ function formatDate(d: Date): string {
 export default async function PatchesPage({ searchParams }: PageProps<"/patches">) {
   const { cursor: raw } = await searchParams;
   const cursor = typeof raw === "string" && parsePatchVersion(raw).ok ? raw : null;
+  const t = await getT();
 
   await patchesService.ensureFresh();
   const queries = patchesService;
@@ -40,9 +45,9 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
   return (
     <div className="space-y-8">
       <PageHeader
-        kicker="Patch hub"
-        title="Patch notes"
-        description="Official Dota 2 patch notes in Valve's original wording, with the changes that matter to your heroes pulled to the top."
+        kicker={t("patches.kicker")}
+        title={t("patches.title")}
+        description={t("patches.description")}
       />
 
       {latest && latestPatch && (
@@ -56,7 +61,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
           />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
-              <p className="kicker">Latest patch</p>
+              <p className="kicker">{t("patches.latest.kicker")}</p>
               <h2
                 id="latest-patch"
                 className="font-display text-5xl font-bold tracking-wide sm:text-6xl"
@@ -64,15 +69,19 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                 {latest.version}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Released {formatDate(latest.publishedAt)} · {latest.summary.heroesChanged} heroes
-                and {latest.summary.itemsChanged + latest.summary.neutralItemsChanged} items changed
+                {t("patches.latest.released", {
+                  date: formatDate(latest.publishedAt),
+                  heroes: latest.summary.heroesChanged,
+                  items: latest.summary.itemsChanged + latest.summary.neutralItemsChanged,
+                })}
               </p>
             </div>
             <Link
               href={`/patches/${latest.version}`}
               className="inline-flex items-center gap-2 self-start rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_-8px_oklch(0.8_0.13_80/0.6)] transition-transform hover:-translate-y-0.5 lg:self-auto"
             >
-              Read patch {latest.version} <ArrowRight className="size-4" />
+              {t("patches.latest.read", { version: latest.version })}{" "}
+              <ArrowRight className="size-4" />
             </Link>
           </div>
 
@@ -80,8 +89,8 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
             <div className="relative mt-6 border-t border-white/[0.06] pt-5">
               <h3 className="mb-3 text-sm font-semibold">
                 {yourChanges.length > 0
-                  ? `${yourChanges.length} of your heroes changed`
-                  : "None of your recent heroes changed in this patch"}
+                  ? t("patches.latest.yoursChanged", { count: yourChanges.length })
+                  : t("patches.latest.noneChanged")}
               </h3>
               {yourChanges.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
@@ -102,8 +111,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                 </ul>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  &ldquo;Your heroes&rdquo; means heroes with 3+ ranked games in the last 90 days,
-                  plus any you star on a patch page.
+                  {t("patches.latest.yourHeroesHelp")}
                 </p>
               )}
             </div>
@@ -114,11 +122,8 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
       {page.items.length === 0 ? (
         <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
           <AlertTriangle aria-hidden className="size-8 text-gold" />
-          <h2 className="text-lg font-semibold">Patch notes aren&apos;t available right now</h2>
-          <p className="max-w-md text-sm text-muted-foreground">
-            We couldn&apos;t reach Valve&apos;s patch feed. You can read them on the official site
-            in the meantime.
-          </p>
+          <h2 className="text-lg font-semibold">{t("patches.unavailable.title")}</h2>
+          <p className="max-w-md text-sm text-muted-foreground">{t("patches.unavailable.body")}</p>
           <a
             href="https://www.dota2.com/patches"
             target="_blank"
@@ -131,7 +136,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
       ) : (
         <section aria-labelledby="all-patches" className="space-y-4">
           <h2 id="all-patches" className="text-lg font-semibold">
-            {cursor ? "Older patches" : "All patches"}
+            {cursor ? t("patches.list.older") : t("patches.list.all")}
           </h2>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {page.items.map((p) => (
@@ -146,7 +151,9 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                     </span>
                     {p.parseStatus !== "parsed" && (
                       <span className="rounded border border-gold/30 bg-gold/10 px-1.5 py-0.5 text-[0.65rem] font-semibold text-gold">
-                        {p.parseStatus === "partial" ? "Partly imported" : "Link only"}
+                        {p.parseStatus === "partial"
+                          ? t("patches.list.partial")
+                          : t("patches.list.linkOnly")}
                       </span>
                     )}
                   </div>
@@ -156,20 +163,20 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                       <span className="font-semibold text-foreground">
                         {p.summary.heroesChanged}
                       </span>{" "}
-                      heroes
+                      {t("patches.list.heroes")}
                     </span>
                     <span>
                       <span className="font-semibold text-foreground">
                         {p.summary.itemsChanged + p.summary.neutralItemsChanged}
                       </span>{" "}
-                      items
+                      {t("patches.list.items")}
                     </span>
                     {p.summary.generalNotes > 0 && (
                       <span>
                         <span className="font-semibold text-foreground">
                           {p.summary.generalNotes}
                         </span>{" "}
-                        general
+                        {t("patches.list.general")}
                       </span>
                     )}
                   </span>
@@ -180,7 +187,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
           <div className="flex justify-between text-sm">
             {cursor ? (
               <Link href="/patches" className="text-muted-foreground hover:text-foreground">
-                Back to latest
+                {t("patches.list.backToLatest")}
               </Link>
             ) : (
               <span />
@@ -190,7 +197,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                 href={`/patches?cursor=${page.nextCursor}`}
                 className="inline-flex items-center gap-1 font-medium text-gold hover:underline"
               >
-                Older patches <ChevronRight className="size-4" />
+                {t("patches.list.older")} <ChevronRight className="size-4" />
               </Link>
             )}
           </div>

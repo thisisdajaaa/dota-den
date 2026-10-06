@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/common/i18n/client";
 
 export function DeleteEntryButton({ id, label }: { id: string; label: string }) {
+  const t = useT();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -20,10 +22,10 @@ export function DeleteEntryButton({ id, label }: { id: string; label: string }) 
     );
     setBusy(false);
     if (ok) {
-      toast.success("Entry deleted");
+      toast.success(t("mmr.remove.deleted"));
       router.refresh();
     } else {
-      toast.error("Couldn't delete. Please try again.");
+      toast.error(t("mmr.remove.failed"));
     }
     setConfirming(false);
   }
@@ -32,10 +34,10 @@ export function DeleteEntryButton({ id, label }: { id: string; label: string }) 
     return (
       <span className="flex items-center gap-1">
         <Button size="sm" variant="destructive" onClick={remove} disabled={busy}>
-          {busy ? "Deleting…" : "Delete"}
+          {busy ? t("mmr.remove.deleting") : t("mmr.remove.delete")}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-          Keep
+          {t("mmr.remove.keep")}
         </Button>
       </span>
     );
@@ -45,7 +47,7 @@ export function DeleteEntryButton({ id, label }: { id: string; label: string }) 
       variant="ghost"
       size="icon"
       className="size-8 text-muted-foreground hover:text-loss"
-      aria-label={`Delete entry ${label}`}
+      aria-label={t("mmr.remove.aria", { label })}
       onClick={() => setConfirming(true)}
     >
       <Trash2 className="size-3.5" />

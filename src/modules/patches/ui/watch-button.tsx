@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -19,6 +20,7 @@ export function WatchButton({
   watchedHeroIds: number[];
   itemIds: number[];
 }) {
+  const t = useT();
   const router = useRouter();
   const [watched, setWatched] = useState(watchedHeroIds.includes(heroId));
   const [busy, setBusy] = useState(false);
@@ -38,12 +40,12 @@ export function WatchButton({
     setBusy(false);
     if (status === 200) {
       setWatched(!watched);
-      toast.success(watched ? `Stopped watching ${heroName}` : `Watching ${heroName}`);
+      toast.success(
+        t(watched ? "patches.watch.stopped" : "patches.watch.watching", { hero: heroName }),
+      );
       router.refresh();
     } else {
-      toast.error(
-        status === 400 ? "Your watchlist is full (50 heroes)." : "Couldn't update your watchlist.",
-      );
+      toast.error(status === 400 ? t("patches.watch.full") : t("patches.watch.failed"));
     }
   }
 
@@ -53,8 +55,10 @@ export function WatchButton({
       onClick={toggle}
       disabled={busy}
       aria-pressed={watched}
-      aria-label={watched ? `Stop watching ${heroName}` : `Watch ${heroName}`}
-      title={watched ? "On your watchlist" : "Add to your watchlist"}
+      aria-label={t(watched ? "patches.watch.stopLabel" : "patches.watch.watchLabel", {
+        hero: heroName,
+      })}
+      title={watched ? t("patches.watch.onList") : t("patches.watch.add")}
       className={cn(
         "rounded-md p-1.5 transition-colors disabled:opacity-50",
         watched ? "text-gold" : "text-muted-foreground hover:text-foreground",

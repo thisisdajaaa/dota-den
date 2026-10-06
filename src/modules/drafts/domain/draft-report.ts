@@ -19,6 +19,8 @@
  */
 
 import calibration from "./draft-calibration.json";
+import { POSITION_NAMES, positionPhrase, type Position } from "./draft-positions";
+import { phrase, type Phrase } from "./phrase";
 
 export type CriterionKey =
   "lanes" | "counters" | "composition" | "strength" | "positions" | "combos";
@@ -34,6 +36,8 @@ export interface Criterion {
   grade: Grade | null;
   /** One plain-language line on why. */
   summary: string;
+  /** The same line for the UI to translate. */
+  summaryPhrase: Phrase;
 }
 
 export interface SideReport {
@@ -98,7 +102,11 @@ export function gradeOf(score: number): Grade {
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 const signed = (n: number) => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)}`;
 
+export type CompositionCheckId =
+  "initiation" | "control" | "frontline" | "late_game" | "burst" | "tower_pressure";
+
 export interface CompositionCheck {
+  id: CompositionCheckId;
   label: string;
   passed: boolean;
   /** e.g. "Axe, Mars" or "no hero tagged Initiator". */
@@ -119,69 +127,115 @@ export interface SideEvidence {
   strengthEdge: number | null;
   /** Geometric mean of how often the pros play each hero at its position (0..1). */
   positionFit: number | null;
-  offRole: string[];
+  /** Heroes at a position the pros rarely play them at. */
+  offRole: { hero: string; position: Position }[];
   /** Average same-team pair edge in pro games (points). */
   comboEdge: number | null;
   comboPairs: number;
   composition: CompositionCheck[];
 }
 
+type Scored = { score: number | null; summary: string; summaryPhrase: Phrase };
+
+/** A criterion without data: its English line and message id (`report.<id>`). */
+const noData = (summary: string, id: string): Scored => ({
+  score: null,
+  summary,
+  summaryPhrase: phrase(`report.${id}`),
+});
+
 export function sideReport(e: SideEvidence): SideReport {
-  const score = (key: CriterionKey): { score: number | null; summary: string } => {
+  const score = (key: CriterionKey): Scored => {
     switch (key) {
-      case "lanes":
-        return e.laneEdge === null
-          ? { score: null, summary: "No lane matchups with enough pro games yet." }
-          : {
-              score: clamp(50 + e.laneEdge * 4),
-              summary: `${signed(e.laneEdge)} points per lane (${
-                e.proLanes === e.lanesWithData
-                  ? `${e.proLanes} from pro lane results`
-                  : `${e.proLanes} from pro lane results, ${e.lanesWithData - e.proLanes} from head-to-heads`
-              }).`,
-            };
-      case "counters":
-        return e.counterEdge === null
-          ? { score: null, summary: "Not enough head-to-head games against the enemy heroes." }
-          : {
-              score: clamp(50 + e.counterEdge * 6),
-              summary: `${signed(e.counterEdge)} points per hero against the enemy lineup.`,
-            };
-      case "composition": {
-        if (e.heroes === 0) return { score: null, summary: "No heroes yet." };
-        const passed = e.composition.filter((c) => c.passed).length;
-        const missing = e.composition.filter((c) => !c.passed).map((c) => c.label.toLowerCase());
+      case "lanes": {
+        if (e.laneEdge === null)
+          return noData("No lane matchups with enough pro games yet.", "lanesNone");
+        const edge = signed(e.laneEdge);
+        const allPro = e.proLanes === e.lanesWithData;
+        const h2h = e.lanesWithData - e.proLanes;
         return {
-          score: clamp((passed / e.composition.length) * 100),
-          summary: missing.length
-            ? `${passed} of ${e.composition.length} covered; missing ${missing.join(", ")}.`
-            : `All ${e.composition.length} covered.`,
+          score: clamp(50 + e.laneEdge * 4),
+          summary: `${edge} points per lane (${
+            allPro
+              ? `${e.proLanes} from pro lane results`
+              : `${e.proLanes} from pro lane results, ${h2h} from head-to-heads`
+          }).`,
+          summaryPhrase: allPro
+            ? phrase("report.lanesPro", { edge, pro: e.proLanes })
+            : phrase("report.lanesMixed", { edge, pro: e.proLanes, h2h }),
         };
       }
-      case "strength":
-        return e.strengthEdge === null
-          ? { score: null, summary: "No win rate data for these heroes." }
-          : {
-              score: clamp(50 + e.strengthEdge * 8),
-              summary: `${signed(e.strengthEdge)} points per hero versus an even win rate this patch.`,
-            };
+      case "counters": {
+        if (e.counterEdge === null)
+          return noData("Not enough head-to-head games against the enemy heroes.", "countersNone");
+        const edge = signed(e.counterEdge);
+        return {
+          score: clamp(50 + e.counterEdge * 6),
+          summary: `${edge} points per hero against the enemy lineup.`,
+          summaryPhrase: phrase("report.counters", { edge }),
+        };
+      }
+      case "composition": {
+        if (e.heroes === 0) return noData("No heroes yet.", "compositionNone");
+        const passed = e.composition.filter((c) => c.passed).length;
+        const failed = e.composition.filter((c) => !c.passed);
+        const missing = failed.map((c) => c.label.toLowerCase());
+        const total = e.composition.length;
+        return {
+          score: clamp((passed / total) * 100),
+          summary: missing.length
+            ? `${passed} of ${total} covered; missing ${missing.join(", ")}.`
+            : `All ${total} covered.`,
+          summaryPhrase: missing.length
+            ? phrase("report.compositionMissing", {
+                passed,
+                total,
+                missing: failed.map((c) => phrase(`report.checks.${c.id}`)),
+              })
+            : phrase("report.compositionAll", { total }),
+        };
+      }
+      case "strength": {
+        if (e.strengthEdge === null)
+          return noData("No win rate data for these heroes.", "strengthNone");
+        const edge = signed(e.strengthEdge);
+        return {
+          score: clamp(50 + e.strengthEdge * 8),
+          summary: `${edge} points per hero versus an even win rate this patch.`,
+          summaryPhrase: phrase("report.strength", { edge }),
+        };
+      }
       case "positions": {
-        if (e.positionFit === null) return { score: null, summary: "No pro position data." };
+        if (e.positionFit === null) return noData("No pro position data.", "positionsNone");
         const base = Math.min(1, e.positionFit / 0.55) * 100 - e.offRole.length * 15;
+        const typical = Math.round(e.positionFit * 100);
         return {
           score: clamp(base),
           summary: e.offRole.length
-            ? `Off-role: ${e.offRole.join(", ")}.`
-            : `Every hero is at a position the pros often play it (${Math.round(e.positionFit * 100)}% typical).`,
+            ? `Off-role: ${e.offRole.map((o) => `${o.hero} at ${POSITION_NAMES[o.position]}`).join(", ")}.`
+            : `Every hero is at a position the pros often play it (${typical}% typical).`,
+          summaryPhrase: e.offRole.length
+            ? phrase("report.offRole", {
+                heroes: e.offRole.map((o) =>
+                  phrase("report.offRoleHero", {
+                    hero: o.hero,
+                    position: positionPhrase(o.position),
+                  }),
+                ),
+              })
+            : phrase("report.positionsTypical", { typical }),
         };
       }
-      case "combos":
-        return e.comboEdge === null
-          ? { score: null, summary: "These heroes rarely play together in pro games." }
-          : {
-              score: clamp(50 + e.comboEdge * 8),
-              summary: `${signed(e.comboEdge)} points per pair across ${e.comboPairs} pro pairing${e.comboPairs === 1 ? "" : "s"}.`,
-            };
+      case "combos": {
+        if (e.comboEdge === null)
+          return noData("These heroes rarely play together in pro games.", "combosNone");
+        const edge = signed(e.comboEdge);
+        return {
+          score: clamp(50 + e.comboEdge * 8),
+          summary: `${edge} points per pair across ${e.comboPairs} pro pairing${e.comboPairs === 1 ? "" : "s"}.`,
+          summaryPhrase: phrase("report.combos", { edge }, e.comboPairs),
+        };
+      }
     }
   };
 
@@ -238,31 +292,37 @@ export function compositionChecks(
   const lateCarry = carryAtPos1?.roles.includes("Carry") ? carryAtPos1.name : null;
   return [
     {
+      id: "initiation",
       label: "Initiation",
       passed: initiators.length >= 1,
       detail: initiators.length ? list(initiators) : "no hero tagged Initiator",
     },
     {
+      id: "control",
       label: "Control",
       passed: disablers.length >= 2,
       detail: disablers.length ? `${list(disablers)} (2+ wanted)` : "no hero tagged Disabler",
     },
     {
+      id: "frontline",
       label: "Frontline",
       passed: durable.length >= 1,
       detail: durable.length ? list(durable) : "no hero tagged Durable",
     },
     {
+      id: "late_game",
       label: "Late game",
       passed: lateCarry !== null,
       detail: lateCarry ?? "no Carry-tagged hero at position 1",
     },
     {
+      id: "burst",
       label: "Burst damage",
       passed: nukers.length >= 2,
       detail: nukers.length ? `${list(nukers)} (2+ wanted)` : "no hero tagged Nuker",
     },
     {
+      id: "tower_pressure",
       label: "Tower pressure",
       passed: pushers.length >= 1,
       detail: pushers.length ? list(pushers) : "no hero tagged Pusher",

@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { ExternalLink, Play, Search, Tv, X } from "lucide-react";
 import { cn } from "cn";
+import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import type { SearchLink, StreamMatch } from "../domain/watch";
 
@@ -19,6 +20,7 @@ export function WatchSection({
   streams: StreamMatch[] | null;
   links: SearchLink[];
 }) {
+  const t = useT();
   const [playing, setPlaying] = useState<string | null>(null);
   // Twitch only plays inside pages it's told about, so the embed names this page's host.
   const host = useSyncExternalStore(
@@ -26,6 +28,15 @@ export function WatchSection({
     () => window.location.hostname,
     () => null,
   );
+  // The search query is in the link itself; the label is rebuilt in the viewer's language.
+  const linkLabel = (l: SearchLink) => {
+    const url = new URL(l.href);
+    const query = url.searchParams.get(l.site === "Twitch" ? "term" : "search_query");
+    if (!query) return l.label;
+    return t(l.site === "Twitch" ? "live.watch.searchTwitch" : "live.watch.searchYouTube", {
+      query,
+    });
+  };
   const current = streams?.find((s) => s.channel === playing) ?? null;
   if (!streams?.length && links.length === 0) return null;
 
@@ -33,14 +44,14 @@ export function WatchSection({
     <section aria-labelledby="watch-title" className="panel space-y-4 p-5">
       <div>
         <h2 id="watch-title" className="flex items-center gap-2 text-lg font-semibold">
-          <Tv aria-hidden className="size-5 text-gold" /> Watch
+          <Tv aria-hidden className="size-5 text-gold" /> {t("live.watch.title")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {streams?.length
-            ? "Live Twitch streams whose titles mention these teams, this league or its pros. We match titles, so a stream may be showing another game."
+            ? t("live.watch.streams")
             : streams
-              ? "No live Twitch stream mentions this game right now. Try a search instead."
-              : "Search for a broadcast on Twitch or YouTube."}
+              ? t("live.watch.noStreams")
+              : t("live.watch.searchOnly")}
         </p>
       </div>
 
@@ -48,7 +59,7 @@ export function WatchSection({
         <div className="space-y-2">
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black ring-1 ring-white/10">
             <iframe
-              title={`${current.displayName} on Twitch`}
+              title={t("live.watch.playerTitle", { name: current.displayName })}
               src={`https://player.twitch.tv/?channel=${encodeURIComponent(current.channel)}&parent=${encodeURIComponent(host)}&autoplay=true`}
               allowFullScreen
               allow="autoplay; fullscreen"
@@ -62,10 +73,11 @@ export function WatchSection({
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-gold hover:underline"
             >
-              Open {current.displayName} on Twitch <ExternalLink aria-hidden className="size-3.5" />
+              {t("live.watch.open", { name: current.displayName })}{" "}
+              <ExternalLink aria-hidden className="size-3.5" />
             </a>
             <Button variant="ghost" size="sm" onClick={() => setPlaying(null)}>
-              <X aria-hidden /> Close player
+              <X aria-hidden /> {t("live.watch.close")}
             </Button>
           </div>
         </div>
@@ -85,7 +97,10 @@ export function WatchSection({
                 <p className="truncate text-sm font-medium">
                   {s.displayName}{" "}
                   <span className="font-normal text-muted-foreground">
-                    · {s.viewers.toLocaleString("en-US")} watching · {s.language.toUpperCase()}
+                    {t("live.watch.viewers", {
+                      n: s.viewers.toLocaleString("en-US"),
+                      lang: s.language.toUpperCase(),
+                    })}
                   </span>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">{s.title}</p>
@@ -94,10 +109,11 @@ export function WatchSection({
                 size="sm"
                 variant={s.channel === playing ? "secondary" : "outline"}
                 disabled={s.channel === playing}
-                aria-label={`Watch ${s.displayName} here`}
+                aria-label={t("live.watch.watchHere", { name: s.displayName })}
                 onClick={() => setPlaying(s.channel)}
               >
-                <Play aria-hidden /> {s.channel === playing ? "Playing" : "Watch"}
+                <Play aria-hidden />{" "}
+                {s.channel === playing ? t("live.watch.playing") : t("live.watch.watch")}
               </Button>
             </li>
           ))}
@@ -114,15 +130,13 @@ export function WatchSection({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-md border border-white/10 px-3 py-1.5 text-sm hover:border-gold/40 hover:text-gold"
               >
-                <Search aria-hidden className="size-3.5" /> {l.label}
+                <Search aria-hidden className="size-3.5" /> {linkLabel(l)}
               </a>
             </li>
           ))}
         </ul>
       )}
-      <p className="text-xs text-muted-foreground">
-        In the Dota 2 client, league games are under Watch → Live.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("live.watch.clientHint")}</p>
     </section>
   );
 }

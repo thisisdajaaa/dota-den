@@ -24,10 +24,23 @@ export interface WeekData {
   mmrEntries: readonly Date[];
 }
 
+/** Where a goal stands, as data, so the UI can word it in the viewer's language. */
+export type GoalStatus =
+  | { kind: "needGames"; games: number; min: number }
+  | { kind: "winRate"; rate: number; wins: number; losses: number }
+  | { kind: "longestSession"; games: number }
+  | { kind: "noSessions" }
+  | { kind: "sessionsLogged"; logged: number; total: number }
+  | { kind: "heroGames"; played: number; target: number }
+  | { kind: "done" }
+  | { kind: "notYet" };
+
 export interface GoalProgress {
   goal: Goal;
-  /** "52%", "3 / 4 sessions", "4 / 10 games": where it stands now. */
+  /** "52%", "3 / 4 sessions", "4 / 10 games": where it stands now (English). */
   current: string;
+  /** The same, as data. */
+  status: GoalStatus;
   /** True once met (or still on track, for limits); false if missed; null if too early to say. */
   met: boolean | null;
   /** 0–1 for a progress bar, when it makes sense. */
@@ -58,6 +71,7 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
         return {
           goal,
           current: `${n} / ${MIN_WIN_RATE_GAMES} games to count`,
+          status: { kind: "needGames", games: n, min: MIN_WIN_RATE_GAMES },
           met: null,
           fraction: n / MIN_WIN_RATE_GAMES,
         };
@@ -65,6 +79,7 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
       return {
         goal,
         current: `${rate.toFixed(0)}% (${wins}–${n - wins})`,
+        status: { kind: "winRate", rate: Number(rate.toFixed(0)), wins, losses: n - wins },
         met: rate >= goal.target,
         fraction: Math.min(1, rate / goal.target),
       };
@@ -74,6 +89,9 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
       return {
         goal,
         current: week.sessions.length ? `Longest session: ${most} games` : "No sessions yet",
+        status: week.sessions.length
+          ? { kind: "longestSession", games: most }
+          : { kind: "noSessions" },
         met: week.sessions.length ? most <= goal.target : null,
         fraction: null,
       };
@@ -90,6 +108,7 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
       return {
         goal,
         current: n ? `${logged} / ${n} sessions logged` : "No sessions yet",
+        status: n ? { kind: "sessionsLogged", logged, total: n } : { kind: "noSessions" },
         met: n ? logged === n : null,
         fraction: n ? logged / n : null,
       };
@@ -99,6 +118,7 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
       return {
         goal,
         current: `${played} / ${goal.target} games`,
+        status: { kind: "heroGames", played, target: goal.target },
         met: played >= goal.target ? true : null,
         fraction: Math.min(1, played / goal.target),
       };
@@ -107,6 +127,7 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
       return {
         goal,
         current: goal.done ? "Done" : "Not yet",
+        status: { kind: goal.done ? "done" : "notYet" },
         met: goal.done ? true : null,
         fraction: null,
       };

@@ -1,12 +1,14 @@
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
-import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
+import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
 import type { DuosView } from "../dtos/responses/meta.dto";
 import { POSITION_INFO, type Position } from "../domain/position";
 import { MetaSection, Unavailable } from "./meta-section";
 
-export function LaneDuosCard({
+export async function LaneDuosCard({
   position,
   view,
   catalog,
@@ -17,13 +19,14 @@ export function LaneDuosCard({
   catalog: Map<number, HeroInfo>;
   now: Date;
 }) {
+  const t = await getT();
   const info = POSITION_INFO[position];
   const id = "meta-lane-duos";
   if (view.result.kind === "solo_lane") {
     return (
-      <MetaSection id={id} kicker="Lane partners" title="Strongest lane duos">
+      <MetaSection id={id} kicker={t("meta.duos.kicker")} title={t("meta.duos.title")}>
         <p className="border-t border-white/[0.06] px-5 py-6 text-sm text-muted-foreground">
-          Mid is a solo lane, so there are no lane duos to show.
+          {t("meta.duos.soloLane")}
         </p>
       </MetaSection>
     );
@@ -32,17 +35,18 @@ export function LaneDuosCard({
   return (
     <MetaSection
       id={id}
-      kicker="Lane partners"
-      title="Strongest lane duos"
-      description={`Two heroes from the same team sharing the ${info.laneName}, in pro matches over the last ${view.windowDays} days. Pairs with fewer than 8 games are left out.`}
+      kicker={t("meta.duos.kicker")}
+      title={t("meta.duos.title")}
+      description={t("meta.duos.description", {
+        lane: info.laneName,
+        days: String(view.windowDays),
+      })}
       footer={
-        view.fetchedAt
-          ? `Source: OpenDota pro match database, updated ${formatAgo(view.fetchedAt, now)}.`
-          : undefined
+        view.fetchedAt ? t("meta.duos.source", { ago: formatAgo(view.fetchedAt, now) }) : undefined
       }
     >
       {duos.length === 0 ? (
-        <Unavailable>No {info.laneName} pair has enough pro games yet.</Unavailable>
+        <Unavailable>{t("meta.duos.empty", { lane: info.laneName })}</Unavailable>
       ) : (
         <ol className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
           {duos.map((d) => {
@@ -59,7 +63,10 @@ export function LaneDuosCard({
                     {heroName(a, d.heroA)} + {heroName(b, d.heroB)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatPercent(d.rate)} win rate · {plural(d.games, "game")}
+                    {t("meta.duos.rate", {
+                      rate: formatPercent(d.rate),
+                      games: plural(t, "meta.counts.games", d.games),
+                    })}
                   </p>
                 </div>
                 <span className="hidden w-20 sm:block">

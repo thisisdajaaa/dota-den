@@ -1,2 +1,90 @@
 /** UI copy for the patches feature. */
-export const patches = {} as const;
+export const patches = {
+  title: "Patch notes",
+  kicker: "Patch hub",
+  description:
+    "Official Dota 2 patch notes in Valve's original wording, with the changes that matter to your heroes pulled to the top.",
+  loading: "Loading patch notes",
+  latest: {
+    kicker: "Latest patch",
+    released: "Released {date} · {heroes} heroes and {items} items changed",
+    read: "Read patch {version}",
+    yoursChanged: "{count} of your heroes changed",
+    noneChanged: "None of your recent heroes changed in this patch",
+    yourHeroesHelp:
+      "“Your heroes” means heroes with 3+ ranked games in the last 90 days, plus any you star on a patch page.",
+  },
+  unavailable: {
+    title: "Patch notes aren't available right now",
+    body: "We couldn't reach Valve's patch feed. You can read them on the official site in the meantime.",
+  },
+  list: {
+    all: "All patches",
+    older: "Older patches",
+    partial: "Partly imported",
+    linkOnly: "Link only",
+    heroes: "heroes",
+    items: "items",
+    general: "general",
+    backToLatest: "Back to latest",
+  },
+  detail: {
+    metaTitle: "Patch {version}",
+    allPatches: "All patches",
+    kicker: "Gameplay update",
+    released: "Released {date} · {heroes} heroes · {items} items",
+    official: "Official notes on dota2.com",
+    failed:
+      "We couldn't import these notes. Please read them on the official site using the link above.",
+    partial:
+      "Some parts of these notes couldn't be imported, so this page may be incomplete. The official page has everything.",
+    sections: "Sections",
+    nav: {
+      yourHeroes: "Your heroes ({n})",
+      general: "General",
+      heroes: "Heroes ({n})",
+      items: "Items ({n})",
+      neutralItems: "Neutral items ({n})",
+      creeps: "Creeps",
+    },
+    forYou: "For you",
+    yourHeroesTitle: "Changes to your heroes",
+    yourHeroesHelp:
+      "Heroes you've played 3+ ranked games on in the last 90 days, plus heroes you've starred.",
+    generalTitle: "General changes",
+    heroesTitle: "Heroes",
+    jumpToHero: "Jump to hero",
+    itemsTitle: "Items",
+    neutralItemsTitle: "Neutral items",
+    creepsTitle: "Neutral creeps",
+    footer:
+      "Patch notes © Valve Corporation, shown in their original wording. Imported {date} UTC{revision}.",
+    revision: " (revision {n})",
+  },
+  notFound: {
+    title: "Patch not found",
+    body: "There's no official patch with that version number.",
+    seeAll: "See all patches",
+  },
+  hero: {
+    cohortTitle: "Your ranked games on this hero",
+    before: "30 days before",
+    after: "Since this patch",
+    games: "{games} games · KDA {kda}",
+    hint: "Other things change too (teammates, the meta, your role), so treat this as a hint, not proof.",
+    notEnough: "Not enough games on both sides yet ({min}+ each) to compare.",
+    ability: "Ability #{id}",
+    talents: "Talents",
+  },
+  item: { fallback: "Item #{id}" },
+  watch: {
+    watching: "Watching {hero}",
+    stopped: "Stopped watching {hero}",
+    full: "Your watchlist is full (50 heroes).",
+    failed: "Couldn't update your watchlist.",
+    watchLabel: "Watch {hero}",
+    stopLabel: "Stop watching {hero}",
+    onList: "On your watchlist",
+    add: "Add to your watchlist",
+  },
+} as const;

@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { HeroInfo } from "../matches.ports";
 import type { MatchPlayer } from "../domain/match-detail";
 import {
-  betterThan,
   formatPerfValue,
-  perfLabel,
   performanceHighlights,
   performanceLines,
+  type PerfStat,
 } from "../domain/match-performance";
 import { HeroPortrait, heroName } from "./hero-portrait";
 
@@ -15,7 +15,7 @@ import { HeroPortrait, heroName } from "./hero-portrait";
  * "How did I play?": one player's stats against everyone else on the same hero, with a
  * picker for the other players in the match.
  */
-export function PerformanceCard({
+export async function PerformanceCard({
   players,
   selected,
   isViewer,
@@ -30,28 +30,45 @@ export function PerformanceCard({
 }) {
   const withData = players.filter((p) => performanceLines(p.benchmarks).length > 0);
   if (withData.length === 0) return null;
+  const t = await getT();
+  const perfLabel = (stat: PerfStat) => t(`matches.performance.stats.${stat}`);
+  /** "better than 83%" for a percentile (same rounding as the domain's `betterThan`). */
+  const betterThan = (pct: number) => {
+    const p = Math.round(Math.min(1, Math.max(0, pct)) * 100);
+    return p >= 100
+      ? t("matches.performance.betterThanMax")
+      : t("matches.performance.betterThan", { pct: p });
+  };
   const hero = selected ? heroes.get(selected.heroId) : undefined;
   const hName = selected ? heroName(hero, selected.heroId) : "";
   const lines = selected ? performanceLines(selected.benchmarks) : [];
   const { best, worst } = performanceHighlights(lines);
-  const who = !selected ? null : isViewer ? "you" : (selected.personaName ?? `the ${hName} player`);
+  const who = !selected
+    ? null
+    : (selected.personaName ?? t("matches.performance.heroPlayer", { hero: hName }));
   const bracket = lines.some((l) => l.pctBracket !== null);
 
   return (
     <section className="panel space-y-4 p-5" aria-labelledby="performance">
       <div>
-        <p className="kicker">Performance</p>
+        <p className="kicker">{t("matches.performance.kicker")}</p>
         <h2 id="performance" className="text-lg font-semibold">
-          {selected ? (isViewer ? "How you played" : `How ${who} played`) : "How did they play?"}
+          {selected
+            ? isViewer
+              ? t("matches.performance.titleYou")
+              : t("matches.performance.titleOther", { who: who ?? "" })
+            : t("matches.performance.titleNone")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {selected
-            ? `Against recent games on ${hName}, from OpenDota${bracket ? ", and against games at this match's rank" : ""}.`
-            : "Pick a player to compare their game with everyone else on the same hero."}
+            ? bracket
+              ? t("matches.performance.againstBracket", { hero: hName })
+              : t("matches.performance.against", { hero: hName })
+            : t("matches.performance.pickPrompt")}
         </p>
       </div>
 
-      <nav aria-label="Choose a player" className="flex flex-wrap gap-1.5">
+      <nav aria-label={t("matches.performance.choosePlayer")} className="flex flex-wrap gap-1.5">
         {withData.map((p) => {
           const h = heroes.get(p.heroId);
           const active = selected?.playerSlot === p.playerSlot;
@@ -80,14 +97,17 @@ export function PerformanceCard({
             <p className="text-sm">
               {best && (
                 <>
-                  Strongest:{" "}
+                  {t("matches.performance.strongest")}{" "}
                   <span className="font-medium">{perfLabel(best.stat).toLowerCase()}</span>,{" "}
-                  {betterThan(best.pct)} of {hName} games.
+                  {t("matches.performance.strongestOf", {
+                    better: betterThan(best.pct),
+                    hero: hName,
+                  })}
                 </>
               )}{" "}
               {worst && (
                 <>
-                  Room to improve:{" "}
+                  {t("matches.performance.roomToImprove")}{" "}
                   <span className="font-medium">{perfLabel(worst.stat).toLowerCase()}</span>,{" "}
                   {betterThan(worst.pct)}.
                 </>
@@ -107,11 +127,16 @@ export function PerformanceCard({
                   </span>
                   <span className="text-right text-xs text-muted-foreground tabular-nums">
                     {betterThan(l.pct)}
-                    {l.pctBracket !== null && ` · ${Math.round(l.pctBracket * 100)}% at this rank`}
+                    {l.pctBracket !== null &&
+                      t("matches.performance.atRank", { pct: Math.round(l.pctBracket * 100) })}
                   </span>
                   <span
                     role="img"
-                    aria-label={`${perfLabel(l.stat)}: ${betterThan(l.pct)} of ${hName} games`}
+                    aria-label={t("matches.performance.barLabel", {
+                      stat: perfLabel(l.stat),
+                      better: betterThan(l.pct),
+                      hero: hName,
+                    })}
                     className="relative col-span-2 h-2 overflow-hidden rounded-full bg-white/[0.06]"
                   >
                     <span
@@ -128,8 +153,7 @@ export function PerformanceCard({
             })}
           </ul>
           <p className="text-xs text-muted-foreground">
-            The line marks the middle: half of {hName} games do better, half worse. Per-minute stats
-            depend on role and game length, so compare like with like.
+            {t("matches.performance.footnote", { hero: hName })}
           </p>
         </>
       )}

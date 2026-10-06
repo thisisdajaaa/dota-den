@@ -1,6 +1,7 @@
 "use client";
 
 import { apiRequest } from "@/common/http/api-client";
+import { useT } from "@/common/i18n/client";
 import { Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,9 +16,11 @@ import {
 } from "@/components/ui/select";
 import type { Side } from "../domain/draft-state";
 import { listRulesets } from "../domain/rulesets";
+import { rulesetName, sideName } from "./i18n";
 
 /** Room settings; creating the room seats you and opens the lobby. */
 export function NewRoomForm() {
+  const t = useT();
   const router = useRouter();
   const [rulesetId, setRulesetId] = useState(listRulesets()[0].id);
   const [hostSide, setHostSide] = useState<Side>("radiant");
@@ -35,7 +38,7 @@ export function NewRoomForm() {
       });
       router.push(`/draft/rooms/${body.roomId}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't create the room.");
+      toast.error(err instanceof Error ? err.message : t("drafts.newRoom.createFailed"));
       setBusy(false);
     }
   }
@@ -44,15 +47,15 @@ export function NewRoomForm() {
   return (
     <form onSubmit={create} className="panel grid max-w-xl gap-5 p-5">
       <label className={field}>
-        <span className="font-medium">Draft mode</span>
+        <span className="font-medium">{t("drafts.newRoom.mode")}</span>
         <Select value={rulesetId} onValueChange={setRulesetId}>
-          <SelectTrigger aria-label="Draft mode">
+          <SelectTrigger aria-label={t("drafts.newRoom.mode")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {listRulesets().map((r) => (
               <SelectItem key={r.id} value={r.id}>
-                {r.name}
+                {rulesetName(t, r)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -60,26 +63,26 @@ export function NewRoomForm() {
       </label>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <label className={field}>
-          <span className="font-medium">Your side</span>
+          <span className="font-medium">{t("drafts.newRoom.yourSide")}</span>
           <Select value={hostSide} onValueChange={(v) => setHostSide(v as Side)}>
-            <SelectTrigger aria-label="Your side">
+            <SelectTrigger aria-label={t("drafts.newRoom.yourSide")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="radiant">Radiant</SelectItem>
-              <SelectItem value="dire">Dire</SelectItem>
+              <SelectItem value="radiant">{sideName(t, "radiant")}</SelectItem>
+              <SelectItem value="dire">{sideName(t, "dire")}</SelectItem>
             </SelectContent>
           </Select>
         </label>
         <label className={field}>
-          <span className="font-medium">First pick</span>
+          <span className="font-medium">{t("drafts.newRoom.firstPick")}</span>
           <Select value={firstSide} onValueChange={(v) => setFirstSide(v as Side)}>
-            <SelectTrigger aria-label="First pick">
+            <SelectTrigger aria-label={t("drafts.newRoom.firstPick")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="radiant">Radiant</SelectItem>
-              <SelectItem value="dire">Dire</SelectItem>
+              <SelectItem value="radiant">{sideName(t, "radiant")}</SelectItem>
+              <SelectItem value="dire">{sideName(t, "dire")}</SelectItem>
             </SelectContent>
           </Select>
         </label>
@@ -91,11 +94,11 @@ export function NewRoomForm() {
           onChange={(e) => setTimerEnabled(e.target.checked)}
           className="accent-[var(--gold)]"
         />
-        Use the Captain&apos;s Mode timer (turn time plus reserve time)
+        {t("drafts.newRoom.timer")}
       </label>
       <Button type="submit" disabled={busy} className="gap-2 justify-self-start">
         <Users aria-hidden className="size-4" />
-        {busy ? "Creating…" : "Create room"}
+        {busy ? t("drafts.newRoom.creating") : t("drafts.newRoom.create")}
       </Button>
     </form>
   );

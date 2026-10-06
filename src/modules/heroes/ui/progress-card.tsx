@@ -1,14 +1,9 @@
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import type { HeroProgress, ProgressStat } from "../domain/hero-progress";
 import { MetaSection } from "@/modules/meta/ui/meta-section";
-
-const LABEL: Record<ProgressStat, string> = {
-  gpm: "Gold per minute",
-  xpm: "XP per minute",
-  lhpm: "Last hits per minute",
-  kda: "KDA ratio",
-  winRate: "Win rate",
-};
 
 function show(stat: ProgressStat, v: number): string {
   if (stat === "winRate") return `${(v * 100).toFixed(0)}%`;
@@ -16,10 +11,16 @@ function show(stat: ProgressStat, v: number): string {
   return Math.round(v).toLocaleString("en-US");
 }
 
-function change(stat: ProgressStat, earlier: number, latest: number): string {
+function change(
+  stat: ProgressStat,
+  earlier: number,
+  latest: number,
+  t: Translator<Messages>,
+): string {
   const d = latest - earlier;
   const sign = d > 0 ? "+" : d < 0 ? "−" : "±";
-  if (stat === "winRate") return `${sign}${Math.abs(d * 100).toFixed(0)} pts`;
+  if (stat === "winRate")
+    return t("heroes.progress.points", { v: `${sign}${Math.abs(d * 100).toFixed(0)}` });
   if (earlier === 0) return `${sign}${show(stat, Math.abs(d))}`;
   return `${sign}${Math.abs((d / earlier) * 100).toFixed(0)}%`;
 }
@@ -56,27 +57,32 @@ function Sparkline({ series, up }: { series: number[]; up: boolean }) {
 }
 
 /** Your latest games on the hero against the ones before, stat by stat. */
-export function ProgressCard({
+export async function ProgressCard({
   progress,
   heroLabel,
 }: {
   progress: HeroProgress;
   heroLabel: string;
 }) {
+  const t = await getT();
   return (
     <MetaSection
       id="hero-progress"
-      kicker="Progress"
-      title={`Are you getting better on ${heroLabel}?`}
-      description={`Your last ${progress.half} games against the ${progress.half} before them (from your ${progress.games} most recent on ${heroLabel}). Lines are 5-game rolling averages.`}
-      footer="Per-minute stats move with role and game length, so a change can come from playing a different position."
+      kicker={t("heroes.progress.kicker")}
+      title={t("heroes.progress.title", { hero: heroLabel })}
+      description={t("heroes.progress.description", {
+        half: progress.half,
+        games: progress.games,
+        hero: heroLabel,
+      })}
+      footer={t("heroes.progress.footer")}
     >
       <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
         {progress.stats.map((s) => {
           const better = s.change >= 0;
           return (
             <li key={s.stat} className="flex items-center gap-3 px-5 py-2.5">
-              <span className="min-w-0 flex-1 text-sm">{LABEL[s.stat]}</span>
+              <span className="min-w-0 flex-1 text-sm">{t(`heroes.progress.stats.${s.stat}`)}</span>
               <Sparkline series={s.series} up={better} />
               <span className="w-28 shrink-0 text-right text-sm tabular-nums">
                 <span className="text-muted-foreground">{show(s.stat, s.earlier)} → </span>
@@ -88,7 +94,7 @@ export function ProgressCard({
                   s.change > 0 ? "text-win" : s.change < 0 ? "text-loss" : "text-muted-foreground",
                 )}
               >
-                {change(s.stat, s.earlier, s.latest)}
+                {change(s.stat, s.earlier, s.latest, t)}
               </span>
             </li>
           );

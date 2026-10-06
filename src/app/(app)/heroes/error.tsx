@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorPanel } from "@/components/error-panel";
+import { useT } from "@/common/i18n/client";
 
 export default function HeroesError({
   error,
@@ -9,7 +10,6 @@ export default function HeroesError({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
-  return (
-    <ErrorPanel error={error} retry={retry} title="Something went wrong loading your heroes" />
-  );
+  const t = useT();
+  return <ErrorPanel error={error} retry={retry} title={t("heroes.index.error")} />;
 }

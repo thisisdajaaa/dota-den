@@ -19,10 +19,13 @@ import {
   MIN_POSITION_FIT,
   POSITION_NAMES,
   positionFact,
+  positionFactPhrase,
   positionOdds,
+  positionPhrase,
   type Position,
   type PositionTable,
 } from "./draft-positions";
+import { phrase, type Phrase } from "./phrase";
 
 export interface ScoringHero {
   id: number;
@@ -187,6 +190,20 @@ export function proSource(pro: ProMeta): string {
   return `${where}, last ${pro.days} days`;
 }
 
+/** `proSource` for the UI to translate (league names stay as they are). */
+export function proSourcePhrase(pro: ProMeta): Phrase {
+  const [top, ...rest] = pro.leagues;
+  const where = top
+    ? rest.length
+      ? phrase("tournaments.more", { league: top.name.trim() }, rest.length)
+      : top.name.trim()
+    : phrase("tournaments.pro");
+  return phrase("tournaments.window", { where, days: pro.days });
+}
+
+/** A lineup role for the UI to translate. */
+export const rolePhrase = (role: LineupRole): Phrase => phrase(`role.${role}`);
+
 export interface Candidate {
   heroId: number;
   name: string;
@@ -206,6 +223,8 @@ export interface Candidate {
   laneEdge: number | null;
   /** Human-readable evidence the model sees and cites. */
   facts: string[];
+  /** The same evidence for the UI to translate. */
+  factPhrases: Phrase[];
 }
 
 const pct = (edge: number) => `${edge >= 0 ? "+" : ""}${edge.toFixed(1)}`;
@@ -307,26 +326,44 @@ export function rankCandidates(input: {
       (laneEdge ?? 0) * 1.2;
 
     const facts: string[] = [];
+    const factPhrases: Phrase[] = [];
     const rec = meta.get(hero.id);
     if (rec && rec.games > 0) {
-      facts.push(
-        `${((rec.wins / rec.games) * 100).toFixed(1)}% win rate at high ranks (${rec.games.toLocaleString("en-US")} games)`,
-      );
+      const rate = ((rec.wins / rec.games) * 100).toFixed(1);
+      const games = rec.games.toLocaleString("en-US");
+      facts.push(`${rate}% win rate at high ranks (${games} games)`);
+      factPhrases.push(phrase("facts.winRate", { rate, games }));
     }
     const strongest = [...edges].sort((a, b) => Math.abs(b.e) - Math.abs(a.e)).slice(0, 3);
     if (strongest.length) {
       const target = action === "pick" ? "vs opponent's" : "vs our";
-      facts.push(`${target} ${strongest.map((x) => `${x.o.name} ${pct(x.e)}%`).join(", ")}`);
+      const list = strongest.map((x) => `${x.o.name} ${pct(x.e)}%`).join(", ");
+      facts.push(`${target} ${list}`);
+      factPhrases.push(phrase(action === "pick" ? "facts.vsOpponents" : "facts.vsOurs", { list }));
     }
     if (pro && proStat && contest >= 0.1) {
+      const share = Math.round(contest * 100);
       const won = proStat.picks >= 5 ? ` (won ${proStat.wins} of ${proStat.picks})` : "";
-      facts.push(`picked or banned in ${Math.round(contest * 100)}% of recent pro drafts${won}`);
+      facts.push(`picked or banned in ${share}% of recent pro drafts${won}`);
+      factPhrases.push(
+        proStat.picks >= 5
+          ? phrase("facts.contestedWon", { share, wins: proStat.wins, picks: proStat.picks })
+          : phrase("facts.contested", { share }),
+      );
     }
     const bestPair = [...pairs].sort((a, b) => b.s.edge - a.s.edge)[0];
     if (bestPair && Math.abs(bestPair.s.edge) >= 1) {
       const whose = action === "pick" ? "with our" : "with their";
+      const rate = Math.round(bestPair.s.winRate * 100);
       facts.push(
-        `${whose} ${bestPair.p.name}: ${Math.round(bestPair.s.winRate * 100)}% win rate together in ${bestPair.s.games} pro games`,
+        `${whose} ${bestPair.p.name}: ${rate}% win rate together in ${bestPair.s.games} pro games`,
+      );
+      factPhrases.push(
+        phrase(action === "pick" ? "facts.withOur" : "facts.withTheir", {
+          hero: bestPair.p.name,
+          rate,
+          games: bestPair.s.games,
+        }),
       );
     }
     const lane = [...laneRows].sort((a, b) => Math.abs(b.r.edge) - Math.abs(a.r.edge))[0];
@@ -335,15 +372,36 @@ export function rankCandidates(input: {
       facts.push(
         `in lane vs ${whose} ${lane.f.name}: won ${lane.r.wins} of ${lane.r.games} pro lanes`,
       );
+      factPhrases.push(
+        phrase(action === "pick" ? "facts.laneVsTheir" : "facts.laneVsOur", {
+          hero: lane.f.name,
+          wins: lane.r.wins,
+          games: lane.r.games,
+        }),
+      );
     }
     if (slot) {
-      const fact = positionFact(slot.position, positionOdds(hero, positions));
+      const odds = positionOdds(hero, positions);
+      const fact = positionFact(slot.position, odds);
+      const factPhrase = positionFactPhrase(slot.position, odds);
       facts.push(
         action === "pick" ? fact : `would fill their ${POSITION_NAMES[slot.position]} (${fact})`,
       );
+      factPhrases.push(
+        action === "pick"
+          ? factPhrase
+          : phrase("facts.wouldFillTheir", {
+              position: positionPhrase(slot.position),
+              fact: factPhrase,
+            }),
+      );
     } else {
-      facts.push(
-        `plays as ${lineupRole(hero)}${canSupport(hero) && lineupRole(hero) === "core" ? " (can support)" : ""}`,
+      const flex = canSupport(hero) && lineupRole(hero) === "core";
+      facts.push(`plays as ${lineupRole(hero)}${flex ? " (can support)" : ""}`);
+      factPhrases.push(
+        phrase(flex ? "facts.playsAsFlex" : "facts.playsAs", {
+          role: rolePhrase(lineupRole(hero)),
+        }),
       );
     }
     return {
@@ -359,6 +417,7 @@ export function rankCandidates(input: {
       contest,
       synergyEdge,
       facts,
+      factPhrases,
     };
   });
 

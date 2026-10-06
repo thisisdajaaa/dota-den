@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
@@ -9,21 +11,20 @@ import type { PoolAdviceView } from "../dtos/responses/pool-advice.dto";
 const MIN_CONTEST = 0.15;
 
 /** "Heroes to add": suggestions for your role, each with the numbers behind it. */
-export function PoolAdviceCard({
+export async function PoolAdviceCard({
   view,
   heroes,
 }: {
   view: PoolAdviceView;
   heroes: Map<number, HeroInfo>;
 }) {
+  const t = await getT();
   const name = (id: number) => heroName(heroes.get(id), id);
   if (view.status !== "ok") {
     return (
-      <MetaSection id="pool-advice" kicker="Your pool" title="Heroes to add">
+      <MetaSection id="pool-advice" kicker={t("advisor.kicker")} title={t("advisor.title")}>
         <Unavailable>
-          {view.status === "no_role"
-            ? "Play a few more games with lane data so we can tell which role you play."
-            : "Suggestions are unavailable right now. Try again in a few minutes."}
+          {view.status === "no_role" ? t("advisor.noRole") : t("advisor.unavailable")}
         </Unavailable>
       </MetaSection>
     );
@@ -32,13 +33,12 @@ export function PoolAdviceCard({
   return (
     <MetaSection
       id="pool-advice"
-      kicker={`Your pool · ${pos.short} · ${pos.name}`}
-      title="Heroes to add"
+      kicker={t("advisor.kickerRole", { short: pos.short, name: pos.name })}
+      title={t("advisor.title")}
       description={
         view.nemeses.length > 0 ? (
           <>
-            Strong at high ranks for your role, favouring heroes that beat the ones you lose to
-            most:{" "}
+            {t("advisor.descNemeses")}{" "}
             {view.nemeses.map((n, i) => (
               <span key={n.heroId}>
                 {i > 0 && ", "}
@@ -48,15 +48,13 @@ export function PoolAdviceCard({
             .
           </>
         ) : (
-          "Strong at high ranks for your role, and not already in your pool."
+          t("advisor.descPlain")
         )
       }
-      footer={`From your last ${view.windowDays} days, recent high-rank games and pro games. Win rates from small samples are pulled toward 50%.`}
+      footer={t("advisor.footer", { days: view.windowDays })}
     >
       {view.advice.length === 0 ? (
-        <Unavailable>
-          No suggestions: you already play the strongest heroes for your role.
-        </Unavailable>
+        <Unavailable>{t("advisor.none")}</Unavailable>
       ) : (
         <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
           {view.advice.map((a) => (
@@ -71,27 +69,28 @@ export function PoolAdviceCard({
                   <ul className="space-y-0.5 text-xs text-muted-foreground">
                     {a.counters.slice(0, 2).map((c) => (
                       <li key={c.nemesisId}>
-                        Beats <span className="text-foreground">{name(c.nemesisId)}</span>:{" "}
-                        {formatPercent(c.winRate)} in {c.games.toLocaleString("en-US")} pro games
-                        (you lose to {name(c.nemesisId)} {formatPercent(c.yourLossRate)} of the
-                        time)
+                        {t("advisor.beats")}{" "}
+                        <span className="text-foreground">{name(c.nemesisId)}</span>:{" "}
+                        {t("advisor.beatsDetail", {
+                          rate: formatPercent(c.winRate),
+                          games: plural(t, "advisor.counts.proGames", c.games),
+                          hero: name(c.nemesisId),
+                          lossRate: formatPercent(c.yourLossRate),
+                        })}
                       </li>
                     ))}
                     {a.highRank && (
                       <li>
-                        {formatPercent(a.highRank.rate)} win rate at high ranks (
-                        {a.highRank.games.toLocaleString("en-US")} games)
+                        {t("advisor.highRank", {
+                          rate: formatPercent(a.highRank.rate),
+                          games: plural(t, "advisor.counts.games", a.highRank.games),
+                        })}
                       </li>
                     )}
                     {a.contestRate !== null && a.contestRate >= MIN_CONTEST && (
-                      <li>Picked or banned in {formatPercent(a.contestRate)} of pro drafts</li>
+                      <li>{t("advisor.contest", { rate: formatPercent(a.contestRate) })}</li>
                     )}
-                    {a.yourGames > 0 && (
-                      <li>
-                        You&apos;ve played it {a.yourGames} {a.yourGames === 1 ? "time" : "times"}{" "}
-                        lately
-                      </li>
-                    )}
+                    {a.yourGames > 0 && <li>{plural(t, "advisor.played", a.yourGames)}</li>}
                   </ul>
                 </span>
               </Link>

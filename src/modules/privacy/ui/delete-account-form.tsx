@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/common/i18n/client";
 
 /** Type DELETE, then delete the account; signs out and goes home. */
 export function DeleteAccountForm() {
+  const t = useT();
   const router = useRouter();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,13 +29,15 @@ export function DeleteAccountForm() {
           router.replace("/?deleted=1");
           router.refresh();
         } catch {
-          setError("Couldn't delete your account right now. Nothing was removed; try again.");
+          setError(t("privacy.delete.failed"));
           setBusy(false);
         }
       }}
     >
       <label className="block text-sm" htmlFor="confirm-delete">
-        Type <strong>DELETE</strong> to confirm
+        {t("privacy.delete.confirmBefore")}
+        <strong>DELETE</strong>
+        {t("privacy.delete.confirmAfter")}
       </label>
       <div className="flex flex-wrap gap-2">
         <input
@@ -45,7 +49,7 @@ export function DeleteAccountForm() {
         />
         <Button type="submit" variant="destructive" disabled={!ready || busy} className="gap-2">
           <Trash2 aria-hidden className="size-4" />
-          {busy ? "Deleting…" : "Delete my account"}
+          {busy ? t("privacy.delete.deleting") : t("privacy.delete.button")}
         </Button>
       </div>
       {error && (

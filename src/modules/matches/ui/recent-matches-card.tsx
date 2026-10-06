@@ -1,14 +1,28 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import type { DashboardFact, HeroInfo } from "../matches.ports";
-import { formatAgo, formatDuration, queueLabel } from "./format";
+import { formatAgo, formatDuration, partyName } from "./format";
 import { HeroPortrait, heroName } from "./hero-portrait";
 
 const COLS =
   "grid grid-cols-[1fr_auto] items-center gap-x-4 @3xl/rows:grid-cols-[minmax(0,1.6fr)_4.5rem_6.5rem_5.5rem_4rem_4.5rem_1rem]";
 
-export function RecentMatchesCard({
+/** Queue name for a row (same rules as `queueLabel`, in the viewer's language). */
+function queueText(
+  t: Translator<Messages>,
+  queueClass: "solo" | "party" | "unknown",
+  partySize: number | null,
+): string {
+  if (queueClass === "solo") return t("matches.queue.solo");
+  if (queueClass === "party") return partySize ? partyName(partySize) : t("matches.queue.party");
+  return t("matches.queue.unknown");
+}
+
+export async function RecentMatchesCard({
   matches,
   heroes,
   now,
@@ -17,17 +31,18 @@ export function RecentMatchesCard({
   heroes: Map<number, HeroInfo>;
   now: Date;
 }) {
+  const t = await getT();
   return (
     <section className="panel overflow-hidden" aria-labelledby="recent-matches">
       <div className="flex items-baseline justify-between p-5 pb-3">
         <div>
-          <p className="kicker">Match history</p>
+          <p className="kicker">{t("matches.recent.kicker")}</p>
           <h2 id="recent-matches" className="text-lg font-semibold">
-            Recent matches
+            {t("matches.recent.title")}
           </h2>
         </div>
         <Link href="/matches" className="text-xs text-gold hover:underline">
-          View all matches
+          {t("matches.recent.viewAll")}
         </Link>
       </div>
       <MatchRows matches={matches} heroes={heroes} now={now} />
@@ -36,7 +51,7 @@ export function RecentMatchesCard({
 }
 
 /** Column header + clickable rows; shared by the dashboard and the match list. */
-export function MatchRows({
+export async function MatchRows({
   matches,
   heroes,
   now,
@@ -45,6 +60,7 @@ export function MatchRows({
   heroes: Map<number, HeroInfo>;
   now: Date;
 }) {
+  const t = await getT();
   // Sized by its own width, not the viewport: it's also used in narrow columns.
   return (
     <div className="@container/rows">
@@ -55,12 +71,12 @@ export function MatchRows({
           "hidden border-y border-white/[0.06] px-5 py-2 text-[0.65rem] tracking-wider text-muted-foreground uppercase @3xl/rows:grid",
         )}
       >
-        <span>Hero</span>
-        <span>Result</span>
-        <span>K / D / A</span>
-        <span>Queue</span>
-        <span>Length</span>
-        <span>Played</span>
+        <span>{t("matches.rows.hero")}</span>
+        <span>{t("matches.rows.result")}</span>
+        <span>{t("matches.rows.kda")}</span>
+        <span>{t("matches.rows.queue")}</span>
+        <span>{t("matches.rows.length")}</span>
+        <span>{t("matches.rows.played")}</span>
         <span />
       </div>
 
@@ -69,11 +85,18 @@ export function MatchRows({
           const hero = heroes.get(m.heroId);
           const win = m.result === "win";
           const name = heroName(hero, m.heroId);
+          const result = win ? t("matches.result.win") : t("matches.result.loss");
+          const queue = queueText(t, m.queueClass, m.partySize);
           return (
             <li key={m.matchId}>
               <Link
                 href={`/matches/${m.matchId}`}
-                aria-label={`${win ? "Win" : "Loss"} as ${name}, ${m.kills}/${m.deaths}/${m.assists}, ${formatAgo(m.startedAt, now)}`}
+                aria-label={t("matches.rows.rowLabel", {
+                  result,
+                  hero: name,
+                  kda: `${m.kills}/${m.deaths}/${m.assists}`,
+                  ago: formatAgo(m.startedAt, now),
+                })}
                 className={cn(
                   COLS,
                   "group relative px-5 py-2.5 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none",
@@ -91,11 +114,11 @@ export function MatchRows({
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{name}</span>
                     <span className="block truncate text-[0.7rem] text-muted-foreground">
-                      {m.ranked ? "Ranked" : "Unranked"}
+                      {m.ranked ? t("matches.rows.ranked") : t("matches.rows.unranked")}
                       {m.patch && ` · ${m.patch}${m.patchCertainty === "boundary" ? "?" : ""}`}
                       <span className="@3xl/rows:hidden">
                         {" · "}
-                        {queueLabel(m.queueClass, m.partySize)} · {formatAgo(m.startedAt, now)}
+                        {queue} · {formatAgo(m.startedAt, now)}
                       </span>
                     </span>
                   </span>
@@ -106,7 +129,7 @@ export function MatchRows({
                   <span
                     className={cn("block text-xs font-semibold", win ? "text-win" : "text-loss")}
                   >
-                    {win ? "Win" : "Loss"}
+                    {result}
                   </span>
                   <span className="block text-xs tabular-nums">
                     {m.kills}/{m.deaths}/{m.assists}
@@ -120,7 +143,7 @@ export function MatchRows({
                       win ? "bg-win/15 text-win" : "bg-loss/15 text-loss",
                     )}
                   >
-                    {win ? "Win" : "Loss"}
+                    {result}
                   </span>
                 </span>
                 <span className="hidden text-sm tabular-nums @3xl/rows:block">
@@ -136,7 +159,7 @@ export function MatchRows({
                     m.queueClass === "unknown" && "text-muted-foreground italic",
                   )}
                 >
-                  {queueLabel(m.queueClass, m.partySize)}
+                  {queue}
                 </span>
                 <span className="hidden text-sm text-muted-foreground tabular-nums @3xl/rows:block">
                   {formatDuration(m.durationSec)}

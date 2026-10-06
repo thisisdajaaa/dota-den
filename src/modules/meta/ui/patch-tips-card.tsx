@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { ArrowUpRight, BookOpenText, Swords, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { getT } from "@/common/i18n/server";
+import type { Messages } from "@/common/i18n/messages";
+import type { Translator } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import type { RankedHero } from "../domain/meta-stats";
-import { tipsFor, type LatestPatch, type TipKind } from "../domain/patch-tips";
-import type { Position } from "../domain/position";
+import { tipsFor, type LatestPatch, type Tip, type TipKind } from "../domain/patch-tips";
+import { POSITION_INFO, type Position } from "../domain/position";
 import { MetaSection, Unavailable } from "./meta-section";
 
 const ICONS: Record<TipKind, typeof Swords> = {
@@ -17,7 +20,48 @@ const ICONS: Record<TipKind, typeof Swords> = {
 
 export const TIP_HEROES = 5;
 
-export function PatchTipsCard({
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+const num = (n: number) => n.toLocaleString("en-US");
+
+/** A tip's sentence in the viewer's language, from the same numbers `tipsFor` used. */
+function tipText(
+  t: Translator<Messages>,
+  tip: Tip,
+  hero: RankedHero,
+  position: Position,
+  patch: LatestPatch | null,
+): string {
+  switch (tip.kind) {
+    case "patch": {
+      const line = patch?.heroes.get(hero.heroId)?.lines[0];
+      return patch && line !== undefined
+        ? t("meta.tips.changed", { version: patch.version, line })
+        : tip.text;
+    }
+    case "rising":
+      return hero.trend ? t("meta.tips.rising", { pct: pct(hero.trend.change) }) : tip.text;
+    case "falling":
+      return hero.trend ? t("meta.tips.falling", { pct: pct(-hero.trend.change) }) : tip.text;
+    case "contested":
+      return hero.pro
+        ? t("meta.tips.contested", {
+            pct: pct(hero.pro.contestRate),
+            drafts: num(hero.pro.drafts),
+            days: hero.pro.windowDays,
+          })
+        : tip.text;
+    case "lane":
+      return hero.lane
+        ? t("meta.tips.lane", {
+            pct: pct(hero.lane.rate),
+            games: num(hero.lane.games),
+            lane: POSITION_INFO[position].laneName,
+          })
+        : tip.text;
+  }
+}
+
+export async function PatchTipsCard({
   position,
   heroes,
   patch,
@@ -30,6 +74,7 @@ export function PatchTipsCard({
   patchStatus: "ok" | "none" | "unavailable";
   catalog: Map<number, HeroInfo>;
 }) {
+  const t = await getT();
   const rows = heroes
     .slice(0, TIP_HEROES)
     .map((h) => ({ hero: h, tips: tipsFor(h, position, patch) }))
@@ -38,21 +83,21 @@ export function PatchTipsCard({
   return (
     <MetaSection
       id="meta-patch-tips"
-      kicker={patch ? `Patch ${patch.version}` : "Patch"}
-      title="Patch tips"
-      description={`What changed and what's moving for the top ${TIP_HEROES} heroes in this role.`}
+      kicker={
+        patch ? t("meta.tips.kicker", { version: patch.version }) : t("meta.tips.kickerShort")
+      }
+      title={t("meta.tips.title")}
+      description={t("meta.tips.description", { n: TIP_HEROES })}
       footer={
         patchStatus === "unavailable"
-          ? "Patch notes are unavailable right now, so patch changes aren't included."
+          ? t("meta.tips.footerUnavailable")
           : patchStatus === "none"
-            ? "No patch notes imported yet, so patch changes aren't included."
-            : "Patch changes are Valve's original wording; open the patch page for the full notes."
+            ? t("meta.tips.footerNone")
+            : t("meta.tips.footerOk")
       }
     >
       {rows.length === 0 ? (
-        <Unavailable>
-          No patch changes, big pick trends or standout numbers for these heroes right now.
-        </Unavailable>
+        <Unavailable>{t("meta.tips.empty")}</Unavailable>
       ) : (
         <ul className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
           {rows.map(({ hero, tips }) => {
@@ -63,24 +108,26 @@ export function PatchTipsCard({
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <p className="text-sm font-medium">{heroName(info, hero.heroId)}</p>
                   <ul className="space-y-1">
-                    {tips.map((t) => {
-                      const Icon = ICONS[t.kind];
+                    {tips.map((tip) => {
+                      const Icon = ICONS[tip.kind];
                       return (
                         <li
-                          key={t.kind}
+                          key={tip.kind}
                           className="flex items-start gap-2 text-xs text-muted-foreground"
                         >
                           <Icon aria-hidden className="mt-0.5 size-3.5 shrink-0 text-gold" />
                           <span className="whitespace-pre-line">
-                            {t.text}
-                            {t.href && (
+                            {tipText(t, tip, hero, position, patch)}
+                            {tip.href && (
                               <>
                                 {" "}
                                 <Link
-                                  href={t.href}
+                                  href={tip.href}
                                   className="inline-flex items-center gap-0.5 font-medium text-gold hover:underline"
                                 >
-                                  {t.more ? `See all ${t.more + 1} changes` : "See the patch notes"}
+                                  {tip.more
+                                    ? t("meta.tips.seeAll", { n: tip.more + 1 })
+                                    : t("meta.tips.seeNotes")}
                                   <ArrowUpRight aria-hidden className="size-3" />
                                 </Link>
                               </>

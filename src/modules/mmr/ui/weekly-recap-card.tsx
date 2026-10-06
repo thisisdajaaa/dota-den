@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
@@ -28,7 +29,7 @@ function Hero({ label, h, heroes }: { label: string; h: HeroWeek; heroes: Map<nu
 }
 
 /** This week's ranked games against last week's, with the MMR change. */
-export function WeeklyRecapCard({
+export async function WeeklyRecapCard({
   recap,
   heroes,
   rangeLabel,
@@ -37,6 +38,7 @@ export function WeeklyRecapCard({
   heroes: Map<number, HeroInfo>;
   rangeLabel: string;
 }) {
+  const t = await getT();
   const { thisWeek: w, lastWeek: l, mmr } = recap;
   const delta = w.winRate !== null && l.winRate !== null ? w.winRate - l.winRate : null;
   const mmrValue = mmr.exact ?? (w.games > 0 ? mmr.estimate : null);
@@ -46,44 +48,47 @@ export function WeeklyRecapCard({
         <div>
           <p className="kicker">{rangeLabel}</p>
           <h2 id="week-title" className="text-lg font-semibold">
-            This week
+            {t("mmr.recap.title")}
           </h2>
         </div>
         <Link
           href="/mmr?view=week"
           className="inline-flex items-center gap-1 text-sm text-gold hover:underline"
         >
-          Week in the MMR journal <ChevronRight aria-hidden className="size-4" />
+          {t("mmr.recap.link")} <ChevronRight aria-hidden className="size-4" />
         </Link>
       </div>
 
       {w.games === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No ranked games yet this week.
-          {l.games > 0 && ` Last week: ${l.wins}–${l.losses} (${formatPercent(l.winRate)}).`}
+          {t("mmr.recap.none")}
+          {l.games > 0 &&
+            ` ${t("mmr.recap.lastWeek", { wins: l.wins, losses: l.losses, rate: formatPercent(l.winRate) })}`}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
           <div>
-            <p className="text-xs text-muted-foreground">Ranked</p>
+            <p className="text-xs text-muted-foreground">{t("mmr.recap.ranked")}</p>
             <p className="text-xl font-semibold tabular-nums">
               <span className="text-win">{w.wins}W</span>–
               <span className="text-loss">{w.losses}L</span>
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Win rate</p>
+            <p className="text-xs text-muted-foreground">{t("mmr.recap.winRate")}</p>
             <p className="text-xl font-semibold tabular-nums">{formatPercent(w.winRate)}</p>
             <p className="text-xs text-muted-foreground">
               {l.games === 0
-                ? "No ranked games last week"
+                ? t("mmr.recap.noLastWeek")
                 : delta === 0
-                  ? "Same as last week"
-                  : `${delta !== null && delta > 0 ? "Up" : "Down"} from ${formatPercent(l.winRate)} last week`}
+                  ? t("mmr.recap.same")
+                  : t(delta !== null && delta > 0 ? "mmr.recap.up" : "mmr.recap.down", {
+                      rate: formatPercent(l.winRate),
+                    })}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">MMR</p>
+            <p className="text-xs text-muted-foreground">{t("mmr.recap.mmr")}</p>
             <p
               className={cn(
                 "text-xl font-semibold tabular-nums",
@@ -94,13 +99,15 @@ export function WeeklyRecapCard({
               {mmrValue === null ? "—" : `${mmr.exact === null ? "≈ " : ""}${signed(mmrValue)}`}
             </p>
             <p className="text-xs text-muted-foreground">
-              {mmr.exact !== null ? "Exact, from your entries" : "Estimate: ±25 per game"}
+              {mmr.exact !== null ? t("mmr.recap.exact") : t("mmr.recap.estimate")}
             </p>
           </div>
           <div className="col-span-2 space-y-2 sm:col-span-1">
-            {recap.mostPlayed && <Hero label="Most played" h={recap.mostPlayed} heroes={heroes} />}
+            {recap.mostPlayed && (
+              <Hero label={t("mmr.recap.mostPlayed")} h={recap.mostPlayed} heroes={heroes} />
+            )}
             {recap.best && recap.best.heroId !== recap.mostPlayed?.heroId && (
-              <Hero label="Best" h={recap.best} heroes={heroes} />
+              <Hero label={t("mmr.recap.best")} h={recap.best} heroes={heroes} />
             )}
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScanSearch } from "lucide-react";
+import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 
 /** Matches the 90s cache on unparsed matches: checking more often only re-reads the cache. */
@@ -11,6 +12,7 @@ const GIVE_UP_MS = 10 * 60_000;
 
 /** Ask OpenDota to parse this match, then refresh the page until the stats arrive. */
 export function ParseRequest({ matchId }: { matchId: string }) {
+  const t = useT();
   const router = useRouter();
   const [state, setState] = useState<"idle" | "sending" | "waiting" | "slow" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -39,10 +41,10 @@ export function ParseRequest({ matchId }: { matchId: string }) {
         return;
       }
       const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-      setMessage(body?.error?.message ?? "Couldn't request it right now.");
+      setMessage(body?.error?.message ?? t("matches.parse.requestFailed"));
       setState("error");
     } catch {
-      setMessage("Couldn't request it. Check your connection.");
+      setMessage(t("matches.parse.offline"));
       setState("error");
     }
   }
@@ -50,9 +52,7 @@ export function ParseRequest({ matchId }: { matchId: string }) {
   if (state === "waiting" || state === "slow") {
     return (
       <p role="status" className="text-sm text-muted-foreground">
-        {state === "waiting"
-          ? "Requested. OpenDota usually parses a replay within a few minutes; this page updates by itself."
-          : "Still not parsed. OpenDota may be busy, or the replay may no longer be available (Valve keeps replays for about two weeks). Check back later."}
+        {state === "waiting" ? t("matches.parse.requested") : t("matches.parse.slow")}
       </p>
     );
   }
@@ -67,7 +67,7 @@ export function ParseRequest({ matchId }: { matchId: string }) {
         onClick={() => void request()}
       >
         <ScanSearch aria-hidden className="size-4" />
-        {state === "sending" ? "Requesting…" : "Get detailed stats"}
+        {state === "sending" ? t("matches.parse.requesting") : t("matches.parse.request")}
       </Button>
       {message && (
         <p role="alert" className="text-sm text-loss">

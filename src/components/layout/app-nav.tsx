@@ -89,7 +89,7 @@ export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
   const t = useT();
   const isActive = useActive();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1">
+    <nav aria-label={t("common.nav.main")} className="flex flex-col gap-1">
       {visible(enabled, true, t).map(({ href, label, icon: Icon }) => {
         const active = isActive(href);
         return (
@@ -151,7 +151,7 @@ export function MobileTabBar({
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={t("common.nav.main")}
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl",
         // Guests get the header links from sm up; signed-in users get the sidebar from lg.
@@ -224,7 +224,7 @@ export function PublicNav({ enabled }: { enabled: readonly NavKey[] }) {
   const t = useT();
   const isActive = useActive();
   return (
-    <nav aria-label="Main" className="hidden items-center gap-6 sm:flex">
+    <nav aria-label={t("common.nav.main")} className="hidden items-center gap-6 sm:flex">
       {visible(enabled, false, t).map(({ href, label }) => {
         const active = isActive(href);
         return (

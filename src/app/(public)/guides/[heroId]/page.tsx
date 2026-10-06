@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { getT } from "@/common/i18n/server";
 import { guideService } from "@/modules/guides";
 import { Benchmarks, Counters, ItemBuilds, ProGames } from "@/modules/guides/ui/guide-sections";
 import { matchesService } from "@/modules/matches";
@@ -14,28 +15,30 @@ export async function generateMetadata({
   params,
 }: PageProps<"/guides/[heroId]">): Promise<Metadata> {
   const { heroId } = await params;
+  const t = await getT();
   const hero = HERO_ID.test(heroId)
     ? (await matchesService.heroMap()).get(Number(heroId))
     : undefined;
   return hero
     ? {
-        title: `${hero.name} guide`,
-        description: `What pros buy on ${hero.name}, what strong games look like, and recent pro games.`,
+        title: t("guides.heroTitle", { name: hero.name }),
+        description: t("guides.heroDescription", { name: hero.name }),
       }
-    : { title: "Hero guide" };
+    : { title: t("guides.heroFallbackTitle") };
 }
 
 export default async function HeroGuidePage({ params }: PageProps<"/guides/[heroId]">) {
   const { heroId: raw } = await params;
   if (!HERO_ID.test(raw)) notFound();
   const heroId = Number(raw);
+  const t = await getT();
   const [heroes, items] = await Promise.all([matchesService.heroMap(), matchesService.itemMap()]);
   const hero = heroes.get(heroId);
   if (heroes.size > 0 && !hero) notFound();
 
   const isConsumable = (id: number) => items.get(id)?.qual === "consumable";
   const guide = await guideService.guide(heroId, isConsumable);
-  const name = hero?.name ?? `Hero #${heroId}`;
+  const name = hero?.name ?? t("guides.hero.fallbackName", { id: heroId });
 
   return (
     <div className="space-y-6">
@@ -43,12 +46,12 @@ export default async function HeroGuidePage({ params }: PageProps<"/guides/[hero
         href="/guides"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft aria-hidden className="size-4" /> All heroes
+        <ArrowLeft aria-hidden className="size-4" /> {t("guides.hero.back")}
       </Link>
       <div className="flex items-center gap-4">
         <HeroPortrait hero={hero} heroId={heroId} size="lg" />
         <PageHeader
-          kicker="Hero guide"
+          kicker={t("guides.hero.kicker")}
           title={name}
           description={hero?.roles.length ? hero.roles.join(" · ") : undefined}
         />

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
+import { getT } from "@/common/i18n/server";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import {
-  benchLabel,
   formatBench,
   PHASES,
   MIN_MATCHUP_GAMES,
@@ -16,49 +16,43 @@ import {
   type ProGame,
 } from "../domain/hero-guide";
 
-const PHASE_LABEL: Record<Phase, string> = {
-  start: "Starting items",
-  early: "Early game",
-  mid: "Mid game",
-  late: "Late game",
-};
-
-function Unavailable() {
-  return <p className="text-sm text-muted-foreground">Unavailable right now. Try again later.</p>;
+function Unavailable({ text }: { text: string }) {
+  return <p className="text-sm text-muted-foreground">{text}</p>;
 }
 
-export function ItemBuilds({
+export async function ItemBuilds({
   items,
   itemMap,
 }: {
   items: Record<Phase, ItemPick[]> | null;
   itemMap: Map<number, ItemInfo>;
 }) {
+  const t = await getT();
+  const phaseLabel = (phase: Phase) => t(`guides.items.phases.${phase}`);
   return (
     <section aria-labelledby="guide-items" className="panel space-y-4 p-5">
       <div>
-        <p className="kicker">Pro games</p>
+        <p className="kicker">{t("guides.items.kicker")}</p>
         <h2 id="guide-items" className="text-lg font-semibold">
-          What pros buy
+          {t("guides.items.title")}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Most-bought items in each phase of recent professional games, from OpenDota. Consumables
-          are left out after the start.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("guides.items.description")}</p>
       </div>
       {!items ? (
-        <Unavailable />
+        <Unavailable text={t("guides.unavailable")} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {PHASES.map((phase) => (
-            <div key={phase} aria-label={PHASE_LABEL[phase]} role="group">
-              <h3 className="mb-2 text-sm font-semibold">{PHASE_LABEL[phase]}</h3>
+            <div key={phase} aria-label={phaseLabel(phase)} role="group">
+              <h3 className="mb-2 text-sm font-semibold">{phaseLabel(phase)}</h3>
               {items[phase].length === 0 ? (
-                <p className="text-xs text-muted-foreground">No data.</p>
+                <p className="text-xs text-muted-foreground">{t("guides.items.noData")}</p>
               ) : (
                 <ul className="space-y-1.5">
                   {items[phase].map((it) => {
-                    const name = itemMap.get(it.itemId)?.name ?? `Item #${it.itemId}`;
+                    const name =
+                      itemMap.get(it.itemId)?.name ??
+                      t("guides.items.fallbackName", { id: it.itemId });
                     return (
                       <li key={it.itemId} className="flex items-center gap-2.5">
                         <ItemIcon itemId={it.itemId} items={itemMap} />
@@ -88,38 +82,36 @@ export function ItemBuilds({
   );
 }
 
-export function Benchmarks({ benchmarks }: { benchmarks: Benchmark[] | null }) {
+export async function Benchmarks({ benchmarks }: { benchmarks: Benchmark[] | null }) {
+  const t = await getT();
   return (
     <section aria-labelledby="guide-bench" className="panel overflow-hidden">
       <div className="p-5 pb-3">
-        <p className="kicker">Benchmarks</p>
+        <p className="kicker">{t("guides.bench.kicker")}</p>
         <h2 id="guide-bench" className="text-lg font-semibold">
-          What strong games look like
+          {t("guides.bench.title")}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          From recent public games on this hero: the typical game, and what the best 10% and best 1%
-          of games reached.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("guides.bench.description")}</p>
       </div>
       {!benchmarks ? (
         <div className="px-5 pb-5">
-          <Unavailable />
+          <Unavailable text={t("guides.unavailable")} />
         </div>
       ) : (
         <table className="w-full text-sm">
           <thead>
             <tr className="border-y border-white/[0.06] text-left text-xs text-muted-foreground">
               <th scope="col" className="px-5 py-2 font-medium">
-                Stat
+                {t("guides.bench.stat")}
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                Typical
+                {t("guides.bench.typical")}
               </th>
               <th scope="col" className="px-2 py-2 text-right font-medium">
-                Top 10%
+                {t("guides.bench.top10")}
               </th>
               <th scope="col" className="px-5 py-2 text-right font-medium">
-                Top 1%
+                {t("guides.bench.top1")}
               </th>
             </tr>
           </thead>
@@ -127,7 +119,7 @@ export function Benchmarks({ benchmarks }: { benchmarks: Benchmark[] | null }) {
             {benchmarks.map((b) => (
               <tr key={b.stat}>
                 <th scope="row" className="px-5 py-2.5 text-left font-normal">
-                  {benchLabel(b.stat)}
+                  {t(`guides.bench.stats.${b.stat}`)}
                 </th>
                 <td className="px-2 py-2.5 text-right text-muted-foreground tabular-nums">
                   {formatBench(b.stat, b.median)}
@@ -152,7 +144,7 @@ function duration(sec: number): string {
   return `${m}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-export function ProGames({
+export async function ProGames({
   games,
   heroLabel,
   now,
@@ -161,28 +153,32 @@ export function ProGames({
   heroLabel: string;
   now: Date;
 }) {
+  const t = await getT();
   const wins = games?.filter((g) => g.won).length ?? 0;
   const date = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
   return (
     <section aria-labelledby="guide-pro-games" className="panel overflow-hidden">
       <div className="p-5 pb-3">
-        <p className="kicker">Watch and learn</p>
+        <p className="kicker">{t("guides.proGames.kicker")}</p>
         <h2 id="guide-pro-games" className="text-lg font-semibold">
-          Recent pro games on {heroLabel}
+          {t("guides.proGames.title", { hero: heroLabel })}
         </h2>
         {games && games.length > 0 && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {wins}–{games.length - wins} in the last {games.length}. Open one for the scoreboard,
-            items and graphs.
+            {t("guides.proGames.summary", {
+              wins,
+              losses: games.length - wins,
+              n: games.length,
+            })}
           </p>
         )}
       </div>
       {!games ? (
         <div className="px-5 pb-5">
-          <Unavailable />
+          <Unavailable text={t("guides.unavailable")} />
         </div>
       ) : games.length === 0 ? (
-        <p className="px-5 pb-5 text-sm text-muted-foreground">No recent pro games.</p>
+        <p className="px-5 pb-5 text-sm text-muted-foreground">{t("guides.proGames.none")}</p>
       ) : (
         <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
           {games.map((g) => (
@@ -197,23 +193,23 @@ export function ProGames({
                     g.won ? "text-win" : "text-loss",
                   )}
                 >
-                  {g.won ? "Win" : "Loss"}
+                  {g.won ? t("guides.proGames.win") : t("guides.proGames.loss")}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium group-hover:text-gold">
-                    {g.playerName ?? "Unnamed player"}
+                    {g.playerName ?? t("guides.proGames.unnamed")}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {g.leagueName ?? "League game"} ·{" "}
+                    {g.leagueName ?? t("guides.proGames.league")} ·{" "}
                     {now.getTime() - g.startedAt.getTime() < 300 * 86_400_000
                       ? date.format(g.startedAt)
                       : g.startedAt.getUTCFullYear()}
                   </span>
                 </span>
                 <span className="shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                  <span className="block text-foreground" title="Kills / deaths / assists">
+                  <span className="block text-foreground" title={t("guides.proGames.kdaTitle")}>
                     {g.kills}/{g.deaths}/{g.assists}
-                    <span className="sr-only"> kills, deaths, assists</span>
+                    <span className="sr-only"> {t("guides.proGames.kdaSr")}</span>
                   </span>
                   {duration(g.durationSec)}
                 </span>
@@ -232,17 +228,21 @@ function CounterList({
   rows,
   heroes,
   good,
+  noneText,
+  gamesText,
 }: {
   title: string;
   rows: Counter[];
   heroes: Map<number, HeroInfo>;
   good: boolean;
+  noneText: string;
+  gamesText: (n: number) => string;
 }) {
   return (
     <div role="group" aria-label={title}>
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No clear matchups yet.</p>
+        <p className="text-xs text-muted-foreground">{noneText}</p>
       ) : (
         <ul className="space-y-1">
           {rows.map((r) => {
@@ -266,7 +266,7 @@ function CounterList({
                     {(r.rate * 100).toFixed(0)}%
                   </span>
                   <span className="w-16 text-right text-xs text-muted-foreground tabular-nums">
-                    {r.games} games
+                    {gamesText(r.games)}
                   </span>
                 </Link>
               </li>
@@ -279,7 +279,7 @@ function CounterList({
 }
 
 /** Who the hero beats and who beats it, in pro games. */
-export function Counters({
+export async function Counters({
   counters,
   heroes,
   heroLabel,
@@ -288,33 +288,39 @@ export function Counters({
   heroes: Map<number, HeroInfo>;
   heroLabel: string;
 }) {
+  const t = await getT();
+  const noneText = t("guides.counters.none");
+  const gamesText = (n: number) => t("guides.counters.games", { n: n.toLocaleString("en-US") });
   return (
     <section aria-labelledby="guide-counters" className="panel space-y-4 p-5">
       <div>
-        <p className="kicker">Pro games</p>
+        <p className="kicker">{t("guides.counters.kicker")}</p>
         <h2 id="guide-counters" className="text-lg font-semibold">
-          Matchups
+          {t("guides.counters.title")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {heroLabel}&apos;s win rate against each hero in pro games. Only heroes with{" "}
-          {MIN_MATCHUP_GAMES}+ games count, and small samples are pulled toward 50% when ranking.
+          {t("guides.counters.description", { hero: heroLabel, min: MIN_MATCHUP_GAMES })}
         </p>
       </div>
       {!counters ? (
-        <Unavailable />
+        <Unavailable text={t("guides.unavailable")} />
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <CounterList
-            title={`${heroLabel} is strong against`}
+            title={t("guides.counters.strong", { hero: heroLabel })}
             rows={counters.strongAgainst}
             heroes={heroes}
             good
+            noneText={noneText}
+            gamesText={gamesText}
           />
           <CounterList
-            title={`${heroLabel} struggles against`}
+            title={t("guides.counters.weak", { hero: heroLabel })}
             rows={counters.weakAgainst}
             heroes={heroes}
             good={false}
+            noneText={noneText}
+            gamesText={gamesText}
           />
         </div>
       )}

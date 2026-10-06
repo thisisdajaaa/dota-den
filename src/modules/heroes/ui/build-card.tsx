@@ -1,12 +1,11 @@
+import { getT } from "@/common/i18n/server";
 import type { ItemInfo } from "@/modules/matches/domain/read-models";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import { MetaSection } from "@/modules/meta/ui/meta-section";
 import type { BuildRow } from "../domain/build-vs-pros";
 
-const PHASE = { mid: "mid game", late: "late game" } as const;
-
 /** The pros' core items on the hero, with how often you buy each. */
-export function BuildCard({
+export async function BuildCard({
   rows,
   items,
   heroLabel,
@@ -17,13 +16,14 @@ export function BuildCard({
   heroLabel: string;
   yourGames: number;
 }) {
+  const t = await getT();
   return (
     <MetaSection
       id="build-vs-pros"
-      kicker="Items"
-      title="Your build vs the pros"
-      description={`The items pros buy most on ${heroLabel}, by rank, and how often you buy each (in ${yourGames} of your games with purchase data).`}
-      footer="OpenDota gives pro purchase counts without the number of games, so pros are shown as a rank, not a percentage."
+      kicker={t("heroes.build.kicker")}
+      title={t("heroes.build.title")}
+      description={t("heroes.build.description", { hero: heroLabel, games: yourGames })}
+      footer={t("heroes.build.footer")}
     >
       <ul className="divide-y divide-white/[0.05] border-t border-white/[0.06]">
         {rows.map((r) => {
@@ -34,7 +34,9 @@ export function BuildCard({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm">{items.get(r.itemId)?.name ?? r.key}</span>
                 <span className="block text-xs text-muted-foreground">
-                  Pros&apos; #{r.rank} {PHASE[r.phase]} item
+                  {t(r.phase === "mid" ? "heroes.build.proRankMid" : "heroes.build.proRankLate", {
+                    rank: r.rank,
+                  })}
                 </span>
               </span>
               <span className="w-24 shrink-0">
@@ -45,7 +47,8 @@ export function BuildCard({
                   />
                 </span>
                 <span className="mt-0.5 block text-right text-xs tabular-nums">
-                  You: {pct}%{r.rarely && <span className="text-loss"> · rarely</span>}
+                  {t("heroes.build.you", { pct })}
+                  {r.rarely && <span className="text-loss"> · {t("heroes.build.rarely")}</span>}
                 </span>
               </span>
             </li>
