@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Relation } from "@/modules/together/domain/relation";
 import {
   baselineRecord,
+  bestStacks,
   compareWithBaseline,
   FORM_LENGTH,
   heroPairs,
@@ -186,5 +187,38 @@ describe("topTrios", () => {
     );
     expect(trios).toHaveLength(3);
     expect(topTrios([{ matchId: "1", friendId: 2, result: "win" }])).toEqual([]);
+  });
+});
+
+describe("bestStacks", () => {
+  const games = (friends: number[], results: Array<"win" | "loss">, start: number) =>
+    results.flatMap((result, i) =>
+      friends.map((friendId) => ({ matchId: String(start + i), friendId, result })),
+    );
+
+  it("groups by exactly who was in the party and damps small samples", () => {
+    const stacks = bestStacks([
+      // Duo with 1: 3–0 (adjusted (3+5)/13 = 0.615).
+      ...games([1], ["win", "win", "win"], 100),
+      // Trio with 1 and 2: 8–2 (adjusted 13/20 = 0.65), ranked above the unbeaten duo.
+      ...games(
+        [1, 2],
+        ["win", "win", "win", "win", "win", "win", "win", "win", "loss", "loss"],
+        200,
+      ),
+      // Duo with 3: only 2 games, below the minimum.
+      ...games([3], ["win", "win"], 300),
+    ]);
+    expect(stacks.map((s) => [s.friends, s.games, s.wins])).toEqual([
+      [[1, 2], 10, 8],
+      [[1], 3, 3],
+    ]);
+    expect(stacks[0].adjustedRate).toBeCloseTo(0.65);
+  });
+
+  it("skips games without a result", () => {
+    expect(
+      bestStacks(games([1], ["win", "win", "win"], 1).map((l) => ({ ...l, result: null }))),
+    ).toEqual([]);
   });
 });

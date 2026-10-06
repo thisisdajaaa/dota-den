@@ -47,6 +47,18 @@ class MemoryRepo implements TogetherRepository {
   async saveMany(rows: readonly PairClassification[]) {
     for (const r of rows) this.rows.set(`${r.matchId}:${r.accountIdA}:${r.accountIdB}`, r);
   }
+  async unknownPartyMatchIdsOf(id: number) {
+    return [
+      ...new Set(
+        [...this.rows.values()]
+          .filter(
+            (r) =>
+              r.relation === "same_team_unknown" && (r.accountIdA === id || r.accountIdB === id),
+          )
+          .map((r) => r.matchId),
+      ),
+    ];
+  }
   async partyMatchesOf(id: number) {
     return [...this.rows.values()].filter(
       (r) => r.relation === "party" && (r.accountIdA === id || r.accountIdB === id),
@@ -203,5 +215,27 @@ describe("TogetherService.analysePair", () => {
     expect(o.partyGames.get(50)).toBe(2);
     expect(o.partyGames.get(200)).toBe(1);
     expect(o.trios).toEqual([{ friends: [50, 200], games: 1, wins: 1, lastMatchId: "1" }]);
+  });
+
+  it("overview counts unknown-party games only when no party was confirmed", async () => {
+    const repo = new MemoryRepo();
+    const base = {
+      startedAt: new Date(T0),
+      radiantWin: true,
+      fetchedAt: new Date(T0),
+      seatA: party,
+      seatB: party,
+    };
+    await repo.saveMany([
+      { ...base, relation: "party", matchId: "1", accountIdA: 50, accountIdB: ME },
+      // Unknown with one friend, but confirmed with another: not unknown.
+      { ...base, relation: "same_team_unknown", matchId: "1", accountIdA: ME, accountIdB: 200 },
+      { ...base, relation: "same_team_unknown", matchId: "2", accountIdA: ME, accountIdB: 200 },
+      { ...base, relation: "same_team_unknown", matchId: "2", accountIdA: 50, accountIdB: ME },
+    ]);
+    const reader = seatReader(() => ({ me: null, friend: null })).reader;
+    const o = await service({ matches: [], reader, repo }).svc.overview(ME);
+    expect(o.unknownPartyGames).toBe(1);
+    expect(o.stacks).toEqual([]); // one game is below the minimum
   });
 });

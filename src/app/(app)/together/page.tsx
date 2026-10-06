@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity/composition";
 import { getTogetherCandidates } from "@/modules/together/composition";
 import { FriendList } from "@/modules/together/ui/friend-list";
+import { StacksCard } from "@/modules/together/ui/stacks-card";
 import { TriosCard, type TrioMember } from "@/modules/together/ui/trios-card";
 
 export const metadata: Metadata = { title: "Play together" };
@@ -37,6 +38,11 @@ export default async function TogetherPage() {
           <FriendList friends={friends} now={now} error={peersErrorCopy} />
         </div>
         <div className="space-y-6 lg:col-span-2">
+          <StacksCard
+            stacks={overview.stacks}
+            members={members}
+            unknownPartyGames={overview.unknownPartyGames}
+          />
           <TriosCard trios={overview.trios} members={members} />
           <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="how">
             <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
