@@ -5,15 +5,14 @@ import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
 import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap, getMatchQueries } from "@/modules/matches/composition";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
-import { getPatchImportService, getPatchQueries } from "@/modules/patches/composition";
 import { COHORT_WINDOW_MS, heroCohort } from "@/modules/patches/domain/digest";
 import { changesAffectingPool, diffSummary } from "@/modules/patches/domain/patch";
 import { parsePatchVersion } from "@/modules/patches/domain/patch-version";
 import { HeroChangeCard, type HeroCohort } from "@/modules/patches/ui/hero-change-card";
 import { ItemChangeList } from "@/modules/patches/ui/item-change-list";
 import { NoteList } from "@/modules/patches/ui/note-list";
-import { getHeroPool } from "@/modules/patches/hero-pool";
 import { WatchButton } from "@/modules/patches/ui/watch-button";
+import { patchImportService, patchesService } from "@/modules/patches";
 
 export async function generateMetadata({
   params,
@@ -27,11 +26,11 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
   const version = decodeURIComponent(raw);
   if (!parsePatchVersion(version).ok) notFound();
 
-  const queries = await getPatchQueries();
+  const queries = patchesService;
   let patch = await queries.getByVersion(version);
   if (!patch) {
     // Older patches are imported the first time someone opens them.
-    const outcome = await (await getPatchImportService()).importVersion(version);
+    const outcome = await patchImportService.importVersion(version);
     if (outcome.outcome === "failed" && outcome.parseStatus === null) notFound();
     patch = await queries.getByVersion(version);
     if (!patch) notFound();
@@ -42,7 +41,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
     getCurrentUser({ tolerateErrors: true }),
   ]);
   const now = new Date();
-  const pool = user ? await getHeroPool(user, now) : null;
+  const pool = user ? await patchesService.heroPool(user, now) : null;
   const yours = pool ? changesAffectingPool(patch, pool.heroIds) : [];
 
   // Before/after cohorts by date (match data only knows major patch labels).

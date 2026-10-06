@@ -1,10 +1,3 @@
-/** Public API of the meta context for other contexts' application layers (ADR 0004). */
-export { MIN_POSITION_GAMES, POSITION_INFO, POSITIONS, positionBreakdown } from "./domain/position";
-export type {
-  LaneGame,
-  Position,
-  PositionBreakdown,
-  PositionInfo,
-  PositionRecord,
-} from "./domain/position";
-export type { HeroPublicStats } from "./domain/meta-stats";
+/** Public API of the meta feature (ADR 0009). Pure helpers live in ./domain. */
+export { metaService, metaSource } from "./meta.container";
+export type { LatestPatchResult, SourceError as MetaSourceError } from "./meta.ports";

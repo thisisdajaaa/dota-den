@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getHeroMap } from "@/modules/matches/composition";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
-import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
 import { getCurrentUser } from "@/modules/identity";
+import { patchesService } from "@/modules/patches";
 
 const AUTH_ERRORS: Record<string, string> = {
   state_mismatch: "Your sign-in session expired or was started in another tab. Please try again.",
@@ -62,13 +62,13 @@ const FEATURES = [
 
 /** The newest official patch, straight from the patch hub (real data, never a mock). */
 async function LatestPatchCard() {
-  await ensurePatchesFresh();
+  await patchesService.ensureFresh();
   const [latest, heroes] = await Promise.all([
-    (await getPatchQueries()).latest().catch(() => null),
+    patchesService.latest().catch(() => null),
     getHeroMap(),
   ]);
   if (!latest) return null;
-  const patch = await (await getPatchQueries()).getByVersion(latest.version).catch(() => null);
+  const patch = await patchesService.getByVersion(latest.version).catch(() => null);
   const changed = (patch?.sections.heroes ?? []).slice(0, 10);
 
   return (

@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { SessionNoteInputSchema, type SessionNoteDto } from "../application/contracts";
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
+import type { SessionNoteDto } from "../dtos/responses/session-note.dto";
+import { SessionNoteInputSchema } from "../schemas/sessions.schema";
 import { GOAL_MAX, NOTE_MAX } from "../domain/session-note";
 
 type FormInput = z.input<typeof SessionNoteInputSchema>;
@@ -51,31 +53,30 @@ export function SessionNoteForm({
   const [goal, note] = useWatch({ control: form.control, name: ["goal", "note"] });
 
   async function onSubmit(values: FormOutput) {
-    const res = await fetch(`/api/v1/sessions/${encodeURIComponent(sessionId)}/notes`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(values),
-    }).catch(() => null);
-    if (res?.ok) {
-      const saved = (await res.json()) as SessionNoteDto;
+    try {
+      const saved = await apiRequest<SessionNoteDto>(
+        `/api/v1/sessions/${encodeURIComponent(sessionId)}/notes`,
+        { method: "PUT", body: values },
+      );
       toast.success("Session notes saved");
       form.reset({ goal: saved.goal, goalMet: saved.goalMet ?? "", note: saved.note });
       router.refresh();
       return;
-    }
-    const body = (await res?.json().catch(() => null)) as {
-      error?: { message?: string; details?: Record<string, string[] | undefined> };
-    } | null;
-    const details = body?.error?.details ?? {};
-    let mapped = false;
-    for (const key of ["goal", "goalMet", "note"] as const) {
-      const msg = details[key]?.[0];
-      if (msg) {
-        form.setError(key, { message: msg });
-        mapped = true;
+    } catch (e) {
+      const apiError = e instanceof ApiClientError ? e : null;
+      const fields =
+        (apiError?.details as { fieldErrors?: Record<string, string[] | undefined> } | undefined)
+          ?.fieldErrors ?? {};
+      let mapped = false;
+      for (const key of ["goal", "goalMet", "note"] as const) {
+        const msg = fields[key]?.[0];
+        if (msg) {
+          form.setError(key, { message: msg });
+          mapped = true;
+        }
       }
+      if (!mapped) toast.error(apiError?.message ?? "Couldn't save. Please try again.");
     }
-    if (!mapped) toast.error(body?.error?.message ?? "Couldn't save. Please try again.");
   }
 
   const { isSubmitting, isDirty } = form.formState;

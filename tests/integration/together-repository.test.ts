@@ -1,11 +1,8 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pairOf, type PairClassification } from "@/modules/together/domain/pair";
-import {
-  ensureTogetherIndexes,
-  MongoTogetherRepository,
-  TOGETHER_COLLECTIONS,
-} from "@/modules/together/infrastructure/mongo-together-repository";
+import { TogetherMatchesRepository } from "@/modules/together/repositories/together.repository";
+import { TOGETHER_COLLECTIONS } from "@/modules/together/together.model";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -13,7 +10,7 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensureTogetherIndexes(db);
+  await new TogetherMatchesRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -49,7 +46,7 @@ describe("together_matches (Mongo)", () => {
   });
 
   it("stores one document per pair whichever direction it was looked up from", async () => {
-    const repo = new MongoTogetherRepository(db);
+    const repo = new TogetherMatchesRepository(async () => db);
     await repo.saveMany([row("100", 900, 30)]);
     // Same match, same pair, from the other side: updates rather than duplicates.
     await repo.saveMany([row("100", 30, 900, { relation: "same_team_unknown" })]);
@@ -70,14 +67,14 @@ describe("together_matches (Mongo)", () => {
   });
 
   it("refuses to store an unordered pair", async () => {
-    const repo = new MongoTogetherRepository(db);
+    const repo = new TogetherMatchesRepository(async () => db);
     await expect(
       repo.saveMany([{ ...row("102", 1, 2), accountIdA: 2, accountIdB: 1 }]),
     ).rejects.toThrow(/ascending/);
   });
 
   it("lists party matches for an account on either side of the pair", async () => {
-    const repo = new MongoTogetherRepository(db);
+    const repo = new TogetherMatchesRepository(async () => db);
     await repo.saveMany([
       row("200", 500, 10), // 500 stored as B
       row("201", 500, 9000), // 500 stored as A
@@ -89,7 +86,7 @@ describe("together_matches (Mongo)", () => {
   });
 
   it("lists distinct unknown-party match ids for an account", async () => {
-    const repo = new MongoTogetherRepository(db);
+    const repo = new TogetherMatchesRepository(async () => db);
     await repo.saveMany([
       row("300", 600, 14, { relation: "same_team_unknown" }),
       row("300", 600, 9100, { relation: "same_team_unknown" }),

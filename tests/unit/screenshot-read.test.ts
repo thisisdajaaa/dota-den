@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseScreenshotAnswer } from "@/modules/mmr/domain/screenshot-read";
+import { GroqClient } from "@/common/llm/groq-client";
 import { GroqScreenshotReader } from "@/modules/mmr/infrastructure/groq-screenshot-reader";
 
 describe("parseScreenshotAnswer", () => {
@@ -40,7 +41,10 @@ describe("GroqScreenshotReader", () => {
           }),
         ),
     );
-    const reader = new GroqScreenshotReader({ apiKey: "k", model: "m", fetch });
+    const reader = new GroqScreenshotReader(
+      new GroqClient({ apiKey: "k", fetch, retryDelayMs: 0 }),
+      { model: "m" },
+    );
     expect(await reader.read({ type: "image/png", base64: "AAAA" })).toEqual({
       mmr: 4100,
       seen: "post-game",
@@ -53,11 +57,14 @@ describe("GroqScreenshotReader", () => {
   });
 
   it("returns null when the provider fails", async () => {
-    const reader = new GroqScreenshotReader({
-      apiKey: "k",
-      model: "m",
-      fetch: async () => new Response("nope", { status: 500 }),
-    });
+    const reader = new GroqScreenshotReader(
+      new GroqClient({
+        apiKey: "k",
+        fetch: async () => new Response("nope", { status: 500 }),
+        retryDelayMs: 0,
+      }),
+      { model: "m" },
+    );
     expect(await reader.read({ type: "image/png", base64: "AAAA" })).toBeNull();
   });
 });

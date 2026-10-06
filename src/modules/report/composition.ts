@@ -1,7 +1,7 @@
 import "server-only";
 import { env } from "@/common/config/env";
 import { getMatchQueries, openDotaGateway } from "@/modules/matches/composition";
-import { getMmrJournal } from "@/modules/mmr/composition";
+import { mmrJournalService } from "@/modules/mmr";
 import { buildCalendar } from "@/modules/mmr/domain/calendar";
 import { addDays, dayKeyFormatter } from "@/common/time/day-key";
 import { battleReport, type BattleReport } from "./domain/battle-report";
@@ -41,7 +41,7 @@ export async function getBattleReport(
       user.accountId32,
       days,
     ),
-    getMmrJournal().then((j) => j.list({ userId: user.id, accountId32: user.accountId32 })),
+    mmrJournalService.list({ userId: user.id, accountId32: user.accountId32 }),
   ]);
   if (!games) return null;
   const inPeriod = games.filter((g) => {

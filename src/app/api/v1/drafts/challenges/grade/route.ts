@@ -7,8 +7,8 @@ import { clientKey, rateLimit } from "@/common/http/rate-limit";
 import { CHALLENGE_TYPES, SEED_PATTERN, type Grade } from "@/modules/drafts/domain/challenges";
 import { getChallengeService } from "@/modules/drafts/composition";
 import { getRouteUser } from "@/modules/identity";
-import type { ChallengeProgressDto } from "@/modules/leaderboards/application/contracts";
-import { getActivityService } from "@/modules/leaderboards/composition";
+import type { ChallengeProgressDto } from "@/modules/leaderboards/dtos/responses/leaderboard-views.dto";
+import { activityService } from "@/modules/leaderboards";
 
 const BodySchema = z.object({
   type: z.enum(CHALLENGE_TYPES),
@@ -27,7 +27,7 @@ async function recordForUser(
   try {
     const user = await getRouteUser(req);
     if (!user) return null;
-    const { counted, streak } = await (await getActivityService()).recordChallenge(user.id, answer);
+    const { counted, streak } = await activityService.recordChallenge(user.id, answer);
     return { counted, streak: streak.current, best: streak.best };
   } catch (error) {
     logger.error("challenge_attempt_record_failed", { error });

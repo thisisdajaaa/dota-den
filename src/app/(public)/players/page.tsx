@@ -6,15 +6,14 @@ import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
-import type { TrackedPlayersPage } from "@/modules/players/application/contracts";
-import { ownerOf } from "@/modules/players/application/follow-service";
-import type { ProviderError } from "@/modules/players/application/ports";
-import { getTrackedPlayers, searchPlayers } from "@/modules/players/composition";
+import type { TrackedPlayersPage } from "@/modules/players";
+import type { PlayerProviderError as ProviderError } from "@/modules/players";
 import { MAX_FOLLOWS_PER_USER } from "@/modules/players/domain/follow";
 import { parsePlayerQuery, type LookupError } from "@/modules/players/domain/player-lookup";
 import { PlayerSearchForm } from "@/modules/players/ui/player-search-form";
 import { SearchResults } from "@/modules/players/ui/search-results";
 import { TrackedPlayers } from "@/modules/players/ui/tracked-players";
+import { ownerOf, playersService } from "@/modules/players";
 
 export const metadata: Metadata = { title: "Players" };
 
@@ -46,12 +45,12 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
 
   const viewer = await getCurrentUser({ tolerateErrors: true });
   const tracked = viewer
-    ? await getTrackedPlayers(ownerOf(viewer), trackedPage).catch(
-        (e: unknown): TrackedPlayersPage | "error" => {
+    ? await playersService
+        .trackedPlayers(ownerOf(viewer), trackedPage)
+        .catch((e: unknown): TrackedPlayersPage | "error" => {
           logger.error("tracked_players_failed", { error: e });
           return "error";
-        },
-      )
+        })
     : null;
   const now = new Date();
   const pageHref = (page: number) => {
@@ -145,7 +144,7 @@ function Notice({
 }
 
 async function SearchSection({ q, now }: { q: string; now: Date }) {
-  const search = await searchPlayers(q);
+  const search = await playersService.search(q);
   if (!search.ok) {
     return (
       <Notice icon="alert" role="alert">

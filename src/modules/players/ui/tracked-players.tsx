@@ -3,7 +3,7 @@ import { UserPlus } from "lucide-react";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { formatAgo } from "@/modules/matches/ui/format";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
-import type { TrackedPlayersPage } from "../application/contracts";
+import type { TrackedPlayersPage } from "../dtos/responses/follows.dto";
 import { displayName, PlayerAvatar } from "./player-avatar";
 import { TrackButton } from "./track-button";
 

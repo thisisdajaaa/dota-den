@@ -6,16 +6,25 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
-import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { UsersService } from "@/modules/identity/services/users.service";
-import * as leaderboards from "@/modules/leaderboards/infrastructure/user-data";
+import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import * as matches from "@/modules/matches/infrastructure/user-data";
-import * as mmr from "@/modules/mmr/infrastructure/user-data";
-import * as patches from "@/modules/patches/infrastructure/user-data";
-import * as players from "@/modules/players/infrastructure/user-data";
-import * as sessions from "@/modules/sessions/infrastructure/user-data";
-import * as together from "@/modules/together/infrastructure/user-data";
+import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
+import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
+import { MmrJournalService } from "@/modules/mmr/services/mmr-journal.service";
+import { PatchWatchlistsRepository } from "@/modules/patches/repositories/patches.repository";
+import { PatchWatchlistService } from "@/modules/patches/services/patch-watchlist.service";
+import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
+import { FollowService } from "@/modules/players/services/follow.service";
+import {
+  SessionNotesRepository,
+  SessionSettingsRepository,
+} from "@/modules/sessions/repositories/sessions.repository";
+import { SessionService } from "@/modules/sessions/sessions.service";
+import { TogetherMatchesRepository } from "@/modules/together/repositories/together.repository";
+import { TogetherService } from "@/modules/together/together.service";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -51,9 +60,58 @@ const identity = servicePart(
   (getDb) =>
     new UsersService({
       users: new UsersRepository(getDb),
-      sessions: new SessionsRepository(getDb),
+      sessions: new AuthSessionsRepository(getDb),
     }),
 );
+
+const sessions = servicePart((getDb) => {
+  const notes = new SessionNotesRepository(getDb);
+  const settings = new SessionSettingsRepository(getDb);
+  return new SessionService({
+    matches: { listMatches: async () => [] },
+    observations: { list: async () => [] },
+    notes,
+    settings,
+    data: { notes, settings },
+  });
+});
+
+const players = servicePart((getDb) => {
+  const repo = new FollowsRepository(getDb);
+  return new FollowService(repo, { data: repo });
+});
+
+const together = servicePart((getDb) => {
+  const repo = new TogetherMatchesRepository(getDb);
+  return new TogetherService({
+    finder: { sharedMatches: async () => ({ ok: true, value: [] }) },
+    seats: { seats: async () => ({ ok: false, error: { type: "unavailable", cause: "test" } }) },
+    repo,
+    ownGames: { ownGames: async () => [] },
+    data: repo,
+  });
+});
+
+const leaderboards = servicePart((getDb) => {
+  const repo = new ActivityRepository(getDb);
+  return {
+    exportMyData: (o: DataOwner) => repo.exportForOwner(o),
+    deleteMyData: (o: DataOwner) => repo.deleteForOwner(o),
+  };
+});
+
+const patches = servicePart((getDb) => {
+  const repo = new PatchWatchlistsRepository(getDb);
+  return new PatchWatchlistService({ watchlists: repo, data: repo });
+});
+
+const mmr = servicePart((getDb) => {
+  const entries = new MmrEntriesRepository(getDb);
+  return new MmrJournalService(entries, undefined, {
+    entries,
+    medals: new MedalHistoryRepository(getDb),
+  });
+});
 
 const PARTS = [
   mmr,

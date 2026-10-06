@@ -2,11 +2,10 @@ import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SessionNote } from "@/modules/sessions/domain/session-note";
 import {
-  ensureSessionIndexes,
-  MongoSessionNoteRepository,
-  MongoSessionSettingsRepository,
-  SESSION_COLLECTIONS,
-} from "@/modules/sessions/infrastructure/mongo-session-repositories";
+  SessionNotesRepository,
+  SessionSettingsRepository,
+} from "@/modules/sessions/repositories/sessions.repository";
+import { SESSION_COLLECTIONS } from "@/modules/sessions/sessions.model";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -14,7 +13,8 @@ let teardown: () => Promise<void>;
 
 beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
-  await ensureSessionIndexes(db);
+  await new SessionNotesRepository(async () => db).ensureIndexes();
+  await new SessionSettingsRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -33,7 +33,7 @@ function note(over: Partial<SessionNote> = {}): SessionNote {
   };
 }
 
-describe("MongoSessionNoteRepository", () => {
+describe("SessionNotesRepository", () => {
   it("creates the unique (userId, sessionId) and (userId, updatedAt) indexes", async () => {
     const indexes = await db.collection(SESSION_COLLECTIONS.notes).indexes();
     const unique = indexes.find((i) => i.name === "uniq_user_session");
@@ -51,7 +51,7 @@ describe("MongoSessionNoteRepository", () => {
   });
 
   it("upserts: the second save replaces the first instead of adding a document", async () => {
-    const repo = new MongoSessionNoteRepository(db);
+    const repo = new SessionNotesRepository(async () => db);
     const first = await repo.upsert(note());
     expect(first).toEqual(note());
 
@@ -69,7 +69,7 @@ describe("MongoSessionNoteRepository", () => {
   });
 
   it("settles concurrent first saves into one document", async () => {
-    const repo = new MongoSessionNoteRepository(db);
+    const repo = new SessionNotesRepository(async () => db);
     const id = "22202:7000000099";
     await Promise.all(
       Array.from({ length: 8 }, (_, i) => repo.upsert(note({ sessionId: id, note: `v${i}` }))),
@@ -82,7 +82,7 @@ describe("MongoSessionNoteRepository", () => {
   });
 
   it("never returns another user's notes", async () => {
-    const repo = new MongoSessionNoteRepository(db);
+    const repo = new SessionNotesRepository(async () => db);
     await repo.upsert(note({ userId: "alice", sessionId: "5:1", accountId32: 5 }));
     await repo.upsert(note({ userId: "bob", sessionId: "5:1", accountId32: 5, note: "bob's" }));
 
@@ -97,7 +97,7 @@ describe("MongoSessionNoteRepository", () => {
   });
 
   it("lists one account's notes, most recently edited first", async () => {
-    const repo = new MongoSessionNoteRepository(db);
+    const repo = new SessionNotesRepository(async () => db);
     const u = "recent-user";
     await repo.upsert(
       note({ userId: u, sessionId: "7:1", accountId32: 7, updatedAt: new Date(1) }),
@@ -113,9 +113,9 @@ describe("MongoSessionNoteRepository", () => {
   });
 });
 
-describe("MongoSessionSettingsRepository", () => {
+describe("SessionSettingsRepository", () => {
   it("stores one gap per user", async () => {
-    const repo = new MongoSessionSettingsRepository(db);
+    const repo = new SessionSettingsRepository(async () => db);
     expect(await repo.getGap("gap-user")).toBeNull();
     await repo.setGap("gap-user", 90, new Date());
     await repo.setGap("gap-user", 30, new Date());
@@ -130,6 +130,6 @@ describe("MongoSessionSettingsRepository", () => {
     await db
       .collection(SESSION_COLLECTIONS.settings)
       .insertOne({ userId: "odd", gapMinutes: 45, updatedAt: new Date(), schemaVersion: 1 });
-    expect(await new MongoSessionSettingsRepository(db).getGap("odd")).toBeNull();
+    expect(await new SessionSettingsRepository(async () => db).getGap("odd")).toBeNull();
   });
 });

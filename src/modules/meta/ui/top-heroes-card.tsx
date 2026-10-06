@@ -4,7 +4,7 @@ import type { HeroInfo } from "@/modules/matches/application/ports";
 import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
-import type { TopHeroesView } from "../application/meta-service";
+import type { TopHeroesView } from "../dtos/responses/meta.dto";
 import type { RankedHero } from "../domain/meta-stats";
 import { TREND_THRESHOLD } from "../domain/patch-tips";
 import { POSITION_INFO } from "../domain/position";

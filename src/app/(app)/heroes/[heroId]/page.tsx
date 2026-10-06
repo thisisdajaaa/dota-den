@@ -5,8 +5,7 @@ import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
 import { logger } from "@/common/logging/logger";
-import type { HeroesService } from "@/modules/heroes/application/heroes-service";
-import { getHeroesService } from "@/modules/heroes/composition";
+import { heroesService, type HeroesService } from "@/modules/heroes";
 import { buildVsPros } from "@/modules/heroes/domain/build-vs-pros";
 import type { HeroRecord } from "@/modules/heroes/domain/hero-stats";
 import {
@@ -22,6 +21,7 @@ import {
 import { BuildCard } from "@/modules/heroes/ui/build-card";
 import { ProgressCard } from "@/modules/heroes/ui/progress-card";
 import { guideService } from "@/modules/guides";
+import { getViewerTimeZone } from "@/common/http/request-context";
 import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/application/ports";
 import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
@@ -67,14 +67,15 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
   const heroId = parseHeroId((await params).heroId);
   if (heroId === null) notFound();
 
-  const [service, heroes, queries] = await Promise.all([
-    getHeroesService(),
+  const service = heroesService;
+  const [heroes, queries, { timeZone }] = await Promise.all([
     getHeroMap(),
     getMatchQueries(),
+    getViewerTimeZone(),
   ]);
   const hero = heroes.get(heroId);
   const now = new Date();
-  const { record, trend } = await service.overview(user.accountId32, heroId);
+  const { record, trend } = await service.overview(user.accountId32, heroId, timeZone);
   // Unknown to the catalog and never played: nothing to show. (If the catalog is down, a
   // hero you've played still gets its page.)
   if (!hero && (heroes.size > 0 || record.games === 0)) notFound();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MmrEntryInputSchema } from "@/modules/mmr/application/contracts";
+import { MmrEntryInputSchema } from "@/modules/mmr/schemas/mmr-entry.schema";
 
 describe("MmrEntryInputSchema", () => {
   it("accepts a valid entry and normalises an empty note to null", () => {

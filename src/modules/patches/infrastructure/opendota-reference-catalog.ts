@@ -2,7 +2,7 @@ import { z } from "zod";
 import { err, ok, type Result } from "@/common/result";
 import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
 import type { PatchReferences, ReferenceEntry } from "../domain/patch";
-import type { PatchReferenceCatalog, ProviderError } from "../application/ports";
+import type { PatchReferenceCatalog, ProviderError } from "../patches.ports";
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 

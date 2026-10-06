@@ -8,13 +8,13 @@ import type { IdentityProvider } from "./identity.ports";
 import { FakeIdentityProvider } from "./infrastructure/fake-identity-provider";
 import { SteamOpenIdProvider } from "./infrastructure/steam-openid-provider";
 import { NoncesRepository } from "./repositories/nonces.repository";
-import { SessionsRepository } from "./repositories/sessions.repository";
+import { AuthSessionsRepository } from "./repositories/auth-sessions.repository";
 import { UsersRepository } from "./repositories/users.repository";
 import { AuthService } from "./services/auth.service";
 import { UsersService } from "./services/users.service";
 
 export const usersRepository = new UsersRepository(getDb);
-export const sessionsRepository = new SessionsRepository(getDb);
+export const sessionsRepository = new AuthSessionsRepository(getDb);
 export const noncesRepository = new NoncesRepository(getDb);
 
 /**

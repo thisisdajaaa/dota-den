@@ -1,7 +1,7 @@
 import { ok, type Result } from "@/common/result";
 import type { MatchDetailProvider } from "@/modules/matches/application/ports";
 import type { Seat } from "../domain/relation";
-import type { MatchSeatReader, MatchSeats, ProviderError } from "../application/ports";
+import type { MatchSeatReader, MatchSeats, ProviderError } from "../together.ports";
 
 /** Seats from the matches context's match detail (party ids exactly as the upstream reports). */
 export class MatchDetailSeatReader implements MatchSeatReader {

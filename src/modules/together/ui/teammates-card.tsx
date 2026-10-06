@@ -8,7 +8,7 @@ import { formatAgo, formatPercent, plural } from "@/modules/matches/ui/format";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
 import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
-import type { TeammateView } from "../application/contracts";
+import type { TeammateView } from "../dtos/responses/together-views.dto";
 import { MIN_TEAMMATE_GAMES, sortTeammates, type TeammateSort } from "../domain/teammates";
 import { formatDelta } from "./copy";
 

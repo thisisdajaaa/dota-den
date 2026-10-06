@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { logger } from "@/common/logging/logger";
 import type { HeroInfo } from "@/modules/matches/application/ports";
-import type { DuosView, TopHeroesView } from "@/modules/meta/application/meta-service";
-import type { SourceError } from "@/modules/meta/application/ports";
-import type { LatestPatchResult } from "@/modules/meta/composition";
+import type { DuosView, TopHeroesView } from "@/modules/meta/dtos/responses/meta.dto";
+import type { LatestPatchResult, MetaSourceError as SourceError } from "@/modules/meta";
 import type { Position } from "@/modules/meta/domain/position";
 import { LaneDuosCard } from "@/modules/meta/ui/lane-duos-card";
 import { MetaSection, Unavailable } from "@/modules/meta/ui/meta-section";

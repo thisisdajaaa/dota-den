@@ -47,11 +47,13 @@ describe("MmrLogPrompt", () => {
         async () =>
           new Response(
             JSON.stringify({
-              error: {
-                // Same shape as the route: details are the flattened field errors.
-                message: "Check the highlighted fields",
-                details: { mmr: ["MMR can't be above 15,000"] },
-              },
+              // The ServiceResponse envelope: details are the flattened zod errors.
+              success: false,
+              message: "Check the highlighted fields",
+              data: null,
+              statusCode: 400,
+              code: "bad_request",
+              details: { formErrors: [], fieldErrors: { mmr: ["MMR can't be above 15,000"] } },
             }),
             { status: 400 },
           ),

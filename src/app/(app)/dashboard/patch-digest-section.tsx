@@ -6,7 +6,7 @@ import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
 import { kdaOf, type PatchDigest, type Record } from "@/modules/patches/domain/digest";
-import { getLatestPatchDigest } from "@/modules/patches/patch-digest";
+import { patchesService } from "@/modules/patches";
 
 export function PatchDigestSkeleton() {
   return <SectionSkeleton label="Loading what the latest patch changed for you" rows={3} />;
@@ -23,7 +23,10 @@ export async function PatchDigestSection({ user }: { user: User }) {
   let digest: PatchDigest | null;
   let heroes: Awaited<ReturnType<typeof getHeroMap>>;
   try {
-    [digest, heroes] = await Promise.all([getLatestPatchDigest(user, new Date()), getHeroMap()]);
+    [digest, heroes] = await Promise.all([
+      patchesService.latestDigest(user, new Date()),
+      getHeroMap(),
+    ]);
   } catch (error) {
     logger.error("patch_digest_failed", { error });
     return (

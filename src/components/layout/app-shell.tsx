@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { getPlayerProfile } from "@/modules/matches/composition";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
-import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { getViewerTimeZone } from "@/common/http/request-context";
 import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
 import { MobileTabBar, PublicNav, SidebarNav, type NavKey } from "./app-nav";
 import { BrandMark } from "./brand-mark";
