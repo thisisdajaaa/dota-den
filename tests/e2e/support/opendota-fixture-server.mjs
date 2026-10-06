@@ -127,6 +127,15 @@ function laningFields(slot, me) {
     camps_stacked: 1,
     stuns: 12.5,
     teamfight_participation: 0.6,
+    obs_log: me
+      ? [
+          { time: -30, x: 100, y: 90, ehandle: 1 },
+          { time: 700, x: 128, y: 128, ehandle: 2 },
+        ]
+      : [],
+    obs_left_log: me ? [{ time: 330, x: 100, y: 90, ehandle: 1 }] : [],
+    sen_log: me ? [{ time: 300, x: 110, y: 95, ehandle: 3 }] : [],
+    sen_left_log: [],
     purchase_log: me
       ? [
           { time: -80, key: "tango" },
@@ -188,6 +197,16 @@ function matchDetail(id) {
     ),
     radiant_xp_adv: Array.from({ length: 30 }, (_, m) => m * 150),
     players: withReplay,
+    teamfights: parsed
+      ? [
+          {
+            start: 1500,
+            players: withReplay.map((p) =>
+              p.player_slot === row.player_slot ? { deaths_pos: { 140: { 135: 1 } } } : {},
+            ),
+          },
+        ]
+      : null,
   };
 }
 

@@ -1,3 +1,4 @@
+import type { MapEvents } from "./match-map";
 import type { Laning } from "./match-laning";
 import type { PlayerBenchmarks } from "./match-performance";
 import type { TeamSide } from "./player-match-fact";
@@ -35,6 +36,8 @@ export interface MatchPlayer {
   benchmarks: PlayerBenchmarks | null;
   /** Laning, wards and item timings: parsed replays only, else null. */
   laning: Laning | null;
+  /** Wards and team fight deaths, parsed replays only. */
+  map: MapEvents | null;
 }
 
 export interface MatchDetail {

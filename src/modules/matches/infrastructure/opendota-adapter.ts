@@ -6,6 +6,7 @@ import type {
 } from "@/modules/shared/infrastructure/provider-gateway";
 import type { MatchDetail, MatchPlayer } from "../domain/match-detail";
 import { atMinute, type Laning } from "../domain/match-laning";
+import { teamfightDeaths, wardSpots, type MapEvents } from "../domain/match-map";
 import { PERF_STATS, type PlayerBenchmarks } from "../domain/match-performance";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import { resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
@@ -75,6 +76,19 @@ const HeroConstantsSchema = z.record(
 
 const nullableNum = z.number().nullable().optional();
 
+const WardLogSchema = z
+  .array(
+    z.object({
+      time: z.number(),
+      x: z.number().nullable().optional(),
+      y: z.number().nullable().optional(),
+      ehandle: z.number().nullable().optional(),
+    }),
+  )
+  .nullable()
+  .optional()
+  .catch(null);
+
 const MatchPlayerSchema = z.object({
   player_slot: z.number().int().min(0).max(255),
   account_id: nullableInt,
@@ -137,6 +151,10 @@ const MatchPlayerSchema = z.object({
     .nullable()
     .optional()
     .catch(null),
+  obs_log: WardLogSchema,
+  obs_left_log: WardLogSchema,
+  sen_log: WardLogSchema,
+  sen_left_log: WardLogSchema,
 });
 
 const MatchDetailSchema = z.object({
@@ -154,6 +172,24 @@ const MatchDetailSchema = z.object({
   radiant_gold_adv: z.array(z.number()).nullable().optional(),
   radiant_xp_adv: z.array(z.number()).nullable().optional(),
   players: z.array(MatchPlayerSchema).min(1).max(24),
+  // Parsed replays only; players are in the same order as `players`.
+  teamfights: z
+    .array(
+      z.object({
+        start: z.number(),
+        players: z.array(
+          z.object({
+            deaths_pos: z
+              .record(z.string(), z.record(z.string(), z.number()))
+              .nullable()
+              .optional(),
+          }),
+        ),
+      }),
+    )
+    .nullable()
+    .optional()
+    .catch(null),
 });
 
 const ItemIdsSchema = z.record(z.string(), z.string());
@@ -379,7 +415,7 @@ export class OpenDotaAdapter
     if (!parsed.success) return err({ type: "invalid_payload", cause: "match" });
     const m = parsed.data;
 
-    const players: MatchPlayer[] = m.players.map((p) => {
+    const players: MatchPlayer[] = m.players.map((p, index) => {
       const known =
         p.account_id !== null &&
         p.account_id !== undefined &&
@@ -412,6 +448,7 @@ export class OpenDotaAdapter
         rankTier: p.rank_tier ?? null,
         benchmarks: toBenchmarks(p.benchmarks),
         laning: toLaning(p),
+        map: toMapEvents(p, index, m.teamfights),
       };
     });
 
@@ -484,6 +521,27 @@ function toBenchmarks(
 }
 
 /** Laning, wards and item timings from a parsed replay; null when the match isn't parsed. */
+function toMapEvents(
+  p: z.infer<typeof MatchPlayerSchema>,
+  index: number,
+  fights: z.infer<typeof MatchDetailSchema>["teamfights"],
+): MapEvents | null {
+  // Unparsed matches have no logs at all (not even empty arrays).
+  if (!p.lh_t || p.lh_t.length === 0) return null;
+  return {
+    wards: [
+      ...wardSpots("observer", p.obs_log, p.obs_left_log),
+      ...wardSpots("sentry", p.sen_log, p.sen_left_log),
+    ].sort((a, b) => a.placedAt - b.placedAt),
+    teamfightDeaths: teamfightDeaths(
+      (fights ?? []).map((f) => ({
+        start: f.start,
+        deathsPos: f.players[index]?.deaths_pos ?? null,
+      })),
+    ),
+  };
+}
+
 function toLaning(p: z.infer<typeof MatchPlayerSchema>): Laning | null {
   if (!p.lh_t || p.lh_t.length === 0) return null;
   return {
