@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { Locale } from "./locales";
-import type { Messages } from "./messages";
+import { englishMessages, type Messages } from "./messages";
 import { translator, type MessageTree, type Translator } from "./translate";
 
 const I18nContext = createContext<{ locale: Locale; t: Translator<Messages> } | null>(null);
@@ -26,10 +26,11 @@ export function I18nProvider({
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
+/** English outside a provider (e.g. component tests rendering one component). */
+const englishOnly = translator<Messages>(englishMessages, englishMessages);
+
 export function useT(): Translator<Messages> {
-  const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error("useT needs an I18nProvider");
-  return ctx.t;
+  return useContext(I18nContext)?.t ?? englishOnly;
 }
 
 export function useLocale(): Locale {
