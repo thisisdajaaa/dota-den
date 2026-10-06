@@ -43,11 +43,16 @@ export const usersService = new UsersService({
   sessions: sessionsRepository,
 });
 
-export const identityController = new IdentityController({
-  auth: authService,
-  authAs: (testSteamId) => (testSteamId ? buildAuthService(testSteamId) : authService),
-  users: usersService,
-  appUrl: () => env().APP_URL,
-  secureCookies: () => env().NODE_ENV === "production",
-  logger,
-});
+// Lazy: identity.controller imports identity.guards, which imports this file, so the
+// IdentityController class may not be initialised yet when this module is evaluated.
+export const identityController = lazy(
+  () =>
+    new IdentityController({
+      auth: authService,
+      authAs: (testSteamId) => (testSteamId ? buildAuthService(testSteamId) : authService),
+      users: usersService,
+      appUrl: () => env().APP_URL,
+      secureCookies: () => env().NODE_ENV === "production",
+      logger,
+    }),
+);

@@ -22,7 +22,8 @@ export const activityRepository = new ActivityRepository(getDb);
 
 export const activityService = new ActivityService({
   repo: activityRepository,
-  referee: draftsReferee,
+  // Lazy: drafts-referee imports the drafts feature, which leads back here.
+  referee: lazy(() => draftsReferee),
   hash: (text) => createHash("sha256").update(text).digest("hex"),
   onScoreError: (error) => logger.warn("draft_score_failed", { error }),
   data: activityRepository,
