@@ -3,37 +3,11 @@ import {
   PHASES,
   pickBenchmarks,
   topItems,
-  type Benchmark,
-  type Counter,
   type ItemPick,
-  type MatchupRow,
   type Phase,
-  type ProGame,
-} from "../domain/hero-guide";
-
-/** Where guide data comes from. Each call is null when that source is unavailable. */
-export interface GuideSource {
-  /** Item purchase counts per phase from professional games. */
-  itemPopularity(heroId: number): Promise<Record<Phase, Record<string, number>> | null>;
-  /** Percentile tables per stat, from recent public games on the hero. */
-  benchmarks(
-    heroId: number,
-  ): Promise<Record<string, Array<{ percentile: number; value: number }>> | null>;
-  /** Recent professional games on the hero, newest first (without player names). */
-  proGames(heroId: number): Promise<ProGame[] | null>;
-  /** Pro players' names for these accounts. */
-  proNames(accountIds: readonly number[]): Promise<Map<number, string> | null>;
-  /** How the hero does against each other hero in pro games. */
-  matchups(heroId: number): Promise<MatchupRow[] | null>;
-}
-
-export interface HeroGuide {
-  heroId: number;
-  items: Record<Phase, ItemPick[]> | null;
-  benchmarks: Benchmark[] | null;
-  proGames: ProGame[] | null;
-  counters: { strongAgainst: Counter[]; weakAgainst: Counter[] } | null;
-}
+} from "./domain/hero-guide";
+import type { GuideSource } from "./guides.ports";
+import type { HeroGuide } from "./dtos/responses/hero-guide.dto";
 
 const PRO_GAMES_SHOWN = 12;
 
@@ -73,5 +47,24 @@ export class GuideService {
         : null,
       counters: matchups ? counters(matchups) : null,
     };
+  }
+
+  /**
+   * The items pros buy most on a hero in the mid and late game (consumables left out), as
+   * ranks: OpenDota gives purchase counts without the number of games, so no percentages.
+   */
+  async proCoreItems(
+    heroId: number,
+    isConsumable: (itemId: number) => boolean,
+  ): Promise<Array<{ phase: "mid" | "late"; itemId: number; rank: number }> | null> {
+    const pop = await this.deps.source.itemPopularity(heroId).catch(() => null);
+    if (!pop) return null;
+    return (["mid", "late"] as const).flatMap((phase) =>
+      topItems(pop[phase] ?? {}, isConsumable, 4).map((it, i) => ({
+        phase,
+        itemId: it.itemId,
+        rank: i + 1,
+      })),
+    );
   }
 }
