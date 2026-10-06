@@ -1,4 +1,4 @@
-import { positionBreakdown, type PositionBreakdown } from "@/modules/meta";
+import { positionBreakdown } from "@/modules/meta";
 import { err, ok, type Result } from "@/common/result";
 import {
   averageOf,
@@ -13,11 +13,8 @@ import {
   type HeroIndexRow,
   type HeroRecord,
   type HighRankComparison,
-  type ItemSummary,
-  type Matchups,
-  type WinRateTrend,
-} from "../domain/hero-stats";
-import { heroProgress, type HeroProgress } from "../domain/hero-progress";
+} from "./domain/hero-stats";
+import { heroProgress } from "./domain/hero-progress";
 import type {
   HeroCatalogEntry,
   HighRankStats,
@@ -26,38 +23,16 @@ import type {
   OwnHeroGames,
   PlayerHeroSource,
   SourceError,
-} from "./ports";
+} from "./heroes.ports";
+import type {
+  HeroDetailsView,
+  HeroOverview,
+  LaneBreakdownView,
+  MatchupsView,
+} from "./dtos/responses/heroes.dto";
 
 /** Games on the hero fetched from OpenDota for GPM, XPM and items (one upstream call). */
 export const RECENT_HERO_GAMES = 100;
-
-export interface HeroOverview {
-  heroId: number;
-  record: HeroRecord;
-  trend: WinRateTrend;
-}
-
-export interface MatchupsView {
-  /** Your games on the hero according to OpenDota (the matchups' sample). */
-  games: number;
-  matchups: Matchups;
-}
-
-export interface HeroDetailsView {
-  /** Games looked at (your most recent on the hero, up to RECENT_HERO_GAMES). */
-  sample: number;
-  gpm: { average: number; games: number } | null;
-  xpm: { average: number; games: number } | null;
-  /** null when the item catalog is unavailable (we can't tell components from items). */
-  items: ItemSummary | null;
-  /** Earlier vs latest of your recent games on the hero; null with too few. */
-  progress: HeroProgress | null;
-}
-
-export interface LaneBreakdownView {
-  breakdown: PositionBreakdown;
-  windowDays: number;
-}
 
 export class HeroesService {
   constructor(
@@ -66,9 +41,9 @@ export class HeroesService {
       player: PlayerHeroSource;
       highRank: HighRankStats;
       lanes: LaneHistory;
-      heroes: readonly HeroCatalogEntry[];
+      /** The hero catalog (ids and roles). */
+      heroes: () => Promise<readonly HeroCatalogEntry[]>;
       items: () => Promise<ItemCatalog>;
-      timeZone: string;
     },
   ) {}
 
@@ -78,14 +53,15 @@ export class HeroesService {
   }
 
   /** Your record and win-rate trend on one hero (from your imported games). */
-  async overview(accountId32: number, heroId: number): Promise<HeroOverview> {
+  /** `timeZone` is the viewer's, for the win rate trend's day boundaries. */
+  async overview(accountId32: number, heroId: number, timeZone: string): Promise<HeroOverview> {
     const games: HeroGame[] = (await this.deps.own.games(accountId32)).filter(
       (g) => g.heroId === heroId,
     );
     return {
       heroId,
       record: heroRecord(games),
-      trend: winRateTrend(games, { timeZone: this.deps.timeZone }),
+      trend: winRateTrend(games, { timeZone }),
     };
   }
 
@@ -152,10 +128,11 @@ export class HeroesService {
 
   /** Where you play (positions 1–5) and your win rate in each, from recent lane data. */
   async laneBreakdown(accountId32: number): Promise<Result<LaneBreakdownView, SourceError>> {
-    if (this.deps.heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
+    const heroes = await this.deps.heroes();
+    if (heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
     const res = await this.deps.lanes.recentLanes(accountId32);
     if (!res.ok) return res;
-    const roles = new Map(this.deps.heroes.map((h) => [h.id, h.roles]));
+    const roles = new Map(heroes.map((h) => [h.id, h.roles]));
     return ok({
       breakdown: positionBreakdown(res.value.games, (id) => roles.get(id)),
       windowDays: res.value.windowDays,

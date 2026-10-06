@@ -1,6 +1,6 @@
 import type { LaneGame } from "@/modules/meta";
 import type { Result } from "@/common/result";
-import type { HeroGame, ItemMeta, MatchupRow } from "../domain/hero-stats";
+import type { HeroGame, ItemMeta, MatchupRow } from "./domain/hero-stats";
 
 export type SourceError =
   | { type: "rate_limited"; retryAfterMs: number | null }

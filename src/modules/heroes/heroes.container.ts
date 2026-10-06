@@ -1,33 +1,24 @@
 import "server-only";
-import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
-import {
-  getHeroMap,
-  getItemMap,
-  getMatchQueries,
-  openDotaGateway,
-} from "@/modules/matches/composition";
-import { getHighRankHeroStats, getPlayerLaneHistory } from "@/modules/meta/composition";
-import { getViewerTimeZone } from "@/modules/mmr/composition";
+import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { ok } from "@/common/result";
-import { HeroesService } from "./application/heroes-service";
-import type { ItemCatalog } from "./application/ports";
+import { lazy } from "@/common/utils/lazy";
+import { getHeroMap, getItemMap, getMatchQueries } from "@/modules/matches/composition";
+import { getHighRankHeroStats, getPlayerLaneHistory } from "@/modules/meta/composition";
+import type { ItemCatalog } from "./heroes.ports";
+import { HeroesService } from "./heroes.service";
 import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";
 
 /** Hero pages: your imported games plus OpenDota's per-player hero data, wired together. */
-export async function getHeroesService(): Promise<HeroesService> {
-  const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();
-  const [queries, heroMap, tz] = await Promise.all([
-    getMatchQueries(),
-    getHeroMap(),
-    getViewerTimeZone(),
-  ]);
+export const heroesService = lazy(() => {
   const highRankStats = getHighRankHeroStats();
   return new HeroesService({
     own: {
       games: async (accountId32) =>
         (
-          await queries.dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date())
+          await (
+            await getMatchQueries()
+          ).dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date())
         ).facts.map((f) => ({
           matchId: f.matchId,
           heroId: f.heroId,
@@ -39,10 +30,7 @@ export async function getHeroesService(): Promise<HeroesService> {
           patch: f.patch,
         })),
     },
-    player: new OpenDotaHeroSource(openDotaGateway(), {
-      apiKey: OPENDOTA_API_KEY,
-      baseUrl: OPENDOTA_BASE_URL,
-    }),
+    player: new OpenDotaHeroSource(openDotaGateway(), openDotaConfig()),
     highRank: {
       heroStats: async () => {
         const res = await highRankStats();
@@ -55,7 +43,8 @@ export async function getHeroesService(): Promise<HeroesService> {
         return res.ok ? ok(res.value.value) : res;
       },
     },
-    heroes: [...heroMap.values()].map((h) => ({ id: h.id, roles: h.roles })),
+    heroes: async () =>
+      [...(await getHeroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
     items: async (): Promise<ItemCatalog> => {
       try {
         const items = await getItemMap();
@@ -65,6 +54,5 @@ export async function getHeroesService(): Promise<HeroesService> {
         return new Map();
       }
     },
-    timeZone: tz.timeZone,
   });
-}
+});

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { logger } from "@/common/logging/logger";
 import { advisorService } from "@/modules/advisor";
 import { PoolAdviceCard } from "@/modules/advisor/ui/pool-advice-card";
-import { getHeroesService } from "@/modules/heroes/composition";
+import { heroesService } from "@/modules/heroes";
 import { countOf, HeroGrid, unavailableCopy } from "@/modules/heroes/ui/hero-sections";
 import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
 import type { HeroInfo } from "@/modules/matches/application/ports";
@@ -20,8 +20,7 @@ export const metadata: Metadata = { title: "Heroes" };
 export default async function HeroesPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const [service, heroes] = await Promise.all([getHeroesService(), getHeroMap()]);
-  const rows = await service.index(user.accountId32);
+  const [rows, heroes] = await Promise.all([heroesService.index(user.accountId32), getHeroMap()]);
   const games = rows.reduce((n, r) => n + r.games, 0);
 
   return (
@@ -74,7 +73,7 @@ async function Lanes({
   accountId32: number;
   heroes: Map<number, HeroInfo>;
 }) {
-  const res = await (await getHeroesService()).laneBreakdown(accountId32).catch((e: unknown) => {
+  const res = await heroesService.laneBreakdown(accountId32).catch((e: unknown) => {
     logger.error("heroes_lanes_failed", { error: e });
     return { ok: false as const, error: { type: "error" as const } };
   });

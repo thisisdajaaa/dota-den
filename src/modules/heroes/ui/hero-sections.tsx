@@ -16,8 +16,8 @@ import {
   type MatchupEntry,
   type WinRateTrend,
 } from "../domain/hero-stats";
-import type { HeroDetailsView, MatchupsView } from "../application/heroes-service";
-import type { SourceError } from "../application/ports";
+import type { HeroDetailsView, MatchupsView } from "../dtos/responses/heroes.dto";
+import type { SourceError } from "../heroes.ports";
 
 export { Unavailable };
 

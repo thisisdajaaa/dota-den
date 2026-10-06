@@ -2,12 +2,7 @@ import { z } from "zod";
 import { err, ok } from "@/common/result";
 import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
 import type { MatchupRow } from "../domain/hero-stats";
-import type {
-  HeroGameExtras,
-  PlayerHeroSource,
-  SourceError,
-  SourceResult,
-} from "../application/ports";
+import type { HeroGameExtras, PlayerHeroSource, SourceError, SourceResult } from "../heroes.ports";
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 /** Per-player hero data changes only when you play; half an hour is fresh enough. */

@@ -6,7 +6,7 @@ import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
 import { MIN_POSITION_GAMES, POSITION_INFO } from "@/modules/meta";
 import { MetaSection, Unavailable } from "@/modules/meta/ui/meta-section";
-import type { LaneBreakdownView } from "../application/heroes-service";
+import type { LaneBreakdownView } from "../dtos/responses/heroes.dto";
 
 /** How much of the sample could be placed, in plain words. */
 function sampleLine(view: LaneBreakdownView): string {

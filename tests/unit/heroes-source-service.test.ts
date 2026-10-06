@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { HeroesService } from "@/modules/heroes/application/heroes-service";
-import type { HeroGameExtras } from "@/modules/heroes/application/ports";
+import { HeroesService } from "@/modules/heroes/heroes.service";
+import type { HeroGameExtras } from "@/modules/heroes/heroes.ports";
 import { OpenDotaHeroSource } from "@/modules/heroes/infrastructure/opendota-hero-source";
 import { ok, err } from "@/common/result";
 import { ProviderGateway } from "@/common/providers/provider-gateway";
@@ -167,20 +167,19 @@ function service(overrides: Partial<ConstructorParameters<typeof HeroesService>[
           games: [{ heroId: 1, laneRole: 1, isRoaming: false, result: "win" as const }],
         }),
     },
-    heroes: [{ id: 1, roles: ["Carry"] }],
+    heroes: async () => [{ id: 1, roles: ["Carry"] }],
     items: async () =>
       new Map([
         ["bkb", { key: "bkb", qual: "epic", cost: 4050 }],
         ["tango", { key: "tango", qual: "consumable", cost: 90 }],
       ]),
-    timeZone: "UTC",
     ...overrides,
   });
 }
 
 describe("HeroesService", () => {
   it("summarises only the requested hero's games", async () => {
-    const o = await service().overview(22202, 1);
+    const o = await service().overview(22202, 1, "UTC");
     expect(o.record.games).toBe(1);
     expect(o.trend.buckets).toHaveLength(1);
   });
@@ -195,7 +194,7 @@ describe("HeroesService", () => {
 
   it("compares with public high-rank games, or says there are none", async () => {
     const s = service();
-    const { record } = await s.overview(22202, 1);
+    const { record } = await s.overview(22202, 1, "UTC");
     const c = await s.highRank(1, record);
     expect(c.ok && c.value.publicRate).toBe(0.48);
     expect((await s.highRank(2, record)).ok).toBe(false);
@@ -204,7 +203,7 @@ describe("HeroesService", () => {
   it("needs the hero catalog to read positions", async () => {
     const b = await service().laneBreakdown(22202);
     expect(b.ok && b.value.breakdown.positions[0].games).toBe(1);
-    const none = await service({ heroes: [] }).laneBreakdown(22202);
+    const none = await service({ heroes: async () => [] }).laneBreakdown(22202);
     expect(none.ok).toBe(false);
   });
 });
