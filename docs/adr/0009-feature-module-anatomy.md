@@ -118,9 +118,8 @@ reached through their `index.ts` and passed in as port implementations.
 
 ### Migration
 
-Modules move to this anatomy one at a time, each change released on its own. The architecture
-test applies the new rules to any module that has a `<feature>.container.ts`. Modules not yet
-migrated keep the ADR 0004 rules until they move. `goals` is the reference implementation.
+All 22 features moved to this anatomy in October 2026, released in three parts. The architecture
+test now requires every feature to have a container and applies the role rules everywhere.
 
 ## Consequences
 

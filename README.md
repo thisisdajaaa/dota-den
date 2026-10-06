@@ -158,9 +158,10 @@ More detail: [docs/draft-engine.md](docs/draft-engine.md).
 
 ## Architecture
 
-A modular monolith on Next.js 16 (App Router). Each bounded context lives in `src/modules/<context>` with
-`domain → application → infrastructure → ui` layers and a `composition.ts` that wires them. The layer rules are
-enforced by a test ([ADR 0004](docs/adr/0004-module-boundaries.md)).
+A modular monolith on Next.js 16 (App Router). Each feature lives in `src/modules/<feature>` with the same
+anatomy: a controller (HTTP), services (use cases), repositories (MongoDB), a model, ports, zod schemas and DTOs,
+pure `domain/` rules, and a container that wires them. Route handlers are one line; every API answers with one
+response envelope. The rules are enforced by a test ([ADR 0009](docs/adr/0009-feature-module-anatomy.md)).
 
 ```mermaid
 flowchart LR
@@ -275,8 +276,9 @@ registered trademark of Valve Corporation.
 src/
   app/                 Routes: (public) and (app) pages, api/ route handlers
   components/          Shared UI (layout, shadcn/ui primitives)
-  lib/                 Env, HTTP helpers, logging, rate limiting, MongoDB client
-  modules/<context>/   domain/ application/ infrastructure/ ui/ composition.ts
+  common/              Config, db, errors, HTTP kit (controller, envelope, API client), LLM client, providers
+  modules/<feature>/   <feature>.controller/service/repository/model/ports/container.ts, index.ts,
+                       schemas/ dtos/ domain/ infrastructure/ ui/
 scripts/               Index setup, draft calibration
 tests/
   unit/ component/ integration/ e2e/
@@ -287,7 +289,7 @@ docs/                  Architecture, configuration, API, draft engine, data sour
 
 - Branch from `develop` (`feature/<name>` or `fix/<name>`) and open a pull request into `develop`.
 - `npm run check`, `npm run build` and the E2E suite must pass.
-- Keep domain code pure; wire dependencies in `composition.ts`. Record significant decisions as an ADR in `docs/adr`.
+- Keep domain code pure; wire dependencies in `<feature>.container.ts`. Record significant decisions as an ADR in `docs/adr`.
 - Commit messages: a short summary line (`Area: what changed`), then the why.
 
 ## License

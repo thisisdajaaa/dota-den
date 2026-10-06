@@ -16,6 +16,7 @@ import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-hist
 import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-meta-cache.repository";
 import { DraftRoomsRepository } from "@/modules/drafts/repositories/draft-rooms.repository";
 import { MatchDraftReadsRepository } from "@/modules/drafts/repositories/match-draft-reads.repository";
+import { ReplayReadsRepository } from "@/modules/report/repositories/replay-reads.repository";
 import { MatchFactsRepository } from "@/modules/matches/repositories/matches.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
@@ -45,6 +46,7 @@ async function main(): Promise<void> {
   await new DraftHistoryRepository(async () => db).ensureIndexes();
   await new ActivityRepository(async () => db).ensureIndexes();
   await new MatchFactsRepository(async () => db).ensureIndexes();
+  await new ReplayReadsRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();

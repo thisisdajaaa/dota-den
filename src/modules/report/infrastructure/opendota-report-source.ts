@@ -19,6 +19,7 @@ const FIELDS = [
   "hero_healing",
   "tower_damage",
   "lane_role",
+  "version",
 ];
 const num = z.number().nullable().optional();
 const Row = z.object({
@@ -39,6 +40,7 @@ const Row = z.object({
   hero_healing: num,
   tower_damage: num,
   lane_role: num,
+  version: num,
 });
 
 /** A player's games over the last `days` days with the stats the report needs (cached 1h). */
@@ -80,6 +82,7 @@ export async function reportGames(
       heroHealing: r.hero_healing ?? null,
       towerDamage: r.tower_damage ?? null,
       laneRole: r.lane_role ?? null,
+      parsed: r.version != null,
     });
   }
   return out;

@@ -2,26 +2,38 @@
 
 Dota Den is a modular monolith on Next.js 16 (App Router), deployed to Vercel, with MongoDB for storage.
 
-## Modules and layers
+## Feature modules
 
-Each bounded context lives in `src/modules/<context>/`:
+Each feature lives in `src/modules/<feature>/` with the same anatomy ([ADR 0009](adr/0009-feature-module-anatomy.md)):
 
-| Layer             | Holds                                                                 | May import                                                                                                    |
-| ----------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `domain/`         | Pure rules and types (no I/O, no env)                                 | `domain` only                                                                                                 |
-| `application/`    | Use cases (services) and ports (interfaces)                           | `domain`, own `application`                                                                                   |
-| `infrastructure/` | Adapters: MongoDB repositories, OpenDota/Valve/Groq clients           | everything in its own module                                                                                  |
-| `ui/`             | React components                                                      | `domain`, `application` types; client components never import server-only code, composition or infrastructure |
-| `composition.ts`  | Wiring: builds services with their adapters and settings from the env | its own module; other modules' composition                                                                    |
+| File or folder                             | Holds                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| `index.ts`                                 | The public API: what pages, routes and other features may import          |
+| `<feature>.container.ts`                   | Wiring: builds repositories → services → controllers, with env settings   |
+| `<feature>.controller.ts`                  | HTTP: guard, rate limit, zod validation, response envelope                |
+| `<feature>.service.ts`, `services/`        | Use cases, with dependencies passed into the constructor                  |
+| `<feature>.repository.ts`, `repositories/` | MongoDB access (no business rules)                                        |
+| `<feature>.model.ts`                       | Collection names and document shapes                                      |
+| `<feature>.ports.ts`                       | Interfaces the services depend on (storage, upstreams, other features)    |
+| `schemas/`, `dtos/`                        | zod request schemas; request and response types (+ mappers)               |
+| `domain/`                                  | Pure rules and calculations (no I/O; unit-tested)                         |
+| `infrastructure/`                          | Upstream adapters (OpenDota, Valve, Groq, Twitch, QStash) and LLM prompts |
+| `ui/`                                      | React components                                                          |
 
-A module never imports another module's infrastructure. Cross-context reuse goes through that module's
-`composition.ts` or `index.ts`. These rules are enforced by `tests/unit/architecture.test.ts`
-([ADR 0004](adr/0004-module-boundaries.md)).
+Every route handler is one line (`export const PUT = goalsController.update;`) and every API returns the
+`ServiceResponse` envelope `{ success, message, data, statusCode }`. Browser code calls the API through
+`apiRequest()`. Features reach each other only through `index.ts`, `domain/` or `ui/`. The rules are enforced by
+`tests/unit/architecture.test.ts`.
 
-Contexts: `identity`, `matches`, `mmr`, `sessions`, `together`, `players`, `heroes`, `meta`, `patches`, `drafts`,
-`leaderboards`, plus `shared` (result types, the provider gateway).
+Shared code lives in `src/common/`: config, db, cache, errors (`AppError` and subclasses), http (the controller
+kit, envelope, API client, rate limits), llm (the Groq client), logging, providers (the OpenDota gateways), privacy
+helpers, time (day keys) and small utils.
 
-Configuration is read only in composition roots and infrastructure (`src/common/config/env.ts`), and passed into services and
+Features: `identity`, `matches`, `mmr`, `sessions`, `together`, `players`, `heroes`, `meta`, `patches`, `drafts`,
+`leaderboards`, `report`, `goals`, `annotations`, `achievements`, `advisor`, `guides`, `live`, `jobs`, `errors`,
+`admin`, `privacy`.
+
+Configuration is read only in containers and infrastructure (`src/common/config/env.ts`), and passed into services and
 adapters through constructors, so domain code stays pure and testable.
 
 ## Routes

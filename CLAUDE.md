@@ -11,8 +11,10 @@
   party_size means `unknown`, never solo.
 - SteamID64 is always a string. Convert with BigInt
   (`src/modules/identity/domain/steam-id.ts`).
-- Layer rules are enforced by `tests/unit/architecture.test.ts`. Wiring lives
-  in `src/modules/<context>/composition.ts`.
+- Feature anatomy (controller, service, repository, model, DTOs, schemas) is in
+  `docs/adr/0009-feature-module-anatomy.md` and enforced by
+  `tests/unit/architecture.test.ts`. Wiring lives in
+  `src/modules/<feature>/<feature>.container.ts`; the public API in `index.ts`.
 - Next 16: `cookies()`, `headers()` and `params` are async, and
   `src/proxy.ts` replaces middleware.
 - Integration and E2E tests need MongoDB at `MONGODB_TEST_URI` (default

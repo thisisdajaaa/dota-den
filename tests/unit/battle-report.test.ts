@@ -20,6 +20,7 @@ const g = (won: boolean, over: Partial<ReportGame> = {}): ReportGame => ({
   heroHealing: 0,
   towerDamage: 1_000,
   laneRole: null,
+  parsed: false,
   ...over,
 });
 const utc = (d: Date) => d.toISOString().slice(0, 10);

@@ -3,7 +3,7 @@
 All configuration is environment variables, parsed and validated once at startup by `src/common/config/env.ts` (Zod). An invalid
 value stops the app with a message that names the variable (never its value). Empty strings count as unset.
 
-Only composition roots and infrastructure read the env; services and domain code receive values through their
+Only containers and infrastructure read the env; services and domain code receive values through their
 constructors. `.env.example` lists every variable with its default.
 
 ## Core

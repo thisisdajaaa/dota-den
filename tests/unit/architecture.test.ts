@@ -3,9 +3,9 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Enforces docs/adr/0009-feature-module-anatomy.md. A feature with `<name>.container.ts` is
- * migrated and gets the role rules (controller / service / repository / model / ui …);
- * features not yet migrated keep the ADR 0004 layer rules until they move.
+ * Enforces docs/adr/0009-feature-module-anatomy.md: every feature has `<name>.container.ts`,
+ * and each file's role (controller / service / repository / model / ui …) decides what it
+ * may import.
  */
 const ROOT = join(process.cwd(), "src");
 const MODULES = join(ROOT, "modules");
@@ -110,7 +110,6 @@ function violations(
 }
 
 const inMigrated = moduleFiles.filter((f) => migrated.has(f.feature));
-const inLegacy = moduleFiles.filter((f) => !migrated.has(f.feature));
 /** The role of an import into the file's own feature, or null for anything else. */
 const ownRole = (f: ModuleFile, spec: string): Role | null => {
   const t = target(f.file, spec);
@@ -120,7 +119,8 @@ const ownRole = (f: ModuleFile, spec: string): Role | null => {
 describe("architecture: shared code", () => {
   it("finds files to check", () => {
     expect(moduleFiles.length).toBeGreaterThan(0);
-    expect(migrated.has("goals")).toBe(true);
+    // Every feature follows ADR 0009 (a <feature>.container.ts wires it).
+    expect(features.filter((f) => !migrated.has(f))).toEqual([]);
   });
 
   it("src/common never depends on a feature or the app", () => {
@@ -163,9 +163,7 @@ describe("architecture: all features", () => {
     const found = violations(moduleFiles, (f, spec) => {
       const t = target(f.file, spec);
       if (!t || t.feature === f.feature) return false;
-      if (t.role === "index" || t.role === "domain" || t.role === "ui") return false;
-      // Features not yet migrated still expose composition.ts and application/ (ADR 0004).
-      return !(!migrated.has(t.feature) && (t.role === "composition" || t.role === "application"));
+      return !(t.role === "index" || t.role === "domain" || t.role === "ui");
     });
     expect(found).toEqual([]);
   });
@@ -272,28 +270,6 @@ describe("architecture: migrated features (ADR 0009 roles)", () => {
     const found = inMigrated
       .filter((f) => f.role === "application" || f.role === "composition")
       .map((f) => relative(ROOT, f.file));
-    expect(found).toEqual([]);
-  });
-});
-
-describe("architecture: features not yet migrated (ADR 0004 layers)", () => {
-  it("application imports no framework, database or infrastructure", () => {
-    const found = violations(inLegacy, (f, spec) => {
-      if (f.role !== "application") return false;
-      if (isFramework(spec) || spec.startsWith("@/common/db")) return true;
-      const own = ownRole(f, spec);
-      return own === "infrastructure" || own === "ui";
-    });
-    expect(found).toEqual([]);
-  });
-
-  it("ui never imports mongodb, infrastructure, db or env", () => {
-    const found = violations(inLegacy, (f, spec) => {
-      if (f.role !== "ui") return false;
-      if (spec === "mongodb" || spec.startsWith("@/common/db") || spec === "@/common/config/env")
-        return true;
-      return target(f.file, spec)?.role === "infrastructure";
-    });
     expect(found).toEqual([]);
   });
 });
