@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Clock, Info } from "lucide-react";
 import { cn } from "cn";
 import { LocalTime } from "@/components/local-time";
-import { getMatchAnnotation } from "@/modules/annotations/composition";
+import { annotationsService } from "@/modules/annotations";
 import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
 import { getAiOpponent } from "@/modules/drafts/composition";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
@@ -314,7 +314,7 @@ async function MatchDraftSection({
 }
 
 async function NotesSection({ userId, matchId }: { userId: string; matchId: string }) {
-  const a = await getMatchAnnotation(userId, matchId).catch(() => null);
+  const a = await annotationsService.get(userId, matchId).catch(() => null);
   return (
     <MatchNotesCard matchId={matchId} initialTags={a?.tags ?? []} initialNote={a?.note ?? ""} />
   );

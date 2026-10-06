@@ -1,6 +1,8 @@
 import { ObjectId, type Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import * as annotations from "@/modules/annotations/infrastructure/mongo-annotations";
+import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
+import { AnnotationsService } from "@/modules/annotations/annotations.service";
+import type { DataOwner } from "@/common/privacy/user-data";
 import * as drafts from "@/modules/drafts/infrastructure/user-data";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
@@ -21,21 +23,27 @@ beforeAll(async () => {
 });
 afterAll(async () => teardown?.());
 
-// Goals in the new module anatomy (ADR 0009): the service exports and deletes.
-const goalsPart = {
-  exportUserData: (_db: Db, owner: { userId: string; accountId32: number }) =>
+/** A migrated feature's service (ADR 0009), with its repository on the test database. */
+const servicePart = (
+  make: (getDb: () => Promise<Db>) => {
+    exportMyData(o: DataOwner): Promise<object>;
+    deleteMyData(o: DataOwner): Promise<object>;
+  },
+) => ({
+  exportUserData: (_db: Db, owner: DataOwner) => make(async () => db).exportMyData(owner),
+  deleteUserData: (_db: Db, owner: DataOwner) => make(async () => db).deleteMyData(owner),
+});
+const goalsPart = servicePart(
+  (getDb) =>
     new GoalsService({
-      repository: new GoalsRepository(async () => db),
+      repository: new GoalsRepository(getDb),
       sessions: { rankedSessions: async () => [] },
       mmr: { entryTimes: async () => [] },
-    }).exportMyData(owner),
-  deleteUserData: (_db: Db, owner: { userId: string; accountId32: number }) =>
-    new GoalsService({
-      repository: new GoalsRepository(async () => db),
-      sessions: { rankedSessions: async () => [] },
-      mmr: { entryTimes: async () => [] },
-    }).deleteMyData(owner),
-};
+    }),
+);
+const annotationsPart = servicePart(
+  (getDb) => new AnnotationsService({ repository: new AnnotationsRepository(getDb) }),
+);
 
 const PARTS = [
   mmr,
@@ -46,7 +54,7 @@ const PARTS = [
   drafts,
   matches,
   together,
-  annotations,
+  annotationsPart,
   goalsPart,
   identity,
 ];

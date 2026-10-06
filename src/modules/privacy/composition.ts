@@ -1,6 +1,6 @@
 import "server-only";
 import { logger } from "@/common/logging/logger";
-import * as annotations from "@/modules/annotations/composition";
+import { annotationsService } from "@/modules/annotations";
 import * as drafts from "@/modules/drafts/composition";
 import { goalsService } from "@/modules/goals";
 import * as identity from "@/modules/identity/composition";
@@ -23,7 +23,7 @@ const PARTS = [
   drafts,
   matches,
   together,
-  annotations,
+  annotationsService,
   goalsService,
 ];
 
