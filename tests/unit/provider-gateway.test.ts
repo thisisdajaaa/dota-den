@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseRetryAfter, ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { parseRetryAfter, ProviderGateway } from "@/common/providers/provider-gateway";
 
 function gateway(
   responses: Array<Response | Error>,

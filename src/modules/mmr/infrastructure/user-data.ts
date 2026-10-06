@@ -1,5 +1,5 @@
 import type { Db } from "mongodb";
-import { forExport, type DataOwner } from "@/modules/shared/infrastructure/user-data";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import { MEDAL_COLLECTION as MEDALS } from "./mongo-medal-history";
 import { MMR_COLLECTIONS } from "./mongo-mmr-repository";
 

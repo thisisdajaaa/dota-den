@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { LaneTable } from "../domain/draft-lanes";
 import type { AbilityBrief, HeroKit } from "../domain/draft-review";
 import type { PositionTable } from "../domain/draft-positions";

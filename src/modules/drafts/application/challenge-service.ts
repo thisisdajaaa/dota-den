@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import {
   generatePuzzle,
   gradeAnswer,

@@ -4,7 +4,7 @@ import { ArrowLeft, Radio } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getAiOpponent } from "@/modules/drafts/composition";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
-import { getLiveService } from "@/modules/live/composition";
+import { liveService } from "@/modules/live";
 import { clock, draftComplete, leadText, sideHeroes } from "@/modules/live/domain/live-game";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { LineupRow } from "@/modules/live/ui/live-game-card";
@@ -18,7 +18,7 @@ const MATCH_ID = /^\d{1,20}$/;
 export default async function LiveGamePage({ params }: PageProps<"/live/[matchId]">) {
   const { matchId } = await params;
   const [game, heroes] = await Promise.all([
-    MATCH_ID.test(matchId) ? getLiveService().game(matchId) : null,
+    MATCH_ID.test(matchId) ? liveService.game(matchId) : null,
     getHeroMap(),
   ]);
   const back = (
@@ -52,7 +52,7 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
           .then((ai) => ai.outlookForHeroes(sideHeroes(game, "radiant"), sideHeroes(game, "dire")))
           .catch(() => null)
       : null,
-    getLiveService().watch(game),
+    liveService.watch(game),
   ]);
 
   return (

@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin, requestId } from "@/lib/http";
-import { logger } from "@/lib/logger";
-import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
+import { apiError, isSameOrigin, requestId } from "@/common/http/http";
+import { logger } from "@/common/logging/logger";
+import { authService, SESSION_COOKIE } from "@/modules/identity";
 import { MAX_IMPORT_COUNT } from "@/modules/patches/application/patch-import-service";
 import { getPatchImportService } from "@/modules/patches/composition";
 
@@ -18,7 +18,7 @@ const BodySchema = z
 /** Admin-only manual patch refresh (spec §2.3). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(req)) return apiError("forbidden", "Cross-origin request rejected");
-  const auth = await getAuthService();
+  const auth = authService;
   const session = await auth.resolveSession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return apiError("unauthorized", "Not signed in");
   if (!session.user.roles.includes("admin")) return apiError("forbidden", "Admins only");

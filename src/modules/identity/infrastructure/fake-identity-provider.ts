@@ -1,6 +1,6 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import { parseSteamId64, type SteamId64 } from "../domain/steam-id";
-import type { IdentityProvider, IdentityVerificationError } from "../application/ports";
+import type { IdentityProvider, IdentityVerificationError } from "../identity.ports";
 
 /**
  * Test-only identity provider for E2E runs (AUTH_TEST_MODE=true, never in production).

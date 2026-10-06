@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type {
   ParseStatus,
   Patch,

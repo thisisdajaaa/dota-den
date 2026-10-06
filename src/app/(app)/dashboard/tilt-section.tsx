@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import type { User } from "@/modules/identity/domain/user";
 import { getSessionService } from "@/modules/sessions/composition";
 import { TiltWarningCard } from "@/modules/sessions/ui/tilt-cards";

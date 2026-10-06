@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Check, Circle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { Button } from "@/components/ui/button";
 import { MAX_CUSTOM_LENGTH, MAX_GOALS, type Goal } from "../domain/goals";
 
@@ -185,16 +186,11 @@ export function GoalsCard({
   async function save(goals: Goal[]) {
     setBusy(true);
     try {
-      const res = await fetch("/api/v1/me/goals", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ goals }),
-      });
-      if (!res.ok) throw new Error();
+      await apiRequest("/api/v1/me/goals", { method: "PUT", body: { goals } });
       setEditing(false);
       router.refresh();
-    } catch {
-      toast.error("Couldn't save your goals. Check them and try again.");
+    } catch (e) {
+      toast.error(e instanceof ApiClientError ? e.message : "Couldn't save your goals.");
     } finally {
       setBusy(false);
     }

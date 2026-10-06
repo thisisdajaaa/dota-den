@@ -10,7 +10,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { getHeroMap, getPlayerProfile } from "@/modules/matches/composition";
 import { formatPercent, plural } from "@/modules/matches/ui/format";
 import { heroName } from "@/modules/matches/ui/hero-portrait";

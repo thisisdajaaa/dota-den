@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getHeroesService } from "@/modules/heroes/composition";
 import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
 import { unavailableCopy } from "@/modules/heroes/ui/hero-sections";

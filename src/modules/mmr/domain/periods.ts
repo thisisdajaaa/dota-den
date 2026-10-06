@@ -1,4 +1,4 @@
-import { addDays, weekday, type DayKey } from "./day-key";
+import { addDays, weekday, type DayKey } from "@/common/time/day-key";
 
 export type CalendarView = "week" | "month" | "year" | "all";
 

@@ -1,9 +1,9 @@
 import "server-only";
-import { env } from "@/lib/env";
+import { env } from "@/common/config/env";
 import { getMatchQueries, openDotaGateway } from "@/modules/matches/composition";
 import { getMmrJournal } from "@/modules/mmr/composition";
 import { buildCalendar } from "@/modules/mmr/domain/calendar";
-import { addDays, dayKeyFormatter } from "@/modules/mmr/domain/day-key";
+import { addDays, dayKeyFormatter } from "@/common/time/day-key";
 import { battleReport, type BattleReport } from "./domain/battle-report";
 import { reportGames } from "./infrastructure/opendota-report-source";
 

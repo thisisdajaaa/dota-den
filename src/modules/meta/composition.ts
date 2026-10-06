@@ -1,11 +1,11 @@
 import "server-only";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import { getHeroMap, openDotaGateway } from "@/modules/matches/composition";
 import { ensurePatchesFresh, getPatchQueries } from "@/modules/patches/composition";
 import type { Patch } from "@/modules/patches/domain/patch";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
-import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
+import { sharedGatewayOptions } from "@/common/providers/shared-gateway-options";
 import { MetaService } from "./application/meta-service";
 import type { MetaStatsSource, PlayerLaneHistory } from "./application/ports";
 import type { HeroPatchChange, LatestPatch } from "./domain/patch-tips";

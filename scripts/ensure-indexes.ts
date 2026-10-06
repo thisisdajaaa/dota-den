@@ -2,17 +2,19 @@
  * Apply all collection indexes. Idempotent.
  * Usage: npm run db:indexes  (reads MONGODB_URI / MONGODB_DB_NAME from the environment)
  */
-import { getDb, getMongoClient } from "@/lib/db/mongo";
-import { ensureAnnotationIndexes } from "@/modules/annotations/infrastructure/mongo-annotations";
-import { ensureGoalIndexes } from "@/modules/goals/infrastructure/mongo-goals";
+import { getDb, getMongoClient } from "@/common/db/mongo";
+import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
+import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { ensureDraftHistoryIndexes } from "@/modules/drafts/infrastructure/mongo-draft-history";
 import { ensureDraftMetaCacheIndexes } from "@/modules/drafts/infrastructure/mongo-draft-meta-cache";
 import { ensureMatchDraftReadIndexes } from "@/modules/drafts/infrastructure/match-draft-reads";
 import { ensureDraftRoomIndexes } from "@/modules/drafts/infrastructure/mongo-draft-rooms";
-import { ensureErrorIndexes } from "@/modules/errors/infrastructure/mongo-error-log";
-import { ensureCronRunIndexes } from "@/modules/jobs/infrastructure/mongo-cron-runs";
-import { ensureJobIndexes } from "@/modules/jobs/infrastructure/mongo-job-runs";
-import { ensureIdentityIndexes } from "@/modules/identity/infrastructure/mongo-identity-repositories";
+import { ErrorsRepository } from "@/modules/errors/errors.repository";
+import { CronRunsRepository } from "@/modules/jobs/repositories/cron-runs.repository";
+import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
+import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
+import { SessionsRepository } from "@/modules/identity/repositories/sessions.repository";
+import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { ensureLeaderboardIndexes } from "@/modules/leaderboards/infrastructure/mongo-activity-repository";
 import { ensureMatchIndexes } from "@/modules/matches/infrastructure/mongo-match-repositories";
 import { ensureMedalHistoryIndexes } from "@/modules/mmr/infrastructure/mongo-medal-history";
@@ -25,12 +27,16 @@ import { ensureTogetherIndexes } from "@/modules/together/infrastructure/mongo-t
 async function main(): Promise<void> {
   const db = await getDb();
   await ensureDraftMetaCacheIndexes(db);
-  await ensureAnnotationIndexes(db);
-  await ensureGoalIndexes(db);
-  await ensureIdentityIndexes(db);
-  await ensureErrorIndexes(db);
-  await ensureJobIndexes(db);
-  await ensureCronRunIndexes(db);
+  await new AnnotationsRepository(async () => db).ensureIndexes();
+  await new GoalsRepository(async () => db).ensureIndexes();
+  await Promise.all([
+    new UsersRepository(async () => db).ensureIndexes(),
+    new SessionsRepository(async () => db).ensureIndexes(),
+    new NoncesRepository(async () => db).ensureIndexes(),
+  ]);
+  await new ErrorsRepository(async () => db).ensureIndexes();
+  await new JobRunsRepository(async () => db).ensureIndexes();
+  await new CronRunsRepository(async () => db).ensureIndexes();
   await ensureDraftRoomIndexes(db);
   await ensureMatchDraftReadIndexes(db);
   await ensureDraftHistoryIndexes(db);

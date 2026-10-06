@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { logger } from "@/lib/logger";
-import type { StreamSource } from "../application/live-service";
+import { logger } from "@/common/logging/logger";
+import type { StreamSource } from "../live.ports";
 import type { LiveStream } from "../domain/watch";
 
 /** Twitch's category id for Dota 2. */

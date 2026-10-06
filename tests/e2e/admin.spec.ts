@@ -39,7 +39,7 @@ test("errors users hit show up for admins, without query strings", async ({
   // Cross-origin reports are rejected; same-origin ones are recorded.
   expect((await request.post("/api/v1/errors", { data: report })).status()).toBe(403);
   const ok = await request.post("/api/v1/errors", { data: report, headers: { origin } });
-  expect(ok.status()).toBe(204);
+  expect(ok.status()).toBe(202);
 
   await page.goto("/api/v1/auth/steam/login");
   await page.goto("/admin");

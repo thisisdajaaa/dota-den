@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { AccountPair, PairClassification } from "../domain/pair";
 import type { Seat, Side } from "../domain/relation";
 import type { OwnGame } from "../domain/together-stats";

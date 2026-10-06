@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, Users } from "lucide-react";
-import { logger } from "@/lib/logger";
+import { logger } from "@/common/logging/logger";
 import { getTeammatesOverview } from "@/modules/together/composition";
 import { TeammatesCard } from "@/modules/together/ui/teammates-card";
 import { TeammatesSummary } from "@/modules/together/ui/teammates-summary";

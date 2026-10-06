@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 
 /**
  * Turns whatever someone pastes into the player search box into either a direct account

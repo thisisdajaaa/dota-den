@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { logger } from "@/lib/logger";
-import { getAdvisorService } from "@/modules/advisor/composition";
+import { logger } from "@/common/logging/logger";
+import { advisorService } from "@/modules/advisor";
 import { PoolAdviceCard } from "@/modules/advisor/ui/pool-advice-card";
 import { getHeroesService } from "@/modules/heroes/composition";
 import { countOf, HeroGrid, unavailableCopy } from "@/modules/heroes/ui/hero-sections";
@@ -12,7 +12,7 @@ import { LaneBreakdownCard } from "@/modules/heroes/ui/lane-breakdown-card";
 import type { HeroInfo } from "@/modules/matches/application/ports";
 import { getHeroMap } from "@/modules/matches/composition";
 import { plural } from "@/modules/matches/ui/format";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { MetaSection, SectionSkeleton, Unavailable } from "@/modules/meta/ui/meta-section";
 
 export const metadata: Metadata = { title: "Heroes" };
@@ -94,7 +94,7 @@ async function PoolAdvice({
   accountId32: number;
   heroes: Map<number, HeroInfo>;
 }) {
-  const view = await (await getAdvisorService()).poolAdvice(accountId32).catch((error: unknown) => {
+  const view = await advisorService.poolAdvice(accountId32).catch((error: unknown) => {
     logger.warn("pool_advice_failed", { error });
     return { status: "unavailable" as const };
   });

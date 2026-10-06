@@ -5,10 +5,10 @@ import { ChevronRight, SearchX } from "lucide-react";
 import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
-import { getMatchIdsWithTag, getTagCounts } from "@/modules/annotations/composition";
+import { annotationsService } from "@/modules/annotations";
 import { getDraftRecord } from "@/modules/drafts/composition";
 import { DraftRecordCard } from "@/modules/drafts/ui/draft-record-card";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import {
   matchListHref,
   parseMatchListFilter,
@@ -34,8 +34,10 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
 
   const queries = await getMatchQueries();
   const [tagged, tags] = await Promise.all([
-    filter.tag ? getMatchIdsWithTag(user.id, filter.tag).catch(() => []) : undefined,
-    getTagCounts(user.id).catch(() => []),
+    filter.tag
+      ? annotationsService.matchIdsWithTag(user.id, filter.tag).catch(() => [])
+      : undefined,
+    annotationsService.tagCounts(user.id).catch(() => []),
   ]);
   const [page, played, heroes] = await Promise.all([
     queries.listMatches(user.accountId32, filter, now, PAGE_SIZE, tagged),

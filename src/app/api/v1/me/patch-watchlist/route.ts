@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { getAuthService, SESSION_COOKIE } from "@/modules/identity/composition";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { authService, SESSION_COOKIE } from "@/modules/identity";
 import { getPatchWatchlistService } from "@/modules/patches/composition";
 import { WATCHLIST_MAX_HEROES, WATCHLIST_MAX_ITEMS } from "@/modules/patches/domain/watchlist";
 
@@ -14,7 +14,7 @@ const BodySchema = z
   .strict();
 
 async function currentUserId(req: NextRequest): Promise<string | null> {
-  const auth = await getAuthService();
+  const auth = authService;
   const session = await auth.resolveSession(req.cookies.get(SESSION_COOKIE)?.value);
   return session?.user.id ?? null;
 }

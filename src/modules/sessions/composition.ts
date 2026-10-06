@@ -1,7 +1,7 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
 import type { DashboardFact } from "@/modules/matches/application/ports";
 import { getMatchQueries } from "@/modules/matches/composition";
 import { getMmrJournal } from "@/modules/mmr/composition";

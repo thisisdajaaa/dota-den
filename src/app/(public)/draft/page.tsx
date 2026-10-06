@@ -8,7 +8,7 @@ import { decodeSnapshot, replaySnapshot } from "@/modules/drafts/application/sna
 import { getRuleset } from "@/modules/drafts/domain/rulesets";
 import { DraftBoard } from "@/modules/drafts/ui/draft-board";
 import { FeedbackPanel } from "@/modules/drafts/ui/feedback-panel";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import { SequenceStrip } from "@/modules/drafts/ui/sequence-strip";
 import { TeamPanel } from "@/modules/drafts/ui/team-panel";
 import type { DraftHero } from "@/modules/drafts/ui/types";

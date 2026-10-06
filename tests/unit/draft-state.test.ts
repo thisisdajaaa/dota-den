@@ -14,7 +14,7 @@ import {
   type DraftState,
 } from "@/modules/drafts/domain/draft-state";
 import { getRuleset } from "@/modules/drafts/domain/rulesets";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 
 const POOL = Array.from({ length: 130 }, (_, i) => i + 1);
 const LOCAL: DraftContext = { mode: "local", heroPool: POOL };

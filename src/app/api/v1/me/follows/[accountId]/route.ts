@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError, isSameOrigin } from "@/lib/http";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
-import { getRouteUser } from "@/modules/identity/composition";
+import { apiError, isSameOrigin } from "@/common/http/http";
+import { clientKey, rateLimit } from "@/common/http/rate-limit";
+import { getRouteUser } from "@/modules/identity";
 import { FOLLOW_MUTATIONS_PER_MINUTE } from "@/modules/players/application/contracts";
 import { ownerOf } from "@/modules/players/application/follow-service";
 import { getFollowService } from "@/modules/players/composition";

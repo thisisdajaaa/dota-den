@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 
 /**
  * SteamID64 for an individual account in the public universe.

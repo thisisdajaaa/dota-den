@@ -1,5 +1,5 @@
 import type { Db } from "mongodb";
-import { forExport, type DataOwner } from "@/modules/shared/infrastructure/user-data";
+import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import { PATCH_COLLECTIONS } from "./mongo-patch-repositories";
 
 export async function exportUserData(db: Db, owner: DataOwner) {

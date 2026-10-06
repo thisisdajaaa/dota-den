@@ -1,4 +1,4 @@
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { PlayerFollow } from "../domain/follow";
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
 

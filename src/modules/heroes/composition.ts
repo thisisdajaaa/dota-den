@@ -1,6 +1,6 @@
 import "server-only";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import {
   getHeroMap,
   getItemMap,
@@ -9,7 +9,7 @@ import {
 } from "@/modules/matches/composition";
 import { getHighRankHeroStats, getPlayerLaneHistory } from "@/modules/meta/composition";
 import { getViewerTimeZone } from "@/modules/mmr/composition";
-import { ok } from "@/modules/shared/domain/result";
+import { ok } from "@/common/result";
 import { HeroesService } from "./application/heroes-service";
 import type { ItemCatalog } from "./application/ports";
 import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";

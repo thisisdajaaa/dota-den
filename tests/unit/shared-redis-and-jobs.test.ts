@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { JobRunner } from "@/modules/jobs/application/job-runner";
-import type { JobRunRepository } from "@/modules/jobs/application/ports";
+import type { JobRunRepository } from "@/modules/jobs/jobs.ports";
+import { JobRunner } from "@/modules/jobs/services/job-runner.service";
 import { bucketedKey, isJobName } from "@/modules/jobs/domain/job";
 import { InlineJobQueue } from "@/modules/jobs/infrastructure/inline-job-queue";
 import { QStashJobQueue } from "@/modules/jobs/infrastructure/qstash-job-queue";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
+import { ProviderGateway } from "@/common/providers/provider-gateway";
 import {
   MAX_SHARED_BODY_BYTES,
   RedisResponseCache,
   RedisUpstreamBudget,
   type RedisLike,
-} from "@/modules/shared/infrastructure/redis-gateway-store";
+} from "@/common/providers/redis-gateway-store";
 
 vi.mock("server-only", () => ({}));
 

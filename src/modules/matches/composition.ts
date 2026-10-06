@@ -1,10 +1,9 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
-import { ProviderGateway } from "@/modules/shared/infrastructure/provider-gateway";
-import { sharedGatewayOptions } from "@/modules/shared/infrastructure/shared-gateway-options";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
+import { openDotaGateway } from "@/common/providers/opendota";
 import { MatchSyncService, toFact } from "./application/match-sync-service";
 import type {
   DashboardFact,
@@ -14,7 +13,7 @@ import type {
   PlayerProfileSnapshot,
   ProviderError,
 } from "./application/ports";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
 import {
   MongoMatchQueries,
@@ -24,28 +23,7 @@ import {
 } from "./infrastructure/mongo-match-repositories";
 import * as userData from "./infrastructure/user-data";
 
-// One gateway per server instance so dedup, cache and circuit state are shared.
-const globalForGateway = globalThis as typeof globalThis & { __ddOpenDota?: ProviderGateway };
-
-/** Shared OpenDota gateway (one per instance: shared cache, dedup and circuit state). */
-export function openDotaGateway(): ProviderGateway {
-  const { OPENDOTA_TIMEOUT_MS, OPENDOTA_MAX_RETRIES } = env();
-  globalForGateway.__ddOpenDota ??= new ProviderGateway({
-    name: "opendota",
-    ...sharedGatewayOptions("opendota"),
-    timeoutMs: OPENDOTA_TIMEOUT_MS,
-    maxRetries: OPENDOTA_MAX_RETRIES,
-    onRequest: ({ url, status, durationMs, attempt }) =>
-      logger.info("provider_request", {
-        provider: "opendota",
-        path: new URL(url).pathname,
-        status,
-        durationMs,
-        attempt,
-      }),
-  });
-  return globalForGateway.__ddOpenDota;
-}
+export { openDotaGateway } from "@/common/providers/opendota";
 
 export function getOpenDotaAdapter(): OpenDotaAdapter {
   const { OPENDOTA_API_KEY, OPENDOTA_BASE_URL } = env();

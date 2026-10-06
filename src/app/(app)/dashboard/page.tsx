@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/modules/identity/composition";
+import { getCurrentUser } from "@/modules/identity";
 import {
   BACKFILL_COOLDOWN_MS,
   MatchSyncService,
@@ -214,7 +214,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       </Suspense>
 
       <Suspense fallback={null}>
-        <AchievementsSection user={user} />
+        <AchievementsSection user={user} timeZone={tz.timeZone} />
       </Suspense>
     </div>
   );

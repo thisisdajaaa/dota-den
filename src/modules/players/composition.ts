@@ -1,8 +1,8 @@
 import "server-only";
-import type { DataOwner } from "@/modules/shared/infrastructure/user-data";
-import { getDb } from "@/lib/db/mongo";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import type { DataOwner } from "@/common/privacy/user-data";
+import { getDb } from "@/common/db/mongo";
+import { env } from "@/common/config/env";
+import { logger } from "@/common/logging/logger";
 import type {
   DashboardFact,
   PlayerProfileSnapshot,
@@ -13,7 +13,7 @@ import {
   getPublicRecentMatches,
   openDotaGateway,
 } from "@/modules/matches/composition";
-import type { Result } from "@/modules/shared/domain/result";
+import type { Result } from "@/common/result";
 import type { TrackedPlayersPage } from "./application/contracts";
 import { FollowService, type FollowOwner } from "./application/follow-service";
 import type { PlayerDirectory, ProviderError } from "./application/ports";

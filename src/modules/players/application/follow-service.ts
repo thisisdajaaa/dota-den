@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@/modules/shared/domain/result";
+import { err, ok, type Result } from "@/common/result";
 import { MAX_FOLLOWS_PER_USER, type PlayerFollow } from "../domain/follow";
 import { parseAccountId } from "../domain/player-lookup";
 import type { FollowRepository } from "./ports";

@@ -1,21 +1,18 @@
 import type { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  ensureJobIndexes,
-  MongoJobRunRepository,
-} from "@/modules/jobs/infrastructure/mongo-job-runs";
+import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
 import { createTestDb } from "../support/mongo";
 
-describe("MongoJobRunRepository", () => {
+describe("JobRunsRepository", () => {
   let db: Db;
   let teardown: () => Promise<void>;
-  let repo: MongoJobRunRepository;
+  let repo: JobRunsRepository;
   const now = new Date("2026-09-30T00:00:00Z");
 
   beforeAll(async () => {
     ({ db, teardown } = await createTestDb());
-    await ensureJobIndexes(db);
-    repo = new MongoJobRunRepository(db);
+    repo = new JobRunsRepository(async () => db);
+    await repo.ensureIndexes();
   });
   afterAll(async () => teardown?.());
 
