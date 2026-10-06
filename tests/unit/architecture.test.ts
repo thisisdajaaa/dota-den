@@ -292,3 +292,67 @@ describe("architecture: app routes and pages", () => {
     expect(found).toEqual([]);
   });
 });
+
+/**
+ * Containers import each other's indexes, and those imports can form cycles. Reading another
+ * feature's object while a container is being built then fails ("Cannot access X before
+ * initialization") depending on which module loads first. So another feature's imports may
+ * only be used inside a closure or a lazy() factory, which run at call time.
+ */
+function usedEagerly(src: string, name: string): number[] {
+  const lines: number[] = [];
+  const re = new RegExp(`(?<![\\w.$])${name}(?![\\w$])`, "g");
+  for (const m of src.matchAll(re)) {
+    const at = m.index!;
+    const lineStart = src.lastIndexOf("\n", at) + 1;
+    if (src.slice(lineStart, lineStart + 7) === "import ") continue;
+    // Walk outwards through the enclosing brackets; any arrow body or lazy() makes it deferred.
+    let depth = 0;
+    let deferred = false;
+    for (let i = at - 1; i >= 0; i--) {
+      const c = src[i];
+      // A line starting at column 0 begins the top-level statement: nothing encloses it.
+      if (c === "\n" && depth === 0 && /\S/.test(src[i + 1] ?? "")) break;
+      if (c === ")" || c === "}" || c === "]") depth++;
+      else if (c === "(" || c === "{" || c === "[") {
+        if (depth > 0) {
+          depth--;
+          continue;
+        }
+        // The text before the bracket on its line: an arrow, lazy(, or a function signature.
+        const before = src.slice(src.lastIndexOf("\n", i) + 1, i).trimEnd();
+        const fnBody = c === "{" && /\)\s*(:\s*[^=;{]+)?$/.test(before);
+        if (before.endsWith("=>") || /lazy$/.test(before) || fnBody) {
+          deferred = true;
+          break;
+        }
+      } else if (depth === 0 && src.startsWith("=>", i)) {
+        // Expression-bodied arrow: `(x) => name.method(x)`.
+        deferred = true;
+        break;
+      }
+    }
+    if (!deferred) lines.push(src.slice(0, at).split("\n").length);
+  }
+  return lines;
+}
+
+describe("architecture: containers", () => {
+  it("use other features' objects only inside closures or lazy() (no init cycles)", () => {
+    const found = moduleFiles
+      .filter((f) => f.role === "container")
+      .flatMap((f) => {
+        const src = readFileSync(f.file, "utf8");
+        const names = [...src.matchAll(/import \{([^}]*)\} from "@\/modules\/([a-z-]+)";/g)]
+          .filter((m) => m[2] !== f.feature)
+          .flatMap((m) => m[1].split(","))
+          .map((n) => n.trim())
+          .filter((n) => n && !n.startsWith("type "))
+          .map((n) => n.split(" as ").pop()!.trim());
+        return names.flatMap((n) =>
+          usedEagerly(src, n).map((line) => `${relative(ROOT, f.file)}:${line} → ${n}`),
+        );
+      });
+    expect(found).toEqual([]);
+  });
+});

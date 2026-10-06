@@ -100,7 +100,12 @@ the container wraps it in `lazy()` (`src/common/utils/lazy.ts`). Importing a con
 no side effects, but call sites still read naturally (`liveService.overview()`).
 A service that needs data fetched per request to be built (the drafts AI captain holds the
 current hero catalog) is exposed as an async factory (`getAiOpponent()`), so a failed lookup
-never sticks for the life of the server. Other features are
+never sticks for the life of the server.
+
+Containers import each other's indexes, and those imports can form cycles (players → matches →
+jobs → drafts → leaderboards → players). So a container must never read another feature's object
+while it is being built: pass it inside a closure (`(id) => playersService.publicProfile(id)`) or
+build the service with `lazy()`. Constants other features need belong in `domain/`. Other features are
 reached through their `index.ts` and passed in as port implementations.
 
 ### Import rules (enforced by `tests/unit/architecture.test.ts`)

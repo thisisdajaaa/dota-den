@@ -13,9 +13,9 @@ import type {
 } from "../matches.ports";
 import type { SyncError, SyncSummary } from "../dtos/responses/matches.dto";
 
-export const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
-/** Shorter wait between syncs while older history is still being imported. */
-export const BACKFILL_COOLDOWN_MS = 30 * 1000;
+import { BACKFILL_COOLDOWN_MS, SYNC_COOLDOWN_MS } from "../domain/sync-policy";
+
+export { BACKFILL_COOLDOWN_MS, SYNC_COOLDOWN_MS };
 export const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
 export const PAGE_SIZE = 100;
 /** While nothing is imported: how often we may ask the upstream to refetch the history. */
