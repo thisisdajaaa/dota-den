@@ -112,6 +112,16 @@ const EnvSchema = z
           .filter(Boolean),
       ),
     AUTH_TEST_MODE: booleanFlag,
+    /**
+     * Web Push (VAPID) keys: `npx web-push generate-vapid-keys`. Unset: notifications are off
+     * and the account page says so. The subject is a mailto: or https: contact for push services.
+     */
+    VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+    VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+    VAPID_SUBJECT: z
+      .string()
+      .regex(/^(mailto:|https:\/\/)/, "VAPID_SUBJECT must start with mailto: or https://")
+      .optional(),
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
     ...TUNING,
@@ -150,6 +160,13 @@ const EnvSchema = z
         code: "custom",
         path: ["UPSTASH_REDIS_REST_TOKEN"],
         message: "Set both UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN, or neither",
+      });
+    }
+    if (!env.VAPID_PUBLIC_KEY !== !env.VAPID_PRIVATE_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["VAPID_PRIVATE_KEY"],
+        message: "Set both VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, or neither",
       });
     }
     if (env.QSTASH_TOKEN && !env.QSTASH_CURRENT_SIGNING_KEY) {

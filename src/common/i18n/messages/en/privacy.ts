@@ -1,8 +1,9 @@
-/** UI copy for the privacy feature (the "Your data" page). */
+/** UI copy for the privacy feature (the Account page). */
 export const privacy = {
-  title: "Your data",
-  kicker: "Account",
-  description: "Download what Dota Den keeps about you, or delete your account and all of it.",
+  title: "Account",
+  kicker: "Settings and data",
+  description:
+    "Choose notifications, download what Dota Den keeps about you, or delete your account and all of it.",
   download: {
     title: "Download your data",
     button: "Download",

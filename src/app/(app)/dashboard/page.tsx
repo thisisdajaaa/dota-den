@@ -21,6 +21,8 @@ import { SyncControl } from "@/modules/matches/ui/sync-control";
 import { HeroPoolCard } from "@/modules/matches/ui/hero-pool-card";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { medalService } from "@/modules/mmr";
+import { notificationService } from "@/modules/notifications";
+import { NotificationsPrompt } from "@/modules/notifications/ui/notifications-prompt";
 import { sessionService } from "@/modules/sessions";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
@@ -57,15 +59,18 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const t = await getT();
 
   const queries = matchQueries;
-  const [status, { facts, latestPatch }, profile, heroes, latestSession, tz] = await Promise.all([
-    queries.importStatus(user.accountId32),
-    queries.dashboardFacts(user.accountId32, filter, now),
-    matchesService.playerProfile(user.accountId32),
-    matchesService.heroMap(),
-    // Optional card: a sessions failure must not take down the dashboard.
-    sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
-    getViewerTimeZone(),
-  ]);
+  const [status, { facts, latestPatch }, profile, heroes, latestSession, tz, notify] =
+    await Promise.all([
+      queries.importStatus(user.accountId32),
+      queries.dashboardFacts(user.accountId32, filter, now),
+      matchesService.playerProfile(user.accountId32),
+      matchesService.heroMap(),
+      // Optional card: a sessions failure must not take down the dashboard.
+      sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
+      getViewerTimeZone(),
+      // Optional: only decides whether to invite the player to turn notifications on.
+      notificationService.status(user.id).catch(() => null),
+    ]);
   // Medal history needs no typing: note the medal each visit (after the page is sent).
   if (profile) after(() => medalService.record(user.accountId32, profile.rankTier));
 
@@ -95,6 +100,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {latestSession && (
         <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />
       )}
+
+      {latestSession && notify?.enabled && notify.endpoints.length === 0 && <NotificationsPrompt />}
 
       <Suspense fallback={null}>
         <TiltSection user={user} />

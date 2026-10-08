@@ -9,6 +9,7 @@ import { matchesService, matchSyncService } from "@/modules/matches";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/domain/sync-policy";
 import { metaService } from "@/modules/meta";
 import { medalService } from "@/modules/mmr";
+import { notificationTriggers } from "@/modules/notifications";
 import { patchImportService } from "@/modules/patches";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
@@ -72,6 +73,7 @@ export const cronService = new CronService({
     },
     record: (id, tier) => medalService.record(id, tier),
   },
+  notifications: { runDaily: (opts) => notificationTriggers.runDaily(opts) },
   patches: { importLatest: () => patchImportService.importLatest() },
   caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
   queue: jobQueue,
