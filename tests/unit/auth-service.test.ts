@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   AuthService,
+  type AuthServiceDeps,
+  PERSONA_REFRESH_MS,
+  PERSONA_TIMEOUT_MS,
   SESSION_ROTATE_AFTER_MS,
   SESSION_TTL_MS,
 } from "@/modules/identity/services/auth.service";
@@ -48,6 +51,10 @@ class InMemoryUsers implements UserRepository {
   async findById(id: string) {
     return this.users.get(id) ?? null;
   }
+  async setPersona(id: string, persona: NonNullable<User["persona"]>) {
+    const user = this.users.get(id);
+    if (user) this.users.set(id, { ...user, persona });
+  }
 }
 
 class InMemorySessions implements SessionRepository {
@@ -68,7 +75,9 @@ class InMemorySessions implements SessionRepository {
   }
 }
 
-function setup(opts: { verifyOk?: boolean; admins?: string[] } = {}) {
+function setup(
+  opts: { verifyOk?: boolean; admins?: string[]; persona?: AuthServiceDeps["persona"] } = {},
+) {
   let now = new Date("2026-09-29T12:00:00Z");
   const seenReturnTo: string[] = [];
   const provider: IdentityProvider = {
@@ -89,6 +98,7 @@ function setup(opts: { verifyOk?: boolean; admins?: string[] } = {}) {
     sessions,
     appUrl: APP_URL,
     adminSteamIds: opts.admins ?? [],
+    persona: opts.persona,
     now: () => now,
   });
   return {
@@ -193,5 +203,42 @@ describe("AuthService", () => {
     if (!signedIn.ok) throw new Error("sign-in failed");
     await ctx.service.signOut(signedIn.value.session.token);
     expect(await ctx.service.resolveSession(signedIn.value.session.token)).toBeNull();
+  });
+
+  it("stores the Steam name at sign-in and refreshes it only after a week", async () => {
+    const lookup = vi.fn(async () => ({ name: "DAJA", avatarUrl: "https://a.example/1.jpg" }));
+    const ctx = setup({ persona: lookup });
+    const first = await signIn(ctx);
+    if (!first.ok) throw new Error("sign-in failed");
+    expect(first.value.user.persona?.name).toBe("DAJA");
+    expect(ctx.users.users.get(first.value.user.id)?.persona?.name).toBe("DAJA");
+
+    ctx.advance(24 * 60 * 60 * 1000);
+    await signIn(ctx);
+    expect(lookup).toHaveBeenCalledTimes(1);
+    ctx.advance(PERSONA_REFRESH_MS);
+    await signIn(ctx);
+    expect(lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it("signs in without a name when the lookup fails or finds nothing", async () => {
+    for (const persona of [async () => null, async () => Promise.reject(new Error("down"))]) {
+      const signedIn = await signIn(setup({ persona }));
+      if (!signedIn.ok) throw new Error("sign-in failed");
+      expect(signedIn.value.user.persona).toBeNull();
+    }
+  });
+
+  it("does not wait more than the timeout for a slow lookup", async () => {
+    vi.useFakeTimers();
+    try {
+      const ctx = setup({ persona: () => new Promise(() => {}) });
+      const pending = signIn(ctx);
+      await vi.advanceTimersByTimeAsync(PERSONA_TIMEOUT_MS);
+      const signedIn = await pending;
+      expect(signedIn.ok && signedIn.value.user.persona).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
