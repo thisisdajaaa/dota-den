@@ -34,3 +34,41 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(async () => (await caches.match(OFFLINE_URL)) ?? Response.error()),
   );
 });
+
+// Push notifications (opt-in on the account page). The server sends
+// { title, body, url, tag } as JSON; anything else shows a generic notification.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  const url = typeof data.url === "string" && data.url.startsWith("/") ? data.url : "/dashboard";
+  event.waitUntil(
+    self.registration.showNotification(typeof data.title === "string" ? data.title : "Dota Den", {
+      body: typeof data.body === "string" ? data.body : "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: typeof data.tag === "string" ? data.tag : undefined,
+      data: { url },
+    }),
+  );
+});
+
+// Opens the notification's page: focuses an open Dota Den tab when there is one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url ?? "/dashboard", self.location.origin);
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => new URL(w.url).origin === target.origin);
+      // navigate() only works on tabs this worker controls; otherwise open a new window.
+      if (!open) return self.clients.openWindow(target.href);
+      return open
+        .navigate(target.href)
+        .then((w) => (w ?? open).focus())
+        .catch(() => self.clients.openWindow(target.href));
+    }),
+  );
+});

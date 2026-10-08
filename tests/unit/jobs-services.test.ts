@@ -96,6 +96,44 @@ describe("CronService", () => {
     expect(finished[0].ok).toBe(true);
   });
 
+  it("sends the morning notifications after the sync, and survives them failing", async () => {
+    const summary = {
+      users: 2,
+      sessionRecaps: 1,
+      weeklyRecaps: 0,
+      patchHeroes: 0,
+      failed: 0,
+      stoppedEarly: false,
+    };
+    const cases = [
+      { runDaily: vi.fn(async () => summary), expected: summary },
+      { runDaily: vi.fn(async () => Promise.reject(new Error("x"))), expected: null },
+    ];
+    for (const { runDaily, expected } of cases) {
+      const { finished, repo } = runs();
+      const svc = new CronService({
+        runs: repo,
+        matches: {
+          sync: async () => ({ ok: true, value: { backfillComplete: true } }),
+          syncDue: async () => [{ accountId32: 1, outcome: "synced" }],
+        },
+        medals: { currentRankTier: async () => null, record: async () => {} },
+        notifications: { runDaily },
+        patches: { importLatest: async () => ({ ok: true, value: [] }) },
+        caches: { warmDraftData: async () => [], warmMeta: async () => [] },
+        queue: () => queue().q,
+        logger,
+      });
+      const run = await svc.runMatchSync("cron");
+      const budget = (runDaily.mock.calls[0] as unknown as [{ budgetMs: number }])[0].budgetMs;
+      expect(budget).toBeGreaterThan(40_000);
+      expect(budget).toBeLessThanOrEqual(50_000);
+      expect(run.synced).toBe(1);
+      expect(finished[0].ok).toBe(true);
+      expect(run.notifications).toEqual(expected);
+    }
+  });
+
   it("records a failed patch refresh and reports the feed as unavailable", async () => {
     const { finished, repo } = runs();
     const svc = new CronService({

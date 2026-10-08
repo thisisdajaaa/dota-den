@@ -61,7 +61,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
     { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },
     { key: "live", href: "/live", label: "Live", icon: Radio, auth: false },
-    { key: "account", href: "/account", label: "Your data", icon: UserCog, auth: true },
+    { key: "account", href: "/account", label: "Account", icon: UserCog, auth: true },
     { key: "admin", href: "/admin", label: "Admin", icon: ShieldCheck, auth: true },
     {
       key: "leaderboards",

@@ -7,6 +7,7 @@ import type {
   JobQueue,
   MatchSyncPort,
   MedalPort,
+  NotificationsPort,
   PatchImportPort,
 } from "../jobs.ports";
 import type { MatchSyncRunDto, PatchRefreshDto } from "../dtos/responses/cron-run.dto";
@@ -16,6 +17,8 @@ const RUN_BUDGET_MS = 50_000;
 /** Syncing stops starting new accounts (and older-history pages) after this. */
 const SYNC_BUDGET_MS = 38_000;
 const DAY_MS = 24 * 3_600_000;
+/** Notifications only start with at least this much of the run budget left. */
+const NOTIFY_MIN_MS = 4_000;
 
 type Trigger = "cron" | "admin";
 
@@ -26,6 +29,8 @@ export class CronService {
       runs: CronRunsRepositoryPort;
       matches: MatchSyncPort;
       medals: MedalPort;
+      /** Optional: sends the morning notifications once the syncs are done. */
+      notifications?: NotificationsPort;
       patches: PatchImportPort;
       caches: CacheWarmPort;
       queue: () => JobQueue;
@@ -41,7 +46,10 @@ export class CronService {
     };
   }
 
-  /** Every player's matches (unfinished histories first), then their medal. */
+  /**
+   * Every player's matches (unfinished histories first), then their medal, then the
+   * morning notifications with whatever time is left.
+   */
   async runMatchSync(trigger: Trigger): Promise<MatchSyncRunDto> {
     const started = Date.now();
     const done = await this.track("matches", trigger);
@@ -61,6 +69,14 @@ export class CronService {
           medals++;
         }
       }
+      const left = RUN_BUDGET_MS - (Date.now() - started);
+      const notifications =
+        this.deps.notifications && left >= NOTIFY_MIN_MS
+          ? await this.deps.notifications.runDaily({ budgetMs: left }).catch((error: unknown) => {
+              this.deps.logger.warn("notifications_run_failed", { error });
+              return null;
+            })
+          : null;
       const run: MatchSyncRunDto = {
         accounts: results.length,
         synced: results.filter((r) => r.outcome === "synced").length,
@@ -71,6 +87,7 @@ export class CronService {
         skipped: results.filter((r) => r.outcome === "skipped_time" || r.outcome === "cooldown")
           .length,
         medals,
+        notifications,
         durationMs: Date.now() - started,
       };
       await done({ ok: true, summary: { ...run } });
