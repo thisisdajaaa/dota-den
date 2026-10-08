@@ -26,7 +26,13 @@ export interface IdentityProvider {
 export interface UserRepository {
   upsertBySteamId(input: { steamId64: SteamId64; isAdmin: boolean; now: Date }): Promise<User>;
   findById(id: string): Promise<User | null>;
+  setPersona(id: string, persona: NonNullable<User["persona"]>): Promise<void>;
 }
+
+/** The player's public Steam name and avatar, or null when it can't be looked up. */
+export type PersonaLookup = (
+  accountId32: number,
+) => Promise<{ name: string; avatarUrl: string | null } | null>;
 
 export interface SessionRecord {
   tokenHash: string;

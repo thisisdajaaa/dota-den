@@ -3,6 +3,7 @@ import type { User } from "../domain/user";
 import type {
   IdentityProvider,
   IdentityVerificationError,
+  PersonaLookup,
   SessionRecord,
   SessionRepository,
   UserRepository,
@@ -12,6 +13,10 @@ import { generateToken, hashToken, safeEqual } from "../domain/session-tokens";
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_ROTATE_AFTER_MS = 24 * 60 * 60 * 1000;
 export const CALLBACK_PATH = "/api/v1/auth/steam/callback";
+/** Steam names change; refresh the stored one at most this often. */
+export const PERSONA_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
+/** Sign-in never waits longer than this for the name lookup. */
+export const PERSONA_TIMEOUT_MS = 2000;
 
 export type SignInError = { type: "state_mismatch" } | IdentityVerificationError;
 
@@ -26,6 +31,8 @@ export interface AuthServiceDeps {
   sessions: SessionRepository;
   appUrl: string;
   adminSteamIds: readonly string[];
+  /** Optional: fills in the Steam name and avatar shown in the admin page and elsewhere. */
+  persona?: PersonaLookup;
   now?: () => Date;
 }
 
@@ -73,7 +80,20 @@ export class AuthService {
       now,
     });
     const session = await this.issueSession(user.id, now);
-    return ok({ user, session });
+    return ok({ user: await this.refreshPersona(user, now), session });
+  }
+
+  /** Best effort: a slow or failed lookup keeps the stored persona and never blocks sign-in. */
+  private async refreshPersona(user: User, now: Date): Promise<User> {
+    const lookup = this.deps.persona;
+    const age = user.persona ? now.getTime() - user.persona.capturedAt.getTime() : Infinity;
+    if (!lookup || age < PERSONA_REFRESH_MS) return user;
+    const timeout = new Promise<null>((resolve) => setTimeout(resolve, PERSONA_TIMEOUT_MS, null));
+    const found = await Promise.race([lookup(user.accountId32).catch(() => null), timeout]);
+    if (!found) return user;
+    const persona = { name: found.name, avatarUrl: found.avatarUrl, capturedAt: now };
+    await this.deps.users.setPersona(user.id, persona);
+    return { ...user, persona };
   }
 
   /**
