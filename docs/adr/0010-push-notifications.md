@@ -14,9 +14,9 @@ The app is already an installable PWA with a service worker.
 
 Opt-in Web Push, in a new `notifications` feature (ADR 0009 layout).
 
-- **Keys.** VAPID keys in `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (`npx web-push
-  generate-vapid-keys`), optional `VAPID_SUBJECT`. Unset: the feature is off, the account
-  page says so and nothing is sent. No third-party account is needed.
+- **Keys.** VAPID keys in `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, plus an optional
+  `VAPID_SUBJECT`. Generate them with `npx web-push generate-vapid-keys`; no third-party
+  account is needed. Unset: the feature is off, the account page says so and nothing is sent.
 - **Opt-in per device.** Account page → Notifications → "Turn on for this device" asks the
   browser for permission and stores the subscription (`push_subscriptions`, keyed by
   endpoint). The overview shows a dismissible invitation once a player has a session and no
