@@ -4,7 +4,7 @@ import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { IdentityController } from "./identity.controller";
-import type { IdentityProvider } from "./identity.ports";
+import type { IdentityProvider, PersonaLookup } from "./identity.ports";
 import { FakeIdentityProvider } from "./infrastructure/fake-identity-provider";
 import { SteamOpenIdProvider } from "./infrastructure/steam-openid-provider";
 import { NoncesRepository } from "./repositories/nonces.repository";
@@ -16,6 +16,13 @@ import { UsersService } from "./services/users.service";
 export const usersRepository = new UsersRepository(getDb);
 export const sessionsRepository = new AuthSessionsRepository(getDb);
 export const noncesRepository = new NoncesRepository(getDb);
+
+// Imported on use: matches depends on identity (requireUser), so a static import is a cycle.
+const lookupPersona: PersonaLookup = async (accountId32) => {
+  const { matchesService } = await import("@/modules/matches");
+  const profile = await matchesService.playerProfile(accountId32);
+  return profile?.personaName ? { name: profile.personaName, avatarUrl: profile.avatarUrl } : null;
+};
 
 /**
  * `testSteamId` only matters in AUTH_TEST_MODE (never production): lets E2E tests sign in as
@@ -33,6 +40,7 @@ function buildAuthService(testSteamId?: string): AuthService {
     sessions: sessionsRepository,
     appUrl: config.APP_URL,
     adminSteamIds: config.ADMIN_STEAM_IDS,
+    persona: lookupPersona,
   });
 }
 

@@ -61,6 +61,11 @@ export class UsersRepository implements UserRepository {
     return toUser(doc);
   }
 
+  async setPersona(id: string, persona: NonNullable<User["persona"]>): Promise<void> {
+    if (!ObjectId.isValid(id)) return;
+    await (await this.col()).updateOne({ _id: new ObjectId(id) }, { $set: { persona } });
+  }
+
   async findById(id: string): Promise<User | null> {
     if (!ObjectId.isValid(id)) return null;
     const doc = await (await this.col()).findOne({ _id: new ObjectId(id) });
