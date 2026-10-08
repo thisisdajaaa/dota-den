@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-// Its own test identity, so goals set here don't show up in other specs.
+// Each test has its own identity: tests in a file run in parallel, and both save goals.
 const LOGIN = "/api/v1/auth/steam/login?as=76561197960456666";
+const API_LOGIN = "/api/v1/auth/steam/login?as=76561197960456667";
 
 test("set weekly goals, mark a custom one done, then clear them", async ({ page }) => {
   await page.goto(LOGIN);
@@ -37,7 +38,7 @@ test("goals need a session, the same origin and valid goals", async ({ request, 
     request.put("/api/v1/me/goals", { data, headers });
   expect((await put({ goals: [] }, {})).status()).toBe(403);
   expect((await put({ goals: [] })).status()).toBe(401);
-  await request.get(LOGIN);
+  await request.get(API_LOGIN);
   expect((await put({ goals: [{ type: "winRate", target: 101 }] })).status()).toBe(400);
   expect(
     (
