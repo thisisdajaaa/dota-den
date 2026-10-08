@@ -17,7 +17,7 @@ export const common = {
     draft: "Draft",
     live: "Live",
     leaderboards: "Leaderboards",
-    account: "Your data",
+    account: "Account",
     admin: "Admin",
     more: "More",
   },

@@ -8,6 +8,7 @@ import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
 import { matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
+import { notificationService } from "@/modules/notifications";
 import { patchWatchlistService } from "@/modules/patches";
 import { battleReportService } from "@/modules/report";
 import { followService } from "@/modules/players";
@@ -31,6 +32,7 @@ export const privacyService = lazy(
         annotationsService,
         goalsService,
         battleReportService,
+        notificationService,
       ],
       identity: usersService,
       logger,

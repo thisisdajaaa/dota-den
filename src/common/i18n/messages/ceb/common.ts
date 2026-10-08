@@ -19,7 +19,7 @@ export const common: MessageTree<typeof en> = {
     draft: "Draft",
     live: "Live",
     leaderboards: "Leaderboards",
-    account: "Imong data",
+    account: "Account",
     admin: "Admin",
     more: "Uban pa",
   },

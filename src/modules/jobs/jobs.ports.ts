@@ -63,6 +63,18 @@ export interface MedalPort {
   record(accountId32: number, rankTier: number | null): Promise<void>;
 }
 
+/** The daily notification run (yesterday's session, weekly recap, patch news). */
+export interface NotificationsPort {
+  runDaily(opts: { budgetMs: number }): Promise<{
+    users: number;
+    sessionRecaps: number;
+    weeklyRecaps: number;
+    patchHeroes: number;
+    failed: number;
+    stoppedEarly: boolean;
+  }>;
+}
+
 export interface PatchImportPort {
   importLatest(): Promise<
     | { ok: true; value: Array<{ outcome: string }> }

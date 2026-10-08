@@ -8,7 +8,7 @@ test("download your data, then delete your account", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard$/);
   await page
     .getByRole("navigation", { name: "Main" })
-    .getByRole("link", { name: "Your data" })
+    .getByRole("link", { name: "Account" })
     .click();
   await expect(page).toHaveURL(/\/account$/);
 

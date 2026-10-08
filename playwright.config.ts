@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import webpush from "web-push";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
@@ -6,6 +7,8 @@ const baseURL = `http://localhost:${PORT}`;
 const FIXTURE_PORT = Number(process.env.FIXTURE_PORT ?? 3101);
 const fixtureURL = `http://localhost:${FIXTURE_PORT}`;
 const DB_NAME = process.env.E2E_DB_NAME ?? "dota_den_e2e";
+// Throwaway Web Push keys so the notifications section is on in tests (nothing is committed).
+const vapid = webpush.generateVAPIDKeys();
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -55,6 +58,9 @@ export default defineConfig({
         QSTASH_TOKEN: "",
         QSTASH_CURRENT_SIGNING_KEY: "",
         QSTASH_NEXT_SIGNING_KEY: "",
+        VAPID_PUBLIC_KEY: vapid.publicKey,
+        VAPID_PRIVATE_KEY: vapid.privateKey,
+        VAPID_SUBJECT: "mailto:e2e@example.com",
       },
     },
   ],

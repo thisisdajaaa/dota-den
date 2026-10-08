@@ -2,10 +2,10 @@ import type { MessageTree } from "../../translate";
 import type { privacy as en } from "../en/privacy";
 
 export const privacy: MessageTree<typeof en> = {
-  title: "Ang data mo",
-  kicker: "Account",
+  title: "Account",
+  kicker: "Settings at data",
   description:
-    "I-download ang itinatago ng Dota Den tungkol sa iyo, o i-delete ang account mo at lahat ng iyon.",
+    "Piliin ang mga notification, i-download ang itinatago ng Dota Den tungkol sa iyo, o i-delete ang account mo at lahat ng iyon.",
   download: {
     title: "I-download ang data mo",
     button: "I-download",
