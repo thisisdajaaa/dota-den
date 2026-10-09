@@ -140,9 +140,9 @@ test("sync waits out a busy OpenDota and tries again by itself", async ({ page }
       await route.continue();
     }
   });
-  // Another test may have synced this account already, so don't rely on the sync on load:
-  // press "Sync now" once it's free.
-  await page.goto("/api/v1/auth/steam/login?as=76561197960305729");
+  // Its own identity: other specs sign in as shared ones in parallel, and their syncs could
+  // pause this one. Don't rely on the sync on load either: press "Sync now" once it's free.
+  await page.goto("/api/v1/auth/steam/login?as=76561197960456999");
   await expect(page).toHaveURL(/\/dashboard$/);
   const syncNow = page.getByRole("button", { name: "Sync now" });
   await expect(syncNow).toBeEnabled({ timeout: 20_000 });

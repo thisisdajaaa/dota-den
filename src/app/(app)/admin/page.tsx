@@ -73,7 +73,7 @@ export default async function AdminPage() {
         </div>
         {retention ? (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-7">
               <StatTile label={t("admin.retention.active1")} value={String(retention.active1)} />
               <StatTile label={t("admin.retention.active7")} value={String(retention.active7)} />
               <StatTile label={t("admin.retention.active30")} value={String(retention.active30)} />
@@ -86,6 +86,16 @@ export default async function AdminPage() {
                 label={t("admin.retention.notifications")}
                 value={optIns.notifications === null ? "–" : String(optIns.notifications)}
                 detail={t("admin.retention.notificationsDetail")}
+              />
+              <StatTile
+                label={t("admin.retention.email")}
+                value={optIns.email === null ? "–" : String(optIns.email)}
+                detail={t("admin.retention.emailDetail")}
+              />
+              <StatTile
+                label={t("admin.retention.discord")}
+                value={optIns.discord === null ? "–" : String(optIns.discord)}
+                detail={t("admin.retention.discordDetail")}
               />
             </div>
             <div className="overflow-x-auto">

@@ -25,7 +25,7 @@ export interface AdminOverviewDto {
   /** Null when activity couldn't be loaded. */
   retention: Retention | null;
   /** Players who turned on each reminder; null when that count couldn't be loaded. */
-  optIns: { notifications: number | null };
+  optIns: { notifications: number | null; email: number | null; discord: number | null };
   /** Most recently active first. */
   users: AdminUserRowDto[];
   jobFailures: JobFailureView[];
