@@ -205,6 +205,17 @@ describe("MatchReadRepository.listMatches", () => {
     expect(pudgeWins.record).toEqual({ games: 10, wins: 5 });
   });
 
+  it("lists matches started after a time, oldest first, skipping given ones (Discord feed)", async () => {
+    const q = new MatchReadRepository(async () => db);
+    const rows = await q.startedAfter(ACCOUNT, new Date(Date.UTC(2026, 0, 1) + 25 * 3_600_000), {
+      excludeMatchIds: ["L027"],
+      limit: 3,
+    });
+    expect(rows.map((r) => r.matchId)).toEqual(["L026", "L028", "L029"]);
+    expect(rows[0]).toMatchObject({ gameMode: 22, kills: 1, deaths: 2, assists: 3, ranked: true });
+    expect(rows[0]).toMatchObject({ queueClass: "party", partySize: 2 });
+  });
+
   it("lists played heroes by games", async () => {
     expect(await new MatchReadRepository(async () => db).playedHeroes(ACCOUNT)).toEqual([
       { heroId: 1, games: 20 },

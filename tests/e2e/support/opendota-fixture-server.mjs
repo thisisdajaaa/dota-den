@@ -741,9 +741,10 @@ const routes = [
   [
     /^\/api\/players\/(\d+)\/matches$/,
     (m, url) => {
-      if (Number(m[1]) !== ACCOUNT) return [];
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Number(url.searchParams.get("limit") ?? 100);
+      if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
+      if (Number(m[1]) !== ACCOUNT) return [];
       // Matches the other account also played in (either team).
       const included = url.searchParams.get("included_account_id");
       const heroId = url.searchParams.get("hero_id");
@@ -798,9 +799,89 @@ const routes = [
   ],
 ];
 
+// Games "played" during a test (POST /e2e/play?account=…), newest first, per account.
+const PLAYED = new Map();
+let playedCount = 0;
+function play(accountId) {
+  playedCount++;
+  const match = {
+    match_id: 7_200_000_000 + playedCount,
+    player_slot: 1,
+    radiant_win: true,
+    duration: 2045,
+    game_mode: 22,
+    lobby_type: 7,
+    hero_id: 1,
+    // Ends up after any webhook the test set up before playing.
+    start_time: Math.ceil(Date.now() / 1000),
+    version: null,
+    kills: 9,
+    deaths: 1,
+    assists: 14,
+    average_rank: 55,
+    // Not recorded: the feed must say Unknown, never solo.
+    party_size: null,
+  };
+  PLAYED.set(accountId, [match, ...(PLAYED.get(accountId) ?? [])]);
+  return match;
+}
+
+// Fake Discord webhooks: GET describes one, POST records a message, DELETE deletes it (as in
+// Discord). Tokens starting with "unknown" don't exist. GET /discord/messages/:id lists posts.
+const DISCORD_MESSAGES = new Map();
+const DISCORD_DELETED = new Set();
+function discord(req, res, url, body) {
+  const json = (status, data) => {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(data === undefined ? "" : JSON.stringify(data));
+  };
+  const log = /^\/discord\/messages\/(\d+)$/.exec(url.pathname);
+  if (log) return json(200, DISCORD_MESSAGES.get(log[1]) ?? []);
+  const m = /^\/api\/webhooks\/(\d+)\/([\w-]+)$/.exec(url.pathname);
+  if (!m) return false;
+  const [, id, token] = m;
+  if (DISCORD_DELETED.has(id) || token.startsWith("unknown"))
+    return json(404, { message: "Unknown Webhook", code: 10015 });
+  if (req.method === "GET")
+    return json(200, {
+      type: 1,
+      id,
+      name: "Fixture Den",
+      channel_id: "555000000000000001",
+      guild_id: "555000000000000000",
+      token,
+    });
+  if (req.method === "POST") {
+    DISCORD_MESSAGES.set(id, [...(DISCORD_MESSAGES.get(id) ?? []), JSON.parse(body || "{}")]);
+    res.writeHead(204);
+    return res.end();
+  }
+  if (req.method === "DELETE") {
+    DISCORD_DELETED.add(id);
+    res.writeHead(204);
+    return res.end();
+  }
+  return json(405, { message: "405: Method Not Allowed", code: 0 });
+}
+
 createServer((req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   if (url.pathname === "/health") return res.end("ok");
+  if (url.pathname === "/e2e/play" && req.method === "POST") {
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify(play(Number(url.searchParams.get("account")))));
+  }
+  if (url.pathname.startsWith("/api/webhooks/") || url.pathname.startsWith("/discord/")) {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      if (discord(req, res, url, body) === false) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Not Found" }));
+      }
+    });
+    return;
+  }
   for (const [re, handler] of routes) {
     const m = re.exec(url.pathname);
     if (!m) continue;
