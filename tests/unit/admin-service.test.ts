@@ -46,6 +46,14 @@ describe("AdminService", () => {
         cronRuns: async () => Promise.reject(new Error("db")),
         errorGroups: async () => [],
       },
+      activity: {
+        activeDays: async () =>
+          new Map([
+            ["a", ["2026-09-06", "2026-10-03"]],
+            ["b", ["2026-10-04", "2026-10-06"]],
+          ]),
+      },
+      optIns: { notifications: async () => ["b", "someone-deleted"] },
     });
     const o = await svc.overview(day(0));
     expect(o.users.map((u) => [u.userId, u.mmrEntries, u.drafts, u.stats?.matches ?? 0])).toEqual([
@@ -55,5 +63,27 @@ describe("AdminService", () => {
     expect(o.users[0].profile).toBeNull();
     expect(o.cronRuns).toBeNull();
     expect(o.totals).toMatchObject({ users: 2, newThisWeek: 1, withMatches: 1, listedPublicly: 1 });
+    expect(o.retention).toMatchObject({ active1: 1, active7: 2, returning: 2 });
+    // Only current players count.
+    expect(o.optIns).toEqual({ notifications: 1 });
+  });
+
+  it("shows retention as unavailable when activity fails to load", async () => {
+    const svc = new AdminService({
+      users: { userRows: async () => [] },
+      stats: {
+        matchStats: async () => new Map(),
+        mmrEntryCounts: async () => new Map(),
+        activityCounts: async () => new Map(),
+        roomDraftCounts: async () => new Map(),
+      },
+      profiles: { publicProfile: async () => null },
+      ops: { jobFailures: async () => [], cronRuns: async () => [], errorGroups: async () => [] },
+      activity: { activeDays: async () => Promise.reject(new Error("db")) },
+      optIns: { notifications: async () => Promise.reject(new Error("db")) },
+    });
+    const o = await svc.overview(day(0));
+    expect(o.retention).toBeNull();
+    expect(o.optIns).toEqual({ notifications: null });
   });
 });

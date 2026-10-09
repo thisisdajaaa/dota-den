@@ -13,6 +13,7 @@ import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.reposito
 import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
+import { VisitDaysRepository } from "@/modules/identity/repositories/visit-days.repository";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-meta-cache.repository";
@@ -40,6 +41,7 @@ async function main(): Promise<void> {
   await Promise.all([
     new UsersRepository(async () => db).ensureIndexes(),
     new AuthSessionsRepository(async () => db).ensureIndexes(),
+    new VisitDaysRepository(async () => db).ensureIndexes(),
     new NoncesRepository(async () => db).ensureIndexes(),
   ]);
   await new ErrorsRepository(async () => db).ensureIndexes();
