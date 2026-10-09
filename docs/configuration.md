@@ -107,6 +107,18 @@ slow work done inline. The design is in [ADR 0008](adr/0008-redis-and-background
 | `QSTASH_TOKEN`, `QSTASH_URL`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` | Upstash QStash for durable background jobs (chunked match backfills, draft data refresh). Without them, jobs run in-process after the response.                                                                                                                         |
 | `OPENDOTA_BUDGET_PER_MINUTE`, `OPENDOTA_BUDGET_PER_DAY`                               | Global OpenDota call budget when Redis is configured                                                                                                                                                                                                                    |
 
+## Weekly email (optional)
+
+Unset, email is off: the Account page says it isn't available yet and nothing is sent. The design is in
+[ADR 0011](adr/0011-weekly-email-digest.md).
+
+| Variable              | Default                  | Meaning                                                                                                                     |
+| --------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`      | unset                    | Resend API key. Set both this and `EMAIL_FROM`, or neither                                                                  |
+| `EMAIL_FROM`          | unset                    | Sender, e.g. `Dota Den <digest@yourdomain.com>`; the domain must be verified in Resend                                      |
+| `RESEND_API_BASE_URL` | `https://api.resend.com` | Tests point this at the fixture server's fake Resend API                                                                    |
+| `EMAIL_TOKEN_SECRET`  | derived from the API key | Signs confirmation and unsubscribe links (32+ chars). Set it so rotating the Resend key keeps old unsubscribe links working |
+
 ## Test-only
 
 | Variable                                  | Default                     | Used by                             |

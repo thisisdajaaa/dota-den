@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { emailService } from "@/modules/email";
+import { EmailDigestCard } from "@/modules/email/ui/email-digest-card";
 import { getCurrentUser } from "@/modules/identity";
 import { notificationService, vapidPublicKey } from "@/modules/notifications";
 import { NotificationsCard } from "@/modules/notifications/ui/notifications-card";
@@ -17,7 +19,10 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
-  const notifications = await notificationService.status(user.id);
+  const [notifications, email] = await Promise.all([
+    notificationService.status(user.id),
+    emailService.status(user.id),
+  ]);
   const downloads = [
     {
       format: "json",
@@ -48,6 +53,8 @@ export default async function AccountPage() {
         endpoints={notifications.endpoints}
         prefs={notifications.prefs}
       />
+
+      <EmailDigestCard initial={email} />
 
       <section className="panel space-y-4 p-5" aria-labelledby="download-title">
         <h2 id="download-title" className="text-lg font-semibold">

@@ -3,7 +3,7 @@ export const privacy = {
   title: "Account",
   kicker: "Settings and data",
   description:
-    "Choose notifications, download what Dota Den keeps about you, or delete your account and all of it.",
+    "Choose notifications and the weekly email, download what Dota Den keeps about you, or delete your account and all of it.",
   download: {
     title: "Download your data",
     button: "Download",

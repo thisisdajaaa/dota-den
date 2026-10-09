@@ -75,6 +75,17 @@ export interface NotificationsPort {
   }>;
 }
 
+/** The weekly email digest run (Mondays in each player's time zone). */
+export interface EmailDigestPort {
+  runDaily(opts: { budgetMs: number }): Promise<{
+    users: number;
+    sent: number;
+    skipped: number;
+    failed: number;
+    stoppedEarly: boolean;
+  }>;
+}
+
 export interface PatchImportPort {
   importLatest(): Promise<
     | { ok: true; value: Array<{ outcome: string }> }

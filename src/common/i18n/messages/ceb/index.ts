@@ -22,6 +22,7 @@ import { live } from "./live";
 import { report } from "./report";
 import { drafts } from "./drafts";
 import { notifications } from "./notifications";
+import { email } from "./email";
 
 /** Every namespace of the ceb messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -49,4 +50,5 @@ export const messages = {
   report,
   drafts,
   notifications,
+  email,
 };

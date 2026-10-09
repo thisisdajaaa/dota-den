@@ -5,6 +5,8 @@
 import { getDb, getMongoClient } from "@/common/db/mongo";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
+import { EmailLogRepository } from "@/modules/email/repositories/email-log.repository";
+import { EmailSubscriptionsRepository } from "@/modules/email/repositories/email-subscriptions.repository";
 import { NotificationLogRepository } from "@/modules/notifications/repositories/notification-log.repository";
 import { PushSubscriptionsRepository } from "@/modules/notifications/repositories/push-subscriptions.repository";
 import { ErrorsRepository } from "@/modules/errors/errors.repository";
@@ -37,6 +39,8 @@ async function main(): Promise<void> {
   await new GoalsRepository(async () => db).ensureIndexes();
   await new PushSubscriptionsRepository(async () => db).ensureIndexes();
   await new NotificationLogRepository(async () => db).ensureIndexes();
+  await new EmailSubscriptionsRepository(async () => db).ensureIndexes();
+  await new EmailLogRepository(async () => db).ensureIndexes();
   await Promise.all([
     new UsersRepository(async () => db).ensureIndexes(),
     new AuthSessionsRepository(async () => db).ensureIndexes(),

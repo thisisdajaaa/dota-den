@@ -4,6 +4,7 @@ import { bucketedKey } from "../domain/job";
 import type {
   CacheWarmPort,
   CronRunsRepositoryPort,
+  EmailDigestPort,
   JobQueue,
   MatchSyncPort,
   MedalPort,
@@ -31,6 +32,8 @@ export class CronService {
       medals: MedalPort;
       /** Optional: sends the morning notifications once the syncs are done. */
       notifications?: NotificationsPort;
+      /** Optional: sends the weekly email digest after the notifications. */
+      weeklyEmail?: EmailDigestPort;
       patches: PatchImportPort;
       caches: CacheWarmPort;
       queue: () => JobQueue;
@@ -48,7 +51,7 @@ export class CronService {
 
   /**
    * Every player's matches (unfinished histories first), then their medal, then the
-   * morning notifications with whatever time is left.
+   * morning notifications and the weekly emails with whatever time is left.
    */
   async runMatchSync(trigger: Trigger): Promise<MatchSyncRunDto> {
     const started = Date.now();
@@ -77,6 +80,16 @@ export class CronService {
               return null;
             })
           : null;
+      const leftForEmail = RUN_BUDGET_MS - (Date.now() - started);
+      const digests =
+        this.deps.weeklyEmail && leftForEmail >= NOTIFY_MIN_MS
+          ? await this.deps.weeklyEmail
+              .runDaily({ budgetMs: leftForEmail })
+              .catch((error: unknown) => {
+                this.deps.logger.warn("email_digest_run_failed", { error });
+                return null;
+              })
+          : null;
       const run: MatchSyncRunDto = {
         accounts: results.length,
         synced: results.filter((r) => r.outcome === "synced").length,
@@ -88,6 +101,7 @@ export class CronService {
           .length,
         medals,
         notifications,
+        digests,
         durationMs: Date.now() - started,
       };
       await done({ ok: true, summary: { ...run } });

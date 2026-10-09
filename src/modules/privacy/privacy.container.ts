@@ -3,6 +3,7 @@ import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
 import { draftsPrivacy } from "@/modules/drafts";
+import { emailService } from "@/modules/email";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
@@ -33,6 +34,7 @@ export const privacyService = lazy(
         goalsService,
         battleReportService,
         notificationService,
+        emailService,
       ],
       identity: usersService,
       logger,
