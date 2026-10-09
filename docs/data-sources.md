@@ -58,5 +58,9 @@ model name Groq serves can be set with `DRAFT_AI_MODEL`.
 ## Steam
 
 Steam OpenID 2.0 for sign-in ([ADR 0001](adr/0001-steam-openid-and-sessions.md)). SteamID64 is always handled as a
-string and converted with BigInt (`src/modules/identity/domain/steam-id.ts`). `STEAM_WEB_API_KEY` (optional) enables
-resolving custom profile URLs in player search.
+string and converted with BigInt (`src/modules/identity/domain/steam-id.ts`). `STEAM_WEB_API_KEY` (optional) turns on
+"Friends playing now" on the overview: `ISteamUser/GetFriendList/v1` (who your Steam friends are, cached 10 minutes;
+private lists fall back to tracked players and frequent teammates) and `ISteamUser/GetPlayerSummaries/v2` (presence,
+up to 100 SteamIDs per call, cached 60 seconds). Only public profiles (`communityvisibilitystate` 3) that report
+Dota 2 (`gameid` 570) are shown; "in a match" is claimed only when Steam reports a game server or the account is in
+OpenDota's live feed. Without the key the strip is hidden.

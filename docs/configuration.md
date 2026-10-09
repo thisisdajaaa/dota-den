@@ -24,7 +24,8 @@ constructors. `.env.example` lists every variable with its default.
 | `OPENDOTA_API_KEY`        | secret                  | unset            | Higher OpenDota limits; sent as the `api_key` query parameter (logs record paths only)       |
 | `OPENDOTA_BASE_URL`       | URL                     | public API       | Tests point this at the fixture server                                                       |
 | `VALVE_DATAFEED_BASE_URL` | URL                     | Valve's datafeed | Tests point this at the fixture server                                                       |
-| `STEAM_WEB_API_KEY`       | secret                  | unset            | Custom Steam URL (`steamcommunity.com/id/…`) lookups in player search                        |
+| `STEAM_WEB_API_KEY`       | secret                  | unset            | "Friends playing now" on the overview (Steam presence). Unset: the strip is hidden           |
+| `STEAM_API_BASE_URL`      | URL                     | Steam Web API    | Tests point this at the fixture server                                                       |
 | `TWITCH_CLIENT_ID`        | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                           |
 | `TWITCH_CLIENT_SECRET`    | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only               |
 | `GROQ_API_KEY`            | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review |
