@@ -28,6 +28,9 @@ constructors. `.env.example` lists every variable with its default.
 | `STEAM_API_BASE_URL`      | URL                     | Steam Web API    | Tests point this at the fixture server                                                       |
 | `TWITCH_CLIENT_ID`        | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                           |
 | `TWITCH_CLIENT_SECRET`    | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only               |
+| `VAPID_PUBLIC_KEY`        | string                  | unset            | Web Push public key (`npx web-push generate-vapid-keys`). Set both VAPID keys, or neither    |
+| `VAPID_PRIVATE_KEY`       | secret                  | unset            | Web Push private key. Unset: notifications are off and the Account page says so (ADR 0010)   |
+| `VAPID_SUBJECT`           | `mailto:` or `https:`   | `APP_URL`        | Contact for push services                                                                    |
 | `GROQ_API_KEY`            | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review |
 | `ADMIN_STEAM_IDS`         | comma list of SteamID64 | empty            | Users granted the admin role (manual patch import)                                           |
 | `CRON_SECRET`             | secret, 16+ chars       | unset            | Bearer secret Vercel Cron sends to `/api/cron/*`. Unset disables cron routes (503)           |

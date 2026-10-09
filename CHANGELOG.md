@@ -4,6 +4,30 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-09
+
+- Discord feed: post your new games to your group's channel (fixes #13)
+- Friends playing now on the overview, once a Steam Web API key is set (fixes #12)
+- Weekly email digest, opt-in with double confirmation, once an email provider is set (fixes #10)
+- Share a session or a week as a link with a preview image (fixes #21)
+- A first-visit checklist for new players (fixes #22)
+- Admin: who comes back, and how many turned on each reminder (fixes #20)
+- Opt-in push notifications: session recap, weekly recap, patch news (fixes #19)
+- Next.js 16.4.0 for six security advisories; Steam names stored at sign-in
+- E2E: production indexes, one identity per parallel test
+
+## 2026-10-06
+
+- Filipino and Cebuano translations (fixes #9)
+- Accessibility checks on every page (fixes #17); E2E specs pass alone (fixes #16)
+- Architecture refactor (ADR 0009); module init-order fix
+- Battle report, with custom range, period comparison, hero tab, lanes and objectives (fixes #18)
+- Grade the drafts of your real matches (fixes #2)
+- Download your data, delete your account (fixes #3)
+- Patch impact on your heroes (fixes #7), match tags and notes (fixes #6)
+- Weekly goals (fixes #4), best stacks (fixes #8)
+- Ward and death map (fixes #5)
+
 ## 2026-10-05
 
 - Images straight from the CDN (fixes #1)
