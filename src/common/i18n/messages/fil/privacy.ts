@@ -5,7 +5,7 @@ export const privacy: MessageTree<typeof en> = {
   title: "Account",
   kicker: "Settings at data",
   description:
-    "Piliin ang mga notification at ang Discord feed mo, i-download ang itinatago ng Dota Den tungkol sa iyo, o i-delete ang account mo at lahat ng iyon.",
+    "Piliin ang mga notification, ang Discord feed mo at ang lingguhang email, i-download ang itinatago ng Dota Den tungkol sa iyo, o i-delete ang account mo at lahat ng iyon.",
   download: {
     title: "I-download ang data mo",
     button: "I-download",

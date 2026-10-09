@@ -23,6 +23,14 @@ export interface MatchSyncRunDto {
     failed: number;
     stoppedEarly: boolean;
   } | null;
+  /** Weekly emails sent after the notifications; null when no time was left or email is off. */
+  digests: {
+    users: number;
+    sent: number;
+    skipped: number;
+    failed: number;
+    stoppedEarly: boolean;
+  } | null;
   durationMs: number;
 }
 

@@ -125,6 +125,22 @@ const EnvSchema = z
       .string()
       .regex(/^(mailto:|https:\/\/)/, "VAPID_SUBJECT must start with mailto: or https://")
       .optional(),
+    /**
+     * Weekly email (Resend). Set both or neither. Unset: email is off, the account page says
+     * so and nothing is sent. EMAIL_FROM needs a domain verified in Resend.
+     */
+    RESEND_API_KEY: z.string().min(1).optional(),
+    EMAIL_FROM: z
+      .string()
+      .regex(
+        /^([^<>\r\n]+ <[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>|[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)$/,
+        'EMAIL_FROM must be "Name <address@domain>" or an address',
+      )
+      .optional(),
+    /** Override for tests (fixture server). Defaults to https://api.resend.com. */
+    RESEND_API_BASE_URL: z.url().optional(),
+    /** Signs links in emails. Defaults to a key derived from RESEND_API_KEY. */
+    EMAIL_TOKEN_SECRET: z.string().min(32).optional(),
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
     ...TUNING,
@@ -170,6 +186,13 @@ const EnvSchema = z
         code: "custom",
         path: ["VAPID_PRIVATE_KEY"],
         message: "Set both VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, or neither",
+      });
+    }
+    if (!env.RESEND_API_KEY !== !env.EMAIL_FROM) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["EMAIL_FROM"],
+        message: "Set both RESEND_API_KEY and EMAIL_FROM, or neither",
       });
     }
     if (env.QSTASH_TOKEN && !env.QSTASH_CURRENT_SIGNING_KEY) {

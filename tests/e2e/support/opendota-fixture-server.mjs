@@ -931,6 +931,35 @@ function steamRoute(url) {
   return { status: 404, body: {} };
 }
 
+// Fake Resend API: records sent emails so E2E tests can read them (GET /resend/outbox?to=…).
+const outbox = [];
+
+function resend(req, res, url) {
+  const json = (status, body) => {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(JSON.stringify(body));
+  };
+  if (url.pathname === "/resend/emails" && req.method === "POST") {
+    if (!/^Bearer .+/.test(req.headers.authorization ?? ""))
+      return json(401, { name: "missing_api_key" });
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => {
+      const email = JSON.parse(raw || "{}");
+      const id = `re_fixture_${outbox.length + 1}`;
+      outbox.push({ id, ...email, idempotencyKey: req.headers["idempotency-key"] ?? null });
+      json(200, { id });
+    });
+    return true;
+  }
+  if (url.pathname === "/resend/outbox" && req.method === "GET") {
+    const to = url.searchParams.get("to");
+    json(200, to ? outbox.filter((e) => e.to?.includes(to)) : outbox);
+    return true;
+  }
+  return false;
+}
+
 createServer((req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   if (url.pathname === "/health") return res.end("ok");
@@ -954,6 +983,7 @@ createServer((req, res) => {
     res.writeHead(steam.status, { "content-type": "application/json" });
     return res.end(JSON.stringify(steam.body));
   }
+  if (url.pathname.startsWith("/resend/") && resend(req, res, url) !== false) return;
   for (const [re, handler] of routes) {
     const m = re.exec(url.pathname);
     if (!m) continue;

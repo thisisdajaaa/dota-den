@@ -26,6 +26,7 @@ import { onboarding } from "./onboarding";
 import { shares } from "./shares";
 import { discord } from "./discord";
 import { presence } from "./presence";
+import { email } from "./email";
 
 /** Every namespace of the fil messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -57,4 +58,5 @@ export const messages = {
   shares,
   discord,
   presence,
+  email,
 };

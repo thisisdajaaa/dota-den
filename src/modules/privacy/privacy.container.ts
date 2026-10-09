@@ -4,6 +4,7 @@ import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
 import { discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
+import { emailService } from "@/modules/email";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
@@ -37,6 +38,7 @@ export const privacyService = lazy(
         notificationService,
         sharesService,
         discordWebhookService,
+        emailService,
       ],
       identity: usersService,
       logger,

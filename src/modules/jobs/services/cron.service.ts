@@ -5,6 +5,7 @@ import type {
   CacheWarmPort,
   CronRunsRepositoryPort,
   DiscordFeedPort,
+  EmailDigestPort,
   JobQueue,
   MatchSyncPort,
   MedalPort,
@@ -37,6 +38,8 @@ export class CronService {
       discord?: DiscordFeedPort;
       /** Optional: sends the morning notifications once the syncs are done. */
       notifications?: NotificationsPort;
+      /** Optional: sends the weekly email digest after the notifications. */
+      weeklyEmail?: EmailDigestPort;
       patches: PatchImportPort;
       caches: CacheWarmPort;
       queue: () => JobQueue;
@@ -54,7 +57,8 @@ export class CronService {
 
   /**
    * Every player's matches (unfinished histories first), then their medal, then new matches
-   * to Discord feeds, then the morning notifications with whatever time is left.
+   * to Discord feeds, then the morning notifications and the weekly emails with whatever
+   * time is left.
    */
   async runMatchSync(trigger: Trigger): Promise<MatchSyncRunDto> {
     const started = Date.now();
@@ -87,13 +91,25 @@ export class CronService {
               return null;
             })
           : null;
-      const left = RUN_BUDGET_MS - (Date.now() - started);
+      // Leave the weekly emails their minimum too.
+      const left =
+        RUN_BUDGET_MS - (Date.now() - started) - (this.deps.weeklyEmail ? NOTIFY_MIN_MS : 0);
       const notifications =
         this.deps.notifications && left >= NOTIFY_MIN_MS
           ? await this.deps.notifications.runDaily({ budgetMs: left }).catch((error: unknown) => {
               this.deps.logger.warn("notifications_run_failed", { error });
               return null;
             })
+          : null;
+      const leftForEmail = RUN_BUDGET_MS - (Date.now() - started);
+      const digests =
+        this.deps.weeklyEmail && leftForEmail >= NOTIFY_MIN_MS
+          ? await this.deps.weeklyEmail
+              .runDaily({ budgetMs: leftForEmail })
+              .catch((error: unknown) => {
+                this.deps.logger.warn("email_digest_run_failed", { error });
+                return null;
+              })
           : null;
       const run: MatchSyncRunDto = {
         accounts: results.length,
@@ -107,6 +123,7 @@ export class CronService {
         medals,
         discord,
         notifications,
+        digests,
         durationMs: Date.now() - started,
       };
       await done({ ok: true, summary: { ...run } });

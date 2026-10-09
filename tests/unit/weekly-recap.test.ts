@@ -54,3 +54,29 @@ describe("weeklyRecap", () => {
     expect(r.mostPlayed).toEqual({ heroId: 5, games: 2, wins: 2 });
   });
 });
+
+describe("MmrInsightsService.weeklyRecap", () => {
+  it("recaps another week when asked (the weekly email recaps the finished week)", async () => {
+    const { MmrInsightsService } = await import("@/modules/mmr/services/mmr-insights.service");
+    const ranked = [
+      { ...g("2026-10-01T10:00:00Z", 2, "win"), matchId: "1" },
+      { ...g("2026-10-06T10:00:00Z", 3, "loss"), matchId: "2" },
+    ];
+    const svc = new MmrInsightsService({
+      journal: { list: async () => [] } as never,
+      ranked: {
+        rankedResults: async (_id, range) =>
+          ranked.filter((m) => m.startedAt >= range.from && m.startedAt <= range.to),
+      },
+      medals: { history: async () => [] },
+      now: () => new Date("2026-10-07T12:00:00Z"),
+    });
+    const owner = { userId: "u", accountId32: 1 };
+    const current = await svc.weeklyRecap(owner, "UTC");
+    expect([current.from, current.thisWeek.games]).toEqual(["2026-10-04", 1]);
+    const previous = await svc.weeklyRecap(owner, "UTC", { weekOf: "2026-09-30" });
+    expect([previous.from, previous.to]).toEqual(["2026-09-27", "2026-10-03"]);
+    expect(previous.thisWeek).toMatchObject({ games: 1, wins: 1 });
+    expect(previous.mostPlayed).toEqual({ heroId: 2, games: 1, wins: 1 });
+  });
+});

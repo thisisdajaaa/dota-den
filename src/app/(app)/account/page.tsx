@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { discordWebhookService } from "@/modules/discord";
 import { DiscordCard } from "@/modules/discord/ui/discord-card";
+import { emailService } from "@/modules/email";
+import { EmailDigestCard } from "@/modules/email/ui/email-digest-card";
 import { getCurrentUser } from "@/modules/identity";
 import { notificationService, vapidPublicKey } from "@/modules/notifications";
 import { NotificationsCard } from "@/modules/notifications/ui/notifications-card";
@@ -21,10 +23,11 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
-  const [notifications, shares, discord] = await Promise.all([
+  const [notifications, shares, discord, email] = await Promise.all([
     notificationService.status(user.id),
     sharesService.list(user.id),
     discordWebhookService.status(user.id),
+    emailService.status(user.id),
   ]);
   const shareLinks = shares.map((s) => ({
     slug: s._id,
@@ -69,6 +72,8 @@ export default async function AccountPage() {
         endpoints={notifications.endpoints}
         prefs={notifications.prefs}
       />
+
+      <EmailDigestCard initial={email} />
 
       <DiscordCard initial={discord} />
 

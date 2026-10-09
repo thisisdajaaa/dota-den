@@ -64,6 +64,11 @@ export default defineConfig({
         VAPID_PUBLIC_KEY: vapid.publicKey,
         VAPID_PRIVATE_KEY: vapid.privateKey,
         VAPID_SUBJECT: "mailto:e2e@example.com",
+        // A fake Resend API (the fixture server records what would have been sent).
+        RESEND_API_KEY: "re_e2e_fixture",
+        EMAIL_FROM: "Dota Den <digest@e2e.example>",
+        RESEND_API_BASE_URL: `${fixtureURL}/resend`,
+        EMAIL_TOKEN_SECRET: "",
       },
     },
   ],
