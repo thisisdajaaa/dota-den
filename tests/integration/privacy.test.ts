@@ -8,6 +8,7 @@ import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
+import { VisitDaysRepository } from "@/modules/identity/repositories/visit-days.repository";
 import { UsersService } from "@/modules/identity/services/users.service";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { MatchReadRepository } from "@/modules/matches/repositories/matches.repository";
@@ -61,6 +62,7 @@ const identity = servicePart(
     new UsersService({
       users: new UsersRepository(getDb),
       sessions: new AuthSessionsRepository(getDb),
+      visits: new VisitDaysRepository(getDb),
     }),
 );
 

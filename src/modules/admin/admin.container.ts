@@ -6,6 +6,7 @@ import { cronRunsRepository, jobRunsRepository } from "@/modules/jobs";
 import { activityRepository } from "@/modules/leaderboards";
 import { matchesService } from "@/modules/matches";
 import { mmrEntriesRepository } from "@/modules/mmr";
+import { notificationService } from "@/modules/notifications";
 import { AdminService } from "./admin.service";
 import { playersService } from "@/modules/players";
 
@@ -18,6 +19,8 @@ export const adminService = new AdminService({
     roomDraftCounts: (ids) => draftHistoryRepository.countsByUser(ids),
   },
   profiles: { publicProfile: (id) => playersService.publicProfile(id) },
+  activity: { activeDays: (ids) => usersService.activeDays(ids) },
+  optIns: { notifications: () => notificationService.subscribedUserIds() },
   ops: {
     jobFailures: () => jobRunsRepository.recentFailures(),
     cronRuns: (limit) => cronRunsRepository.recent(limit),
