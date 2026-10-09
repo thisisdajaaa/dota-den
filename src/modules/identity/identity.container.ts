@@ -10,12 +10,14 @@ import { SteamOpenIdProvider } from "./infrastructure/steam-openid-provider";
 import { NoncesRepository } from "./repositories/nonces.repository";
 import { AuthSessionsRepository } from "./repositories/auth-sessions.repository";
 import { UsersRepository } from "./repositories/users.repository";
+import { VisitDaysRepository } from "./repositories/visit-days.repository";
 import { AuthService } from "./services/auth.service";
 import { UsersService } from "./services/users.service";
 
 export const usersRepository = new UsersRepository(getDb);
 export const sessionsRepository = new AuthSessionsRepository(getDb);
 export const noncesRepository = new NoncesRepository(getDb);
+export const visitDaysRepository = new VisitDaysRepository(getDb);
 
 // Imported on use: matches depends on identity (requireUser), so a static import is a cycle.
 const lookupPersona: PersonaLookup = async (accountId32) => {
@@ -49,6 +51,7 @@ export const authService = lazy(() => buildAuthService());
 export const usersService = new UsersService({
   users: usersRepository,
   sessions: sessionsRepository,
+  visits: visitDaysRepository,
 });
 
 // Lazy: identity.controller imports identity.guards, which imports this file, so the

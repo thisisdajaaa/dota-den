@@ -50,6 +50,9 @@ export default defineConfig({
         TWITCH_CLIENT_SECRET: "fixture",
         TWITCH_API_BASE_URL: `${fixtureURL}/twitch/helix`,
         TWITCH_AUTH_URL: `${fixtureURL}/twitch/oauth2/token`,
+        // Friends playing now: a dummy key against the fixture's fake Steam Web API.
+        STEAM_WEB_API_KEY: "e2e-steam-key",
+        STEAM_API_BASE_URL: `${fixtureURL}/steam`,
         // Never call a paid model from tests (overrides any key in .env.local).
         GROQ_API_KEY: "",
         // Never use shared Redis or the durable job queue from tests (ADR 0008).
@@ -61,6 +64,11 @@ export default defineConfig({
         VAPID_PUBLIC_KEY: vapid.publicKey,
         VAPID_PRIVATE_KEY: vapid.privateKey,
         VAPID_SUBJECT: "mailto:e2e@example.com",
+        // A fake Resend API (the fixture server records what would have been sent).
+        RESEND_API_KEY: "re_e2e_fixture",
+        EMAIL_FROM: "Dota Den <digest@e2e.example>",
+        RESEND_API_BASE_URL: `${fixtureURL}/resend`,
+        EMAIL_TOKEN_SECRET: "",
       },
     },
   ],

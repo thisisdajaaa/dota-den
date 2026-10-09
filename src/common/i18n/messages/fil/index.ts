@@ -22,6 +22,11 @@ import { live } from "./live";
 import { report } from "./report";
 import { drafts } from "./drafts";
 import { notifications } from "./notifications";
+import { onboarding } from "./onboarding";
+import { shares } from "./shares";
+import { discord } from "./discord";
+import { presence } from "./presence";
+import { email } from "./email";
 
 /** Every namespace of the fil messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -49,4 +54,9 @@ export const messages = {
   report,
   drafts,
   notifications,
+  onboarding,
+  shares,
+  discord,
+  presence,
+  email,
 };

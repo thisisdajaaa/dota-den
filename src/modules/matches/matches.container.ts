@@ -1,8 +1,10 @@
 import "server-only";
+import { after } from "next/server";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
+import { discordFeedService } from "@/modules/discord";
 import { errorsService } from "@/modules/errors";
 import { jobsService } from "@/modules/jobs";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
@@ -42,5 +44,16 @@ export const matchesController = new MatchesController({
   continueBackfill: (accountId32) => jobsService.enqueueMatchBackfill(accountId32),
   reportError: ({ message, path }) =>
     errorsService.record({ source: "server", kind: "sync", message, path }),
+  // Post the new games to the player's Discord feed (if they set one up) after the response.
+  onNewMatches: (accountId32) =>
+    after(() =>
+      discordFeedService
+        .postNewFor(accountId32)
+        .then((result) => {
+          if (result.outcome !== "off")
+            logger.info("discord_feed_posted", { accountId32, ...result });
+        })
+        .catch((error: unknown) => logger.warn("discord_feed_failed", { accountId32, error })),
+    ),
   logger,
 });

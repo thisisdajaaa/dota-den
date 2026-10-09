@@ -448,6 +448,25 @@ export class MatchReadRepository implements MatchQueries {
     return { facts: docs.map(toDashboardFact), latestPatch };
   }
 
+  async startedAfter(
+    accountId32: number,
+    after: Date,
+    opts: { excludeMatchIds: readonly string[]; limit: number },
+  ): Promise<Array<DashboardFact & { gameMode: number | null }>> {
+    const query: Record<string, unknown> = { accountId32, startedAt: { $gt: after } };
+    if (opts.excludeMatchIds.length > 0) query.matchId = { $nin: [...opts.excludeMatchIds] };
+    const docs = await (
+      await this.facts()
+    )
+      .find(query, {
+        sort: { startedAt: 1 },
+        limit: opts.limit,
+        projection: { ...FACT_PROJECTION, gameMode: 1 },
+      })
+      .toArray();
+    return docs.map((d) => ({ ...toDashboardFact(d), gameMode: d.gameMode ?? null }));
+  }
+
   /** Admin overview: imported matches and sync state per account. */
   async statsByAccount(
     accountIds: readonly number[],

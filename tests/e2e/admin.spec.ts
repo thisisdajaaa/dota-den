@@ -10,6 +10,11 @@ test("admins see every user and their activity", async ({ page }) => {
   const users = page.getByRole("region", { name: "Users" });
   await expect(users.getByRole("link", { name: "Fixture Hero" })).toBeVisible();
   await expect(users).toContainText("admin");
+  const retention = page.getByRole("region", { name: "Who comes back" });
+  await expect(retention.getByText("Active in 7 days")).toBeVisible();
+  await expect(
+    retention.getByRole("table", { name: "Sign-ups per week and how many came back" }),
+  ).toBeVisible();
 });
 
 test("non-admins don't see the admin page or its link", async ({ page }) => {

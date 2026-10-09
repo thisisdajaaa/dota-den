@@ -4,7 +4,9 @@ import { after } from "next/server";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
+import { discordFeedService } from "@/modules/discord";
 import { draftInsights } from "@/modules/drafts";
+import { emailDigest } from "@/modules/email";
 import { matchesService, matchSyncService } from "@/modules/matches";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/domain/sync-policy";
 import { metaService } from "@/modules/meta";
@@ -73,7 +75,9 @@ export const cronService = new CronService({
     },
     record: (id, tier) => medalService.record(id, tier),
   },
+  discord: { runAll: (opts) => discordFeedService.runAll(opts) },
   notifications: { runDaily: (opts) => notificationTriggers.runDaily(opts) },
+  weeklyEmail: { runDaily: (opts) => emailDigest.runDaily(opts) },
   patches: { importLatest: () => patchImportService.importLatest() },
   caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
   queue: jobQueue,

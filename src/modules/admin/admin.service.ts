@@ -1,6 +1,9 @@
 import { mapLimit } from "@/common/utils/map-limit";
 import { adminTotals } from "./domain/overview";
+import { retention } from "./domain/retention";
 import type {
+  AdminActivitySource,
+  AdminOptInSource,
   AdminOpsSource,
   AdminProfileSource,
   AdminStatsSource,
@@ -19,6 +22,8 @@ export class AdminService {
       stats: AdminStatsSource;
       profiles: AdminProfileSource;
       ops: AdminOpsSource;
+      activity: AdminActivitySource;
+      optIns: AdminOptInSource;
     },
   ) {}
 
@@ -27,19 +32,38 @@ export class AdminService {
     const users = await userSource.userRows();
     const userIds = users.map((u) => u.userId);
     const accountIds = users.map((u) => u.accountId32);
-    const [matches, mmr, activity, rooms, jobFailures, errors, cronRuns, profileList] =
-      await Promise.all([
-        stats.matchStats(accountIds),
-        stats.mmrEntryCounts(userIds),
-        stats.activityCounts(userIds),
-        stats.roomDraftCounts(userIds),
-        ops.jobFailures().catch(() => []),
-        ops.errorGroups(7).catch(() => null),
-        ops.cronRuns(10).catch(() => null),
-        mapLimit(accountIds, PROFILE_CONCURRENCY, (id) =>
-          profiles.publicProfile(id).catch(() => null),
-        ),
-      ]);
+    const [
+      matches,
+      mmr,
+      activity,
+      rooms,
+      jobFailures,
+      errors,
+      cronRuns,
+      profileList,
+      activeDays,
+      notified,
+      emailed,
+      discordFeeds,
+    ] = await Promise.all([
+      stats.matchStats(accountIds),
+      stats.mmrEntryCounts(userIds),
+      stats.activityCounts(userIds),
+      stats.roomDraftCounts(userIds),
+      ops.jobFailures().catch(() => []),
+      ops.errorGroups(7).catch(() => null),
+      ops.cronRuns(10).catch(() => null),
+      mapLimit(accountIds, PROFILE_CONCURRENCY, (id) =>
+        profiles.publicProfile(id).catch(() => null),
+      ),
+      this.deps.activity.activeDays(userIds).catch(() => null),
+      this.deps.optIns.notifications().catch(() => null),
+      this.deps.optIns.email().catch(() => null),
+      this.deps.optIns.discord().catch(() => null),
+    ]);
+    // Count current players only (a deleted account's row may linger briefly).
+    const count = (ids: string[] | null) =>
+      ids ? new Set(ids.filter((id) => userIds.includes(id))).size : null;
     const rows = users
       .map((u, i) => ({
         ...u,
@@ -61,6 +85,20 @@ export class AdminService {
         })),
         now,
       ),
+      retention: activeDays
+        ? retention(
+            users.map((u) => ({
+              createdAt: u.createdAt,
+              activeDays: activeDays.get(u.userId) ?? [],
+            })),
+            now,
+          )
+        : null,
+      optIns: {
+        notifications: count(notified),
+        email: count(emailed),
+        discord: count(discordFeeds),
+      },
       users: rows,
       jobFailures,
       cronRuns,

@@ -5,7 +5,7 @@ export const privacy: MessageTree<typeof en> = {
   title: "Account",
   kicker: "Settings ug data",
   description:
-    "Pilia ang mga notification, i-download ang gitipigan sa Dota Den bahin nimo, o i-delete ang imong account ug tanan niini.",
+    "Pilia ang mga notification, ang imong Discord feed ug ang sinemanang email, i-download ang gitipigan sa Dota Den bahin nimo, o i-delete ang imong account ug tanan niini.",
   download: {
     title: "I-download ang imong data",
     button: "I-download",
@@ -19,7 +19,7 @@ export const privacy: MessageTree<typeof en> = {
   delete: {
     title: "I-delete ang imong account",
     removes:
-      "Tangtangon ang imong account, mga sign-in, MMR log, medal history, session notes ug goals, gisubay nga player, draft results ug challenge streak, ug ang imong na-import nga mga match.",
+      "Tangtangon ang imong account, mga sign-in, MMR log, medal history, session notes ug goals, gisubay nga player, draft results ug challenge streak, ang imong Discord webhook, ug ang imong na-import nga mga match.",
     friends:
       "Ang mga draft nga imong gidula uban sa higala magpabilin sa ilang history, pero tangtang na ang imong ngalan ug hulagway.",
     backups:
