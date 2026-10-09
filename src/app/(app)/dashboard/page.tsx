@@ -23,6 +23,8 @@ import { getViewerTimeZone } from "@/common/http/request-context";
 import { medalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
 import { NotificationsPrompt } from "@/modules/notifications/ui/notifications-prompt";
+import { onboardingService } from "@/modules/onboarding";
+import { OnboardingChecklist } from "@/modules/onboarding/ui/onboarding-checklist";
 import { sessionService } from "@/modules/sessions";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
@@ -59,6 +61,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const t = await getT();
 
   const queries = matchQueries;
+  const owner = { userId: user.id, accountId32: user.accountId32 };
   const [status, { facts, latestPatch }, profile, heroes, latestSession, tz, notify] =
     await Promise.all([
       queries.importStatus(user.accountId32),
@@ -71,6 +74,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       // Optional: only decides whether to invite the player to turn notifications on.
       notificationService.status(user.id).catch(() => null),
     ]);
+  // Optional card: a failure just hides the checklist.
+  const checklist = await onboardingService
+    .checklist({ ...owner, createdAt: user.createdAt }, tz.timeZone)
+    .catch(() => null);
   // Medal history needs no typing: note the medal each visit (after the page is sent).
   if (profile) after(() => medalService.record(user.accountId32, profile.rankTier));
 
@@ -101,7 +108,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />
       )}
 
-      {latestSession && notify?.enabled && notify.endpoints.length === 0 && <NotificationsPrompt />}
+      {checklist ? (
+        <OnboardingChecklist steps={checklist} />
+      ) : (
+        latestSession && notify?.enabled && notify.endpoints.length === 0 && <NotificationsPrompt />
+      )}
 
       <Suspense fallback={null}>
         <TiltSection user={user} />
