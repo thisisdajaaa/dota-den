@@ -4,6 +4,7 @@ import { bucketedKey } from "../domain/job";
 import type {
   CacheWarmPort,
   CronRunsRepositoryPort,
+  DiscordFeedPort,
   JobQueue,
   MatchSyncPort,
   MedalPort,
@@ -19,6 +20,9 @@ const SYNC_BUDGET_MS = 38_000;
 const DAY_MS = 24 * 3_600_000;
 /** Notifications only start with at least this much of the run budget left. */
 const NOTIFY_MIN_MS = 4_000;
+/** Discord posts get at most this long, and only start with this much left for them. */
+const DISCORD_MAX_MS = 15_000;
+const DISCORD_MIN_MS = 2_000;
 
 type Trigger = "cron" | "admin";
 
@@ -29,6 +33,8 @@ export class CronService {
       runs: CronRunsRepositoryPort;
       matches: MatchSyncPort;
       medals: MedalPort;
+      /** Optional: posts new matches to players' Discord feeds once the syncs are done. */
+      discord?: DiscordFeedPort;
       /** Optional: sends the morning notifications once the syncs are done. */
       notifications?: NotificationsPort;
       patches: PatchImportPort;
@@ -47,8 +53,8 @@ export class CronService {
   }
 
   /**
-   * Every player's matches (unfinished histories first), then their medal, then the
-   * morning notifications with whatever time is left.
+   * Every player's matches (unfinished histories first), then their medal, then new matches
+   * to Discord feeds, then the morning notifications with whatever time is left.
    */
   async runMatchSync(trigger: Trigger): Promise<MatchSyncRunDto> {
     const started = Date.now();
@@ -69,6 +75,18 @@ export class CronService {
           medals++;
         }
       }
+      // Discord first (time-sensitive), leaving the notifications their minimum.
+      const forDiscord = Math.min(
+        DISCORD_MAX_MS,
+        RUN_BUDGET_MS - (Date.now() - started) - NOTIFY_MIN_MS,
+      );
+      const discord =
+        this.deps.discord && forDiscord >= DISCORD_MIN_MS
+          ? await this.deps.discord.runAll({ budgetMs: forDiscord }).catch((error: unknown) => {
+              this.deps.logger.warn("discord_run_failed", { error });
+              return null;
+            })
+          : null;
       const left = RUN_BUDGET_MS - (Date.now() - started);
       const notifications =
         this.deps.notifications && left >= NOTIFY_MIN_MS
@@ -87,6 +105,7 @@ export class CronService {
         skipped: results.filter((r) => r.outcome === "skipped_time" || r.outcome === "cooldown")
           .length,
         medals,
+        discord,
         notifications,
         durationMs: Date.now() - started,
       };

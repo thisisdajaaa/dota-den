@@ -8,6 +8,8 @@ import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { SharesRepository } from "@/modules/shares/repositories/shares.repository";
 import { NotificationLogRepository } from "@/modules/notifications/repositories/notification-log.repository";
 import { PushSubscriptionsRepository } from "@/modules/notifications/repositories/push-subscriptions.repository";
+import { DiscordPostLogRepository } from "@/modules/discord/repositories/discord-post-log.repository";
+import { DiscordWebhooksRepository } from "@/modules/discord/repositories/discord-webhooks.repository";
 import { ErrorsRepository } from "@/modules/errors/errors.repository";
 import { CronRunsRepository } from "@/modules/jobs/repositories/cron-runs.repository";
 import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
@@ -40,6 +42,8 @@ async function main(): Promise<void> {
   await new SharesRepository(async () => db).ensureIndexes();
   await new PushSubscriptionsRepository(async () => db).ensureIndexes();
   await new NotificationLogRepository(async () => db).ensureIndexes();
+  await new DiscordWebhooksRepository(async () => db).ensureIndexes();
+  await new DiscordPostLogRepository(async () => db).ensureIndexes();
   await Promise.all([
     new UsersRepository(async () => db).ensureIndexes(),
     new AuthSessionsRepository(async () => db).ensureIndexes(),

@@ -75,6 +75,17 @@ export interface NotificationsPort {
   }>;
 }
 
+/** Posts new matches to players' Discord feeds (after the match sync). */
+export interface DiscordFeedPort {
+  runAll(opts: { budgetMs: number }): Promise<{
+    feeds: number;
+    posted: number;
+    failed: number;
+    rateLimited: boolean;
+    stoppedEarly: boolean;
+  }>;
+}
+
 export interface PatchImportPort {
   importLatest(): Promise<
     | { ok: true; value: Array<{ outcome: string }> }

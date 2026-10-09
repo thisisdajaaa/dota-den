@@ -2,6 +2,7 @@ import "server-only";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
+import { discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
 import { goalsService } from "@/modules/goals";
 import { usersService } from "@/modules/identity";
@@ -35,6 +36,7 @@ export const privacyService = lazy(
         battleReportService,
         notificationService,
         sharesService,
+        discordWebhookService,
       ],
       identity: usersService,
       logger,

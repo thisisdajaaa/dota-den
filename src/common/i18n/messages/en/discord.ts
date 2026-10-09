@@ -1,0 +1,60 @@
+/** UI copy and post text for the Discord feed. */
+export const discord = {
+  card: {
+    title: "Discord",
+    description:
+      "Post your finished matches to a Discord channel, so your group sees how your games went: win or loss, hero, K/D/A and a link to the match. Only games you play after you set this up are posted, each once.",
+    howTo:
+      "In Discord, open the channel's settings → Integrations → Webhooks → New Webhook, then Copy Webhook URL and paste it here.",
+    urlLabel: "Webhook URL",
+    urlPlaceholder: "https://discord.com/api/webhooks/…",
+    secretNote:
+      "Treat this URL like a password: anyone who has it can post to the channel. Dota Den never shows it again.",
+    save: "Save webhook",
+    saving: "Checking with Discord…",
+    saved: "Webhook saved. Your next matches will be posted.",
+    saveFailed: "Couldn't save that webhook.",
+    invalid:
+      "That isn't a Discord webhook URL. It should look like https://discord.com/api/webhooks/…",
+    postingTo: "Posting to {name}",
+    unnamed: "your Discord webhook",
+    toggle: "Post my finished matches",
+    toggleHelp: "Turning this back on only posts games you play from then on.",
+    turnedOn: "Your matches will be posted to Discord.",
+    turnedOff: "Discord posts are off.",
+    test: "Send a test post",
+    testSent: "Test post sent. Check the channel.",
+    testFailed: "Couldn't send a test post.",
+    remove: "Remove webhook",
+    removed: "Webhook removed.",
+    removeFailed: "Couldn't remove the webhook. Try again.",
+    replace: "Use a different webhook",
+    cancel: "Cancel",
+    gone: "Discord says this webhook was deleted, so posting stopped. Paste a new webhook URL to start again.",
+    lastPosted: "Last post: {date}",
+    saveToggleFailed: "Couldn't save that. Try again.",
+  },
+  post: {
+    title: "{result} · {hero}",
+    win: "Win",
+    loss: "Loss",
+    kda: "K / D / A",
+    duration: "Duration",
+    mode: "Mode",
+    queue: "Queue",
+    ranked: "Ranked",
+    unranked: "Unranked",
+    unknownMode: "Unknown mode",
+    solo: "Solo",
+    party: "Party",
+    partyOf: "Party of {n}",
+    unknownQueue: "Unknown",
+    heroFallback: "Hero #{id}",
+    footer: "Dota Den · Match {id}",
+    test: {
+      title: "Dota Den is connected",
+      description:
+        "Finished matches will show up here: win or loss, hero, K/D/A and a link to the match.",
+    },
+  },
+};
