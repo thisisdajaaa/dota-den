@@ -95,7 +95,10 @@ const EnvSchema = z
       .enum(["true", "false"])
       .optional()
       .transform((v) => v !== "false"),
+    /** Steam Web API key: "Friends playing now" on the overview. Unset: the strip is off. */
     STEAM_WEB_API_KEY: z.string().min(1).optional(),
+    /** Override for tests (fixture server). Defaults to Steam's Web API. */
+    STEAM_API_BASE_URL: z.url().optional(),
     /** Twitch app credentials: embed matching streams on live game pages. Unset: search links only. */
     TWITCH_CLIENT_ID: z.string().min(1).optional(),
     TWITCH_CLIENT_SECRET: z.string().min(1).optional(),

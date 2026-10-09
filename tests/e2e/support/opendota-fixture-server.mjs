@@ -864,6 +864,73 @@ function discord(req, res, url, body) {
   return json(405, { message: "405: Method Not Allowed", code: 0 });
 }
 
+// --- Steam Web API (ISteamUser) for "Friends playing now". Synthetic accounts only. ---------
+const STEAM_KEY = "e2e-steam-key";
+const STEAM_BASE = 76561197960265728n;
+const sid = (accountId32) => (BigInt(accountId32) + STEAM_BASE).toString();
+/** Identities used by tests/e2e/friends-playing.spec.ts (each test signs in as its own). */
+const STEAM_FRIENDS = {
+  // Public friend list: some friends in Dota 2, some hidden (private, other game, offline).
+  "76561197960458881": [60_001, 60_002, 50_000, 60_003, 60_004, 60_005],
+  // Public friend list: nobody in Dota 2 right now.
+  "76561197960458882": [60_003, 60_004, 60_005],
+};
+// Presence by account: anything not listed is a public profile that is offline.
+const STEAM_PRESENCE = {
+  60_001: { personaname: "Fixture Friend", personastate: 1, gameid: "570" },
+  60_002: {
+    personaname: "Fixture Stacker",
+    personastate: 1,
+    gameid: "570",
+    gameserversteamid: "90071992547409920",
+  },
+  // In OpenDota's live feed (match 8000000001).
+  50_000: { personaname: "Fixture Pro", personastate: 1, gameid: "570" },
+  // Private profile: Steam would not expose this, and the app must not show it.
+  60_003: { personaname: "Fixture Private", personastate: 1, gameid: "570", visibility: 1 },
+  60_004: { personaname: "Fixture Other Game", personastate: 1, gameid: "730" },
+  60_005: { personaname: "Fixture Offline", personastate: 0 },
+};
+
+/** Steam answers 401 for a private friend list: every identity not listed above. */
+function steamRoute(url) {
+  if (!url.pathname.startsWith("/steam/")) return null;
+  if (url.searchParams.get("key") !== STEAM_KEY) return { status: 403, body: {} };
+  if (url.pathname === "/steam/ISteamUser/GetFriendList/v1/") {
+    const friends = STEAM_FRIENDS[url.searchParams.get("steamid") ?? ""];
+    if (!friends) return { status: 401, body: {} };
+    return {
+      status: 200,
+      body: {
+        friendslist: {
+          friends: friends.map((id) => ({
+            steamid: sid(id),
+            relationship: "friend",
+            friend_since: NOW - 30 * DAY,
+          })),
+        },
+      },
+    };
+  }
+  if (url.pathname === "/steam/ISteamUser/GetPlayerSummaries/v2/") {
+    const ids = (url.searchParams.get("steamids") ?? "").split(",").filter(Boolean);
+    const players = ids.map((steamid) => {
+      const p = STEAM_PRESENCE[Number(BigInt(steamid) - STEAM_BASE)] ?? { personastate: 0 };
+      const { visibility = 3, ...rest } = p;
+      return {
+        steamid,
+        communityvisibilitystate: visibility,
+        profilestate: 1,
+        personaname: rest.personaname ?? `Fixture Steam ${steamid.slice(-4)}`,
+        avatarfull: "",
+        ...rest,
+      };
+    });
+    return { status: 200, body: { response: { players } } };
+  }
+  return { status: 404, body: {} };
+}
+
 createServer((req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   if (url.pathname === "/health") return res.end("ok");
@@ -881,6 +948,11 @@ createServer((req, res) => {
       }
     });
     return;
+  }
+  const steam = steamRoute(url);
+  if (steam) {
+    res.writeHead(steam.status, { "content-type": "application/json" });
+    return res.end(JSON.stringify(steam.body));
   }
   for (const [re, handler] of routes) {
     const m = re.exec(url.pathname);

@@ -30,6 +30,7 @@ import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
 import { AchievementsSection } from "./achievements-section";
+import { FriendsPlayingSection } from "./friends-playing-section";
 import { GoalsSection } from "./goals-section";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
 import { MmrPromptSection } from "./mmr-prompt-section";
@@ -103,6 +104,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}
         />
       </PlayerBanner>
+
+      {/* Steam presence: hidden when nobody is playing or no Steam Web API key is set. */}
+      <Suspense fallback={null}>
+        <FriendsPlayingSection user={user} />
+      </Suspense>
 
       {latestSession && (
         <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />

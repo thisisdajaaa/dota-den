@@ -25,6 +25,7 @@ import { notifications } from "./notifications";
 import { onboarding } from "./onboarding";
 import { shares } from "./shares";
 import { discord } from "./discord";
+import { presence } from "./presence";
 
 /** Every namespace of the fil messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -55,4 +56,5 @@ export const messages = {
   onboarding,
   shares,
   discord,
+  presence,
 };
