@@ -33,10 +33,13 @@ export async function WeeklyRecapCard({
   recap,
   heroes,
   rangeLabel,
+  action,
 }: {
   recap: WeeklyRecap;
   heroes: Map<number, HeroInfo>;
   rangeLabel: string;
+  /** Extra control in the header (e.g. Share). */
+  action?: React.ReactNode;
 }) {
   const t = await getT();
   const { thisWeek: w, lastWeek: l, mmr } = recap;
@@ -51,12 +54,15 @@ export async function WeeklyRecapCard({
             {t("mmr.recap.title")}
           </h2>
         </div>
-        <Link
-          href="/mmr?view=week"
-          className="inline-flex items-center gap-1 text-sm text-gold hover:underline"
-        >
-          {t("mmr.recap.link")} <ChevronRight aria-hidden className="size-4" />
-        </Link>
+        <div className="flex items-center gap-3">
+          {action}
+          <Link
+            href="/mmr?view=week"
+            className="inline-flex items-center gap-1 text-sm text-gold hover:underline"
+          >
+            {t("mmr.recap.link")} <ChevronRight aria-hidden className="size-4" />
+          </Link>
+        </div>
       </div>
 
       {w.games === 0 ? (

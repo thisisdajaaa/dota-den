@@ -23,6 +23,7 @@ import { report } from "./report";
 import { drafts } from "./drafts";
 import { notifications } from "./notifications";
 import { onboarding } from "./onboarding";
+import { shares } from "./shares";
 
 /** Every namespace of the en messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -51,4 +52,5 @@ export const messages = {
   drafts,
   notifications,
   onboarding,
+  shares,
 };
