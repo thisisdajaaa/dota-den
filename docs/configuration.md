@@ -24,7 +24,8 @@ constructors. `.env.example` lists every variable with its default.
 | `OPENDOTA_API_KEY`        | secret                  | unset            | Higher OpenDota limits; sent as the `api_key` query parameter (logs record paths only)       |
 | `OPENDOTA_BASE_URL`       | URL                     | public API       | Tests point this at the fixture server                                                       |
 | `VALVE_DATAFEED_BASE_URL` | URL                     | Valve's datafeed | Tests point this at the fixture server                                                       |
-| `STEAM_WEB_API_KEY`       | secret                  | unset            | Custom Steam URL (`steamcommunity.com/id/…`) lookups in player search                        |
+| `STEAM_WEB_API_KEY`       | secret                  | unset            | "Friends playing now" on the overview (Steam presence). Unset: the strip is hidden           |
+| `STEAM_API_BASE_URL`      | URL                     | Steam Web API    | Tests point this at the fixture server                                                       |
 | `TWITCH_CLIENT_ID`        | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                           |
 | `TWITCH_CLIENT_SECRET`    | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only               |
 | `GROQ_API_KEY`            | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review |
@@ -106,6 +107,18 @@ slow work done inline. The design is in [ADR 0008](adr/0008-redis-and-background
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`                                  | Upstash Redis over REST: shared rate limits, a shared OpenDota response cache and a global OpenDota request budget. The REST URL is `https://<your-db-host>`; for a database created with a Redis password, that password works as the REST token. Set both or neither. |
 | `QSTASH_TOKEN`, `QSTASH_URL`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` | Upstash QStash for durable background jobs (chunked match backfills, draft data refresh). Without them, jobs run in-process after the response.                                                                                                                         |
 | `OPENDOTA_BUDGET_PER_MINUTE`, `OPENDOTA_BUDGET_PER_DAY`                               | Global OpenDota call budget when Redis is configured                                                                                                                                                                                                                    |
+
+## Weekly email (optional)
+
+Unset, email is off: the Account page says it isn't available yet and nothing is sent. The design is in
+[ADR 0011](adr/0011-weekly-email-digest.md).
+
+| Variable              | Default                  | Meaning                                                                                                                     |
+| --------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`      | unset                    | Resend API key. Set both this and `EMAIL_FROM`, or neither                                                                  |
+| `EMAIL_FROM`          | unset                    | Sender, e.g. `Dota Den <digest@yourdomain.com>`; the domain must be verified in Resend                                      |
+| `RESEND_API_BASE_URL` | `https://api.resend.com` | Tests point this at the fixture server's fake Resend API                                                                    |
+| `EMAIL_TOKEN_SECRET`  | derived from the API key | Signs confirmation and unsubscribe links (32+ chars). Set it so rotating the Resend key keeps old unsubscribe links working |
 
 ## Test-only
 

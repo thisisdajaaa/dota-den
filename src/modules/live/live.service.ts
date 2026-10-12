@@ -21,6 +21,23 @@ export class LiveService {
     return g ? (await this.withLeagueNames([g]))[0] : null;
   }
 
+  /**
+   * The live game each of these accounts is in (account → match id), from the feed's player
+   * lists. Empty when none is live or the feed is unavailable. Public games appear in the
+   * feed only for players who expose their match data, so a missing account proves nothing.
+   */
+  async liveMatchIds(accountIds: readonly number[]): Promise<Map<number, string>> {
+    const found = new Map<number, string>();
+    if (accountIds.length === 0) return found;
+    const wanted = new Set(accountIds);
+    const games = (await this.deps.source.games()) ?? [];
+    for (const g of games)
+      for (const p of g.players)
+        if (p.accountId32 !== null && wanted.has(p.accountId32) && !found.has(p.accountId32))
+          found.set(p.accountId32, g.matchId);
+    return found;
+  }
+
   /** Where to watch a game: matching streams to embed (when configured) and search links. */
   async watch(game: LiveGame): Promise<WatchOptions> {
     const all = this.deps.streams ? await this.deps.streams.dotaStreams().catch(() => null) : null;

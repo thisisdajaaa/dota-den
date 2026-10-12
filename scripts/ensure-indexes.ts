@@ -5,14 +5,20 @@
 import { getDb, getMongoClient } from "@/common/db/mongo";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
+import { SharesRepository } from "@/modules/shares/repositories/shares.repository";
+import { EmailLogRepository } from "@/modules/email/repositories/email-log.repository";
+import { EmailSubscriptionsRepository } from "@/modules/email/repositories/email-subscriptions.repository";
 import { NotificationLogRepository } from "@/modules/notifications/repositories/notification-log.repository";
 import { PushSubscriptionsRepository } from "@/modules/notifications/repositories/push-subscriptions.repository";
+import { DiscordPostLogRepository } from "@/modules/discord/repositories/discord-post-log.repository";
+import { DiscordWebhooksRepository } from "@/modules/discord/repositories/discord-webhooks.repository";
 import { ErrorsRepository } from "@/modules/errors/errors.repository";
 import { CronRunsRepository } from "@/modules/jobs/repositories/cron-runs.repository";
 import { JobRunsRepository } from "@/modules/jobs/repositories/job-runs.repository";
 import { NoncesRepository } from "@/modules/identity/repositories/nonces.repository";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
+import { VisitDaysRepository } from "@/modules/identity/repositories/visit-days.repository";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-meta-cache.repository";
@@ -35,11 +41,17 @@ async function main(): Promise<void> {
   await new DraftMetaCacheRepository(async () => db).ensureIndexes();
   await new AnnotationsRepository(async () => db).ensureIndexes();
   await new GoalsRepository(async () => db).ensureIndexes();
+  await new SharesRepository(async () => db).ensureIndexes();
   await new PushSubscriptionsRepository(async () => db).ensureIndexes();
   await new NotificationLogRepository(async () => db).ensureIndexes();
+  await new DiscordWebhooksRepository(async () => db).ensureIndexes();
+  await new DiscordPostLogRepository(async () => db).ensureIndexes();
+  await new EmailSubscriptionsRepository(async () => db).ensureIndexes();
+  await new EmailLogRepository(async () => db).ensureIndexes();
   await Promise.all([
     new UsersRepository(async () => db).ensureIndexes(),
     new AuthSessionsRepository(async () => db).ensureIndexes(),
+    new VisitDaysRepository(async () => db).ensureIndexes(),
     new NoncesRepository(async () => db).ensureIndexes(),
   ]);
   await new ErrorsRepository(async () => db).ensureIndexes();

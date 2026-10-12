@@ -2,9 +2,15 @@ import type { Metadata } from "next";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { discordWebhookService } from "@/modules/discord";
+import { DiscordCard } from "@/modules/discord/ui/discord-card";
+import { emailService } from "@/modules/email";
+import { EmailDigestCard } from "@/modules/email/ui/email-digest-card";
 import { getCurrentUser } from "@/modules/identity";
 import { notificationService, vapidPublicKey } from "@/modules/notifications";
 import { NotificationsCard } from "@/modules/notifications/ui/notifications-card";
+import { sharesService } from "@/modules/shares";
+import { SharedLinks } from "@/modules/shares/ui/shared-links";
 import { DeleteAccountForm } from "@/modules/privacy/ui/delete-account-form";
 import { getT } from "@/common/i18n/server";
 
@@ -17,7 +23,25 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
-  const notifications = await notificationService.status(user.id);
+  const [notifications, shares, discord, email] = await Promise.all([
+    notificationService.status(user.id),
+    sharesService.list(user.id),
+    discordWebhookService.status(user.id),
+    emailService.status(user.id),
+  ]);
+  const shareLinks = shares.map((s) => ({
+    slug: s._id,
+    url: `/s/${s._id}`,
+    label:
+      s.kind === "session"
+        ? t("shares.account.sessionLabel", {
+            date:
+              s.snapshot.kind === "session"
+                ? s.snapshot.startedAt.toISOString().slice(0, 10)
+                : s.ref,
+          })
+        : t("shares.account.weekLabel", { date: s.ref }),
+  }));
   const downloads = [
     {
       format: "json",
@@ -48,6 +72,12 @@ export default async function AccountPage() {
         endpoints={notifications.endpoints}
         prefs={notifications.prefs}
       />
+
+      <EmailDigestCard initial={email} />
+
+      <DiscordCard initial={discord} />
+
+      <SharedLinks links={shareLinks} />
 
       <section className="panel space-y-4 p-5" aria-labelledby="download-title">
         <h2 id="download-title" className="text-lg font-semibold">

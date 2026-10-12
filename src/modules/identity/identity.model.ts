@@ -8,7 +8,17 @@ export const IDENTITY_COLLECTIONS = {
   users: "users",
   sessions: "auth_sessions",
   nonces: "auth_nonces",
+  visitDays: "visit_days",
 } as const;
+
+/** A day (UTC, YYYY-MM-DD) a player opened the app. */
+export interface VisitDayDocument {
+  /** `${userId}:${day}` */
+  _id: string;
+  userId: string;
+  day: string;
+  firstAt: Date;
+}
 
 export interface UserDocument {
   _id: ObjectId;

@@ -7,6 +7,7 @@ import { getT } from "@/common/i18n/server";
 import { plural, type Translator } from "@/common/i18n/translate";
 import { StatTile } from "@/components/stat-tile";
 import { PageHeader } from "@/components/page-header";
+import { ShareButton } from "@/modules/shares/ui/share-button";
 import { getCurrentUser } from "@/modules/identity";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { matchesService } from "@/modules/matches";
@@ -107,6 +108,7 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
         kicker={t("sessions.detail.title")}
         title={labels.date}
         description={`${labels.timeRange} · ${plural(t, "sessions.item.games", s.games)}`}
+        actions={<ShareButton target={{ kind: "session", ref: session.id }} />}
       />
 
       <section className="panel space-y-3 p-5" aria-labelledby="recap-title">

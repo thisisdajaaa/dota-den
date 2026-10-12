@@ -3,6 +3,7 @@ import type { User } from "@/modules/identity/domain/user";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { mmrInsightsService } from "@/modules/mmr";
 import { WeeklyRecapCard } from "@/modules/mmr/ui/weekly-recap-card";
+import { ShareButton } from "@/modules/shares/ui/share-button";
 
 async function loadRecap(user: User, timeZone: string) {
   try {
@@ -38,6 +39,7 @@ export async function WeeklyRecapSection({
       recap={recap}
       heroes={heroes}
       rangeLabel={`${shortDay(recap.from)} – ${shortDay(recap.to)}`}
+      action={recap.thisWeek.games > 0 ? <ShareButton target={{ kind: "week" }} /> : undefined}
     />
   );
 }

@@ -32,6 +32,8 @@ export default async function AdminPage() {
   const now = new Date();
   const {
     totals,
+    retention,
+    optIns,
     users: rows,
     jobFailures: failures,
     errors,
@@ -60,6 +62,69 @@ export default async function AdminPage() {
           detail={t("admin.totals.withMatchesDetail")}
         />
         <StatTile label={t("admin.totals.listedPublicly")} value={String(totals.listedPublicly)} />
+      </section>
+
+      <section aria-labelledby="admin-retention" className="panel space-y-4 p-5">
+        <div>
+          <h2 id="admin-retention" className="text-lg font-semibold">
+            {t("admin.retention.title")}
+          </h2>
+          <p className="text-xs text-muted-foreground">{t("admin.retention.definition")}</p>
+        </div>
+        {retention ? (
+          <>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-7">
+              <StatTile label={t("admin.retention.active1")} value={String(retention.active1)} />
+              <StatTile label={t("admin.retention.active7")} value={String(retention.active7)} />
+              <StatTile label={t("admin.retention.active30")} value={String(retention.active30)} />
+              <StatTile
+                label={t("admin.retention.returning")}
+                value={`${retention.returning} / ${totals.users}`}
+                detail={t("admin.retention.returningDetail")}
+              />
+              <StatTile
+                label={t("admin.retention.notifications")}
+                value={optIns.notifications === null ? "–" : String(optIns.notifications)}
+                detail={t("admin.retention.notificationsDetail")}
+              />
+              <StatTile
+                label={t("admin.retention.email")}
+                value={optIns.email === null ? "–" : String(optIns.email)}
+                detail={t("admin.retention.emailDetail")}
+              />
+              <StatTile
+                label={t("admin.retention.discord")}
+                value={optIns.discord === null ? "–" : String(optIns.discord)}
+                detail={t("admin.retention.discordDetail")}
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[28rem] text-sm">
+                <caption className="sr-only">{t("admin.retention.caption")}</caption>
+                <thead>
+                  <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
+                    <th className="py-2 font-medium">{t("admin.retention.week")}</th>
+                    <th className="py-2 text-right font-medium">{t("admin.retention.signedUp")}</th>
+                    <th className="py-2 text-right font-medium">{t("admin.retention.within7")}</th>
+                    <th className="py-2 text-right font-medium">{t("admin.retention.ever")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {retention.weeks.map((w) => (
+                    <tr key={w.week} className="border-t border-border/50">
+                      <td className="py-2 tabular-nums">{w.week}</td>
+                      <td className="py-2 text-right tabular-nums">{w.signedUp}</td>
+                      <td className="py-2 text-right tabular-nums">{w.returnedWithin7}</td>
+                      <td className="py-2 text-right tabular-nums">{w.returnedEver}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("admin.retention.unavailable")}</p>
+        )}
       </section>
 
       <section aria-labelledby="admin-users" className="panel overflow-hidden">

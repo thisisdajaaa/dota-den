@@ -16,6 +16,20 @@ export interface AdminUserSource {
   >;
 }
 
+/** Days each player was active (UTC "YYYY-MM-DD"). */
+export interface AdminActivitySource {
+  activeDays(userIds: readonly string[]): Promise<Map<string, string[]>>;
+}
+
+/** Who turned on each way of being reminded (user ids). */
+export interface AdminOptInSource {
+  notifications(): Promise<string[]>;
+  /** Confirmed weekly email addresses. */
+  email(): Promise<string[]>;
+  /** Discord feeds that are on and still exist. */
+  discord(): Promise<string[]>;
+}
+
 export interface AdminStatsSource {
   matchStats(
     accountIds: readonly number[],

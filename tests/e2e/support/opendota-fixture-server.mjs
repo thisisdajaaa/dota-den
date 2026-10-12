@@ -741,9 +741,10 @@ const routes = [
   [
     /^\/api\/players\/(\d+)\/matches$/,
     (m, url) => {
-      if (Number(m[1]) !== ACCOUNT) return [];
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Number(url.searchParams.get("limit") ?? 100);
+      if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
+      if (Number(m[1]) !== ACCOUNT) return [];
       // Matches the other account also played in (either team).
       const included = url.searchParams.get("included_account_id");
       const heroId = url.searchParams.get("hero_id");
@@ -798,9 +799,191 @@ const routes = [
   ],
 ];
 
+// Games "played" during a test (POST /e2e/play?account=…), newest first, per account.
+const PLAYED = new Map();
+let playedCount = 0;
+function play(accountId) {
+  playedCount++;
+  const match = {
+    match_id: 7_200_000_000 + playedCount,
+    player_slot: 1,
+    radiant_win: true,
+    duration: 2045,
+    game_mode: 22,
+    lobby_type: 7,
+    hero_id: 1,
+    // Ends up after any webhook the test set up before playing.
+    start_time: Math.ceil(Date.now() / 1000),
+    version: null,
+    kills: 9,
+    deaths: 1,
+    assists: 14,
+    average_rank: 55,
+    // Not recorded: the feed must say Unknown, never solo.
+    party_size: null,
+  };
+  PLAYED.set(accountId, [match, ...(PLAYED.get(accountId) ?? [])]);
+  return match;
+}
+
+// Fake Discord webhooks: GET describes one, POST records a message, DELETE deletes it (as in
+// Discord). Tokens starting with "unknown" don't exist. GET /discord/messages/:id lists posts.
+const DISCORD_MESSAGES = new Map();
+const DISCORD_DELETED = new Set();
+function discord(req, res, url, body) {
+  const json = (status, data) => {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(data === undefined ? "" : JSON.stringify(data));
+  };
+  const log = /^\/discord\/messages\/(\d+)$/.exec(url.pathname);
+  if (log) return json(200, DISCORD_MESSAGES.get(log[1]) ?? []);
+  const m = /^\/api\/webhooks\/(\d+)\/([\w-]+)$/.exec(url.pathname);
+  if (!m) return false;
+  const [, id, token] = m;
+  if (DISCORD_DELETED.has(id) || token.startsWith("unknown"))
+    return json(404, { message: "Unknown Webhook", code: 10015 });
+  if (req.method === "GET")
+    return json(200, {
+      type: 1,
+      id,
+      name: "Fixture Den",
+      channel_id: "555000000000000001",
+      guild_id: "555000000000000000",
+      token,
+    });
+  if (req.method === "POST") {
+    DISCORD_MESSAGES.set(id, [...(DISCORD_MESSAGES.get(id) ?? []), JSON.parse(body || "{}")]);
+    res.writeHead(204);
+    return res.end();
+  }
+  if (req.method === "DELETE") {
+    DISCORD_DELETED.add(id);
+    res.writeHead(204);
+    return res.end();
+  }
+  return json(405, { message: "405: Method Not Allowed", code: 0 });
+}
+
+// --- Steam Web API (ISteamUser) for "Friends playing now". Synthetic accounts only. ---------
+const STEAM_KEY = "e2e-steam-key";
+const STEAM_BASE = 76561197960265728n;
+const sid = (accountId32) => (BigInt(accountId32) + STEAM_BASE).toString();
+/** Identities used by tests/e2e/friends-playing.spec.ts (each test signs in as its own). */
+const STEAM_FRIENDS = {
+  // Public friend list: some friends in Dota 2, some hidden (private, other game, offline).
+  "76561197960458881": [60_001, 60_002, 50_000, 60_003, 60_004, 60_005],
+  // Public friend list: nobody in Dota 2 right now.
+  "76561197960458882": [60_003, 60_004, 60_005],
+};
+// Presence by account: anything not listed is a public profile that is offline.
+const STEAM_PRESENCE = {
+  60_001: { personaname: "Fixture Friend", personastate: 1, gameid: "570" },
+  60_002: {
+    personaname: "Fixture Stacker",
+    personastate: 1,
+    gameid: "570",
+    gameserversteamid: "90071992547409920",
+  },
+  // In OpenDota's live feed (match 8000000001).
+  50_000: { personaname: "Fixture Pro", personastate: 1, gameid: "570" },
+  // Private profile: Steam would not expose this, and the app must not show it.
+  60_003: { personaname: "Fixture Private", personastate: 1, gameid: "570", visibility: 1 },
+  60_004: { personaname: "Fixture Other Game", personastate: 1, gameid: "730" },
+  60_005: { personaname: "Fixture Offline", personastate: 0 },
+};
+
+/** Steam answers 401 for a private friend list: every identity not listed above. */
+function steamRoute(url) {
+  if (!url.pathname.startsWith("/steam/")) return null;
+  if (url.searchParams.get("key") !== STEAM_KEY) return { status: 403, body: {} };
+  if (url.pathname === "/steam/ISteamUser/GetFriendList/v1/") {
+    const friends = STEAM_FRIENDS[url.searchParams.get("steamid") ?? ""];
+    if (!friends) return { status: 401, body: {} };
+    return {
+      status: 200,
+      body: {
+        friendslist: {
+          friends: friends.map((id) => ({
+            steamid: sid(id),
+            relationship: "friend",
+            friend_since: NOW - 30 * DAY,
+          })),
+        },
+      },
+    };
+  }
+  if (url.pathname === "/steam/ISteamUser/GetPlayerSummaries/v2/") {
+    const ids = (url.searchParams.get("steamids") ?? "").split(",").filter(Boolean);
+    const players = ids.map((steamid) => {
+      const p = STEAM_PRESENCE[Number(BigInt(steamid) - STEAM_BASE)] ?? { personastate: 0 };
+      const { visibility = 3, ...rest } = p;
+      return {
+        steamid,
+        communityvisibilitystate: visibility,
+        profilestate: 1,
+        personaname: rest.personaname ?? `Fixture Steam ${steamid.slice(-4)}`,
+        avatarfull: "",
+        ...rest,
+      };
+    });
+    return { status: 200, body: { response: { players } } };
+  }
+  return { status: 404, body: {} };
+}
+
+// Fake Resend API: records sent emails so E2E tests can read them (GET /resend/outbox?to=…).
+const outbox = [];
+
+function resend(req, res, url) {
+  const json = (status, body) => {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(JSON.stringify(body));
+  };
+  if (url.pathname === "/resend/emails" && req.method === "POST") {
+    if (!/^Bearer .+/.test(req.headers.authorization ?? ""))
+      return json(401, { name: "missing_api_key" });
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => {
+      const email = JSON.parse(raw || "{}");
+      const id = `re_fixture_${outbox.length + 1}`;
+      outbox.push({ id, ...email, idempotencyKey: req.headers["idempotency-key"] ?? null });
+      json(200, { id });
+    });
+    return true;
+  }
+  if (url.pathname === "/resend/outbox" && req.method === "GET") {
+    const to = url.searchParams.get("to");
+    json(200, to ? outbox.filter((e) => e.to?.includes(to)) : outbox);
+    return true;
+  }
+  return false;
+}
+
 createServer((req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   if (url.pathname === "/health") return res.end("ok");
+  if (url.pathname === "/e2e/play" && req.method === "POST") {
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify(play(Number(url.searchParams.get("account")))));
+  }
+  if (url.pathname.startsWith("/api/webhooks/") || url.pathname.startsWith("/discord/")) {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      if (discord(req, res, url, body) === false) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Not Found" }));
+      }
+    });
+    return;
+  }
+  const steam = steamRoute(url);
+  if (steam) {
+    res.writeHead(steam.status, { "content-type": "application/json" });
+    return res.end(JSON.stringify(steam.body));
+  }
+  if (url.pathname.startsWith("/resend/") && resend(req, res, url) !== false) return;
   for (const [re, handler] of routes) {
     const m = re.exec(url.pathname);
     if (!m) continue;

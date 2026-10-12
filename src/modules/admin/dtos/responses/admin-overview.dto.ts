@@ -1,5 +1,6 @@
 import type { ErrorGroup } from "@/modules/errors";
 import type { AdminTotals } from "../../domain/overview";
+import type { Retention } from "../../domain/retention";
 import type { AdminProfileSource, CronRunView, JobFailureView } from "../../admin.ports";
 
 export interface AdminUserRowDto {
@@ -21,6 +22,10 @@ export interface AdminUserRowDto {
 /** Everything the admin page shows. Sections that failed to load are null. */
 export interface AdminOverviewDto {
   totals: AdminTotals;
+  /** Null when activity couldn't be loaded. */
+  retention: Retention | null;
+  /** Players who turned on each reminder; null when that count couldn't be loaded. */
+  optIns: { notifications: number | null; email: number | null; discord: number | null };
   /** Most recently active first. */
   users: AdminUserRowDto[];
   jobFailures: JobFailureView[];

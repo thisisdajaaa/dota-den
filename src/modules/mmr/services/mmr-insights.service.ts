@@ -31,12 +31,19 @@ export class MmrInsightsService {
     },
   ) {}
 
-  /** This week against last week, in the player's time zone. */
-  async weeklyRecap(owner: JournalOwner, timeZone: string): Promise<WeeklyRecap> {
+  /**
+   * This week against last week, in the player's time zone. `weekOf` picks another week (any
+   * day in it), e.g. a finished week for the weekly email; the week before it is "last week".
+   */
+  async weeklyRecap(
+    owner: JournalOwner,
+    timeZone: string,
+    opts: { weekOf?: DayKey } = {},
+  ): Promise<WeeklyRecap> {
     const now = this.deps.now?.() ?? new Date();
     const dayKey = dayKeyFormatter(timeZone);
     const today = dayKey(now);
-    const week = periodFor("week", today, today, null);
+    const week = periodFor("week", opts.weekOf ?? today, today, null);
     const entries = await this.deps.journal.list(owner);
     // Games from last week's start (or the entry before it) to the entry after this week.
     const loaded = loadWindow(entries, { from: addDays(week.from, -7), to: week.to }, now);

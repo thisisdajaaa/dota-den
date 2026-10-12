@@ -3,7 +3,7 @@ export const privacy = {
   title: "Account",
   kicker: "Settings and data",
   description:
-    "Choose notifications, download what Dota Den keeps about you, or delete your account and all of it.",
+    "Choose notifications, your Discord feed and the weekly email, download what Dota Den keeps about you, or delete your account and all of it.",
   download: {
     title: "Download your data",
     button: "Download",
@@ -17,7 +17,7 @@ export const privacy = {
   delete: {
     title: "Delete your account",
     removes:
-      "Removes your account, sign-ins, MMR log, medal history, session notes and goals, tracked players, draft results and challenge streak, and your imported matches.",
+      "Removes your account, sign-ins, MMR log, medal history, session notes and goals, tracked players, draft results and challenge streak, your Discord webhook, and your imported matches.",
     friends:
       "Drafts you played with a friend stay in their history, with your name and picture removed.",
     backups: "Encrypted backups are kept for 30 days, then your data is gone from them too.",

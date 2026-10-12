@@ -25,6 +25,11 @@ export class MatchesController {
       continueBackfill: (accountId32: number) => Promise<void>;
       /** Upstream failures are recorded for the admin page (logs are short-lived on Vercel). */
       reportError: (input: { message: string; path: string }) => Promise<void>;
+      /**
+       * New matches were imported: work that may follow (the Discord feed). Runs after the
+       * response is sent, so it never slows the sync down.
+       */
+      onNewMatches?: (accountId32: number) => void;
       logger: Pick<Logger, "info" | "warn">;
     },
   ) {}
@@ -37,6 +42,7 @@ export class MatchesController {
     const log = { requestId: requestId(req), accountId32, durationMs: Date.now() - started };
     if (result.ok) {
       this.deps.logger.info("match_sync_completed", { ...log, ...result.value });
+      if (result.value.inserted > 0) this.deps.onNewMatches?.(accountId32);
       if (!result.value.backfillComplete) {
         await this.deps
           .continueBackfill(accountId32)

@@ -128,6 +128,12 @@ export interface MatchQueries {
   /** Heroes this account has imported matches on, most played first. */
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
+  /** Matches that started after `after`, oldest first, skipping `excludeMatchIds` (the Discord feed). */
+  startedAfter(
+    accountId32: number,
+    after: Date,
+    opts: { excludeMatchIds: readonly string[]; limit: number },
+  ): Promise<Array<DashboardFact & { gameMode: number | null }>>;
 }
 
 export interface HeroCatalog {

@@ -5,8 +5,9 @@ type Fields = Record<string, unknown>;
 
 const order: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 
-// Keys whose values must never reach logs.
-const REDACT = /token|secret|password|key|cookie|authorization|uri/i;
+// Keys whose values must never reach logs (email addresses are personal data: log a masked
+// copy under another key, e.g. `to`).
+const REDACT = /token|secret|password|key|cookie|authorization|uri|email/i;
 
 function redact(fields: Fields): Fields {
   const out: Fields = {};
