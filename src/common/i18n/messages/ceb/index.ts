@@ -9,8 +9,10 @@ import { annotations } from "./annotations";
 import { mmr } from "./mmr";
 import { sessions } from "./sessions";
 import { goals } from "./goals";
+import { practice } from "./practice";
 import { achievements } from "./achievements";
 import { together } from "./together";
+import { groups } from "./groups";
 import { players } from "./players";
 import { leaderboards } from "./leaderboards";
 import { heroes } from "./heroes";
@@ -41,8 +43,10 @@ export const messages = {
   mmr,
   sessions,
   goals,
+  practice,
   achievements,
   together,
+  groups,
   players,
   leaderboards,
   heroes,

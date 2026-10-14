@@ -5,6 +5,8 @@
 import { getDb, getMongoClient } from "@/common/db/mongo";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
+import { PracticeRepository } from "@/modules/practice/practice.repository";
+import { GroupsRepository } from "@/modules/groups/repositories/groups.repository";
 import { SharesRepository } from "@/modules/shares/repositories/shares.repository";
 import { EmailLogRepository } from "@/modules/email/repositories/email-log.repository";
 import { EmailSubscriptionsRepository } from "@/modules/email/repositories/email-subscriptions.repository";
@@ -31,6 +33,7 @@ import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
 import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
+import { PlayerProfilesRepository } from "@/modules/players/repositories/player-profiles.repository";
 import {
   SessionNotesRepository,
   SessionSettingsRepository,
@@ -42,6 +45,8 @@ async function main(): Promise<void> {
   await new DraftMetaCacheRepository(async () => db).ensureIndexes();
   await new AnnotationsRepository(async () => db).ensureIndexes();
   await new GoalsRepository(async () => db).ensureIndexes();
+  await new PracticeRepository(async () => db).ensureIndexes();
+  await new GroupsRepository(async () => db).ensureIndexes();
   await new SharesRepository(async () => db).ensureIndexes();
   await new PushSubscriptionsRepository(async () => db).ensureIndexes();
   await new NotificationLogRepository(async () => db).ensureIndexes();
@@ -69,6 +74,7 @@ async function main(): Promise<void> {
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();
   await new FollowsRepository(async () => db).ensureIndexes();
+  await new PlayerProfilesRepository(async () => db).ensureIndexes();
   await Promise.all([
     new SessionNotesRepository(async () => db).ensureIndexes(),
     new SessionSettingsRepository(async () => db).ensureIndexes(),

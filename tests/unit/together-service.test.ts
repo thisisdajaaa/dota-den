@@ -59,6 +59,11 @@ class MemoryRepo implements TogetherMatchesPort {
       ),
     ];
   }
+  async sameTeamAmong(ids: readonly number[]) {
+    return [...this.rows.values()].filter(
+      (r) => ids.includes(r.accountIdA) && ids.includes(r.accountIdB),
+    );
+  }
   async partyMatchesOf(id: number) {
     return [...this.rows.values()].filter(
       (r) => r.relation === "party" && (r.accountIdA === id || r.accountIdB === id),

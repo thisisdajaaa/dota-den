@@ -47,8 +47,8 @@ const MATCHES = Array.from({ length: 12 }, (_, i) => ({
   // every game, Manta in four, BKB in two; consumables and components are filtered out.
   purchase: AM_PURCHASES[i] ?? null,
 }));
-// Both lineups per match (for draft grading): distinct fixture heroes, the player's own hero
-// in their slot.
+// Both lineups per match (the `heroes` projection: slot → hero), for draft grading and
+// matchups from your own games: distinct fixture heroes, the player's own hero in their slot.
 for (const m of MATCHES) {
   const slots = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132];
   m.heroes = Object.fromEntries(
@@ -802,16 +802,20 @@ const routes = [
 // Games "played" during a test (POST /e2e/play?account=…), newest first, per account.
 const PLAYED = new Map();
 let playedCount = 0;
-function play(accountId) {
+/**
+ * Options: `won` (default true), `enemyBase` (the Dire lineup is enemyBase…enemyBase+4, default
+ * 105) and `lineups: false` for a game the upstream has no lineup for.
+ */
+function play(accountId, { won = true, enemyBase = 105, lineups = true } = {}) {
   playedCount++;
   const match = {
     match_id: 7_200_000_000 + playedCount,
     player_slot: 1,
-    radiant_win: true,
     duration: 2045,
     game_mode: 22,
     lobby_type: 7,
     hero_id: 1,
+    radiant_win: won,
     // Ends up after any webhook the test set up before playing.
     start_time: Math.ceil(Date.now() / 1000),
     version: null,
@@ -821,6 +825,15 @@ function play(accountId) {
     average_rank: 55,
     // Not recorded: the feed must say Unknown, never solo.
     party_size: null,
+    // Both lineups (the `heroes` projection): the player in slot 1, fixture heroes elsewhere.
+    heroes: lineups
+      ? Object.fromEntries(
+          [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot, k) => [
+            String(slot),
+            { hero_id: slot === 1 ? 1 : slot < 128 ? 100 + k : enemyBase + k - 5 },
+          ]),
+        )
+      : null,
   };
   PLAYED.set(accountId, [match, ...(PLAYED.get(accountId) ?? [])]);
   return match;
@@ -965,7 +978,13 @@ createServer((req, res) => {
   if (url.pathname === "/health") return res.end("ok");
   if (url.pathname === "/e2e/play" && req.method === "POST") {
     res.writeHead(200, { "content-type": "application/json" });
-    return res.end(JSON.stringify(play(Number(url.searchParams.get("account")))));
+    const q = url.searchParams;
+    const match = play(Number(q.get("account")), {
+      won: q.get("result") !== "loss",
+      enemyBase: q.has("enemies") ? Number(q.get("enemies")) : undefined,
+      lineups: q.get("lineups") !== "none",
+    });
+    return res.end(JSON.stringify(match));
   }
   if (url.pathname.startsWith("/api/webhooks/") || url.pathname.startsWith("/discord/")) {
     let body = "";

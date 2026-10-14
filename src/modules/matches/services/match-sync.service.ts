@@ -110,6 +110,7 @@ export class MatchSyncService {
       rejected: 0,
       backfillComplete: fresh || rescan ? false : state.backfillComplete,
       historyRefreshRequested: false,
+      lineupsComplete: state.lineupBackfillComplete,
     };
 
     try {
@@ -168,6 +169,30 @@ export class MatchSyncService {
         if (page.value.rawCount < pageSize) summary.backfillComplete = true;
       }
 
+      // Lineups: games imported before lineups were kept are re-read, a page at a time, from
+      // the same paged history call (never one call per match), with whatever budget is left.
+      // New matches above shift the older ones down, so the offset moves with them; the head
+      // pages this sync already read (offsets below `offset`) have their lineups now.
+      let lineupOffset = Math.max(
+        state.lineupBackfillOffset + (state.newestStartedAt ? newCount : 0),
+        offset,
+      );
+      while (!summary.lineupsComplete) {
+        if ((await this.deps.facts.countWithoutLineups(accountId32)) === 0) {
+          summary.lineupsComplete = true;
+          break;
+        }
+        if (budget <= 0) break;
+        if (opts.deadline !== undefined && this.now().getTime() >= opts.deadline) break;
+        const page = await this.fetchPage(accountId32, lineupOffset, pageSize, entries, summary);
+        budget--;
+        // Lineups can wait too: carry on next time.
+        if (!page.ok) break;
+        lineupOffset += pageSize;
+        // The whole history has been re-read: games left without lineups have none upstream.
+        if (page.value.rawCount < pageSize) summary.lineupsComplete = true;
+      }
+
       // Ask the upstream to fetch the full history from Steam: on first sync, every 6h while
       // still empty, and weekly otherwise. Best effort; the import itself already succeeded.
       let historyRefreshRequestedAt = state.historyRefreshRequestedAt;
@@ -191,6 +216,8 @@ export class MatchSyncService {
         backfillComplete: summary.backfillComplete,
         historyRefreshRequestedAt,
         rescannedAt: rescan ? this.now() : state.rescannedAt,
+        lineupBackfillOffset: summary.lineupsComplete ? 0 : lineupOffset,
+        lineupBackfillComplete: summary.lineupsComplete,
       });
       return ok(summary);
     } catch (e) {

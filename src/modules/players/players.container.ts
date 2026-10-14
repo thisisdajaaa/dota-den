@@ -7,11 +7,13 @@ import { matchesService } from "@/modules/matches";
 import { OpenDotaPlayerDirectory, steamAvatar } from "./infrastructure/opendota-player-directory";
 import { PlayersController } from "./players.controller";
 import { FollowsRepository } from "./repositories/follows.repository";
+import { PlayerProfilesRepository } from "./repositories/player-profiles.repository";
 import { FollowService } from "./services/follow.service";
 import { PlayersService } from "./services/players.service";
 
 export const followsRepository = new FollowsRepository(getDb);
 export const followService = new FollowService(followsRepository, { data: followsRepository });
+export const playerProfilesRepository = new PlayerProfilesRepository(getDb);
 
 /** The shared OpenDota gateway: one cache, dedup and circuit breaker for the whole app. */
 export const playerDirectory = lazy(
@@ -28,6 +30,7 @@ export const playersService = lazy(
       },
       follows: followService,
       safeAvatar: steamAvatar,
+      snapshots: playerProfilesRepository,
       logger,
     }),
 );

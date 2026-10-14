@@ -1,6 +1,8 @@
 import type { LaneGame } from "@/modules/meta/domain/position";
 import type { Result } from "@/common/result";
 import type { HeroGame, ItemMeta, MatchupRow } from "./domain/hero-stats";
+import type { LineupGame } from "./domain/own-matchups";
+import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 
 export type SourceError =
   | { type: "rate_limited"; retryAfterMs: number | null }
@@ -13,6 +15,16 @@ export type SourceResult<T> = Promise<Result<T, SourceError>>;
 /** Your imported games (our database), for records and trends. */
 export interface OwnHeroGames {
   games(accountId32: number): Promise<HeroGame[]>;
+}
+
+/** Your imported games with both lineups (our database), and how far their backfill is. */
+export interface OwnLineups {
+  games(
+    accountId32: number,
+    filter: MatchupsFilter,
+    now: Date,
+  ): Promise<{ games: LineupGame[]; latestPatch: string | null }>;
+  coverage(accountId32: number): Promise<{ total: number; withLineups: number; complete: boolean }>;
 }
 
 /** Per-game extras OpenDota keeps for your games on a hero (not stored by us). */

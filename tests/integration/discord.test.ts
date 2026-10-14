@@ -125,6 +125,8 @@ describe("Discord feed end to end (database, fake Discord)", () => {
           role: null,
           partySize,
           averageRankTier: null,
+          allyHeroIds: null,
+          enemyHeroIds: null,
           provenance: { provider: "opendota", fetchedAt: T0, parseStatus: "unparsed" },
         },
         [],
