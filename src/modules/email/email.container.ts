@@ -13,11 +13,14 @@ import type { EmailLinks } from "./email.ports";
 import { ResendEmailSender } from "./infrastructure/resend-email-sender";
 import { EmailLogRepository } from "./repositories/email-log.repository";
 import { EmailSubscriptionsRepository } from "./repositories/email-subscriptions.repository";
+import { EmailWebhookEventsRepository } from "./repositories/email-webhook-events.repository";
 import { EmailDigestService } from "./services/email-digest.service";
 import { EmailService } from "./services/email.service";
+import { EmailWebhookService } from "./services/email-webhook.service";
 
 export const emailSubscriptionsRepository = new EmailSubscriptionsRepository(getDb);
 export const emailLogRepository = new EmailLogRepository(getDb);
+export const emailWebhookEventsRepository = new EmailWebhookEventsRepository(getDb);
 
 /** True when RESEND_API_KEY and EMAIL_FROM are set (env.ts requires both or neither). */
 export function emailEnabled(): boolean {
@@ -120,4 +123,18 @@ export const emailDigest = lazy(
     }),
 );
 
-export const emailController = new EmailController({ service: emailService });
+/** Resend's bounce and complaint webhooks; off (404) without RESEND_WEBHOOK_SECRET. */
+export const emailWebhooks = lazy(
+  () =>
+    new EmailWebhookService({
+      subscriptions: emailSubscriptionsRepository,
+      events: emailWebhookEventsRepository,
+      secret: env().RESEND_WEBHOOK_SECRET ?? null,
+      logger,
+    }),
+);
+
+export const emailController = new EmailController({
+  service: emailService,
+  webhooks: emailWebhooks,
+});

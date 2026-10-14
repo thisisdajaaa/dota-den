@@ -116,12 +116,17 @@ slow work done inline. The design is in [ADR 0008](adr/0008-redis-and-background
 Unset, email is off: the Account page says it isn't available yet and nothing is sent. The design is in
 [ADR 0011](adr/0011-weekly-email-digest.md).
 
-| Variable              | Default                  | Meaning                                                                                                                     |
-| --------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `RESEND_API_KEY`      | unset                    | Resend API key. Set both this and `EMAIL_FROM`, or neither                                                                  |
-| `EMAIL_FROM`          | unset                    | Sender, e.g. `Dota Den <digest@yourdomain.com>`; the domain must be verified in Resend                                      |
-| `RESEND_API_BASE_URL` | `https://api.resend.com` | Tests point this at the fixture server's fake Resend API                                                                    |
-| `EMAIL_TOKEN_SECRET`  | derived from the API key | Signs confirmation and unsubscribe links (32+ chars). Set it so rotating the Resend key keeps old unsubscribe links working |
+| Variable                | Default                  | Meaning                                                                                                                                                                                                                            |
+| ----------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`        | unset                    | Resend API key. Set both this and `EMAIL_FROM`, or neither                                                                                                                                                                         |
+| `EMAIL_FROM`            | unset                    | Sender, e.g. `Dota Den <digest@yourdomain.com>`; the domain must be verified in Resend                                                                                                                                             |
+| `RESEND_API_BASE_URL`   | `https://api.resend.com` | Tests point this at the fixture server's fake Resend API                                                                                                                                                                           |
+| `EMAIL_TOKEN_SECRET`    | derived from the API key | Signs confirmation and unsubscribe links (32+ chars). Set it so rotating the Resend key keeps old unsubscribe links working                                                                                                        |
+| `RESEND_WEBHOOK_SECRET` | unset                    | Resend webhook signing secret (`whsec_…`). With it, `POST /api/v1/email/webhook` accepts Resend's signed `email.bounced` and `email.complained` events and stops the weekly email to that address. Unset, the endpoint answers 404 |
+
+To turn on bounce and complaint handling, add a webhook in Resend (Webhooks → Add endpoint) for
+`https://<your-site>/api/v1/email/webhook` with the events `email.bounced` and `email.complained`,
+then copy its signing secret into `RESEND_WEBHOOK_SECRET`.
 
 ## Test-only
 

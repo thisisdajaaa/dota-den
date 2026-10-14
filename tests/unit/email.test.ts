@@ -9,6 +9,7 @@ import {
   type DigestWeek,
 } from "@/modules/email/domain/digest";
 import { isEmailAddress, maskEmail, normalizeEmail } from "@/modules/email/domain/email-address";
+import { deliveryStop, recipientAddress } from "@/modules/email/domain/delivery-events";
 import { escapeHtml, renderEmail } from "@/modules/email/domain/email-template";
 import {
   confirmationTokenHash,
@@ -17,8 +18,14 @@ import {
   readUnsubscribeToken,
   unsubscribeToken,
 } from "@/modules/email/domain/email-tokens";
+import {
+  signWebhook,
+  verifyWebhookSignature,
+  webhookKey,
+} from "@/modules/email/domain/webhook-signature";
 import type {
   EmailLinks,
+  EmailWebhookEventsPort,
   EmailLogPort,
   EmailSender,
   EmailSubscription,
@@ -31,6 +38,7 @@ import { ResendEmailSender } from "@/modules/email/infrastructure/resend-email-s
 import { SubscribeEmailSchema } from "@/modules/email/schemas/email.schema";
 import { EmailDigestService } from "@/modules/email/services/email-digest.service";
 import { EmailService } from "@/modules/email/services/email.service";
+import { EmailWebhookService } from "@/modules/email/services/email-webhook.service";
 
 const KEY = "test-signing-key-0123456789abcdef0123456789";
 const HOUR = 3_600_000;
@@ -233,6 +241,15 @@ function fakeSubscriptions() {
       if (!d || d.status !== "confirmed" || d.unsubscribeNonce !== nonce) return false;
       Object.assign(d, { status: "unsubscribed", unsubscribeNonce: null });
       return true;
+    },
+    stopAddress: async (email, reason) => {
+      let n = 0;
+      for (const d of docs.values())
+        if (d.email === email && !["bounced", "complained"].includes(d.status)) {
+          Object.assign(d, { status: reason, tokenHash: null, unsubscribeNonce: null });
+          n++;
+        }
+      return n;
     },
     remove: async (userId) => docs.delete(userId),
     confirmed: async () =>
@@ -717,5 +734,283 @@ describe("email environment", () => {
       parseEnv({ ...base, RESEND_API_KEY: "re_x", EMAIL_FROM: "not an address" }),
     ).toThrow(/EMAIL_FROM/);
     expect(() => parseEnv({ ...base, EMAIL_TOKEN_SECRET: "short" })).toThrow(/EMAIL_TOKEN_SECRET/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------
+// Bounces and spam complaints (Resend webhooks, signed with Svix).
+
+const WEBHOOK_SECRET = `whsec_${Buffer.from("unit-test-webhook-key-0123456789").toString("base64")}`;
+const OTHER_SECRET = `whsec_${Buffer.from("another-webhook-key-9876543210ab").toString("base64")}`;
+
+describe("webhook signatures (Svix)", () => {
+  const now = new Date("2026-10-14T10:00:00Z");
+  const ts = String(Math.floor(now.getTime() / 1000));
+  const body = JSON.stringify({ type: "email.bounced", data: { to: ["a@example.com"] } });
+  const signed = (over: Partial<Parameters<typeof verifyWebhookSignature>[0]> = {}) => ({
+    secret: WEBHOOK_SECRET,
+    id: "msg_1",
+    timestamp: ts,
+    signature: signWebhook(WEBHOOK_SECRET, "msg_1", ts, body),
+    body,
+    now,
+    ...over,
+  });
+
+  it("matches Svix's documented example", () => {
+    // From Svix's "verifying payloads manually" docs and their libraries' test vectors.
+    const secret = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw";
+    const payload = '{"test": 2432232314}';
+    expect(signWebhook(secret, "msg_p5jXN8AQM9LWM0D4loKWxJek", "1614265330", payload)).toBe(
+      "v1,g0hM9SsE+OTPJTGt/tmIKtSyZlE3uFJELVlNIOLJ1OE=",
+    );
+  });
+
+  it("accepts a fresh request signed with the secret", () => {
+    expect(verifyWebhookSignature(signed())).toBeNull();
+    // Our clock may be a little off from theirs.
+    expect(
+      verifyWebhookSignature(signed({ now: new Date(now.getTime() + 4 * 60_000) })),
+    ).toBeNull();
+  });
+
+  it("rejects a wrong secret, a tampered body, id or timestamp", () => {
+    expect(
+      verifyWebhookSignature(signed({ signature: signWebhook(OTHER_SECRET, "msg_1", ts, body) })),
+    ).toBe("no_match");
+    expect(verifyWebhookSignature(signed({ body: body.replace("a@", "b@") }))).toBe("no_match");
+    expect(verifyWebhookSignature(signed({ body: `${body} ` }))).toBe("no_match");
+    expect(verifyWebhookSignature(signed({ id: "msg_2" }))).toBe("no_match");
+    expect(verifyWebhookSignature(signed({ timestamp: String(Number(ts) + 1) }))).toBe("no_match");
+  });
+
+  it("rejects timestamps more than five minutes off, either way", () => {
+    const at = (offsetMs: number) => {
+      const t = String(Math.floor((now.getTime() + offsetMs) / 1000));
+      return signed({ timestamp: t, signature: signWebhook(WEBHOOK_SECRET, "msg_1", t, body) });
+    };
+    expect(verifyWebhookSignature(at(-6 * 60_000))).toBe("stale_timestamp");
+    expect(verifyWebhookSignature(at(6 * 60_000))).toBe("stale_timestamp");
+    expect(verifyWebhookSignature(at(-4 * 60_000))).toBeNull();
+    expect(verifyWebhookSignature(signed({ timestamp: "soon" }))).toBe("bad_timestamp");
+  });
+
+  it("accepts any matching v1 signature in the list, and nothing else", () => {
+    const good = signWebhook(WEBHOOK_SECRET, "msg_1", ts, body);
+    const old = signWebhook(OTHER_SECRET, "msg_1", ts, body);
+    expect(verifyWebhookSignature(signed({ signature: `${old} ${good}` }))).toBeNull();
+    expect(verifyWebhookSignature(signed({ signature: `${good} ${old}` }))).toBeNull();
+    expect(verifyWebhookSignature(signed({ signature: old }))).toBe("no_match");
+    // Another version, a bare value or garbage don't count.
+    expect(verifyWebhookSignature(signed({ signature: good.replace("v1,", "v2,") }))).toBe(
+      "no_match",
+    );
+    expect(verifyWebhookSignature(signed({ signature: good.slice(3) }))).toBe("no_match");
+    expect(verifyWebhookSignature(signed({ signature: "v1,AAAA" }))).toBe("no_match");
+  });
+
+  it("needs all three headers and a whsec_ secret", () => {
+    expect(verifyWebhookSignature(signed({ id: null }))).toBe("missing_headers");
+    expect(verifyWebhookSignature(signed({ timestamp: null }))).toBe("missing_headers");
+    expect(verifyWebhookSignature(signed({ signature: "" }))).toBe("missing_headers");
+    expect(verifyWebhookSignature(signed({ secret: "not-a-secret" }))).toBe("bad_secret");
+    expect(webhookKey(WEBHOOK_SECRET)?.toString()).toBe("unit-test-webhook-key-0123456789");
+    expect(webhookKey("whsec_")).toBeNull();
+  });
+});
+
+describe("delivery events", () => {
+  it("stops on hard bounces and complaints only", () => {
+    expect(
+      deliveryStop({
+        type: "email.bounced",
+        data: { to: ["P@Example.com"], bounce: { type: "Permanent" } },
+      }),
+    ).toEqual({ reason: "bounced", recipients: ["p@example.com"] });
+    expect(deliveryStop({ type: "email.bounced", data: { to: ["p@example.com"] } })).toEqual({
+      reason: "bounced",
+      recipients: ["p@example.com"],
+    });
+    expect(
+      deliveryStop({
+        type: "email.bounced",
+        data: { to: ["p@example.com"], bounce: { type: "Temporary" } },
+      }),
+    ).toBeNull();
+    expect(
+      deliveryStop({ type: "email.complained", data: { to: "Player <p@example.com>" } }),
+    ).toEqual({ reason: "complained", recipients: ["p@example.com"] });
+    expect(deliveryStop({ type: "email.delivered", data: { to: ["p@example.com"] } })).toBeNull();
+    expect(deliveryStop({ type: "email.bounced", data: { to: ["not an address"] } })).toBeNull();
+    expect(deliveryStop({ type: "email.bounced" })).toBeNull();
+  });
+
+  it("reads plain and named recipients", () => {
+    expect(recipientAddress(" A@Example.com ")).toBe("a@example.com");
+    expect(recipientAddress("Ann <ann@example.com>")).toBe("ann@example.com");
+    expect(recipientAddress("<script>")).toBeNull();
+  });
+});
+
+function webhookSetup(opts: { secret?: string | null } = {}) {
+  const base = setup();
+  const claimed = new Set<string>();
+  const events: EmailWebhookEventsPort = {
+    claim: async (id) => (claimed.has(id) ? false : (claimed.add(id), true)),
+    release: async (id) => {
+      claimed.delete(id);
+    },
+  };
+  const clock = new Date("2026-10-14T10:00:00Z");
+  const webhookLogger = { info: vi.fn(), warn: vi.fn() };
+  const webhooks = new EmailWebhookService({
+    subscriptions: base.subs.port,
+    events,
+    secret: opts.secret === undefined ? WEBHOOK_SECRET : opts.secret,
+    logger: webhookLogger,
+    now: () => clock,
+  });
+  const ts = String(Math.floor(clock.getTime() / 1000));
+  const post = (event: unknown, id = `msg_${Math.random()}`, secret = WEBHOOK_SECRET) => {
+    const body = JSON.stringify(event);
+    return webhooks.receive({
+      id,
+      timestamp: ts,
+      signature: signWebhook(secret, id, ts, body),
+      body,
+    });
+  };
+  return { ...base, webhooks, post, claimed, webhookLogger };
+}
+
+const bounce = (to: string, type = "Permanent") => ({
+  type: "email.bounced",
+  created_at: "2026-10-14T10:00:00.000Z",
+  data: { email_id: "e1", to: [to], subject: "s", bounce: { type, subType: "General" } },
+});
+const complaint = (to: string) => ({ type: "email.complained", data: { to: [to] } });
+
+describe("EmailWebhookService (bounces and complaints)", () => {
+  it("doesn't exist without a secret, and refuses unsigned or wrongly signed requests", async () => {
+    const off = webhookSetup({ secret: null });
+    expect(off.webhooks.enabled).toBe(false);
+    await expect(off.post(bounce("p@example.com"))).rejects.toMatchObject({ code: "not_found" });
+
+    const s = webhookSetup();
+    const sub = await confirmedUser(s);
+    await expect(
+      s.webhooks.receive({
+        id: "m",
+        timestamp: null,
+        signature: null,
+        body: JSON.stringify(bounce(sub.email)),
+      }),
+    ).rejects.toMatchObject({ code: "unauthorized" });
+    await expect(s.post(bounce(sub.email), "m2", OTHER_SECRET)).rejects.toMatchObject({
+      code: "unauthorized",
+    });
+    expect((await s.service.status("u1")).status).toBe("confirmed");
+    expect(s.claimed.size).toBe(0);
+  });
+
+  it("a hard bounce stops the digest, test emails and old links for that address", async () => {
+    const s = webhookSetup();
+    const sub = await confirmedUser(s);
+    const other = await confirmedUser(s, "u2", "other@example.com");
+    expect(await s.post(bounce("P@example.com"))).toEqual({ outcome: "processed", stopped: 1 });
+    expect(await s.service.status("u1")).toEqual({
+      enabled: true,
+      email: "p@example.com",
+      status: "bounced",
+    });
+    expect((await s.service.confirmedSubscribers()).map((x) => x.userId)).toEqual(["u2"]);
+    const build = vi.fn(async () => ({ lang: "en", subject: "s", preheader: "p", heading: "h" }));
+    expect(await s.service.sendOnce(sub, "weekly_digest", "w", build)).toBe("skipped");
+    expect(build).not.toHaveBeenCalled();
+    expect(await s.service.sendOnce(other, "weekly_digest", "w", build)).toBe("sent");
+    await expect(s.service.sendTest("u1", null)).rejects.toMatchObject({ code: "conflict" });
+    // The address is never logged in full.
+    expect(JSON.stringify(s.webhookLogger.info.mock.calls)).not.toContain("p@example.com");
+    expect(JSON.stringify(s.webhookLogger.info.mock.calls)).toContain("p***@example.com");
+  });
+
+  it("a complaint stops a pending address too: its confirmation link no longer works", async () => {
+    const s = webhookSetup();
+    await s.service.subscribe("u1", "p@example.com", null);
+    const token = tokenFrom(s.mail.sent[0]);
+    expect(await s.post(complaint("p@example.com"))).toEqual({ outcome: "processed", stopped: 1 });
+    expect((await s.service.status("u1")).status).toBe("complained");
+    expect(await s.service.confirm(token)).toBe("invalid");
+    expect(await s.service.confirmedSubscribers()).toEqual([]);
+  });
+
+  it("ignores soft bounces, other events and other addresses", async () => {
+    const s = webhookSetup();
+    await confirmedUser(s);
+    expect(await s.post(bounce("p@example.com", "Temporary"))).toEqual({ outcome: "ignored" });
+    expect(await s.post({ type: "email.delivered", data: { to: ["p@example.com"] } })).toEqual({
+      outcome: "ignored",
+    });
+    expect(await s.post(bounce("someone@example.com"))).toEqual({
+      outcome: "processed",
+      stopped: 0,
+    });
+    expect((await s.service.status("u1")).status).toBe("confirmed");
+  });
+
+  it("handles a retried message once", async () => {
+    const s = webhookSetup();
+    await confirmedUser(s);
+    expect(await s.post(bounce("p@example.com"), "msg_same")).toEqual({
+      outcome: "processed",
+      stopped: 1,
+    });
+    expect(await s.post(bounce("p@example.com"), "msg_same")).toEqual({ outcome: "duplicate" });
+  });
+
+  it("rejects a signed body that isn't an event", async () => {
+    const s = webhookSetup();
+    await expect(s.post({ nope: true })).rejects.toMatchObject({ code: "bad_request" });
+  });
+
+  it("entering an address again restarts the double opt-in", async () => {
+    const s = webhookSetup();
+    await confirmedUser(s);
+    await s.post(complaint("p@example.com"));
+    s.tick(61_000);
+    // The same address typed again is a new, explicit request: it needs confirming again.
+    const status = await s.service.subscribe("u1", "p@example.com", null);
+    expect(status.status).toBe("pending");
+    expect(await s.service.confirmedSubscribers()).toEqual([]);
+    expect(await s.service.confirm(tokenFrom(s.mail.sent.at(-1)!))).toBe("confirmed");
+    expect((await s.service.status("u1")).status).toBe("confirmed");
+  });
+
+  it("releases the claim when handling fails, so Resend's retry is handled", async () => {
+    const s = webhookSetup();
+    await confirmedUser(s);
+    const stop = s.subs.port.stopAddress;
+    s.subs.port.stopAddress = async () => {
+      throw new Error("db down");
+    };
+    await expect(s.post(bounce("p@example.com"), "msg_retry")).rejects.toThrow("db down");
+    s.subs.port.stopAddress = stop;
+    expect(await s.post(bounce("p@example.com"), "msg_retry")).toMatchObject({
+      outcome: "processed",
+    });
+  });
+});
+
+describe("webhook environment", () => {
+  const base = { APP_URL: "http://localhost:3000", MONGODB_URI: "mongodb://localhost:27017" };
+
+  it("accepts a whsec_ secret, or none", () => {
+    expect(parseEnv(base).RESEND_WEBHOOK_SECRET).toBeUndefined();
+    expect(parseEnv({ ...base, RESEND_WEBHOOK_SECRET: WEBHOOK_SECRET }).RESEND_WEBHOOK_SECRET).toBe(
+      WEBHOOK_SECRET,
+    );
+    expect(() => parseEnv({ ...base, RESEND_WEBHOOK_SECRET: "secret" })).toThrow(
+      /RESEND_WEBHOOK_SECRET/,
+    );
   });
 });

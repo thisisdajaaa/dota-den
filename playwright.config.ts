@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import webpush from "web-push";
+import { E2E_RESEND_WEBHOOK_SECRET } from "./tests/e2e/support/resend-webhook";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
@@ -69,6 +70,8 @@ export default defineConfig({
         EMAIL_FROM: "Dota Den <digest@e2e.example>",
         RESEND_API_BASE_URL: `${fixtureURL}/resend`,
         EMAIL_TOKEN_SECRET: "",
+        // Bounce and complaint webhooks: tests sign fake Resend events with this test secret.
+        RESEND_WEBHOOK_SECRET: E2E_RESEND_WEBHOOK_SECRET,
       },
     },
   ],

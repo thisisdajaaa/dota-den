@@ -26,6 +26,11 @@ export const email: MessageTree<typeof en> = {
     test: "Pagpadala og test email",
     testSent: "Napadala ang test email. Tan-awa ang imong inbox.",
     stopped: "Naka-off na ang sinemanang email. Napapas na ang imong address.",
+    bounced:
+      "Dili namo mapadala ang email niining address ({email}), mao nga naka-off ang sinemanang email. Pagbutang og address pag-usab aron magsugod pag-usab.",
+    complained:
+      "Gimarkahan nimo ang email nga spam, mao nga among gihunong ang pagpadala sa {email}. Pagbutang og address pag-usab kung gusto nimo kini ibalik.",
+    again: "Pagbutang og address pag-usab",
     failed: "Dili ma-save. Sulayi pag-usab.",
   },
   link: {

@@ -141,6 +141,18 @@ const EnvSchema = z
     RESEND_API_BASE_URL: z.url().optional(),
     /** Signs links in emails. Defaults to a key derived from RESEND_API_KEY. */
     EMAIL_TOKEN_SECRET: z.string().min(32).optional(),
+    /**
+     * Resend webhook signing secret (`whsec_…`, Svix): bounces and spam complaints stop the
+     * weekly email to that address. Unset: the webhook endpoint answers 404.
+     */
+    RESEND_WEBHOOK_SECRET: z
+      .string()
+      .trim()
+      .regex(
+        /^whsec_[A-Za-z0-9+/]{16,}={0,2}$/,
+        "RESEND_WEBHOOK_SECRET must look like whsec_<base64>",
+      )
+      .optional(),
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
     ...TUNING,

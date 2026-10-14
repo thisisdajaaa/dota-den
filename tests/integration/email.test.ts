@@ -3,12 +3,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EMAIL_COLLECTIONS } from "@/modules/email/email.model";
 import { EmailLogRepository } from "@/modules/email/repositories/email-log.repository";
 import { EmailSubscriptionsRepository } from "@/modules/email/repositories/email-subscriptions.repository";
+import { EmailWebhookEventsRepository } from "@/modules/email/repositories/email-webhook-events.repository";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
 let teardown: () => Promise<void>;
 let subs: EmailSubscriptionsRepository;
 let log: EmailLogRepository;
+let events: EmailWebhookEventsRepository;
 const now = new Date("2026-10-12T06:30:00Z");
 const later = (ms: number) => new Date(now.getTime() + ms);
 const owner = { userId: "u1", accountId32: 1 };
@@ -18,8 +20,10 @@ beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
   subs = new EmailSubscriptionsRepository(async () => db);
   log = new EmailLogRepository(async () => db);
+  events = new EmailWebhookEventsRepository(async () => db);
   await subs.ensureIndexes();
   await log.ensureIndexes();
+  await events.ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -90,5 +94,62 @@ describe("EmailLogRepository", () => {
     );
     expect(ttl?.expireAfterSeconds).toBe(90 * 24 * 3600);
     expect(await log.deleteForOwner(owner)).toBe(1);
+  });
+});
+
+describe("bounces and complaints", () => {
+  it("stops every live subscription to the address, and only those", async () => {
+    // b1 confirmed, b2 pending, both on the bounced address; b3 confirmed elsewhere.
+    await subs.startConfirmation("b1", "dead@example.com", token("hb1"), [now], now);
+    await subs.confirm("hb1", "nb1", now);
+    await subs.startConfirmation("b2", "dead@example.com", token("hb2"), [now], now);
+    await subs.startConfirmation("b3", "alive@example.com", token("hb3"), [now], now);
+    await subs.confirm("hb3", "nb3", now);
+
+    expect(await subs.stopAddress("dead@example.com", "bounced", later(1000))).toBe(2);
+    expect(await subs.get("b1")).toMatchObject({ status: "bounced", unsubscribeNonce: null });
+    expect(await subs.get("b2")).toMatchObject({ status: "bounced" });
+    const stopped = await db
+      .collection(EMAIL_COLLECTIONS.subscriptions)
+      .findOne({ _id: "b2" as never });
+    expect(stopped).toMatchObject({
+      confirmTokenHash: null,
+      confirmExpiresAt: null,
+      stoppedAt: later(1000),
+    });
+    // The pending link is gone; the confirmed one's unsubscribe nonce too.
+    expect(await subs.confirm("hb2", "x", now)).toBeNull();
+    expect(await subs.unsubscribe("b1", "nb1", now)).toBe(false);
+    expect((await subs.confirmed()).map((s) => s.userId)).toEqual(["b3"]);
+
+    // Already stopped: a later complaint doesn't change the reason.
+    expect(await subs.stopAddress("dead@example.com", "complained", later(2000))).toBe(0);
+    expect(await subs.get("b1")).toMatchObject({ status: "bounced" });
+    expect(await subs.stopAddress("alive@example.com", "complained", later(2000))).toBe(1);
+    expect(await subs.get("b3")).toMatchObject({ status: "complained" });
+
+    // Entering an address again restarts the double opt-in.
+    await subs.startConfirmation("b1", "dead@example.com", token("hb4"), [now], later(3000));
+    const restarted = await db
+      .collection(EMAIL_COLLECTIONS.subscriptions)
+      .findOne({ _id: "b1" as never });
+    expect(restarted).toMatchObject({ status: "pending", stoppedAt: null });
+    expect(await subs.confirm("hb4", "nb4", later(3000))).toEqual({ userId: "b1" });
+    const indexes = await db.collection(EMAIL_COLLECTIONS.subscriptions).indexes();
+    expect(indexes.map((i) => i.name)).toContain("by_email");
+  });
+
+  it("claims each webhook message id once, with an expiry", async () => {
+    expect(await events.claim("msg_1", "email.bounced", now)).toBe(true);
+    expect(await events.claim("msg_1", "email.bounced", now)).toBe(false);
+    await events.release("msg_1");
+    expect(await events.claim("msg_1", "email.bounced", now)).toBe(true);
+    const doc = await db.collection(EMAIL_COLLECTIONS.webhookEvents).findOne({});
+    // No addresses are kept with handled events.
+    expect(Object.keys(doc!).sort()).toEqual(["_id", "receivedAt", "type"]);
+    const ttl = (await db.collection(EMAIL_COLLECTIONS.webhookEvents).indexes()).find(
+      (i) => i.name === "ttl",
+    );
+    expect(ttl?.expireAfterSeconds).toBe(7 * 24 * 3600);
   });
 });
