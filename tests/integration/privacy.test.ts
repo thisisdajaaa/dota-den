@@ -6,6 +6,8 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { GoalsService } from "@/modules/goals/goals.service";
+import { GroupsRepository } from "@/modules/groups/repositories/groups.repository";
+import { GroupsService } from "@/modules/groups/services/groups.service";
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { VisitDaysRepository } from "@/modules/identity/repositories/visit-days.repository";
@@ -68,6 +70,15 @@ const practicePart = servicePart(
 );
 const annotationsPart = servicePart(
   (getDb) => new AnnotationsService({ repository: new AnnotationsRepository(getDb) }),
+);
+
+const groupsPart = servicePart(
+  (getDb) =>
+    new GroupsService({
+      repository: new GroupsRepository(getDb),
+      profiles: { profiles: async () => new Map() },
+      newToken: () => "unused",
+    }),
 );
 
 const identity = servicePart(
@@ -158,6 +169,7 @@ const PARTS = [
   annotationsPart,
   goalsPart,
   practicePart,
+  groupsPart,
   identity,
 ];
 
@@ -195,14 +207,36 @@ async function seed(userId: ObjectId, accountId32: number, friendAccount: number
   await db
     .collection("together_matches")
     .insertOne({ accountIdA: accountId32, accountIdB: friendAccount });
+  // A group of your own, and one you share with the friend's account (owned by you).
+  const groups = new GroupsRepository(async () => db);
+  const joinedAt = new Date("2026-10-01T00:00:00Z");
+  await groups.create({
+    name: `Solo ${u}`,
+    owner: { userId: u, accountId32, joinedAt },
+    inviteToken: `solo${u}`,
+    now: joinedAt,
+  });
+  return groups.create({
+    name: `Shared ${u}`,
+    owner: { userId: u, accountId32, joinedAt },
+    inviteToken: `shared${u}`,
+    now: joinedAt,
+  });
 }
 
 describe("deleting your data", () => {
   it("removes everything about you, anonymises shared drafts, and leaves others alone", async () => {
     const me = new ObjectId();
     const other = new ObjectId();
-    await seed(me, 111, 222);
+    const myGroup = await seed(me, 111, 222);
     await seed(other, 222, 333);
+    // The friend joined my shared group: it passes to them when I go.
+    await new GroupsRepository(async () => db).addMember(
+      myGroup.id,
+      { userId: other.toHexString(), accountId32: 222, joinedAt: new Date("2026-10-02T00:00:00Z") },
+      10,
+      new Date(),
+    );
     // A friend-room draft shared by both captains.
     await db.collection("draft_history").insertOne({
       captains: {
@@ -222,6 +256,8 @@ describe("deleting your data", () => {
     expect(exported.friendRoomDrafts).toHaveLength(1);
     expect(exported.weeklyGoals).toHaveLength(1);
     expect(exported.practicePlans).toHaveLength(1);
+    expect(exported.groups).toHaveLength(2);
+    expect(JSON.stringify(exported.groups)).not.toContain("solo");
     expect(JSON.stringify(exported)).not.toContain("tokenHash");
 
     for (const p of PARTS) await p.deleteUserData(db, owner);
@@ -236,6 +272,8 @@ describe("deleting your data", () => {
         { captainUserIds: me.toHexString() },
         { accountIdA: 111 },
         { accountIdB: 111 },
+        { "members.userId": me.toHexString() },
+        { ownerUserId: me.toHexString() },
       ],
     };
     for (const name of await db
@@ -254,5 +292,14 @@ describe("deleting your data", () => {
       1,
     );
     expect(await db.collection("player_match_facts").countDocuments({ accountId32: 222 })).toBe(1);
+    // My solo group is gone; the shared one now belongs to the friend.
+    expect(await db.collection("groups").findOne({ name: `Solo ${me.toHexString()}` })).toBeNull();
+    expect(await db.collection("groups").findOne({ _id: new ObjectId(myGroup.id) })).toMatchObject({
+      ownerUserId: other.toHexString(),
+      members: [expect.objectContaining({ accountId32: 222 })],
+    });
+    expect(await db.collection("groups").countDocuments({ ownerUserId: other.toHexString() })).toBe(
+      3,
+    );
   });
 });

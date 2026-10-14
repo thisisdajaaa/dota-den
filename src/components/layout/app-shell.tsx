@@ -24,6 +24,7 @@ const ENABLED: readonly NavKey[] = [
   "sessions",
   "report",
   "together",
+  "groups",
   "meta",
   "guides",
   "players",

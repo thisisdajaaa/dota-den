@@ -31,6 +31,7 @@ const SIGNED_IN = [
   "/mmr",
   "/sessions",
   "/together",
+  "/groups",
   "/heroes",
   "/leaderboards",
   "/report",

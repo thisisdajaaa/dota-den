@@ -10,6 +10,7 @@ export const common = {
     sessions: "Sessions",
     report: "Battle report",
     together: "Together",
+    groups: "Groups",
     meta: "Meta",
     guides: "Guides",
     players: "Players",

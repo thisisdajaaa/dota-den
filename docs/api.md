@@ -51,6 +51,22 @@ All routes live under `src/app/api`. Responses are JSON.
 | `DELETE /api/v1/mmr-entries/{id}`        | signed in, same-origin                  | Delete your entry                                                                                          |
 | `PUT /api/v1/sessions/{sessionId}/notes` | signed in, same-origin, 30/min per user | `{note?, goal?, goalMet?: "yes" \| "no" \| "partly"}`; 404 for another account's session                   |
 
+## Groups
+
+Every route needs you signed in; writes need the same origin and are rate limited. A group you
+aren't in is 404, and owner-only actions answer 403 to other members.
+
+| Method & path                                    | Auth      | Body → response                                                               |
+| ------------------------------------------------ | --------- | ----------------------------------------------------------------------------- |
+| `GET /api/v1/groups`                             | signed in | Your groups: `[{id, name, isOwner, memberCount}]`                             |
+| `POST /api/v1/groups`                            | signed in | `{name}` (2–40 characters) → 201; 409 when you're already in 5 groups         |
+| `PATCH /api/v1/groups/{id}`                      | owner     | `{name}`: rename                                                              |
+| `DELETE /api/v1/groups/{id}`                     | owner     | Delete the group                                                              |
+| `POST /api/v1/groups/{id}/invite`                | owner     | New invite link `{invitePath}`; the old one stops working                     |
+| `POST /api/v1/groups/join`                       | signed in | `{token}` → the group; 404 for a dead link, 409 when full (10) or at your cap |
+| `POST /api/v1/groups/{id}/leave`                 | member    | Leave; an owner hands the group to the longest-standing member                |
+| `DELETE /api/v1/groups/{id}/members/{accountId}` | owner     | Remove a member                                                               |
+
 ## Patches
 
 | Method & path                        | Auth                                 | Notes                                                                    |

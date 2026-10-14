@@ -74,6 +74,23 @@ export class TogetherMatchesRepository implements TogetherMatchesPort {
     return ids.map(String);
   }
 
+  async sameTeamAmong(accountIds: readonly number[]): Promise<PairClassification[]> {
+    if (accountIds.length < 2) return [];
+    const ids = [...accountIds];
+    const docs = await (
+      await this.col()
+    )
+      .find({
+        accountIdA: { $in: ids },
+        accountIdB: { $in: ids },
+        relation: { $in: ["party", "same_team_unknown"] },
+      })
+      .sort({ startedAt: -1 })
+      .limit(10_000)
+      .toArray();
+    return docs.map(toDomain);
+  }
+
   async partyMatchesOf(accountId32: number): Promise<PairClassification[]> {
     const docs = await (
       await this.col()

@@ -6,6 +6,7 @@ import { getDb, getMongoClient } from "@/common/db/mongo";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { PracticeRepository } from "@/modules/practice/practice.repository";
+import { GroupsRepository } from "@/modules/groups/repositories/groups.repository";
 import { SharesRepository } from "@/modules/shares/repositories/shares.repository";
 import { EmailLogRepository } from "@/modules/email/repositories/email-log.repository";
 import { EmailSubscriptionsRepository } from "@/modules/email/repositories/email-subscriptions.repository";
@@ -45,6 +46,7 @@ async function main(): Promise<void> {
   await new AnnotationsRepository(async () => db).ensureIndexes();
   await new GoalsRepository(async () => db).ensureIndexes();
   await new PracticeRepository(async () => db).ensureIndexes();
+  await new GroupsRepository(async () => db).ensureIndexes();
   await new SharesRepository(async () => db).ensureIndexes();
   await new PushSubscriptionsRepository(async () => db).ensureIndexes();
   await new NotificationLogRepository(async () => db).ensureIndexes();

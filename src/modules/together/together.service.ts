@@ -64,7 +64,12 @@ export class TogetherService {
    * Shared matches with one friend, classified by party membership. Classifications are
    * cached, so each match detail is fetched once; at most `maxNewDetails` per call.
    */
-  async analysePair(me: number, friend: number): Promise<Result<PairAnalysis, ProviderError>> {
+  async analysePair(
+    me: number,
+    friend: number,
+    /** A smaller budget per call (a group page checks several pairs per visit). */
+    opts: { maxNewDetails?: number } = {},
+  ): Promise<Result<PairAnalysis, ProviderError>> {
     const pair = pairOf(me, friend);
     const shared = await this.deps.finder.sharedMatches(me, friend);
     if (!shared.ok) return shared;
@@ -83,7 +88,7 @@ export class TogetherService {
     const missing = matches
       .filter((m) => !cached.has(m.matchId))
       .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
-      .slice(0, this.deps.maxNewDetails ?? MAX_NEW_DETAILS);
+      .slice(0, opts.maxNewDetails ?? this.deps.maxNewDetails ?? MAX_NEW_DETAILS);
 
     let interrupted = false;
     const fetched = await mapLimit(
@@ -185,6 +190,14 @@ export class TogetherService {
     const partyIds = new Set(links.map((l) => l.matchId));
     const unknownPartyGames = unknownIds.filter((id) => !partyIds.has(id)).length;
     return { partyGames, trios, stacks: bestStacks(links), unknownPartyGames };
+  }
+
+  /**
+   * Cached party and unknown-party games between any two of these accounts (a group's
+   * members). No upstream calls: pairs are filled in by `analysePair`.
+   */
+  sameTeamAmong(accountIds: readonly number[]): Promise<PairClassification[]> {
+    return this.deps.repo.sameTeamAmong(accountIds);
   }
 
   async exportMyData(owner: DataOwner) {

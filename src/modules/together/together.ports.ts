@@ -59,6 +59,11 @@ export interface TogetherMatchesPort {
   partyMatchesOf(accountId32: number): Promise<PairClassification[]>;
   /** Match ids where the account shared a team with a friend but party data was missing. */
   unknownPartyMatchIdsOf(accountId32: number): Promise<string[]>;
+  /**
+   * Cached party and unknown-party classifications between any two of these accounts (a
+   * group's members). Other relations are left out.
+   */
+  sameTeamAmong(accountIds: readonly number[]): Promise<PairClassification[]>;
 }
 
 /** The signed-in player's own imported games, for the baseline. */
