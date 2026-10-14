@@ -14,6 +14,7 @@ import {
   PERIODIC_REFRESH_INTERVAL_MS,
   RESCAN_DELAY_MS,
   SYNC_COOLDOWN_MS,
+  toFact,
 } from "@/modules/matches/services/match-sync.service";
 import type { PlayerMatchFact } from "@/modules/matches/domain/player-match-fact";
 import { err, ok } from "@/common/result";
@@ -38,6 +39,8 @@ function imported(i: number, overrides: Partial<ImportedPlayerMatch> = {}): Impo
     role: null,
     partySize: 1,
     averageRankTier: null,
+    allyHeroIds: [2, 3, 4, 5],
+    enemyHeroIds: [6, 7, 8, 9, 10],
     provenance: { provider: "opendota", fetchedAt: new Date(), parseStatus: "unparsed" },
     ...overrides,
   };
@@ -72,11 +75,25 @@ class FakeUpstream implements MatchProvider {
 
 class MemoryFacts implements MatchFactsPort {
   byKey = new Map<string, PlayerMatchFact>();
+  /** Keys of facts stored before lineups were kept (schema version 1). */
+  withoutLineups = new Set<string>();
+  /** Store facts as an older version would have (no lineups). */
+  seedLegacy(facts: readonly PlayerMatchFact[]) {
+    for (const f of facts) {
+      const key = `${f.accountId32}:${f.matchId}`;
+      this.byKey.set(key, { ...f, allyHeroIds: null, enemyHeroIds: null });
+      this.withoutLineups.add(key);
+    }
+  }
+  async countWithoutLineups(accountId32: number) {
+    return [...this.withoutLineups].filter((k) => k.startsWith(`${accountId32}:`)).length;
+  }
   async upsertMany(facts: readonly PlayerMatchFact[]) {
     let inserted = 0;
     let updated = 0;
     for (const f of facts) {
       const key = `${f.accountId32}:${f.matchId}`;
+      this.withoutLineups.delete(key);
       if (this.byKey.has(key)) updated++;
       else inserted++;
       this.byKey.set(key, f);
@@ -104,6 +121,8 @@ class MemorySyncState implements SyncStatesPort {
       backfillComplete: false,
       historyRefreshRequestedAt: null,
       rescannedAt: null,
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: false,
       lockedUntil: null,
     };
     if (this.state.lockedUntil && this.state.lockedUntil > now) return { type: "locked" };
@@ -167,6 +186,7 @@ describe("MatchSyncService", () => {
         rejected: 0,
         backfillComplete: true,
         historyRefreshRequested: true,
+        lineupsComplete: true,
       },
     });
     const fact = [...ctx.facts.byKey.values()][0];
@@ -216,6 +236,8 @@ describe("MatchSyncService", () => {
       backfillComplete,
       historyRefreshRequestedAt: null,
       rescannedAt: null,
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: true,
     });
     expect(MatchSyncService.isStale(null, now)).toBe(true);
     expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, false), now)).toBe(true);
@@ -377,5 +399,83 @@ describe("MatchSyncService", () => {
     });
     expect((await service.sync(ACCOUNT)).ok).toBe(true);
     expect([...ctx.facts.byKey.values()][0].patch).toEqual({ patch: null, certainty: "unknown" });
+  });
+  describe("lineup backfill", () => {
+    /** An account whose history was imported before lineups were kept. */
+    function legacy(historySize: number, opts: { maxPages?: number } = {}) {
+      const ctx = setup(historySize, { maxPages: opts.maxPages ?? 3 });
+      ctx.facts.seedLegacy(ctx.upstream.history.map((m) => toFact(m, [])));
+      ctx.syncState.state = {
+        accountId32: ACCOUNT,
+        lastSyncAt: new Date("2026-09-28T12:00:00Z"),
+        newestStartedAt: ctx.upstream.history[0].startedAt,
+        backfillOffset: historySize,
+        backfillComplete: true,
+        historyRefreshRequestedAt: new Date("2026-09-28T12:00:00Z"),
+        rescannedAt: new Date("2026-09-28T12:00:00Z"),
+        lineupBackfillOffset: 0,
+        lineupBackfillComplete: false,
+        lockedUntil: null,
+      };
+      return ctx;
+    }
+
+    it("is done at once for a history imported with lineups (no extra calls)", async () => {
+      const ctx = setup(7);
+      const res = await ctx.service.sync(ACCOUNT);
+      expect(res.ok && res.value.lineupsComplete).toBe(true);
+      expect(ctx.upstream.calls).toHaveLength(1);
+      expect(ctx.syncState.state).toMatchObject({ lineupBackfillComplete: true });
+    });
+
+    it("re-reads older games' lineups from the paged history with the leftover budget", async () => {
+      const ctx = legacy(25);
+      const res = await ctx.service.sync(ACCOUNT);
+      expect(res.ok && res.value.lineupsComplete).toBe(true);
+      // The head page, then the rest of the history: never one call per match.
+      expect(ctx.upstream.calls.map((c) => c.offset)).toEqual([0, 10, 20]);
+      expect(await ctx.facts.countWithoutLineups(ACCOUNT)).toBe(0);
+      expect([...ctx.facts.byKey.values()].every((f) => f.enemyHeroIds?.length === 5)).toBe(true);
+    });
+
+    it("resumes where it stopped, shifted by new matches, until the history runs out", async () => {
+      const ctx = legacy(45, { maxPages: 2 });
+      const first = await ctx.service.sync(ACCOUNT);
+      expect(first.ok && first.value.lineupsComplete).toBe(false);
+      expect(ctx.syncState.state).toMatchObject({ lineupBackfillOffset: 20 });
+      expect(await ctx.facts.countWithoutLineups(ACCOUNT)).toBe(25);
+
+      // Three new games push the older ones down by three.
+      for (let i = 100; i < 103; i++) ctx.upstream.add(imported(i));
+      ctx.advance(SYNC_COOLDOWN_MS + 1);
+      ctx.upstream.calls = [];
+      await ctx.service.sync(ACCOUNT);
+      expect(ctx.upstream.calls.map((c) => c.offset)).toEqual([0, 23]);
+
+      for (let i = 0; i < 3; i++) {
+        ctx.advance(SYNC_COOLDOWN_MS + 1);
+        await ctx.service.sync(ACCOUNT);
+      }
+      expect(await ctx.facts.countWithoutLineups(ACCOUNT)).toBe(0);
+      expect(ctx.syncState.state).toMatchObject({ lineupBackfillComplete: true });
+    });
+
+    it("finishes when the history runs out, leaving games the upstream no longer lists", async () => {
+      const ctx = legacy(15);
+      // A stored game the upstream doesn't return any more.
+      ctx.facts.seedLegacy([toFact(imported(-5, { matchId: "999" }), [])]);
+      const res = await ctx.service.sync(ACCOUNT);
+      expect(res.ok && res.value.lineupsComplete).toBe(true);
+      expect(await ctx.facts.countWithoutLineups(ACCOUNT)).toBe(1);
+      expect(ctx.facts.byKey.get(`${ACCOUNT}:999`)?.enemyHeroIds).toBeNull();
+    });
+
+    it("keeps the sync's result and resumes later when a lineup page fails", async () => {
+      const ctx = legacy(45, { maxPages: 5 });
+      ctx.upstream.failOnCall = 2;
+      const res = await ctx.service.sync(ACCOUNT);
+      expect(res.ok && res.value.lineupsComplete).toBe(false);
+      expect(ctx.syncState.state).toMatchObject({ lineupBackfillOffset: 10, lockedUntil: null });
+    });
   });
 });

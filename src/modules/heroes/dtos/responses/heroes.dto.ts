@@ -6,6 +6,8 @@ import {
   type WinRateTrend,
 } from "../../domain/hero-stats";
 import { type HeroProgress } from "../../domain/hero-progress";
+import { type LineupProgress, type OwnMatchups } from "../../domain/own-matchups";
+import { type MatchupsFilter } from "../../schemas/matchups-filter.schema";
 
 export interface HeroOverview {
   heroId: number;
@@ -33,4 +35,14 @@ export interface HeroDetailsView {
 export interface LaneBreakdownView {
   breakdown: PositionBreakdown;
   windowDays: number;
+}
+
+/** Matchups from your own games (the Matchups page). */
+export interface OwnMatchupsView {
+  filter: MatchupsFilter;
+  matchups: OwnMatchups;
+  /** The lineup backfill over all your imported games (not just the filter). */
+  progress: LineupProgress;
+  /** Patch of your latest imported game (the "current patch" filter's label). */
+  latestPatch: string | null;
 }

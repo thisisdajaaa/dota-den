@@ -15,6 +15,9 @@ import type {
   DashboardFacts,
   DashboardFilter,
   ImportStatus,
+  LineupCoverage,
+  LineupFacts,
+  LineupFilter,
   LockOutcome,
   MatchQueries,
   MatchFactsPort,
@@ -22,7 +25,13 @@ import type {
   SyncStatesPort,
 } from "../matches.ports";
 
-const SCHEMA_VERSION = 1;
+/**
+ * 2: facts carry both lineups (allyHeroIds, enemyHeroIds). Facts below 2 were stored before
+ * lineups were kept; the lineup backfill re-reads them.
+ */
+const SCHEMA_VERSION = 2;
+/** Facts at or above this version have been read with their lineups. */
+const LINEUPS_SINCE_VERSION = 2;
 
 export const MATCH_COLLECTIONS = {
   matches: "matches",
@@ -131,6 +140,13 @@ export class MatchFactsRepository implements MatchFactsPort {
     ]);
     return { inserted: factRes.upsertedCount, updated: factRes.matchedCount };
   }
+
+  async countWithoutLineups(accountId32: number): Promise<number> {
+    return (await this.facts()).countDocuments({
+      accountId32,
+      schemaVersion: { $not: { $gte: LINEUPS_SINCE_VERSION } },
+    });
+  }
 }
 
 export class SyncStatesRepository implements SyncStatesPort {
@@ -179,6 +195,8 @@ export class SyncStatesRepository implements SyncStatesPort {
             backfillComplete: false,
             historyRefreshRequestedAt: null,
             rescannedAt: null,
+            lineupBackfillOffset: 0,
+            lineupBackfillComplete: false,
           },
         },
         { upsert: true, returnDocument: "after" },
@@ -235,6 +253,8 @@ function toState(doc: SyncStateDoc): SyncState {
     // Older documents predate this field.
     historyRefreshRequestedAt: doc.historyRefreshRequestedAt ?? null,
     rescannedAt: doc.rescannedAt ?? null,
+    lineupBackfillOffset: doc.lineupBackfillOffset ?? 0,
+    lineupBackfillComplete: doc.lineupBackfillComplete ?? false,
   };
 }
 
@@ -446,6 +466,58 @@ export class MatchReadRepository implements MatchQueries {
       .find(query, { sort: { startedAt: -1 }, limit: 5_000, projection: FACT_PROJECTION })
       .toArray();
     return { facts: docs.map(toDashboardFact), latestPatch };
+  }
+
+  async lineupFacts(accountId32: number, filter: LineupFilter, now: Date): Promise<LineupFacts> {
+    const latestPatch = await this.latestPatch(accountId32);
+    // Only allow-listed, typed values reach the query.
+    const query: Record<string, unknown> = { accountId32 };
+    if (filter.mode === "ranked") query.ranked = true;
+    if (filter.range === "30d" || filter.range === "90d") {
+      const days = filter.range === "30d" ? 30 : 90;
+      query.startedAt = { $gte: new Date(now.getTime() - days * 86_400_000) };
+    }
+    if (filter.range === "patch") query["patch.patch"] = latestPatch;
+    if (filter.heroId !== undefined) query.heroId = filter.heroId;
+    const docs = await (
+      await this.facts()
+    )
+      .find(query, {
+        sort: { startedAt: -1 },
+        limit: 20_000,
+        projection: { _id: 0, matchId: 1, heroId: 1, result: 1, allyHeroIds: 1, enemyHeroIds: 1 },
+      })
+      .toArray();
+    return {
+      games: docs.map((d) => ({
+        matchId: d.matchId,
+        heroId: d.heroId,
+        result: d.result,
+        // Facts stored before lineups were kept have no such fields: missing, not empty.
+        allyHeroIds: Array.isArray(d.allyHeroIds) ? d.allyHeroIds : null,
+        enemyHeroIds: Array.isArray(d.enemyHeroIds) ? d.enemyHeroIds : null,
+      })),
+      latestPatch,
+    };
+  }
+
+  async lineupCoverage(accountId32: number): Promise<LineupCoverage> {
+    const facts = await this.facts();
+    const [total, withLineups, pending, sync] = await Promise.all([
+      facts.countDocuments({ accountId32 }),
+      facts.countDocuments({ accountId32, "enemyHeroIds.0": { $exists: true } }),
+      facts.countDocuments({
+        accountId32,
+        schemaVersion: { $not: { $gte: LINEUPS_SINCE_VERSION } },
+      }),
+      new SyncStatesRepository(this.getDb).get(accountId32),
+    ]);
+    return {
+      total,
+      withLineups,
+      pending,
+      complete: pending === 0 || sync?.lineupBackfillComplete === true,
+    };
   }
 
   async startedAfter(

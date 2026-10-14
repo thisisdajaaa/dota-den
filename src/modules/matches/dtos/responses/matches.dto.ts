@@ -13,4 +13,6 @@ export interface SyncSummary {
   backfillComplete: boolean;
   /** True when this sync asked the upstream to fetch the player's history from Steam. */
   historyRefreshRequested: boolean;
+  /** Every stored game has its lineups (or was re-read and the upstream had none). */
+  lineupsComplete: boolean;
 }

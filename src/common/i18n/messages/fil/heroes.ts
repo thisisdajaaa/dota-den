@@ -98,6 +98,48 @@ export const heroes: MessageTree<typeof en> = {
     emptyWinWith:
       "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
   },
+  own: {
+    metaTitle: "Matchups",
+    kicker: "Matchups",
+    title: "Sino ang tumatalo sa iyo",
+    description:
+      "Ang record mo laban at kasama ang bawat hero, binilang mula sa mga lineup ng sarili mong na-import na laro.",
+    link: "Sino ang tumatalo sa iyo: matchups mula sa mga laro mo",
+    linkHero: "Matchups mula sa mga laro mo gamit si {name}",
+    back: "Bumalik sa mga hero mo",
+    last90: "Huling 90 araw",
+    progressRunning:
+      "Binabasa pa ang mga lineup ng mas lumang laro mo: may matchups na para sa {done} sa {total} sa ngayon. Nagpapatuloy ito tuwing nagsi-sync ang mga match mo at sa araw-araw na update.",
+    progressMissing: "Walang lineup sa OpenDota ang {games} kaya hindi isinama.",
+    sample: "Binilang mula sa {done} sa {games} mo sa view na ito na may parehong lineup.",
+    baseline: "Win rate mo sa mga ito: {rate}.",
+    noGamesTitle: "Wala pang laro na may lineup dito",
+    noGames: "Wala pang lineup ang alinman sa mga laro mo sa view na ito.",
+    noGamesFiltered: "Subukan ang mas mahabang panahon o lahat ng laro.",
+    opponents: "Mga kalaban mo",
+    toughest: "Pinakamahirap na kalaban",
+    toughestNote:
+      "Mga kalabang hero na tinatalo mo sa wala pang kalahati ng mga laro mo laban sa kanila.",
+    easiest: "Pinakamadaling kalaban",
+    easiestNote:
+      "Mga kalabang hero na tinatalo mo sa kalahati o higit pa ng mga laro mo laban sa kanila.",
+    bestAllies: "Mga kakamping panalo ka",
+    worstAllies: "Mga kakamping talo ka",
+    allies: "Kasama ang mga kakampi mo",
+    alliesNote: "Mga hero sa team mo (hindi ang sa iyo) at ang record mo kasama sila.",
+    emptyToughest: "Walang kalabang hero na may {min}+ laro kung saan mas madalas kang talo.",
+    emptyEasiest:
+      "Walang kalabang hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
+    emptyBestAllies:
+      "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
+    emptyWorstAllies: "Walang kakamping hero na may {min}+ laro kung saan mas madalas kang talo.",
+    record: "{wins}–{losses}",
+    rowLabel: "{name}: {wins} panalo, {losses} talo ({rate}) sa {games}",
+    playedInto: "Nilaro mo",
+    playedIntoItem: "{name} {wins}–{losses}",
+    footer:
+      "Hindi isinama ang mga hero na nakaharap mo nang wala pang {min} laro ({enemies}, {allies}). Hinahati ang mga listahan sa 50% at inihahanay nang may hila papuntang 50%, kaya hindi mangunguna ang ilang suwerteng laro.",
+  },
   items: {
     kicker: "Items",
     title: "Mga pinakamadalas mong bilhing item",

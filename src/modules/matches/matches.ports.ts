@@ -8,6 +8,9 @@ import type {
   DashboardFact,
   DashboardFacts,
   ItemInfo,
+  LineupCoverage,
+  LineupFacts,
+  LineupFilter,
 } from "./domain/read-models";
 
 export type {
@@ -21,6 +24,10 @@ export type {
   DashboardFact,
   DashboardFacts,
   ItemInfo,
+  LineupCoverage,
+  LineupFact,
+  LineupFacts,
+  LineupFilter,
 } from "./domain/read-models";
 import type { MatchDetail } from "./domain/match-detail";
 import type { MatchListFilter } from "./schemas/match-list-filter.schema";
@@ -61,6 +68,8 @@ export interface PatchTimelineSource {
 
 export interface MatchFactsPort {
   upsertMany(facts: readonly PlayerMatchFact[]): Promise<{ inserted: number; updated: number }>;
+  /** Imported games stored before lineups were kept (to be re-read for them). */
+  countWithoutLineups(accountId32: number): Promise<number>;
 }
 
 export interface SyncState {
@@ -73,6 +82,10 @@ export interface SyncState {
   historyRefreshRequestedAt: Date | null;
   /** When the last full re-walk after a refresh request started. */
   rescannedAt: Date | null;
+  /** Lineup backfill: next upstream offset to re-read older games' lineups from. */
+  lineupBackfillOffset: number;
+  /** Every stored game has been re-read for its lineups (or the history ran out). */
+  lineupBackfillComplete: boolean;
 }
 
 export type LockOutcome =
@@ -128,6 +141,10 @@ export interface MatchQueries {
   /** Heroes this account has imported matches on, most played first. */
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
+  /** Your games with both lineups, for matchups from your own games. */
+  lineupFacts(accountId32: number, filter: LineupFilter, now: Date): Promise<LineupFacts>;
+  /** How far the lineup backfill has got. */
+  lineupCoverage(accountId32: number): Promise<LineupCoverage>;
   /** Matches that started after `after`, oldest first, skipping `excludeMatchIds` (the Discord feed). */
   startedAfter(
     accountId32: number,
