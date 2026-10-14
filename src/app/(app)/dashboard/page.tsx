@@ -34,6 +34,7 @@ import { FriendsPlayingSection } from "./friends-playing-section";
 import { GoalsSection } from "./goals-section";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
 import { MmrPromptSection } from "./mmr-prompt-section";
+import { PracticeSection } from "./practice-section";
 import { TiltSection } from "./tilt-section";
 import { WeeklyRecapSection } from "./weekly-recap-section";
 import { PatchDigestSection, PatchDigestSkeleton } from "./patch-digest-section";
@@ -127,9 +128,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       <Suspense fallback={null}>
         <WeeklyRecapSection user={user} heroes={heroes} timeZone={tz.timeZone} />
       </Suspense>
-      <Suspense fallback={null}>
-        <GoalsSection user={user} heroes={heroes} timeZone={tz.timeZone} />
-      </Suspense>
+      {/* The week's goals (yours) and practice plan (suggested) side by side; either may hide. */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:[&>*:only-child]:col-span-2">
+        <Suspense fallback={null}>
+          <GoalsSection user={user} heroes={heroes} timeZone={tz.timeZone} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <PracticeSection user={user} heroes={heroes} timeZone={tz.timeZone} />
+        </Suspense>
+      </div>
 
       <Suspense fallback={null}>
         <MmrPromptSection user={user} />

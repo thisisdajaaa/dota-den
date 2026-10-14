@@ -9,6 +9,7 @@ import { annotations } from "./annotations";
 import { mmr } from "./mmr";
 import { sessions } from "./sessions";
 import { goals } from "./goals";
+import { practice } from "./practice";
 import { achievements } from "./achievements";
 import { together } from "./together";
 import { players } from "./players";
@@ -41,6 +42,7 @@ export const messages = {
   mmr,
   sessions,
   goals,
+  practice,
   achievements,
   together,
   players,

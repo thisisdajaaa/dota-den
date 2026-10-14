@@ -19,6 +19,8 @@ import { PatchWatchlistsRepository } from "@/modules/patches/repositories/patche
 import { PatchWatchlistService } from "@/modules/patches/services/patch-watchlist.service";
 import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
 import { FollowService } from "@/modules/players/services/follow.service";
+import { PracticeRepository } from "@/modules/practice/practice.repository";
+import { PracticeService } from "@/modules/practice/practice.service";
 import {
   SessionNotesRepository,
   SessionSettingsRepository,
@@ -51,6 +53,17 @@ const goalsPart = servicePart(
       repository: new GoalsRepository(getDb),
       sessions: { rankedSessions: async () => [] },
       mmr: { entryTimes: async () => [] },
+    }),
+);
+const practicePart = servicePart(
+  (getDb) =>
+    new PracticeService({
+      repository: new PracticeRepository(getDb),
+      sessions: { rankedSessions: async () => [] },
+      mmr: { entryTimes: async () => [] },
+      tilt: { tilt: async () => Promise.reject(new Error("unused")) },
+      heroes: { advice: async () => ({ status: "unavailable" }) },
+      reviews: { reviewed: async () => new Set<string>() },
     }),
 );
 const annotationsPart = servicePart(
@@ -144,6 +157,7 @@ const PARTS = [
   together,
   annotationsPart,
   goalsPart,
+  practicePart,
   identity,
 ];
 
@@ -165,6 +179,17 @@ async function seed(userId: ObjectId, accountId32: number, friendAccount: number
   await new GoalsRepository(async () => db).saveGoals(u, "2026-10-05", [
     { type: "logAfterSessions" },
   ]);
+  await new PracticeRepository(async () => db).insertIfAbsent({
+    userId: u,
+    week: "2026-10-05",
+    steps: [{ id: "logMmr", kind: "logMmr", reason: null }],
+    alternates: [],
+    personal: false,
+    gaps: [],
+    edited: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   await db.collection("player_match_facts").insertOne({ accountId32, matchId: `m${accountId32}` });
   await db.collection("match_sync_state").insertOne({ accountId32 });
   await db
@@ -196,6 +221,7 @@ describe("deleting your data", () => {
     expect(exported.mmrEntries).toHaveLength(1);
     expect(exported.friendRoomDrafts).toHaveLength(1);
     expect(exported.weeklyGoals).toHaveLength(1);
+    expect(exported.practicePlans).toHaveLength(1);
     expect(JSON.stringify(exported)).not.toContain("tokenHash");
 
     for (const p of PARTS) await p.deleteUserData(db, owner);
