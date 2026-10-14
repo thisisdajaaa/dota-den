@@ -1,4 +1,5 @@
 import type { DataOwner } from "@/common/privacy/user-data";
+import type { StopReason } from "./domain/delivery-events";
 import type { EmailSubscriptionStatus } from "./email.model";
 
 export interface EmailSubscription {
@@ -23,6 +24,12 @@ export interface EmailSubscriptionsPort {
   confirm(tokenHash: string, nonce: string, now: Date): Promise<{ userId: string } | null>;
   /** Ends the confirmed subscription with this nonce; false when there isn't one. */
   unsubscribe(userId: string, nonce: string, now: Date): Promise<boolean>;
+  /**
+   * Stops every subscription to this (normalised) address after a hard bounce or a spam
+   * complaint: no digest, no confirmation, no unsubscribe link works until the player enters an
+   * address again. Returns how many subscriptions changed.
+   */
+  stopAddress(email: string, reason: StopReason, now: Date): Promise<number>;
   /** Forgets the address entirely. */
   remove(userId: string): Promise<boolean>;
   confirmed(): Promise<Array<{ userId: string; email: string; unsubscribeNonce: string }>>;
@@ -37,6 +44,14 @@ export interface EmailLogPort {
   recordSent(userId: string, kind: string, key: string, providerId: string | null): Promise<void>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+/** Provider webhooks already handled, by message id (kept for a while, then forgotten). */
+export interface EmailWebhookEventsPort {
+  /** Claims a message id; false when it was already handled (a retry). */
+  claim(id: string, type: string, now: Date): Promise<boolean>;
+  /** Lets a retry handle it again (handling failed). */
+  release(id: string): Promise<void>;
 }
 
 export interface OutgoingEmail {

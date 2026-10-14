@@ -4,6 +4,11 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-14
+
+- Stable preview image URLs; match images in Discord posts (fixes #23)
+- Stop the weekly email for addresses that bounce or report spam (fixes #24)
+
 ## 2026-10-09
 
 - Discord feed: post your new games to your group's channel (fixes #13)

@@ -20,7 +20,17 @@ export async function generateMetadata({ params }: PageProps<"/s/[slug]">): Prom
   if (!share) return { robots };
   const t = await getT();
   const { title, games } = shareHeadline(t, share.snapshot, share.playerName);
-  return { title, description: games, robots, openGraph: { title, description: games } };
+  // ?v= changes when the owner shares again, so previews pick up the new snapshot.
+  const images = [
+    { url: `/og/share/${slug}?v=${share.updatedAt.getTime()}`, width: 1200, height: 630 },
+  ];
+  return {
+    title,
+    description: games,
+    robots,
+    openGraph: { title, description: games, images },
+    twitter: { card: "summary_large_image", title, description: games, images },
+  };
 }
 
 const dateRange = (from: Date, to: Date) => {

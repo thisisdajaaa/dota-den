@@ -2,6 +2,7 @@ import "server-only";
 import type { Db } from "mongodb";
 import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import { EMAIL_COLLECTIONS, type EmailSubscriptionDocument } from "../email.model";
+import type { StopReason } from "../domain/delivery-events";
 import type { EmailSubscription, EmailSubscriptionsPort } from "../email.ports";
 
 export class EmailSubscriptionsRepository implements EmailSubscriptionsPort {
@@ -24,6 +25,8 @@ export class EmailSubscriptionsRepository implements EmailSubscriptionsPort {
       },
     );
     await col.createIndex({ status: 1 }, { name: "by_status" });
+    // Bounce and complaint webhooks find subscriptions by address.
+    await col.createIndex({ email: 1 }, { name: "by_email" });
   }
 
   async get(userId: string): Promise<EmailSubscription | null> {
@@ -61,6 +64,7 @@ export class EmailSubscriptionsRepository implements EmailSubscriptionsPort {
           updatedAt: now,
           confirmedAt: null,
           unsubscribedAt: null,
+          stoppedAt: null,
         },
         $setOnInsert: { createdAt: now },
       },
@@ -102,6 +106,26 @@ export class EmailSubscriptionsRepository implements EmailSubscriptionsPort {
       },
     );
     return res.modifiedCount > 0;
+  }
+
+  async stopAddress(email: string, reason: StopReason, now: Date): Promise<number> {
+    const res = await (
+      await this.col()
+    ).updateMany(
+      { email, status: { $in: ["pending", "confirmed", "unsubscribed"] } },
+      {
+        $set: {
+          status: reason,
+          // The pending link and the unsubscribe links stop working too.
+          confirmTokenHash: null,
+          confirmExpiresAt: null,
+          unsubscribeNonce: null,
+          stoppedAt: now,
+          updatedAt: now,
+        },
+      },
+    );
+    return res.modifiedCount;
   }
 
   async remove(userId: string): Promise<boolean> {

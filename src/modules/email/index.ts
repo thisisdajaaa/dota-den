@@ -6,9 +6,12 @@ export {
   emailLogRepository,
   emailService,
   emailSubscriptionsRepository,
+  emailWebhookEventsRepository,
+  emailWebhooks,
 } from "./email.container";
 export type {
   DigestRunDto,
   EmailStatusDto,
   TokenOutcomeDto,
+  WebhookOutcomeDto,
 } from "./dtos/responses/email-status.dto";
