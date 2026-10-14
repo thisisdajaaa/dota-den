@@ -95,6 +95,9 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
 - **Together.** Who you play with, win rate together versus your usual, rivals, and duo and trio pages. A game counts
   as "together" only when OpenDota reports a shared party; same team without party data is shown as unknown, never
   guessed.
+- **Groups.** A page for your stack: invite friends with a link, then see your record as a party (confirmed parties
+  only), best lineups, who plays what and a weekly board. No MMR, and nothing private beyond what members agreed to
+  share by joining ([ADR 0012](docs/adr/0012-groups.md)).
 - **Leaderboards.** Separate boards for draft games, draft challenges and friend rooms, for your friends or everyone,
   this week or all time. The Everyone boards only list players who opt in (profiles are private by default).
 - **Ranked this week.** You and up to 15 friends by ranked wins minus losses over the last 7 days (public OpenDota
@@ -171,7 +174,7 @@ flowchart LR
   subgraph Vercel["Next.js on Vercel"]
     Pages[Server components & route handlers]
     subgraph Modules["src/modules/*"]
-      Identity & Matches & MMR & Sessions & Together & Players & Heroes & Meta & Patches & Drafts & Leaderboards
+      Identity & Matches & MMR & Sessions & Together & Groups & Players & Heroes & Meta & Patches & Drafts & Leaderboards
     end
     Cron[Vercel Cron: patches + draft data]
   end
