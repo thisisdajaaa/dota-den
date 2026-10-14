@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 
 // Identities no other spec uses (one per role, so parallel runs don't collide).
 const OWNER = "76561197960462001";
@@ -8,6 +8,17 @@ const OUTSIDER = "76561197960462003";
 const API_USER = "76561197960462004";
 const accountOf = (steamId: string) => Number(BigInt(steamId) - 76561197960265728n);
 const nameOf = (steamId: string) => `Player ${accountOf(steamId)}`;
+
+/**
+ * Clicks until the click has an effect. On a slow machine a button can be clicked before
+ * the page's JavaScript is attached; the click is then lost, so try again.
+ */
+async function clickUntil(button: Locator, effect: () => Promise<void>) {
+  await expect(async () => {
+    await button.click();
+    await effect();
+  }).toPass({ timeout: 30_000, intervals: [500, 1000, 2000] });
+}
 
 async function signedIn(browser: Browser, steamId?: string): Promise<Page> {
   const context = await browser.newContext();
@@ -21,6 +32,8 @@ test("create a group, a friend joins by link, outsiders get a 404, then remove a
   browser,
   baseURL,
 }) => {
+  // Three people and every group page: longer than one page's worth of steps.
+  test.setTimeout(120_000);
   const headers = { origin: new URL(baseURL!).origin };
   const owner = await signedIn(browser, OWNER);
   await owner.goto("/groups");
@@ -38,8 +51,9 @@ test("create a group, a friend joins by link, outsiders get a 404, then remove a
   await friend.goto(inviteUrl);
   await expect(friend.getByRole("heading", { name: "Join Friday stack" })).toBeVisible();
   await expect(friend.getByText(/Never your MMR/).first()).toBeVisible();
-  await friend.getByRole("button", { name: "Join group" }).click();
-  await expect(friend).toHaveURL(new RegExp(`${groupPath}$`));
+  await clickUntil(friend.getByRole("button", { name: "Join group" }), () =>
+    expect(friend).toHaveURL(new RegExp(`${groupPath}$`), { timeout: 5000 }),
+  );
   const members = friend.getByRole("region", { name: "Members" });
   await expect(members.getByText(nameOf(OWNER))).toBeVisible();
   await expect(members.getByText(nameOf(FRIEND))).toBeVisible();
@@ -66,7 +80,13 @@ test("create a group, a friend joins by link, outsiders get a 404, then remove a
   );
 
   // The owner removes the friend; the page is gone for them.
-  await owner.getByRole("button", { name: `Remove ${nameOf(FRIEND)} from the group` }).click();
+  await clickUntil(
+    owner.getByRole("button", { name: `Remove ${nameOf(FRIEND)} from the group` }),
+    () =>
+      expect(owner.getByRole("button", { name: `Remove ${nameOf(FRIEND)}?` })).toBeVisible({
+        timeout: 3000,
+      }),
+  );
   await owner.getByRole("button", { name: `Remove ${nameOf(FRIEND)}?` }).click();
   await expect(
     owner.getByRole("region", { name: "Members" }).getByText(nameOf(FRIEND)),
@@ -75,27 +95,37 @@ test("create a group, a friend joins by link, outsiders get a 404, then remove a
 
   // They rejoin by the same link, then leave on their own.
   await friend.goto(inviteUrl);
-  await friend.getByRole("button", { name: "Join group" }).click();
-  await expect(friend).toHaveURL(new RegExp(`${groupPath}$`));
-  await friend.getByRole("button", { name: "Leave group" }).click();
+  await clickUntil(friend.getByRole("button", { name: "Join group" }), () =>
+    expect(friend).toHaveURL(new RegExp(`${groupPath}$`), { timeout: 5000 }),
+  );
+  await clickUntil(friend.getByRole("button", { name: "Leave group" }), () =>
+    expect(friend.getByRole("button", { name: "Yes, leave" })).toBeVisible({ timeout: 3000 }),
+  );
   await friend.getByRole("button", { name: "Yes, leave" }).click();
   await expect(friend).toHaveURL(/\/groups$/);
   await expect(friend.getByText("You're not in a group yet.", { exact: false })).toBeVisible();
 
   // Resetting the link stops the old one.
-  await owner.getByRole("button", { name: "Reset link" }).click();
-  await expect(owner.getByTestId("invite-url")).not.toHaveText(inviteUrl);
+  await clickUntil(owner.getByRole("button", { name: "Reset link" }), () =>
+    expect(owner.getByTestId("invite-url")).not.toHaveText(inviteUrl, { timeout: 5000 }),
+  );
   await friend.goto(inviteUrl);
   await expect(
     friend.getByRole("heading", { name: "This invite link doesn't work" }),
   ).toBeVisible();
 
   // Rename, then delete.
-  await owner.getByRole("button", { name: "Rename" }).click();
+  await clickUntil(owner.getByRole("button", { name: "Rename" }), () =>
+    expect(owner.getByLabel("New name")).toBeVisible({ timeout: 3000 }),
+  );
   await owner.getByLabel("New name").fill("Saturday stack");
   await owner.getByRole("button", { name: "Save" }).click();
   await expect(owner.getByRole("heading", { level: 1 })).toHaveText("Saturday stack");
-  await owner.getByRole("button", { name: "Delete group" }).click();
+  await clickUntil(owner.getByRole("button", { name: "Delete group" }), () =>
+    expect(owner.getByRole("button", { name: "Yes, delete it for everyone" })).toBeVisible({
+      timeout: 3000,
+    }),
+  );
   await owner.getByRole("button", { name: "Yes, delete it for everyone" }).click();
   await expect(owner).toHaveURL(/\/groups$/);
   expect((await owner.goto(groupPath))?.status()).toBe(404);
