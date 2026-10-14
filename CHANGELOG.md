@@ -4,6 +4,13 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-15
+
+- Who you lose to: matchups from your own games (fixes #25)
+- Groups: a page for your stack, invite by link (fixes #26)
+- A weekly practice plan that ticks from your games (fixes #27)
+- Fewer OpenDota calls: saved player profiles for lists, parallel replay reads (fixes #28)
+
 ## 2026-10-14
 
 - Stable preview image URLs; match images in Discord posts (fixes #23)
