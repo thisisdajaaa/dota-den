@@ -9,11 +9,16 @@ import type {
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
 import type { TrackedPlayersPage } from "../dtos/responses/follows.dto";
 import type { FollowOwner } from "../dtos/responses/players.dto";
-import type { PlayerDirectory, ProviderError } from "../players.ports";
+import type { PlayerDirectory, ProfileSnapshotStore, ProviderError } from "../players.ports";
 import type { FollowService } from "./follow.service";
 
 /** Tracked players rendered per page: each costs up to two (cached) upstream calls. */
 export const TRACKED_PAGE_SIZE = 20;
+
+/** Other players' names, avatars and ranks in lists are refreshed this often. */
+export const PROFILE_SNAPSHOT_MAX_AGE_MS = 6 * 3_600_000;
+/** New profile fetches at a time when filling a list. */
+const PROFILE_CONCURRENCY = 4;
 
 /** Profiles and recent matches come from the matches feature's OpenDota adapter. */
 export interface PlayerProfileSource {
@@ -43,7 +48,10 @@ export class PlayersService {
       follows: FollowService;
       /** Only Steam's CDN is allowed for other players' avatars. */
       safeAvatar: (url: string | null | undefined) => string | null;
+      /** Optional: without it every lookup goes to OpenDota (through the gateway's cache). */
+      snapshots?: ProfileSnapshotStore;
       logger: Pick<Logger, "warn">;
+      now?: () => Date;
     },
   ) {}
 
@@ -95,13 +103,51 @@ export class PlayersService {
   }
 
   /** Any player's public name, avatar and rank (cached upstream); null when unavailable. */
+  /**
+   * A player's public profile for showing them in a list or header: a saved copy up to
+   * PROFILE_SNAPSHOT_MAX_AGE_MS old, else fetched (and saved). When OpenDota fails, an older
+   * saved copy is better than nothing.
+   */
   async publicProfile(accountId32: number): Promise<PlayerProfileSnapshot | null> {
-    const res = await this.deps.profiles.fetchPlayerProfile(accountId32);
-    if (!res.ok) {
-      this.warnOnError("player_profile_failed", { accountId32 }, res);
-      return null;
-    }
-    return { ...res.value, avatarUrl: this.deps.safeAvatar(res.value.avatarUrl) };
+    return (await this.publicProfiles([accountId32])).get(accountId32) ?? null;
+  }
+
+  /** Many profiles at once: one database read, then OpenDota only for missing or old ones. */
+  async publicProfiles(
+    accountIds: readonly number[],
+  ): Promise<Map<number, PlayerProfileSnapshot | null>> {
+    const ids = [...new Set(accountIds)];
+    const now = this.deps.now?.() ?? new Date();
+    const saved: Map<number, PlayerProfileSnapshot & { fetchedAt: Date }> = this.deps.snapshots
+      ? await this.deps.snapshots.getMany(ids).catch(() => new Map())
+      : new Map();
+    const isFresh = (id: number) => {
+      const s = saved.get(id);
+      return s !== undefined && now.getTime() - s.fetchedAt.getTime() < PROFILE_SNAPSHOT_MAX_AGE_MS;
+    };
+    // Missing or old: fetch. A failed fetch keeps the old copy, if there is one.
+    const profiles = new Map<number, PlayerProfileSnapshot | null>(
+      [...saved].map(([id, { fetchedAt: _at, ...p }]) => [id, p]),
+    );
+    await mapLimit(
+      ids.filter((id) => !isFresh(id)),
+      PROFILE_CONCURRENCY,
+      async (id) => {
+        const res = await this.deps.profiles.fetchPlayerProfile(id);
+        if (!res.ok) {
+          this.warnOnError("player_profile_failed", { accountId32: id }, res);
+          return;
+        }
+        profiles.set(id, res.value);
+        await this.deps.snapshots?.save(res.value, now).catch(() => {});
+      },
+    );
+    return new Map(
+      ids.map((id) => {
+        const p = profiles.get(id);
+        return [id, p ? { ...p, avatarUrl: this.deps.safeAvatar(p.avatarUrl) } : null];
+      }),
+    );
   }
 
   /** The owner's tracked players, newest first, with live public details for one page. */

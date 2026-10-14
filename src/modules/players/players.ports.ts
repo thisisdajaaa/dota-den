@@ -1,3 +1,4 @@
+import type { PlayerProfileSnapshot } from "@/modules/matches/domain/read-models";
 import type { Result } from "@/common/result";
 import type { PlayerFollow } from "./domain/follow";
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "./domain/public-player";
@@ -28,4 +29,12 @@ export interface FollowsPort {
   list(userId: string): Promise<PlayerFollow[]>;
   count(userId: string): Promise<number>;
   find(userId: string, accountId32: number): Promise<PlayerFollow | null>;
+}
+
+/** Saved public profiles (names, avatars, ranks), so lists don't call OpenDota per row. */
+export interface ProfileSnapshotStore {
+  getMany(
+    accountIds: readonly number[],
+  ): Promise<Map<number, PlayerProfileSnapshot & { fetchedAt: Date }>>;
+  save(profile: PlayerProfileSnapshot, fetchedAt: Date): Promise<void>;
 }
