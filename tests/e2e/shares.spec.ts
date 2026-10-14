@@ -35,8 +35,9 @@ test("share a session: public page with preview, then remove the link", async ({
   await guest.goto(`/s/${slug}`);
   await expect(guest.getByRole("heading", { level: 1 })).toContainText("session");
   await expect(guest.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
-  // Next adds a hash to the image path inside route groups: take it from the page.
+  // The preview a chat app would read from the page.
   const imageUrl = await guest.locator('meta[property="og:image"]').getAttribute("content");
+  expect(new URL(imageUrl!).pathname).toBe(`/og/share/${slug}`);
   const image = await guest.request.get(imageUrl!);
   expect(image.status()).toBe(200);
   expect(image.headers()["content-type"]).toBe("image/png");
@@ -50,6 +51,7 @@ test("share a session: public page with preview, then remove the link", async ({
   await expect(links.getByText("You haven't shared anything yet.")).toBeVisible();
   await guest.goto(`/s/${slug}`);
   await expect(guest.getByRole("heading", { name: "This link doesn't work" })).toBeVisible();
+  expect((await guest.request.get(`/og/share/${slug}`)).status()).toBe(404);
   await guest.close();
 });
 

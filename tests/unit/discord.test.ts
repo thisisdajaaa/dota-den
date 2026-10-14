@@ -299,6 +299,7 @@ describe("DiscordFeedService", () => {
       color: WIN_COLOR,
       author: { name: "Fixture Hero" },
       thumbnail: { url: "https://cdn.example/am.png" },
+      image: { url: "https://dotaden.example/og/match/8000000001" },
       footer: { text: "Dota Den · Match 8000000001" },
     });
     expect(win.fields).toEqual([

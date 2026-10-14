@@ -3,22 +3,13 @@ import { OG, OG_SIZE, OgFrame, OgHero } from "@/components/og/og-frame";
 import { matchesService } from "@/modules/matches";
 import { sharesService } from "@/modules/shares";
 
-export const alt = "A shared Dota 2 session or week on Dota Den";
-export const size = OG_SIZE;
-export const contentType = "image/png";
+const size = OG_SIZE;
 
 /** Link preview for a share: the record, win rate and the heroes played. English only. */
-export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function render(slug: string) {
   const [share, heroes] = await Promise.all([sharesService.view(slug), matchesService.heroMap()]);
-  if (!share) {
-    return new ImageResponse(
-      <OgFrame kicker="Shared">
-        <div style={{ display: "flex", fontSize: 64, fontWeight: 700 }}>Link not found</div>
-      </OgFrame>,
-      size,
-    );
-  }
+  // A removed or unknown link has no preview.
+  if (!share) return null;
   const s = share.snapshot;
   const heroIds =
     s.kind === "session"
@@ -46,4 +37,12 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     </OgFrame>,
     size,
   );
+}
+
+/** GET /og/share/:slug: the share preview. Pages add ?v= (last update) so a refreshed share gets a new image. */
+export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const image = await render((await params).slug);
+  if (!image) return new Response(null, { status: 404 });
+  image.headers.set("cache-control", "public, max-age=300, s-maxage=3600");
+  return image;
 }

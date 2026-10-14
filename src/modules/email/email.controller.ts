@@ -1,14 +1,19 @@
 import "server-only";
+import { ValidationError } from "@/common/errors/app-error";
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
 import { getLocale } from "@/common/i18n/server";
 import { requireUser } from "@/modules/identity";
 import { EmailTokenQuerySchema, SubscribeEmailSchema } from "./schemas/email.schema";
 import type { EmailService } from "./services/email.service";
+import type { EmailWebhookService } from "./services/email-webhook.service";
 import type { TokenOutcomeDto } from "./dtos/responses/email-status.dto";
 
+/** Resend's events are a few KB; anything far bigger isn't one. */
+const MAX_WEBHOOK_BYTES = 256 * 1024;
+
 export class EmailController {
-  constructor(private readonly deps: { service: EmailService }) {}
+  constructor(private readonly deps: { service: EmailService; webhooks: EmailWebhookService }) {}
 
   /** PUT /api/v1/me/email: start (or restart) the double opt-in for an address. */
   subscribe = handler(
@@ -82,6 +87,33 @@ export class EmailController {
         { outcome },
         outcome === "unsubscribed" ? "Unsubscribed" : "Link invalid",
       );
+    },
+  );
+
+  /**
+   * POST /api/v1/email/webhook: Resend's delivery events (signed with Svix). A hard bounce or a
+   * spam complaint stops the weekly email to that address. Resend's servers call it, so there's
+   * no session or Origin; the signature over the raw body is the credential. 404 when
+   * RESEND_WEBHOOK_SECRET isn't set. A failure answers 5xx so Resend retries.
+   */
+  webhook = handler(
+    {
+      sameOrigin: false,
+      rateLimit: { name: "email:webhook", limit: 300, windowMs: 60_000, byIp: true },
+    },
+    async ({ req }) => {
+      if (Number(req.headers.get("content-length") ?? 0) > MAX_WEBHOOK_BYTES)
+        throw new ValidationError("Body too large");
+      // The exact bytes received: the signature covers them.
+      const body = await req.text();
+      if (body.length > MAX_WEBHOOK_BYTES) throw new ValidationError("Body too large");
+      const result = await this.deps.webhooks.receive({
+        id: req.headers.get("svix-id"),
+        timestamp: req.headers.get("svix-timestamp"),
+        signature: req.headers.get("svix-signature"),
+        body,
+      });
+      return ServiceResponse.success(result, "Webhook received");
     },
   );
 }

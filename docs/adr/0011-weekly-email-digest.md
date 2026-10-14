@@ -53,5 +53,26 @@ A new `email` feature (ADR 0009 layout) sends one opt-in email a week.
 - Emails go out around 14:30 Manila time on Mondays, a day late for players west of UTC.
 - "Send a test email" on the Account page shows the email (and its unsubscribe link) without
   waiting for a Monday.
-- Bounces and complaints aren't processed yet (Resend webhooks would let us stop sending to
-  dead addresses).
+- Bounces and complaints are handled since #24, see below.
+
+## Addendum: bounces and spam complaints (2026-10-14, #24)
+
+- **Webhook.** `POST /api/v1/email/webhook` takes Resend's delivery events. Resend signs them
+  with Svix (`svix-id`, `svix-timestamp`, `svix-signature`: HMAC-SHA256 over
+  `id.timestamp.rawBody` with the base64 key after `whsec_`). We verify that ourselves with
+  `node:crypto` (constant-time compare, any matching `v1` signature, timestamps more than five
+  minutes off refused), no SDK. The raw body is read before parsing. No session and no
+  same-origin check (Resend's servers call it); rate-limited per IP. `RESEND_WEBHOOK_SECRET`
+  unset: the endpoint answers 404 and nothing changes.
+- **Once.** The `svix-id` is claimed in `email_webhook_events` (kept 7 days, no addresses
+  stored), so Resend's retries aren't handled twice. A failed handling releases it and answers
+  500, so Resend retries.
+- **What stops.** `email.bounced` with a permanent bounce (`bounce.type` "Permanent", or no
+  type) and `email.complained` set every pending, confirmed or unsubscribed subscription to
+  that (normalised) address to `bounced` or `complained`, clearing the confirmation token and
+  the unsubscribe nonce. Temporary bounces and other events are acknowledged and ignored. The
+  digest, test emails and confirmation already require `confirmed` / `pending`, so nothing
+  more is sent.
+- **Starting again.** The Account page explains what happened and offers "Enter an address
+  again"; typing an address (even the same one) restarts the double opt-in.
+- **Privacy.** Logs get the masked address and the reason only.
