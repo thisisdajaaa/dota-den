@@ -31,7 +31,15 @@ export async function generateMetadata({
 }: PageProps<"/matches/[matchId]">): Promise<Metadata> {
   const { matchId } = await params;
   const t = await getT();
-  return { title: t("matches.detail.title", { id: matchId }) };
+  const title = t("matches.detail.title", { id: matchId });
+  if (!MATCH_ID.test(matchId)) return { title };
+  // A stable image URL (a file-based opengraph-image gets a build hash in this route group).
+  const images = [{ url: `/og/match/${matchId}`, width: 1200, height: 630 }];
+  return {
+    title,
+    openGraph: { title, images },
+    twitter: { card: "summary_large_image", title, images },
+  };
 }
 
 export default async function MatchPage({ params, searchParams }: PageProps<"/matches/[matchId]">) {

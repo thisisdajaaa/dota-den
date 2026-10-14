@@ -213,6 +213,8 @@ export class DiscordFeedService {
         { name: t("discord.post.queue"), value: queue, inline: true },
       ],
       ...(hero?.imageUrl ? { thumbnail: { url: hero.imageUrl } } : {}),
+      // The match preview (both lineups and the score), at a stable URL.
+      image: { url: `${this.appUrl()}/og/match/${encodeURIComponent(m.matchId)}` },
       footer: { text: t("discord.post.footer", { id: m.matchId }) },
       // When the game ended.
       timestamp: new Date(m.startedAt.getTime() + m.durationSec * 1000).toISOString(),
