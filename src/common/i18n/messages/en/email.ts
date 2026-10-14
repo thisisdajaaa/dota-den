@@ -22,6 +22,11 @@ export const email = {
     test: "Send a test email",
     testSent: "Test email sent. Check your inbox.",
     stopped: "Weekly email off. Your address is deleted.",
+    bounced:
+      "We couldn't deliver to this address ({email}), so the weekly email is off. Enter an address again to start over.",
+    complained:
+      "You marked the email as spam, so we stopped sending to {email}. Enter an address again if you want it back.",
+    again: "Enter an address again",
     failed: "Couldn't save that. Try again.",
   },
   link: {

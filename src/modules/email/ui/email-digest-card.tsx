@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MailCheck, Send, Trash2 } from "lucide-react";
+import { MailCheck, MailX, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
@@ -67,6 +67,9 @@ export function EmailDigestCard({ initial }: { initial: EmailStatusDto }) {
   }
 
   const email = state.email ?? "";
+  // The provider reported a hard bounce or a spam complaint: nothing more goes to this address
+  // until the player enters an address again (which restarts the double opt-in).
+  const stopped = state.status === "bounced" || state.status === "complained";
   const statusText =
     state.status === "confirmed"
       ? t("email.card.confirmed", { email })
@@ -74,7 +77,11 @@ export function EmailDigestCard({ initial }: { initial: EmailStatusDto }) {
         ? t("email.card.pending", { email })
         : state.status === "unsubscribed"
           ? t("email.card.unsubscribed", { email })
-          : null;
+          : state.status === "bounced"
+            ? t("email.card.bounced", { email })
+            : state.status === "complained"
+              ? t("email.card.complained", { email })
+              : null;
 
   return (
     <section id="email" className="panel space-y-4 p-5" aria-labelledby="email-title">
@@ -96,6 +103,7 @@ export function EmailDigestCard({ initial }: { initial: EmailStatusDto }) {
               {state.status === "confirmed" && (
                 <MailCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-win" />
               )}
+              {stopped && <MailX aria-hidden className="mt-0.5 size-4 shrink-0 text-loss" />}
               {statusText}
             </p>
           )}
@@ -151,22 +159,23 @@ export function EmailDigestCard({ initial }: { initial: EmailStatusDto }) {
                   <Send aria-hidden className="size-4" /> {t("email.card.test")}
                 </Button>
               )}
-              {state.status !== "confirmed" && (
+              {state.status !== "confirmed" && !stopped && (
                 <Button size="sm" className="gap-2" disabled={busy} onClick={() => send(email)}>
                   <Send aria-hidden className="size-4" />{" "}
                   {state.status === "pending" ? t("email.card.resend") : t("email.card.subscribe")}
                 </Button>
               )}
               <Button
-                variant="outline"
+                variant={stopped ? "default" : "outline"}
                 size="sm"
                 disabled={busy}
                 onClick={() => {
-                  setAddress(email);
+                  // A stopped address isn't offered again: the player types one on purpose.
+                  setAddress(stopped ? "" : email);
                   setEditing(true);
                 }}
               >
-                {t("email.card.change")}
+                {stopped ? t("email.card.again") : t("email.card.change")}
               </Button>
               <Button variant="ghost" size="sm" className="gap-2" disabled={busy} onClick={stop}>
                 <Trash2 aria-hidden className="size-4" /> {t("email.card.stop")}

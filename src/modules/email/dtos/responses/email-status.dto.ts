@@ -20,3 +20,7 @@ export interface DigestRunDto {
 
 /** What a confirmation or unsubscribe link did. */
 export type TokenOutcomeDto = { outcome: "confirmed" | "unsubscribed" | "invalid" | "stale" };
+
+/** What a provider webhook did (Resend only reads the status code). */
+export type WebhookOutcomeDto =
+  { outcome: "processed"; stopped: number } | { outcome: "ignored" | "duplicate" };

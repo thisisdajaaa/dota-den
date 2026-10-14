@@ -8,6 +8,7 @@ import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { SharesRepository } from "@/modules/shares/repositories/shares.repository";
 import { EmailLogRepository } from "@/modules/email/repositories/email-log.repository";
 import { EmailSubscriptionsRepository } from "@/modules/email/repositories/email-subscriptions.repository";
+import { EmailWebhookEventsRepository } from "@/modules/email/repositories/email-webhook-events.repository";
 import { NotificationLogRepository } from "@/modules/notifications/repositories/notification-log.repository";
 import { PushSubscriptionsRepository } from "@/modules/notifications/repositories/push-subscriptions.repository";
 import { DiscordPostLogRepository } from "@/modules/discord/repositories/discord-post-log.repository";
@@ -48,6 +49,7 @@ async function main(): Promise<void> {
   await new DiscordPostLogRepository(async () => db).ensureIndexes();
   await new EmailSubscriptionsRepository(async () => db).ensureIndexes();
   await new EmailLogRepository(async () => db).ensureIndexes();
+  await new EmailWebhookEventsRepository(async () => db).ensureIndexes();
   await Promise.all([
     new UsersRepository(async () => db).ensureIndexes(),
     new AuthSessionsRepository(async () => db).ensureIndexes(),
