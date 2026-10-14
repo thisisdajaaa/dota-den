@@ -12,6 +12,7 @@ import {
   Ellipsis,
   FileChartColumn,
   GraduationCap,
+  Handshake,
   History,
   LayoutDashboard,
   Radio,
@@ -36,6 +37,7 @@ export type NavKey =
   | "sessions"
   | "report"
   | "together"
+  | "groups"
   | "meta"
   | "guides"
   | "players"
@@ -55,6 +57,7 @@ const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon;
     { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
     { key: "report", href: "/report", label: "Battle report", icon: FileChartColumn, auth: true },
     { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
+    { key: "groups", href: "/groups", label: "Groups", icon: Handshake, auth: true },
     { key: "meta", href: "/meta", label: "Meta", icon: TrendingUp, auth: false },
     { key: "guides", href: "/guides", label: "Guides", icon: GraduationCap, auth: false },
     { key: "players", href: "/players", label: "Players", icon: Users, auth: false },

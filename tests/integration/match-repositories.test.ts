@@ -19,7 +19,12 @@ beforeAll(async () => {
 });
 afterAll(async () => teardown?.());
 
-function fact(accountId32: number, matchId: string, partySize: number | null = 1) {
+function fact(
+  accountId32: number,
+  matchId: string,
+  partySize: number | null = 1,
+  overrides: Partial<ImportedPlayerMatch> = {},
+) {
   const m: ImportedPlayerMatch = {
     accountId32,
     matchId,
@@ -36,7 +41,10 @@ function fact(accountId32: number, matchId: string, partySize: number | null = 1
     role: null,
     partySize,
     averageRankTier: null,
+    allyHeroIds: [2, 3, 4, 5],
+    enemyHeroIds: [6, 7, 8, 9, 10],
     provenance: { provider: "opendota", fetchedAt: new Date(), parseStatus: "unparsed" },
+    ...overrides,
   };
   return toFact(m, []);
 }
@@ -97,6 +105,8 @@ describe("SyncStatesRepository", () => {
       backfillComplete: true,
       historyRefreshRequestedAt: null,
       rescannedAt: null,
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: true,
     });
 
     const during = await repo.acquire(43, opts(new Date(t0.getTime() + 1000)));
@@ -115,6 +125,8 @@ describe("SyncStatesRepository", () => {
       backfillComplete: false,
       historyRefreshRequestedAt: null,
       rescannedAt: null,
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: true,
     });
     expect(await repo.acquire(45, opts(new Date(t0.getTime() + 10_000)))).toEqual({
       type: "cooldown",
@@ -143,6 +155,8 @@ describe("SyncStatesRepository", () => {
         backfillComplete,
         historyRefreshRequestedAt: null,
         rescannedAt: null,
+        lineupBackfillOffset: 0,
+        lineupBackfillComplete: true,
       });
     };
     await release(70, new Date("2026-09-20T00:00:00Z"), true);
@@ -221,5 +235,72 @@ describe("MatchReadRepository.listMatches", () => {
       { heroId: 1, games: 20 },
       { heroId: 14, games: 10 },
     ]);
+  });
+});
+
+describe("Lineups (matchups from your own games)", () => {
+  const NOW = new Date("2026-10-15T00:00:00Z");
+  const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
+
+  it("counts games stored before lineups were kept, reads lineups and reports coverage", async () => {
+    const facts = new MatchFactsRepository(async () => db);
+    const reads = new MatchReadRepository(async () => db);
+    const ACC = 8801;
+    await facts.upsertMany([
+      fact(ACC, "l1", 1, { startedAt: daysAgo(5), heroId: 1 }),
+      fact(ACC, "l2", 1, { startedAt: daysAgo(60), heroId: 2, lobbyType: 0 }),
+      // The upstream had no lineup for this one: missing, not empty.
+      fact(ACC, "l3", 1, { startedAt: daysAgo(200), allyHeroIds: null, enemyHeroIds: null }),
+    ]);
+    // A fact as an older version stored it: schema version 1, no lineup fields.
+    const legacy = { ...fact(ACC, "l4", 1, { startedAt: daysAgo(300) }) } as Record<
+      string,
+      unknown
+    >;
+    delete legacy.allyHeroIds;
+    delete legacy.enemyHeroIds;
+    await db.collection(MATCH_COLLECTIONS.facts).insertOne({ ...legacy, schemaVersion: 1 });
+
+    expect(await facts.countWithoutLineups(ACC)).toBe(1);
+    expect(await reads.lineupCoverage(ACC)).toEqual({
+      total: 4,
+      withLineups: 2,
+      pending: 1,
+      complete: false,
+    });
+
+    const all = await reads.lineupFacts(ACC, { range: "all", mode: "all" }, NOW);
+    expect(all.games.map((g) => [g.matchId, g.enemyHeroIds])).toEqual([
+      ["l1", [6, 7, 8, 9, 10]],
+      ["l2", [6, 7, 8, 9, 10]],
+      ["l3", null],
+      ["l4", null],
+    ]);
+    const recent = await reads.lineupFacts(ACC, { range: "90d", mode: "all" }, NOW);
+    expect(recent.games.map((g) => g.matchId)).toEqual(["l1", "l2"]);
+    const ranked = await reads.lineupFacts(ACC, { range: "30d", mode: "ranked" }, NOW);
+    expect(ranked.games.map((g) => g.matchId)).toEqual(["l1"]);
+    const onHero = await reads.lineupFacts(ACC, { range: "all", mode: "all", heroId: 2 }, NOW);
+    expect(onHero.games.map((g) => g.matchId)).toEqual(["l2"]);
+
+    // Re-imported with lineups: nothing left to backfill.
+    await facts.upsertMany([fact(ACC, "l4", 1, { startedAt: daysAgo(300) })]);
+    expect(await facts.countWithoutLineups(ACC)).toBe(0);
+    expect(await reads.lineupCoverage(ACC)).toMatchObject({ withLineups: 3, complete: true });
+  });
+
+  it("reads sync state saved before the lineup backfill existed as not yet done", async () => {
+    await db.collection(MATCH_COLLECTIONS.syncState).insertOne({
+      accountId32: 8802,
+      lastSyncAt: new Date("2026-09-01T00:00:00Z"),
+      newestStartedAt: new Date("2026-09-01T00:00:00Z"),
+      backfillOffset: 300,
+      backfillComplete: true,
+      lockedUntil: null,
+    });
+    expect(await new SyncStatesRepository(async () => db).get(8802)).toMatchObject({
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: false,
+    });
   });
 });

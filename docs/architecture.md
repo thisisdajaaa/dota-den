@@ -29,7 +29,7 @@ Shared code lives in `src/common/`: config, db, cache, errors (`AppError` and su
 kit, envelope, API client, rate limits), llm (the Groq client), logging, providers (the OpenDota gateways), privacy
 helpers, time (day keys) and small utils.
 
-Features: `identity`, `matches`, `mmr`, `sessions`, `together`, `players`, `heroes`, `meta`, `patches`, `drafts`,
+Features: `identity`, `matches`, `mmr`, `sessions`, `together`, `groups`, `players`, `heroes`, `meta`, `patches`, `drafts`,
 `leaderboards`, `report`, `goals`, `annotations`, `achievements`, `advisor`, `guides`, `live`, `jobs`, `errors`,
 `admin`, `privacy`.
 
@@ -39,7 +39,7 @@ adapters through constructors, so domain code stays pure and testable.
 ## Routes
 
 - `src/app/(public)/…`: pages anyone can see (landing, meta, players, patches, draft).
-- `src/app/(app)/…`: signed-in pages (dashboard, matches, MMR, sessions, together, heroes, leaderboards).
+- `src/app/(app)/…`: signed-in pages (dashboard, matches, MMR, sessions, together, groups, heroes, leaderboards).
 - `src/app/api/…`: route handlers. See [api.md](api.md).
 - `src/proxy.ts` replaces middleware in Next 16. `cookies()`, `headers()` and `params` are async.
 

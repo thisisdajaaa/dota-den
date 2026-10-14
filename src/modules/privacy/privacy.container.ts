@@ -6,6 +6,7 @@ import { discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
 import { emailService } from "@/modules/email";
 import { goalsService } from "@/modules/goals";
+import { groupsService } from "@/modules/groups";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
 import { matchesService } from "@/modules/matches";
@@ -13,6 +14,7 @@ import { mmrJournalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
 import { sharesService } from "@/modules/shares";
 import { patchWatchlistService } from "@/modules/patches";
+import { practiceService } from "@/modules/practice";
 import { battleReportService } from "@/modules/report";
 import { followService } from "@/modules/players";
 import { sessionService } from "@/modules/sessions";
@@ -32,8 +34,10 @@ export const privacyService = lazy(
         draftsPrivacy,
         matchesService,
         togetherService,
+        groupsService,
         annotationsService,
         goalsService,
+        practiceService,
         battleReportService,
         notificationService,
         sharesService,

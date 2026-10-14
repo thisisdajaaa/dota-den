@@ -78,6 +78,40 @@ export interface DashboardFacts {
   latestPatch: string | null;
 }
 
+/** Filters for matchups from your own games. */
+export interface LineupFilter {
+  range: "all" | "patch" | "90d" | "30d";
+  mode: DashboardMode;
+  /** Only games where you played this hero. */
+  heroId?: number;
+}
+
+/** One of your games with both lineups (null lineups: the upstream gave none). */
+export interface LineupFact {
+  matchId: string;
+  heroId: number;
+  result: "win" | "loss";
+  allyHeroIds: number[] | null;
+  enemyHeroIds: number[] | null;
+}
+
+export interface LineupFacts {
+  games: LineupFact[];
+  latestPatch: string | null;
+}
+
+/** How many of your imported games have lineups yet (the lineup backfill's progress). */
+export interface LineupCoverage {
+  /** All your imported games. */
+  total: number;
+  /** Of those, games stored with both lineups. */
+  withLineups: number;
+  /** Older games still waiting to be re-read for their lineups. */
+  pending: number;
+  /** The backfill has walked your whole history (any games left have no lineup upstream). */
+  complete: boolean;
+}
+
 export interface ItemInfo {
   id: number;
   /** Internal item name ("black_king_bar"), as used in purchase logs. */

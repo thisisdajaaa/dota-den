@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
+import { groupsService } from "@/modules/groups";
+import { TogetherGroupsCard } from "@/modules/groups/ui/together-groups-card";
 import { getCurrentUser } from "@/modules/identity";
 import { friendsService } from "@/modules/together";
 import { FriendList } from "@/modules/together/ui/friend-list";
@@ -19,7 +21,10 @@ export default async function TogetherPage() {
   if (!user) return null;
   const t = await getT();
   const now = new Date();
-  const { friends, overview, peersError } = await friendsService.candidates(user);
+  const [{ friends, overview, peersError }, groups] = await Promise.all([
+    friendsService.candidates(user),
+    groupsService.listMine(user),
+  ]);
 
   const members = new Map<number, TrioMember>(
     friends.map((f) => [f.accountId32, { personaName: f.personaName, avatarUrl: f.avatarUrl }]),
@@ -49,6 +54,7 @@ export default async function TogetherPage() {
             unknownPartyGames={overview.unknownPartyGames}
           />
           <TriosCard trios={overview.trios} members={members} />
+          <TogetherGroupsCard groups={groups} />
           <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="how">
             <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
             <div className="space-y-1">

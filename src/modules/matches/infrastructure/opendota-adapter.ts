@@ -6,7 +6,7 @@ import { atMinute, type Laning } from "../domain/match-laning";
 import { teamfightDeaths, wardSpots, type MapEvents } from "../domain/match-map";
 import { PERF_STATS, type PlayerBenchmarks } from "../domain/match-performance";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
-import { resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
+import { lineupsFromSlots, resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
 import type {
   HeroCatalog,
   HeroInfo,
@@ -41,6 +41,16 @@ const MatchRowSchema = z.object({
   assists: z.number().int().min(0),
   average_rank: nullableInt,
   party_size: nullableInt,
+  // Slot → hero for all ten players (the `heroes` projection). A malformed map counts as
+  // missing (the row itself is still valid).
+  heroes: z
+    .record(
+      z.string(),
+      z.object({ hero_id: z.number().int().nullable().optional() }).nullable().optional(),
+    )
+    .nullable()
+    .optional()
+    .catch(null),
 });
 
 const ProfileSchema = z.object({
@@ -228,6 +238,8 @@ const MATCH_FIELDS = [
   "assists",
   "average_rank",
   "party_size",
+  // Both lineups (slot → hero), for matchups from your own games.
+  "heroes",
 ];
 
 function toProviderError(res: Exclude<GatewayResponse, { ok: true }>): ProviderError {
@@ -310,6 +322,7 @@ export class OpenDotaAdapter
         role: null,
         partySize: r.party_size ?? null,
         averageRankTier: r.average_rank ?? null,
+        ...lineupsFromSlots(r.heroes, r.player_slot),
         provenance: {
           provider: "opendota",
           fetchedAt,
