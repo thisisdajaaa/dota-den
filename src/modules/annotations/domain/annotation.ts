@@ -13,6 +13,7 @@ export const SUGGESTED_TAGS = [
   "stomped",
   "good teamwork",
   "bad draft",
+  "reviewed",
 ] as const;
 
 /** "Good  Teamwork!" → "good teamwork": lower case, letters, digits, spaces and dashes only. */

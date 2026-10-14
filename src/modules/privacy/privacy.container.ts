@@ -13,6 +13,7 @@ import { mmrJournalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
 import { sharesService } from "@/modules/shares";
 import { patchWatchlistService } from "@/modules/patches";
+import { practiceService } from "@/modules/practice";
 import { battleReportService } from "@/modules/report";
 import { followService } from "@/modules/players";
 import { sessionService } from "@/modules/sessions";
@@ -34,6 +35,7 @@ export const privacyService = lazy(
         togetherService,
         annotationsService,
         goalsService,
+        practiceService,
         battleReportService,
         notificationService,
         sharesService,
