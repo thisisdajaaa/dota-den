@@ -97,6 +97,11 @@ export async function HeroBanner({
               })}
             </Link>
           )}
+          {games > 0 && (
+            <Link href={`/heroes/matchups?hero=${heroId}`} className="text-gold hover:underline">
+              {t("heroes.own.linkHero", { name })}
+            </Link>
+          )}
           <Link href={`/guides/${heroId}`} className="text-gold hover:underline">
             {t("heroes.banner.proGuide", { name })}
           </Link>

@@ -52,6 +52,56 @@ describe("OpenDotaAdapter.fetchPlayerMatches", () => {
     expect(res.ok && res.value.matches.map((m) => m.partySize)).toEqual([null, null]);
   });
 
+  it("reads both lineups from the heroes projection, seen from your slot", async () => {
+    // The live shape: slot → { account_id?, hero_id } for all ten players.
+    const heroes = {
+      "0": { account_id: 425305536, hero_id: 53 },
+      "1": { hero_id: 121 },
+      "2": { account_id: 353792135, hero_id: 90 },
+      "3": { hero_id: 78 },
+      "4": { hero_id: 14 },
+      "128": { hero_id: 113 },
+      "129": { hero_id: 45 },
+      "130": { account_id: null, hero_id: 86 },
+      "131": { hero_id: 33 },
+      "132": { hero_id: 93 },
+    };
+    const { adapter, fetch } = adapterWith([
+      matchRow({ player_slot: 2, hero_id: 90, heroes }),
+      matchRow({ match_id: 2, player_slot: 130, hero_id: 86, heroes }),
+    ]);
+    const res = await adapter.fetchPlayerMatches(1, { offset: 0, limit: 100 });
+    expect(res.ok && res.value.matches.map((m) => [m.allyHeroIds, m.enemyHeroIds])).toEqual([
+      [
+        [53, 121, 78, 14],
+        [113, 45, 86, 33, 93],
+      ],
+      [
+        [113, 45, 33, 93],
+        [53, 121, 90, 78, 14],
+      ],
+    ]);
+    expect(new URL(fetch.mock.calls[0][0]).searchParams.getAll("project")).toContain("heroes");
+  });
+
+  it("keeps lineups missing (null) when the upstream gives none, and skips unknown heroes", async () => {
+    const row = matchRow();
+    delete row.heroes;
+    const { adapter } = adapterWith([
+      row,
+      matchRow({ heroes: null }),
+      matchRow({ heroes: "garbage" }),
+      matchRow({ player_slot: 0, heroes: { "0": { hero_id: 1 }, "1": { hero_id: 0 }, "128": {} } }),
+    ]);
+    const res = await adapter.fetchPlayerMatches(1, { offset: 0, limit: 100 });
+    expect(res.ok && res.value.matches.map((m) => [m.allyHeroIds, m.enemyHeroIds])).toEqual([
+      [null, null],
+      [null, null],
+      [null, null],
+      [[], []],
+    ]);
+  });
+
   it("rejects malformed rows and counts them", async () => {
     const { adapter } = adapterWith([
       matchRow(),

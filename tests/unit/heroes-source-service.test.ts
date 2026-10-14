@@ -155,6 +155,18 @@ function service(overrides: Partial<ConstructorParameters<typeof HeroesService>[
         },
       ],
     },
+    lineups: {
+      games: async (_id, filter) => ({
+        games: Array.from({ length: 6 }, (_, i) => ({
+          heroId: filter.hero ?? 1,
+          result: i < 5 ? ("loss" as const) : ("win" as const),
+          allyHeroIds: [20],
+          enemyHeroIds: [50],
+        })),
+        latestPatch: "7.41",
+      }),
+      coverage: async () => ({ total: 940, withLineups: 120, complete: false }),
+    },
     player: {
       matchups: async () => ok({ games: 1, rows: [] }),
       recentGames: async () => ok(games),
@@ -205,5 +217,19 @@ describe("HeroesService", () => {
     expect(b.ok && b.value.breakdown.positions[0].games).toBe(1);
     const none = await service({ heroes: async () => [] }).laneBreakdown(22202);
     expect(none.ok).toBe(false);
+  });
+
+  it("builds matchups from your own games with the backfill's progress", async () => {
+    const view = await service().ownMatchups(
+      22202,
+      { range: "all", mode: "all", hero: 3 },
+      new Date("2026-10-15T00:00:00Z"),
+    );
+    expect(view.matchups.toughest).toMatchObject([
+      { heroId: 50, games: 6, wins: 1, playedInto: [{ heroId: 3, games: 6 }] },
+    ]);
+    expect(view.progress).toEqual({ total: 940, withLineups: 120, inProgress: true, missing: 0 });
+    expect(view.latestPatch).toBe("7.41");
+    expect(view.filter.hero).toBe(3);
   });
 });

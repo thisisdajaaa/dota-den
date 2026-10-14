@@ -27,6 +27,15 @@ export const heroesService = lazy(() => {
           patch: f.patch,
         })),
     },
+    lineups: {
+      games: (accountId32, filter, now) =>
+        matchQueries.lineupFacts(
+          accountId32,
+          { range: filter.range, mode: filter.mode, heroId: filter.hero },
+          now,
+        ),
+      coverage: (accountId32) => matchQueries.lineupCoverage(accountId32),
+    },
     player: new OpenDotaHeroSource(openDotaGateway(), openDotaConfig()),
     highRank: {
       heroStats: async () => {

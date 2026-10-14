@@ -32,6 +32,12 @@ export interface PlayerMatchFact {
   queue: QueueClassification;
   patch: PatchAssignment;
   averageRankTier: number | null;
+  /**
+   * Heroes on your team (not yours) and on the other team, from the upstream's lineups.
+   * null when the upstream gave no lineup for the match: missing, never guessed.
+   */
+  allyHeroIds: number[] | null;
+  enemyHeroIds: number[] | null;
   provenance: Provenance;
 }
 
@@ -42,4 +48,33 @@ export function sideFromPlayerSlot(playerSlot: number): TeamSide {
 
 export function resultFor(side: TeamSide, radiantWin: boolean): MatchResult {
   return (side === "radiant") === radiantWin ? "win" : "loss";
+}
+
+export interface Lineups {
+  allyHeroIds: number[] | null;
+  enemyHeroIds: number[] | null;
+}
+
+/**
+ * Both lineups from the upstream's slot → hero map, seen from `playerSlot`: allies are the
+ * other heroes on your side, enemies the heroes on the other side. Unknown heroes (missing
+ * or 0) are left out, never filled in; with no map at all both lineups are null.
+ */
+export function lineupsFromSlots(
+  heroes:
+    Readonly<Record<string, { hero_id?: number | null } | null | undefined>> | null | undefined,
+  playerSlot: number,
+): Lineups {
+  if (!heroes) return { allyHeroIds: null, enemyHeroIds: null };
+  const mySide = sideFromPlayerSlot(playerSlot);
+  const allies = new Set<number>();
+  const enemies = new Set<number>();
+  for (const [key, entry] of Object.entries(heroes)) {
+    const slot = Number(key);
+    const heroId = entry?.hero_id;
+    if (!Number.isInteger(slot) || slot < 0 || slot > 255 || slot === playerSlot) continue;
+    if (typeof heroId !== "number" || !Number.isInteger(heroId) || heroId <= 0) continue;
+    (sideFromPlayerSlot(slot) === mySide ? allies : enemies).add(heroId);
+  }
+  return { allyHeroIds: [...allies], enemyHeroIds: [...enemies] };
 }

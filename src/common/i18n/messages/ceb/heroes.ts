@@ -98,6 +98,49 @@ export const heroes: MessageTree<typeof en> = {
     emptyWinWith:
       "Walay kauban nga hero nga adunay {min}+ ka duwa diin modaog ka sa katunga o labaw pa.",
   },
+  own: {
+    metaTitle: "Matchups",
+    kicker: "Matchups",
+    title: "Kinsa ang nakapildi nimo",
+    description:
+      "Ang imong record batok ug kauban ang matag hero, giihap gikan sa mga lineup sa imong kaugalingong na-import nga mga duwa.",
+    link: "Kinsa ang nakapildi nimo: matchups gikan sa imong mga duwa",
+    linkHero: "Matchups gikan sa imong mga duwa gamit si {name}",
+    back: "Balik sa imong mga hero",
+    last90: "Katapusang 90 ka adlaw",
+    progressRunning:
+      "Gibasa pa ang mga lineup sa imong mas karaang mga duwa: adunay matchups para sa {done} sa {total} sa pagkakaron. Magpadayon kini matag sync sa imong mga match ug sa adlaw-adlaw nga update.",
+    progressMissing: "Walay lineup sa OpenDota ang {games} mao nga wala giapil.",
+    sample: "Giihap gikan sa {done} sa imong {games} niini nga view nga adunay duha ka lineup.",
+    baseline: "Imong win rate niini: {rate}.",
+    noGamesTitle: "Wala pay duwa nga adunay lineup dinhi",
+    noGames: "Wala pay lineup ang bisan unsa sa imong mga duwa niini nga view.",
+    noGamesFiltered: "Sulayi ang mas taas nga panahon o tanang duwa.",
+    opponents: "Imong mga kaaway",
+    toughest: "Pinakalisod nga kaaway",
+    toughestNote:
+      "Mga kaaway nga hero nga imong gidaog sa ubos sa katunga sa imong mga duwa batok kanila.",
+    easiest: "Pinakasayon nga kaaway",
+    easiestNote:
+      "Mga kaaway nga hero nga imong gidaog sa katunga o labaw pa sa imong mga duwa batok kanila.",
+    bestAllies: "Mga kauban nga modaog ka",
+    worstAllies: "Mga kauban nga mapildi ka",
+    allies: "Kauban ang imong mga kauban",
+    alliesNote: "Mga hero sa imong team (dili imo) ug ang imong record kauban sila.",
+    emptyToughest: "Walay kaaway nga hero nga adunay {min}+ ka duwa diin mas kanunay kang mapildi.",
+    emptyEasiest:
+      "Walay kaaway nga hero nga adunay {min}+ ka duwa diin modaog ka sa katunga o labaw pa.",
+    emptyBestAllies:
+      "Walay kauban nga hero nga adunay {min}+ ka duwa diin modaog ka sa katunga o labaw pa.",
+    emptyWorstAllies:
+      "Walay kauban nga hero nga adunay {min}+ ka duwa diin mas kanunay kang mapildi.",
+    record: "{wins}–{losses}",
+    rowLabel: "{name}: {wins} ka daog, {losses} ka pildi ({rate}) sa {games}",
+    playedInto: "Imong gidula",
+    playedIntoItem: "{name} {wins}–{losses}",
+    footer:
+      "Wala giapil ang mga hero nga imong naatubang og kulang sa {min} ka duwa ({enemies}, {allies}). Gibahin ang mga lista sa 50% ug gihan-ay nga adunay bira padulong sa 50%, aron dili manguna ang pipila ka swerte nga duwa.",
+  },
   items: {
     kicker: "Items",
     title: "Imong kanunay paliton nga mga item",

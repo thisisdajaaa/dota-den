@@ -15,12 +15,15 @@ import {
   type HighRankComparison,
 } from "./domain/hero-stats";
 import { heroProgress } from "./domain/hero-progress";
+import { lineupProgress, ownMatchups } from "./domain/own-matchups";
+import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 import type {
   HeroCatalogEntry,
   HighRankStats,
   ItemCatalog,
   LaneHistory,
   OwnHeroGames,
+  OwnLineups,
   PlayerHeroSource,
   SourceError,
 } from "./heroes.ports";
@@ -29,6 +32,7 @@ import type {
   HeroOverview,
   LaneBreakdownView,
   MatchupsView,
+  OwnMatchupsView,
 } from "./dtos/responses/heroes.dto";
 
 /** Games on the hero fetched from OpenDota for GPM, XPM and items (one upstream call). */
@@ -38,6 +42,7 @@ export class HeroesService {
   constructor(
     private readonly deps: {
       own: OwnHeroGames;
+      lineups: OwnLineups;
       player: PlayerHeroSource;
       highRank: HighRankStats;
       lanes: LaneHistory;
@@ -62,6 +67,24 @@ export class HeroesService {
       heroId,
       record: heroRecord(games),
       trend: winRateTrend(games, { timeZone }),
+    };
+  }
+
+  /** Who you lose to (and beat, and win with), from the lineups of your own imported games. */
+  async ownMatchups(
+    accountId32: number,
+    filter: MatchupsFilter,
+    now: Date,
+  ): Promise<OwnMatchupsView> {
+    const [{ games, latestPatch }, coverage] = await Promise.all([
+      this.deps.lineups.games(accountId32, filter, now),
+      this.deps.lineups.coverage(accountId32),
+    ]);
+    return {
+      filter,
+      matchups: ownMatchups(games),
+      progress: lineupProgress(coverage),
+      latestPatch,
     };
   }
 
