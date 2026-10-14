@@ -22,12 +22,6 @@ These are built and tested; each starts working when its keys are set in Vercel 
 | Higher OpenDota limits               | `OPENDOTA_API_KEY`                                                                        | [#14](https://github.com/thisisdajaaa/dota-den/issues/14) |
 | Durable background imports (QStash)  | `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`                   | [#15](https://github.com/thisisdajaaa/dota-den/issues/15) |
 
-## Soon (P2)
-
-| Feature                   | Why                                                     | Issue                                                     |
-| ------------------------- | ------------------------------------------------------- | --------------------------------------------------------- |
-| Stable preview image URLs | Discord posts and other embeds can show the match image | [#23](https://github.com/thisisdajaaa/dota-den/issues/23) |
-
 ## Principles for new features
 
 - **Honest numbers.** Never invent MMR, party membership or win chances. Estimates are labelled;
