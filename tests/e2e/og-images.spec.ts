@@ -19,6 +19,19 @@ test("link previews render for the site, matches and players", async ({ page, re
   }
 });
 
+test("match previews have a stable URL with a long cache, and a short one when unavailable", async ({
+  page,
+  request,
+}) => {
+  const { url, res } = await previewOf(page, request, "/matches/7000000012");
+  // No build hash in the path: Discord posts and old links keep working across deploys.
+  expect(url.pathname).toBe("/og/match/7000000012");
+  expect(res.headers()["cache-control"]).toContain("s-maxage=604800");
+  const missing = await request.get("/og/match/1");
+  expect(missing.status()).toBe(200);
+  expect(missing.headers()["cache-control"]).toContain("s-maxage=300");
+});
+
 test("a shared draft's preview shows the draft", async ({ page, request, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/draft");
