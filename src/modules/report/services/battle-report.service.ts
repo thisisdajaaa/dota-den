@@ -1,4 +1,5 @@
 import type { DataOwner } from "@/common/privacy/user-data";
+import { mapLimit } from "@/common/utils/map-limit";
 import { daysBetween, dayKeyFormatter, type DayKey } from "@/common/time/day-key";
 import { buildCalendar } from "@/modules/mmr/domain/calendar";
 import { loadWindow } from "@/modules/mmr/domain/load-window";
@@ -15,6 +16,7 @@ import type {
 
 /** Parsed matches read per page view (each is one OpenDota call); the rest wait for later. */
 export const REPLAY_NEW_PER_VIEW = 5;
+const REPLAY_CONCURRENCY = 3;
 
 /**
  * The battle report (Dota Plus style): a period of your games, the period before it for
@@ -92,12 +94,13 @@ export class BattleReportService {
       parsed.map((g) => g.matchId),
     );
     const missing = parsed.filter((g) => !saved.has(g.matchId)).slice(0, REPLAY_NEW_PER_VIEW);
-    for (const g of missing) {
+    // A few at a time: each is an OpenDota match request (cached and budgeted by the gateway).
+    await mapLimit(missing, REPLAY_CONCURRENCY, async (g) => {
       const s = await this.deps.replays.read(g.matchId, accountId32).catch(() => null);
-      if (!s) continue;
+      if (!s) return;
       saved.set(g.matchId, s);
       await this.deps.reads.save(g.matchId, accountId32, s).catch(() => {});
-    }
+    });
     const summaries: ReplaySummary[] = parsed.flatMap((g) =>
       saved.has(g.matchId) ? [saved.get(g.matchId)!] : [],
     );

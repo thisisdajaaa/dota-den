@@ -31,6 +31,7 @@ import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
 import { FollowsRepository } from "@/modules/players/repositories/follows.repository";
+import { PlayerProfilesRepository } from "@/modules/players/repositories/player-profiles.repository";
 import {
   SessionNotesRepository,
   SessionSettingsRepository,
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();
   await new FollowsRepository(async () => db).ensureIndexes();
+  await new PlayerProfilesRepository(async () => db).ensureIndexes();
   await Promise.all([
     new SessionNotesRepository(async () => db).ensureIndexes(),
     new SessionSettingsRepository(async () => db).ensureIndexes(),
