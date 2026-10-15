@@ -5,6 +5,7 @@ import {
   type Matchups,
   type WinRateTrend,
 } from "../../domain/hero-stats";
+import { type ItemImpactView } from "../../domain/hero-coaching";
 import { type HeroProgress } from "../../domain/hero-progress";
 import { type LineupProgress, type OwnMatchups } from "../../domain/own-matchups";
 import { type MatchupsFilter } from "../../schemas/matchups-filter.schema";
@@ -28,6 +29,8 @@ export interface HeroDetailsView {
   xpm: { average: number; games: number } | null;
   /** null when the item catalog is unavailable (we can't tell components from items). */
   items: ItemSummary | null;
+  /** Win rate with vs without each item; null when the item catalog is unavailable. */
+  impact: ItemImpactView | null;
   /** Earlier vs latest of your recent games on the hero; null with too few. */
   progress: HeroProgress | null;
 }

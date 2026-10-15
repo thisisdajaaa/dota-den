@@ -6,6 +6,8 @@ export interface MatchSyncRunDto {
   failed: Array<{ accountId32: number; outcome: string }>;
   skipped: number;
   medals: number;
+  /** Match details fetched for the hero coaching extras; null when the run had no time left. */
+  extras: { accounts: number; fetched: number; parsed: number; stoppedEarly: boolean } | null;
   /** Discord feed posts after the sync; null when the run had no time left or none are set up. */
   discord: {
     feeds: number;

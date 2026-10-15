@@ -14,6 +14,7 @@ import {
   type HeroRecord,
   type HighRankComparison,
 } from "./domain/hero-stats";
+import { heroCoaching, itemImpact, type HeroCoaching } from "./domain/hero-coaching";
 import { heroProgress } from "./domain/hero-progress";
 import { lineupProgress, ownMatchups } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
@@ -26,6 +27,7 @@ import type {
   OwnLineups,
   PlayerHeroSource,
   SourceError,
+  StoredExtras,
 } from "./heroes.ports";
 import type {
   HeroDetailsView,
@@ -46,6 +48,7 @@ export class HeroesService {
       player: PlayerHeroSource;
       highRank: HighRankStats;
       lanes: LaneHistory;
+      extras: StoredExtras;
       /** The hero catalog (ids and roles). */
       heroes: () => Promise<readonly HeroCatalogEntry[]>;
       items: () => Promise<ItemCatalog>;
@@ -113,6 +116,7 @@ export class HeroesService {
       gpm: averageOf(games.map((g) => g.goldPerMin)),
       xpm: averageOf(games.map((g) => g.xpPerMin)),
       items: catalog.size === 0 ? null : itemPurchases(games, notable),
+      impact: catalog.size === 0 ? null : itemImpact(games, notable),
       progress: heroProgress(
         games.flatMap((g) =>
           g.startedAt
@@ -132,6 +136,22 @@ export class HeroesService {
             : [],
         ),
       ),
+    });
+  }
+
+  /**
+   * Item timings in wins vs losses and lane results by role, from the stored extras of your
+   * parsed games on the hero. null when the item catalog is unavailable.
+   */
+  async coaching(accountId32: number, heroId: number): Promise<HeroCoaching | null> {
+    const [{ games, parsedGames }, catalog] = await Promise.all([
+      this.deps.extras.forHero(accountId32, heroId),
+      this.deps.items(),
+    ]);
+    if (catalog.size === 0) return null;
+    return heroCoaching(games, parsedGames, (key) => {
+      const item = catalog.get(key);
+      return item !== undefined && isNotableItem(item);
     });
   }
 

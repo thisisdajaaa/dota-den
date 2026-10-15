@@ -30,6 +30,8 @@ export class MatchesController {
        * response is sent, so it never slows the sync down.
        */
       onNewMatches?: (accountId32: number) => void;
+      /** Any successful sync: a few match details for the extras (after the response). */
+      onSynced?: (accountId32: number) => void;
       logger: Pick<Logger, "info" | "warn">;
     },
   ) {}
@@ -43,6 +45,7 @@ export class MatchesController {
     if (result.ok) {
       this.deps.logger.info("match_sync_completed", { ...log, ...result.value });
       if (result.value.inserted > 0) this.deps.onNewMatches?.(accountId32);
+      this.deps.onSynced?.(accountId32);
       if (!result.value.backfillComplete) {
         await this.deps
           .continueBackfill(accountId32)

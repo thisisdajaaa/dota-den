@@ -59,6 +59,100 @@ for (const m of MATCHES) {
   );
 }
 
+// Hero coaching fixture (its own account, SteamID 76561197960466001): 20 parsed Anti-Mage
+// games, newest first. Battle Fury every game; Manta in the 10 even ones, 8 of them won;
+// 3 of the 10 without Manta won. Match details carry purchase logs and lanes.
+const COACH = 200_273;
+const COACH_MANTA_WINS = new Set([0, 2, 4, 8, 10, 12, 14, 16]);
+const COACH_OTHER_WINS = new Set([1, 3, 5]);
+const COACH_MATCHES = Array.from({ length: 20 }, (_, i) => {
+  const manta = i % 2 === 0;
+  const won = manta ? COACH_MANTA_WINS.has(i) : COACH_OTHER_WINS.has(i);
+  return {
+    match_id: 7_300_000_000 + (20 - i),
+    player_slot: 0,
+    radiant_win: won,
+    duration: 2000 + i * 30,
+    game_mode: 22,
+    lobby_type: 7,
+    hero_id: 1,
+    start_time: NOW - (i + 1) * 6 * 3600,
+    version: 22,
+    kills: 8,
+    deaths: 4,
+    assists: 6,
+    average_rank: 55,
+    party_size: 1,
+    lane_role: 1,
+    is_roaming: false,
+    gold_per_min: 620,
+    xp_per_min: 700,
+    purchase: { tango: 2, boots: 1, bfury: 1, ...(manta ? { manta: 1 } : {}) },
+    heroes: Object.fromEntries(
+      [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot, k) => [
+        String(slot),
+        { hero_id: slot === 0 ? 1 : 100 + k },
+      ]),
+    ),
+  };
+});
+
+/** A coaching game's detail: you safe lane (slot 0) with slot 3, against slots 130 and 132. */
+function coachDetail(index) {
+  const row = COACH_MATCHES[index];
+  const won = row.radiant_win;
+  const lanes = { 0: 1, 1: 2, 2: 3, 3: 1, 4: 3, 128: 3, 129: 2, 130: 1, 131: 3, 132: 1 };
+  const players = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot, k) => {
+    const me = slot === 0;
+    // Gold per minute in lane: you win the lane in wins and lose it in losses.
+    const perMin = me ? (won ? 450 : 250) : 330;
+    return {
+      player_slot: slot,
+      account_id: me ? COACH : 91_000 + slot,
+      personaname: me ? "Fixture Coachee" : `Fixture ${slot}`,
+      hero_id: me ? 1 : 100 + k,
+      level: 20,
+      kills: 5,
+      deaths: 5,
+      assists: 5,
+      last_hits: 150,
+      denies: 10,
+      gold_per_min: 500,
+      xp_per_min: 600,
+      lane: lanes[slot],
+      lane_role: me ? 1 : lanes[slot] === 2 ? 2 : lanes[slot] === 1 ? 1 : 3,
+      is_roaming: false,
+      lane_efficiency_pct: me ? (won ? 80 : 55) : 60,
+      lh_t: Array.from({ length: 31 }, (_, m) => m * 5),
+      dn_t: Array.from({ length: 31 }, (_, m) => Math.floor(m / 2)),
+      gold_t: Array.from({ length: 31 }, (_, m) => m * perMin),
+      purchase_log: me
+        ? [
+            { time: -80, key: "tango" },
+            { time: 200, key: "boots" },
+            // Faster Battle Fury in wins: 13:00 in wins, 16:00 in losses (plus a few seconds).
+            { time: (won ? 780 : 960) + index, key: "bfury" },
+            ...(row.purchase.manta ? [{ time: (won ? 1500 : 1800) + index, key: "manta" }] : []),
+          ]
+        : [],
+    };
+  });
+  return {
+    match_id: row.match_id,
+    start_time: row.start_time,
+    duration: row.duration,
+    radiant_win: row.radiant_win,
+    radiant_score: 30,
+    dire_score: 20,
+    game_mode: 22,
+    lobby_type: 7,
+    region: 3,
+    first_blood_time: 90,
+    version: row.version,
+    players,
+  };
+}
+
 function player(slot, extra = {}) {
   return {
     player_slot: slot,
@@ -147,6 +241,8 @@ function laningFields(slot, me) {
 }
 
 function matchDetail(id) {
+  const coach = COACH_MATCHES.findIndex((m) => String(m.match_id) === id);
+  if (coach >= 0) return coachDetail(coach);
   const index = MATCHES.findIndex((m) => String(m.match_id) === id);
   if (index < 0) return null;
   const row = MATCHES[index];
@@ -744,6 +840,13 @@ const routes = [
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Number(url.searchParams.get("limit") ?? 100);
       if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
+      if (Number(m[1]) === COACH) {
+        const heroId = url.searchParams.get("hero_id");
+        return COACH_MATCHES.filter((r) => !heroId || r.hero_id === Number(heroId)).slice(
+          offset,
+          offset + limit,
+        );
+      }
       if (Number(m[1]) !== ACCOUNT) return [];
       // Matches the other account also played in (either team).
       const included = url.searchParams.get("included_account_id");

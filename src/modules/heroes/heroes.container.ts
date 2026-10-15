@@ -3,7 +3,7 @@ import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { ok } from "@/common/result";
 import { lazy } from "@/common/utils/lazy";
-import { matchQueries, matchesService } from "@/modules/matches";
+import { matchExtrasService, matchQueries, matchesService } from "@/modules/matches";
 import { metaSource } from "@/modules/meta";
 import type { ItemCatalog } from "./heroes.ports";
 import { HeroesService } from "./heroes.service";
@@ -49,6 +49,7 @@ export const heroesService = lazy(() => {
         return res.ok ? ok(res.value.value) : res;
       },
     },
+    extras: { forHero: (accountId32, heroId) => matchExtrasService.forHero(accountId32, heroId) },
     heroes: async () =>
       [...(await matchesService.heroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
     items: async (): Promise<ItemCatalog> => {

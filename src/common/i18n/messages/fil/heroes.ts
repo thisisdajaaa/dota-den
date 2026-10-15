@@ -153,6 +153,36 @@ export const heroes: MessageTree<typeof en> = {
     listLabel: "Mga pinakamadalas bilhing item",
     ofGames: "ng mga laro · {games} sa {total}",
   },
+  coaching: {
+    kicker: "Coaching",
+    worksTitle: "Ano ang gumagana para sa iyo",
+    worksDescription:
+      "Ang win rate mo sa mga larong binili mo ang bawat item laban sa mga larong hindi, mula sa {games} na may purchase data kay {hero}.",
+    worksFooter:
+      "Ugnayan ito sa mga laro mo, hindi sanhi: ang item na binibili sa mas mahahabang laro o sa mga larong panalo na ay puwedeng magmukhang mas maganda o mas pangit kaysa sa totoo. Kailangan ng item ng hindi bababa sa {min} larong binili at {min} na hindi.",
+    worksNotEnough:
+      "Kulang pa ang mga laro: {games} ang may purchase data, at kailangan ng item ng hindi bababa sa {min} larong binili at {min} na hindi para maikumpara.",
+    worksListLabel: "Win rate na may at walang bawat item",
+    bought: "Binili: {rate} · {games}",
+    skipped: "Hindi binili: {rate} · {games}",
+    points: "{pts} pts",
+    timingsTitle: "Ang timings at lanes mo",
+    analysed: "{analysed} sa {parsed} mong may parsed replay kay {hero} ang nasuri na.",
+    timingsNotEnough:
+      "Lalabas ang item timings at lane results kapag nasuri na ang {min} sa mga parsed na laro mo kay {hero}. Ilan pa ang binabasa bawat araw.",
+    timingsFooter:
+      "Median na oras ng unang bili (bilang ng laro sa panaklong; — kung kulang sa 3). Kinukumpara ng lane results ang gold ng lane mo sa 10 minuto sa mga kalaban sa lane (10% pataas o pababa). Ugnayan, hindi sanhi.",
+    timingsLabel: "Item timings sa panalo at talo",
+    item: "Item",
+    inWins: "Sa panalo",
+    inLosses: "Sa talo",
+    lanesLabel: "Lane results ayon sa role",
+    laneGames: "{games} · {wins} panalo",
+    laneResults: "lane {won} panalo, {even} tabla, {lost} talo",
+    efficiency: "lane efficiency {pct}%",
+    noLaneRole: "{games} na walang lane role.",
+    roles: { safe: "Safe lane", mid: "Mid", off: "Off lane", jungle: "Jungle" },
+  },
   build: {
     kicker: "Items",
     title: "Ang build mo laban sa mga pro",

@@ -37,6 +37,8 @@ export const MATCH_COLLECTIONS = {
   matches: "matches",
   facts: "player_match_facts",
   syncState: "match_sync_state",
+  /** Per-match extras from parsed replays (item timings, lanes), per player. */
+  extras: "match_extras",
 } as const;
 
 export interface PlayerMatchFactDoc extends PlayerMatchFact {
