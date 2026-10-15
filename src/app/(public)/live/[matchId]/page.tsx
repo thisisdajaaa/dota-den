@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, Radio } from "lucide-react";
 import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
+import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { liveService } from "@/modules/live";
-import { clock, draftComplete, sideHeroes } from "@/modules/live/domain/live-game";
+import { clock, draftComplete, sideHeroes, type LiveGame } from "@/modules/live/domain/live-game";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { leadLabel, LineupRow } from "@/modules/live/ui/live-game-card";
 import { WatchSection } from "@/modules/live/ui/watch-section";
@@ -51,14 +53,6 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
   }
 
   const name = (s: "radiant" | "dire") => game.teams[s] ?? (s === "radiant" ? "Radiant" : "Dire");
-  const [outlook, watch] = await Promise.all([
-    draftComplete(game)
-      ? getAiOpponent()
-          .then((ai) => ai.outlookForHeroes(sideHeroes(game, "radiant"), sideHeroes(game, "dire")))
-          .catch(() => null)
-      : null,
-    liveService.watch(game),
-  ]);
 
   return (
     <div className="space-y-6">
@@ -104,7 +98,10 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
         </div>
       </section>
 
-      <WatchSection streams={watch.streams} links={watch.links} />
+      {/* Twitch can be slow: show the score and lineups first. */}
+      <Suspense fallback={<SectionSkeleton label={t("live.watch.title")} rows={2} />}>
+        <Watch game={game} />
+      </Suspense>
 
       <section aria-label={t("live.game.lineups")} className="panel space-y-4 p-5">
         <div>
@@ -117,23 +114,45 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
         </div>
       </section>
 
-      {outlook ? (
-        <DraftRead
-          outlook={outlook}
-          name={name}
-          outcome={(favoured) => {
-            const leader =
-              game.radiantLead > 500 ? "radiant" : game.radiantLead < -500 ? "dire" : null;
-            return leader
-              ? leader === favoured
-                ? t("live.game.aheadAsDrafted", { team: name(leader) })
-                : t("live.game.aheadDespite", { team: name(leader) })
-              : t("live.game.even");
-          }}
-        />
-      ) : (
-        <p className="panel p-5 text-sm text-muted-foreground">{t("live.game.draftPending")}</p>
-      )}
+      <Suspense fallback={<SectionSkeleton label={t("live.game.draftPending")} rows={3} />}>
+        <Outlook game={game} />
+      </Suspense>
     </div>
+  );
+}
+
+const teamName = (game: LiveGame, s: "radiant" | "dire") =>
+  game.teams[s] ?? (s === "radiant" ? "Radiant" : "Dire");
+
+/** Matching streams (Twitch) and search links. */
+async function Watch({ game }: { game: LiveGame }) {
+  const watch = await liveService.watch(game);
+  return <WatchSection streams={watch.streams} links={watch.links} />;
+}
+
+/** The draft read, once both drafts are complete. */
+async function Outlook({ game }: { game: LiveGame }) {
+  const t = await getT();
+  const outlook = draftComplete(game)
+    ? await getAiOpponent()
+        .then((ai) => ai.outlookForHeroes(sideHeroes(game, "radiant"), sideHeroes(game, "dire")))
+        .catch(() => null)
+    : null;
+  if (!outlook)
+    return <p className="panel p-5 text-sm text-muted-foreground">{t("live.game.draftPending")}</p>;
+  const name = (s: "radiant" | "dire") => teamName(game, s);
+  return (
+    <DraftRead
+      outlook={outlook}
+      name={name}
+      outcome={(favoured) => {
+        const leader = game.radiantLead > 500 ? "radiant" : game.radiantLead < -500 ? "dire" : null;
+        return leader
+          ? leader === favoured
+            ? t("live.game.aheadAsDrafted", { team: name(leader) })
+            : t("live.game.aheadDespite", { team: name(leader) })
+          : t("live.game.even");
+      }}
+    />
   );
 }
