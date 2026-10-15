@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarRange, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, Info, Route } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
 import { LocalTime } from "@/components/local-time";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
@@ -115,7 +116,16 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         kicker={t("mmr.page.kicker")}
         title={t("mmr.page.title")}
         description={t("mmr.page.description")}
-        actions={<MmrEntryDialog canReadScreenshots={screenshotService.available} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link href="/mmr/journey">
+                <Route aria-hidden className="size-4" /> {t("mmr.journey.link")}
+              </Link>
+            </Button>
+            <MmrEntryDialog canReadScreenshots={screenshotService.available} />
+          </div>
+        }
       />
 
       <section aria-label={t("mmr.page.summary")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">

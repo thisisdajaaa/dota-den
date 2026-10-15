@@ -9,6 +9,7 @@ import { EmailDigestCard } from "@/modules/email/ui/email-digest-card";
 import { getCurrentUser } from "@/modules/identity";
 import { notificationService, vapidPublicKey } from "@/modules/notifications";
 import { NotificationsCard } from "@/modules/notifications/ui/notifications-card";
+import { isJourneyRange } from "@/modules/mmr/domain/journey";
 import { sharesService } from "@/modules/shares";
 import { SharedLinks } from "@/modules/shares/ui/shared-links";
 import { DeleteAccountForm } from "@/modules/privacy/ui/delete-account-form";
@@ -40,7 +41,11 @@ export default async function AccountPage() {
                 ? s.snapshot.startedAt.toISOString().slice(0, 10)
                 : s.ref,
           })
-        : t("shares.account.weekLabel", { date: s.ref }),
+        : s.kind === "journey"
+          ? t("shares.account.journeyLabel", {
+              range: isJourneyRange(s.ref) ? t(`mmr.journey.ranges.${s.ref}`) : s.ref,
+            })
+          : t("shares.account.weekLabel", { date: s.ref }),
   }));
   const downloads = [
     {

@@ -1,5 +1,11 @@
 import type { DataOwner } from "@/common/privacy/user-data";
-import type { SessionShare, ShareKind, WeekShare } from "./domain/share";
+import type {
+  JourneyShare,
+  JourneyShareRange,
+  SessionShare,
+  ShareKind,
+  WeekShare,
+} from "./domain/share";
 import type { ShareDocument } from "./shares.model";
 
 export interface SharesRepositoryPort {
@@ -21,7 +27,12 @@ export interface ShareSources {
   session(owner: DataOwner, sessionId: string): Promise<SessionShare | null>;
   /** This week (player's time zone) as a share. */
   week(owner: DataOwner, timeZone: string): Promise<WeekShare>;
+  /** The owner's rank journey over a range, by medal only. */
+  journey(owner: DataOwner, range: JourneyShareRange): Promise<JourneyShare>;
   playerName(accountId32: number): Promise<string | null>;
 }
 
-export type ShareRequest = { kind: Extract<ShareKind, "session">; ref: string } | { kind: "week" };
+export type ShareRequest =
+  | { kind: Extract<ShareKind, "session">; ref: string }
+  | { kind: "week" }
+  | { kind: "journey"; range: JourneyShareRange };

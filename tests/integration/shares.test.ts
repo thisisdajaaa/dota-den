@@ -43,4 +43,30 @@ describe("SharesRepository", () => {
     expect(await repo.deleteForOwner({ userId: "u1", accountId32: 1 })).toBe(1);
     expect(await repo.find("AAAAAAAAAAAA")).toBeNull();
   });
+
+  it("stores a journey per range, with its dates intact", async () => {
+    const at = new Date("2026-07-01T00:00:00Z");
+    const journey = {
+      kind: "journey" as const,
+      range: "6m" as const,
+      from: new Date("2026-04-16T00:00:00Z"),
+      to: new Date("2026-10-16T00:00:00Z"),
+      medals: [{ rankTier: 52, at, carried: false }],
+      lastSeenAt: at,
+      peak: { rankTier: 52, at },
+      low: { rankTier: 52, at },
+      climb: null,
+      slide: null,
+      games: 0,
+      wins: 0,
+      losses: 0,
+      heroes: [],
+    };
+    const input = { userId: "u3", kind: "journey" as const, playerName: null, snapshot: journey };
+    await repo.upsert({ ...input, ref: "6m" }, "CCCCCCCCCCCC", at);
+    await repo.upsert({ ...input, ref: "1y" }, "DDDDDDDDDDDD", at);
+    const found = await repo.find("CCCCCCCCCCCC");
+    expect(found?.snapshot).toEqual(journey);
+    expect(await repo.listForUser("u3")).toHaveLength(2);
+  });
 });
