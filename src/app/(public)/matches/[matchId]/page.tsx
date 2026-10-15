@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -230,7 +231,14 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         hrefFor={(slot) => `/matches/${match.matchId}?p=${slot}#performance`}
       />
 
-      <Suspense fallback={null}>
+      {/* Usually shown: reserve its space so the cards below don't jump when it arrives. */}
+      <Suspense
+        fallback={
+          radiant.length === 5 && dire.length === 5 ? (
+            <SectionSkeleton label={t("drafts.read.title")} rows={3} />
+          ) : null
+        }
+      >
         <MatchDraftSection
           radiant={radiant.map((p) => p.heroId)}
           dire={dire.map((p) => p.heroId)}

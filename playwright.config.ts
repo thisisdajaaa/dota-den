@@ -47,6 +47,8 @@ export default defineConfig({
         // Never call the real OpenDota API from tests.
         OPENDOTA_BASE_URL: `${fixtureURL}/api`,
         VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
+        // Hero and rank art from the fixture: no internet, and tiny images to resize.
+        IMAGE_SOURCE_BASE_URL: `${fixtureURL}/images`,
         TWITCH_CLIENT_ID: "fixture",
         TWITCH_CLIENT_SECRET: "fixture",
         TWITCH_API_BASE_URL: `${fixtureURL}/twitch/helix`,

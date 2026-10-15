@@ -973,9 +973,17 @@ function resend(req, res, url) {
   return false;
 }
 
+const TINY_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAACAAAAASCAIAAAC1qksFAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAJ0lEQVQ4jWOoiLKhKWIYtSBqNIhsRlNRxWhGsxktKipGS9Mo2lY4ALK6X59aY36mAAAAAElFTkSuQmCC";
+
 createServer((req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   if (url.pathname === "/health") return res.end("ok");
+  // Hero and rank art for the /img resize routes (IMAGE_SOURCE_BASE_URL): one tiny image.
+  if (/^\/images\/(hero|rank)\/[a-z0-9_]+\.png$/.test(url.pathname)) {
+    res.writeHead(200, { "content-type": "image/png" });
+    return res.end(Buffer.from(TINY_PNG, "base64"));
+  }
   if (url.pathname === "/e2e/play" && req.method === "POST") {
     res.writeHead(200, { "content-type": "application/json" });
     const q = url.searchParams;
