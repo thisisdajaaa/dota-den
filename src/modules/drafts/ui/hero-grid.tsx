@@ -1,5 +1,6 @@
 "use client";
 
+import { heroThumb } from "@/modules/matches/ui/hero-image";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/common/i18n/client";
@@ -107,7 +108,7 @@ export function HeroGrid({
                       >
                         {h.imageUrl ? (
                           <Image
-                            src={h.imageUrl}
+                            src={heroThumb(h.imageUrl, 64)}
                             alt=""
                             width={64}
                             height={36}

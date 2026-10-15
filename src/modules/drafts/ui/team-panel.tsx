@@ -1,5 +1,6 @@
 "use client";
 
+import { heroThumb } from "@/modules/matches/ui/hero-image";
 import Image from "next/image";
 import { cn } from "cn";
 import { useT } from "@/common/i18n/client";
@@ -33,7 +34,7 @@ function Slot({
     >
       {hero?.imageUrl && (
         <Image
-          src={hero.imageUrl}
+          src={heroThumb(hero.imageUrl, pick ? 160 : 80)}
           alt=""
           width={pick ? 160 : 80}
           height={pick ? 90 : 45}

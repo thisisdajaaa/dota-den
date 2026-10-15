@@ -1,5 +1,6 @@
 "use client";
 
+import { heroThumb } from "@/modules/matches/ui/hero-image";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
 import { Bot, Link2, Pause, Play, RotateCcw, Save, Undo2 } from "lucide-react";
@@ -735,7 +736,7 @@ function HeroThumb({ hero, dim }: { hero: DraftHero | undefined; dim?: boolean }
       {(hero?.imageUrl ?? hero?.iconUrl) && (
         // eslint-disable-next-line @next/next/no-img-element -- tiny icon
         <img
-          src={(hero.imageUrl ?? hero.iconUrl)!}
+          src={hero.imageUrl ? heroThumb(hero.imageUrl, 48) : hero.iconUrl!}
           alt=""
           className={cn("size-full object-cover", dim && "grayscale")}
         />

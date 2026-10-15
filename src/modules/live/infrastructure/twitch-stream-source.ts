@@ -24,16 +24,24 @@ const StreamsSchema = z.object({
   pagination: z.object({ cursor: z.string().optional() }).optional(),
 });
 
+export type LiveStreamList = LiveStream[];
+
 export interface TwitchOptions {
   clientId: string;
   clientSecret: string;
   apiBaseUrl: string;
   authUrl: string;
+  /** A cache every server can read (Redis), for the stream list. Optional. */
+  shared?: {
+    get(): Promise<LiveStream[] | null>;
+    set(streams: LiveStream[]): Promise<void>;
+  };
 }
 
 /**
  * Live Dota 2 streams from the Twitch Helix API, with an app access token (client
- * credentials). Cached per instance; returns null when Twitch is unavailable.
+ * credentials). Cached per instance and, when configured, across servers; returns null when
+ * Twitch is unavailable.
  */
 export class TwitchStreamSource implements StreamSource {
   private token: { value: string; expiresAt: number } | null = null;
@@ -43,6 +51,12 @@ export class TwitchStreamSource implements StreamSource {
 
   async dotaStreams(): Promise<LiveStream[] | null> {
     if (this.cache && Date.now() - this.cache.at < CACHE_MS) return this.cache.streams;
+    // Servers come and go on Vercel: share the list through Redis when it's set up.
+    const shared = await this.opts.shared?.get().catch(() => null);
+    if (shared) {
+      this.cache = { at: Date.now(), streams: shared };
+      return shared;
+    }
     try {
       const streams: LiveStream[] = [];
       let cursor: string | undefined;
@@ -65,6 +79,7 @@ export class TwitchStreamSource implements StreamSource {
         if (!cursor || body.data.length < 100) break;
       }
       this.cache = { at: Date.now(), streams };
+      await this.opts.shared?.set(streams).catch(() => {});
       return streams;
     } catch (err) {
       logger.warn("twitch_streams_failed", {
