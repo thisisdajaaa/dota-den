@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { heroThumb } from "@/modules/matches/ui/hero-image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Eye, Radio, UserRound } from "lucide-react";
 import { cn } from "cn";
@@ -74,7 +75,7 @@ function HeroThumb({
     >
       {hero?.imageUrl ? (
         <Image
-          src={hero.imageUrl}
+          src={heroThumb(hero.imageUrl, 56)}
           alt={name}
           width={56}
           height={32}
