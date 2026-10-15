@@ -9,7 +9,7 @@ import { goalsService } from "@/modules/goals";
 import { groupsService } from "@/modules/groups";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
-import { matchesService } from "@/modules/matches";
+import { matchExtrasService, matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
 import { sharesService } from "@/modules/shares";
@@ -33,6 +33,7 @@ export const privacyService = lazy(
         activityService,
         draftsPrivacy,
         matchesService,
+        matchExtrasService,
         togetherService,
         groupsService,
         annotationsService,

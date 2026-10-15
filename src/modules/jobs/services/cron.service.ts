@@ -7,6 +7,7 @@ import type {
   DiscordFeedPort,
   EmailDigestPort,
   JobQueue,
+  MatchExtrasPort,
   MatchSyncPort,
   MedalPort,
   NotificationsPort,
@@ -24,6 +25,9 @@ const NOTIFY_MIN_MS = 4_000;
 /** Discord posts get at most this long, and only start with this much left for them. */
 const DISCORD_MAX_MS = 15_000;
 const DISCORD_MIN_MS = 2_000;
+/** Match details for the extras get at most this long, and only start with this much left. */
+const EXTRAS_MAX_MS = 8_000;
+const EXTRAS_MIN_MS = 2_000;
 
 type Trigger = "cron" | "admin";
 
@@ -34,6 +38,8 @@ export class CronService {
       runs: CronRunsRepositoryPort;
       matches: MatchSyncPort;
       medals: MedalPort;
+      /** Optional: a few match details per player for the hero coaching extras. */
+      extras?: MatchExtrasPort;
       /** Optional: posts new matches to players' Discord feeds once the syncs are done. */
       discord?: DiscordFeedPort;
       /** Optional: sends the morning notifications once the syncs are done. */
@@ -79,6 +85,24 @@ export class CronService {
           medals++;
         }
       }
+      // A few match details per player (capped per day), leaving the posts and notifications
+      // their minimum.
+      const forExtras = Math.min(
+        EXTRAS_MAX_MS,
+        RUN_BUDGET_MS - (Date.now() - started) - DISCORD_MIN_MS - NOTIFY_MIN_MS,
+      );
+      const extras =
+        this.deps.extras && forExtras >= EXTRAS_MIN_MS
+          ? await this.deps.extras
+              .backfillMany(
+                results.filter((r) => r.outcome !== "skipped_time").map((r) => r.accountId32),
+                { budgetMs: forExtras },
+              )
+              .catch((error: unknown) => {
+                this.deps.logger.warn("match_extras_run_failed", { error });
+                return null;
+              })
+          : null;
       // Discord first (time-sensitive), leaving the notifications their minimum.
       const forDiscord = Math.min(
         DISCORD_MAX_MS,
@@ -121,6 +145,7 @@ export class CronService {
         skipped: results.filter((r) => r.outcome === "skipped_time" || r.outcome === "cooldown")
           .length,
         medals,
+        extras,
         discord,
         notifications,
         digests,

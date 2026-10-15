@@ -153,6 +153,36 @@ export const heroes: MessageTree<typeof en> = {
     listLabel: "Kanunay paliton nga mga item",
     ofGames: "sa mga duwa · {games} sa {total}",
   },
+  coaching: {
+    kicker: "Coaching",
+    worksTitle: "Unsa ang epektibo para nimo",
+    worksDescription:
+      "Imong win rate sa mga duwa nga gipalit nimo ang matag item batok sa mga duwa nga wala, gikan sa {games} nga adunay purchase data kang {hero}.",
+    worksFooter:
+      "Kalambigitan kini sa imong mga duwa, dili hinungdan: ang item nga gipalit sa mas taas nga duwa o sa mga duwa nga nagdaog na mahimong morag mas maayo o mas daotan kaysa sa tinuod. Ang item nanginahanglan og labing menos {min} ka duwa nga gipalit ug {min} nga wala.",
+    worksNotEnough:
+      "Kulang pa ang mga duwa: {games} ang adunay purchase data, ug ang item nanginahanglan og labing menos {min} ka duwa nga gipalit ug {min} nga wala aron maikumpara.",
+    worksListLabel: "Win rate nga adunay ug walay matag item",
+    bought: "Gipalit: {rate} · {games}",
+    skipped: "Wala gipalit: {rate} · {games}",
+    points: "{pts} pts",
+    timingsTitle: "Imong timings ug lanes",
+    analysed: "{analysed} sa imong {parsed} nga adunay parsed replay kang {hero} ang nasusi na.",
+    timingsNotEnough:
+      "Makita ang item timings ug lane results kung nasusi na ang {min} sa imong parsed nga duwa kang {hero}. Pipila pa ang basahon matag adlaw.",
+    timingsFooter:
+      "Median nga oras sa unang palit (ihap sa duwa sa parentesis; — kung ubos sa 3). Ang lane results nagkumpara sa gold sa imong lane sa 10 minutos sa mga kaatbang sa lane (10% pataas o paubos). Kalambigitan, dili hinungdan.",
+    timingsLabel: "Item timings sa daog ug pildi",
+    item: "Item",
+    inWins: "Sa daog",
+    inLosses: "Sa pildi",
+    lanesLabel: "Lane results sumala sa role",
+    laneGames: "{games} · {wins} daog",
+    laneResults: "lane {won} daog, {even} patas, {lost} pildi",
+    efficiency: "lane efficiency {pct}%",
+    noLaneRole: "{games} nga walay lane role.",
+    roles: { safe: "Safe lane", mid: "Mid", off: "Off lane", jungle: "Jungle" },
+  },
   build: {
     kicker: "Items",
     title: "Imong build batok sa mga pro",

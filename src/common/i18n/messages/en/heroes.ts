@@ -143,6 +143,36 @@ export const heroes = {
     listLabel: "Most-bought items",
     ofGames: "of games · {games} of {total}",
   },
+  coaching: {
+    kicker: "Coaching",
+    worksTitle: "What works for you",
+    worksDescription:
+      "Your win rate in games you bought each item against games you didn't, from {games} with purchase data on {hero}.",
+    worksFooter:
+      "A correlation in your games, not a cause: an item bought in longer or already-winning games can look better or worse than it is. Items need at least {min} games bought and {min} without.",
+    worksNotEnough:
+      "Not enough games yet: {games} with purchase data, and an item needs at least {min} games bought and {min} without to compare.",
+    worksListLabel: "Win rate with and without each item",
+    bought: "Bought: {rate} · {games}",
+    skipped: "Not bought: {rate} · {games}",
+    points: "{pts} pts",
+    timingsTitle: "Your timings and lanes",
+    analysed: "{analysed} of your {parsed} with parsed replays on {hero} analysed so far.",
+    timingsNotEnough:
+      "Item timings and lane results show once {min} of your parsed games on {hero} are analysed. A few more are read each day.",
+    timingsFooter:
+      "Median first-purchase time (games in brackets; — under 3). Lane results compare your lane's gold at 10 minutes with the lane opponents' (10% either way). Correlation, not cause.",
+    timingsLabel: "Item timings in wins and losses",
+    item: "Item",
+    inWins: "In wins",
+    inLosses: "In losses",
+    lanesLabel: "Lane results by role",
+    laneGames: "{games} · {wins} won",
+    laneResults: "lane {won} won, {even} even, {lost} lost",
+    efficiency: "lane efficiency {pct}%",
+    noLaneRole: "{games} with no lane role.",
+    roles: { safe: "Safe lane", mid: "Mid", off: "Off lane", jungle: "Jungle" },
+  },
   build: {
     kicker: "Items",
     title: "Your build vs the pros",

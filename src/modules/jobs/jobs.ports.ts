@@ -57,6 +57,14 @@ export interface MatchSyncPort {
   }): Promise<Array<{ accountId32: number; outcome: string }>>;
 }
 
+/** Per-match extras (item timings, lanes) from parsed games, a few per player per day. */
+export interface MatchExtrasPort {
+  backfillMany(
+    accountIds: readonly number[],
+    opts: { budgetMs: number },
+  ): Promise<{ accounts: number; fetched: number; parsed: number; stoppedEarly: boolean }>;
+}
+
 export interface MedalPort {
   /** The player's current medal from their public profile, or undefined when unavailable. */
   currentRankTier(accountId32: number): Promise<{ rankTier: number | null } | null>;

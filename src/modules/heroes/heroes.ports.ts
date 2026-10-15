@@ -1,5 +1,6 @@
 import type { LaneGame } from "@/modules/meta/domain/position";
 import type { Result } from "@/common/result";
+import type { CoachingGame } from "./domain/hero-coaching";
 import type { HeroGame, ItemMeta, MatchupRow } from "./domain/hero-stats";
 import type { LineupGame } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
@@ -73,3 +74,11 @@ export interface HeroCatalogEntry {
 }
 
 export type ItemCatalog = ReadonlyMap<string, ItemMeta>;
+
+/** Stored extras of your parsed games (item timings, lanes), filled a few per day. */
+export interface StoredExtras {
+  forHero(
+    accountId32: number,
+    heroId: number,
+  ): Promise<{ games: CoachingGame[]; parsedGames: number }>;
+}
