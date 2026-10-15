@@ -6,6 +6,7 @@ import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
 import { discordFeedService } from "@/modules/discord";
 import { errorsService } from "@/modules/errors";
+import { isNotableItem } from "@/modules/heroes/domain/hero-stats";
 import { jobsService } from "@/modules/jobs";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
 import { MatchesController } from "./matches.controller";
@@ -14,6 +15,8 @@ import {
   MatchReadRepository,
   SyncStatesRepository,
 } from "./repositories/matches.repository";
+import { MatchExtrasRepository } from "./repositories/match-extras.repository";
+import { MatchExtrasService } from "./services/match-extras.service";
 import { MatchSyncService } from "./services/match-sync.service";
 import { MatchesService } from "./services/matches.service";
 
@@ -38,6 +41,21 @@ export const matchesService = new MatchesService({
   logger,
 });
 
+export const matchExtrasRepository = new MatchExtrasRepository(getDb);
+
+/** Item timings and lanes from your parsed games, a few match details per day. */
+export const matchExtrasService = new MatchExtrasService({
+  store: matchExtrasRepository,
+  provider: openDotaAdapter,
+  completedItems: async () => {
+    const res = await openDotaAdapter.getItems();
+    if (!res.ok) return null;
+    const completed = new Set(res.value.filter(isNotableItem).map((i) => i.key));
+    return (key) => completed.has(key);
+  },
+  logger,
+});
+
 export const matchesController = new MatchesController({
   sync: matchSyncService,
   matches: matchesService,
@@ -54,6 +72,16 @@ export const matchesController = new MatchesController({
             logger.info("discord_feed_posted", { accountId32, ...result });
         })
         .catch((error: unknown) => logger.warn("discord_feed_failed", { accountId32, error })),
+    ),
+  // A few match details for the hero coaching extras, within the daily cap, after the response.
+  onSynced: (accountId32) =>
+    after(() =>
+      matchExtrasService
+        .backfill(accountId32)
+        .then((run) => {
+          if (run.fetched > 0) logger.info("match_extras_filled", { accountId32, ...run });
+        })
+        .catch((error: unknown) => logger.warn("match_extras_failed", { accountId32, error })),
     ),
   logger,
 });

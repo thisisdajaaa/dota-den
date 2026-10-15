@@ -6,6 +6,9 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-16
 
+- Hero coaching: items you win more with, your item timings and lane results (fixes #29)
+- Rank journey: your medal and logged MMR over months, with a medal-only share (fixes #30)
+- Owner alerts for failed or missed jobs, OpenDota outages and backups; weekly restore drill (fixes #31)
 - Servers moved next to the database (Hong Kong): pages respond in about 0.3 s instead of 0.5 s+
 - Hero and rank images resized (~95% smaller): /draft 9.1 MB to 0.9 MB, live pages 4.3 MB to 0.7 MB
 - Live game pages show the score at once; Twitch streams load after

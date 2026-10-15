@@ -1,6 +1,7 @@
 import { addDays, dayKeyFormatter, type DayKey } from "@/common/time/day-key";
 import { buildCalendar, type QueueScope } from "../domain/calendar";
 import { climbByHero } from "../domain/hero-climb";
+import { buildJourney, journeyStart, type Journey, type JourneyRange } from "../domain/journey";
 import type { MedalDoc } from "../mmr.model";
 import { loadWindow } from "../domain/load-window";
 import { logPrompt, type LogPrompt } from "../domain/log-prompt";
@@ -119,5 +120,29 @@ export class MmrInsightsService {
       },
     });
     return { entries, medals, period, calendar, climbs, matches };
+  }
+
+  /**
+   * The rank journey over a range ending now: medal changes, logged MMR, and ranked games for
+   * the heroes of each stretch. Medals and MMR stay separate; nothing is estimated.
+   */
+  async journey(owner: JournalOwner, range: JourneyRange): Promise<Journey> {
+    const now = this.deps.now?.() ?? new Date();
+    const [entries, medals] = await Promise.all([
+      this.deps.journal.list(owner),
+      this.deps.medals.history(owner.accountId32).catch(() => []),
+    ]);
+    const earliest = [entries[0]?.observedAt, medals[0]?.observedAt]
+      .filter((d): d is Date => d instanceof Date)
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+    const from = journeyStart(range, now, earliest ?? null);
+    const matches = await this.deps.ranked.rankedResults(owner.accountId32, { from, to: now });
+    return buildJourney({
+      range,
+      now,
+      medals,
+      observations: entries.map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
+      matches,
+    });
   }
 }

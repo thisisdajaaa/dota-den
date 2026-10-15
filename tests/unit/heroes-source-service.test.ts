@@ -179,6 +179,22 @@ function service(overrides: Partial<ConstructorParameters<typeof HeroesService>[
           games: [{ heroId: 1, laneRole: 1, isRoaming: false, result: "win" as const }],
         }),
     },
+    extras: {
+      forHero: async () => ({
+        games: Array.from({ length: 8 }, (_, i) => ({
+          result: i < 5 ? ("win" as const) : ("loss" as const),
+          laneRole: 1,
+          roaming: false,
+          efficiencyPct: 70,
+          laneResult: "won" as const,
+          itemTimings: [
+            { key: "tango", time: -90 },
+            { key: "bkb", time: 1200 + i * 60 },
+          ],
+        })),
+        parsedGames: 20,
+      }),
+    },
     heroes: async () => [{ id: 1, roles: ["Carry"] }],
     items: async () =>
       new Map([
@@ -202,6 +218,21 @@ describe("HeroesService", () => {
     expect(d.ok && d.value.items?.withData).toBe(1);
     const noCatalog = await service({ items: async () => new Map() }).details(22202, 1);
     expect(noCatalog.ok && noCatalog.value.items).toBeNull();
+  });
+
+  it("reads timings and lanes from stored extras, leaving consumables out", async () => {
+    const c = await service().coaching(22202, 1);
+    expect(c).toMatchObject({ analysed: 8, parsedGames: 20, enough: true });
+    expect(c?.timings.map((t) => t.key)).toEqual(["bkb"]);
+    expect(c?.timings[0]).toMatchObject({
+      games: 8,
+      wins: { games: 5, median: 1320 },
+      losses: { games: 3, median: 1560 },
+    });
+    expect(c?.lanes).toEqual([
+      expect.objectContaining({ laneRole: 1, games: 8, wins: 5, lane: expect.anything() }),
+    ]);
+    expect(await service({ items: async () => new Map() }).coaching(22202, 1)).toBeNull();
   });
 
   it("compares with public high-rank games, or says there are none", async () => {

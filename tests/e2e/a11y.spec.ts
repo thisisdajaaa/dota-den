@@ -29,6 +29,7 @@ const SIGNED_IN = [
   "/dashboard",
   "/matches",
   "/mmr",
+  "/mmr/journey",
   "/sessions",
   "/together",
   "/groups",

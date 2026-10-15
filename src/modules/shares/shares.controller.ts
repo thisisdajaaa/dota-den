@@ -23,7 +23,7 @@ export class SharesController {
     };
   }
 
-  /** POST /api/v1/me/shares: a link to a session or this week (refreshed if it exists). */
+  /** POST /api/v1/me/shares: a link to a session, this week or a rank journey (refreshed if it exists). */
   create = handler(
     {
       guard: requireUser,

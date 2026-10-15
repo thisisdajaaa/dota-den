@@ -1,7 +1,13 @@
 import type { ErrorGroup } from "@/modules/errors";
 import type { AdminTotals } from "../../domain/overview";
 import type { Retention } from "../../domain/retention";
-import type { AdminProfileSource, CronRunView, JobFailureView } from "../../admin.ports";
+import type {
+  AdminProfileSource,
+  CronRunView,
+  JobFailureView,
+  OpsReportView,
+  OwnerAlertView,
+} from "../../admin.ports";
 
 export interface AdminUserRowDto {
   userId: string;
@@ -31,4 +37,8 @@ export interface AdminOverviewDto {
   jobFailures: JobFailureView[];
   cronRuns: CronRunView[] | null;
   errors: ErrorGroup[] | null;
+  /** Owner alerts that went out lately. */
+  alerts: OwnerAlertView[] | null;
+  /** Backup and restore-drill outcomes. */
+  opsReports: OpsReportView[] | null;
 }

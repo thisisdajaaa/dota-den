@@ -134,6 +134,11 @@ export class UsersRepository implements UserRepository {
     ]);
   }
 
+  /** Users with the admin role (a handful; no index needed). */
+  async admins(): Promise<User[]> {
+    return (await (await this.col()).find({ roles: "admin" }).toArray()).map(toUser);
+  }
+
   /** Admin overview: every user with their session count and last activity. */
   async adminRows(): Promise<AdminUserRow[]> {
     const db = await this.getDb();

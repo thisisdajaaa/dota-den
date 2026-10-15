@@ -7,7 +7,10 @@ import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 
-type Target = { kind: "session"; ref: string } | { kind: "week" };
+type Target =
+  | { kind: "session"; ref: string }
+  | { kind: "week" }
+  | { kind: "journey"; range: "3m" | "6m" | "1y" | "all" };
 
 /** Makes (or refreshes) a share link, then opens the share sheet or copies the link. */
 export function ShareButton({ target }: { target: Target }) {

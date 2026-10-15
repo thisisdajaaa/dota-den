@@ -45,6 +45,8 @@ export class AdminService {
       notified,
       emailed,
       discordFeeds,
+      alerts,
+      opsReports,
     ] = await Promise.all([
       stats.matchStats(accountIds),
       stats.mmrEntryCounts(userIds),
@@ -60,6 +62,8 @@ export class AdminService {
       this.deps.optIns.notifications().catch(() => null),
       this.deps.optIns.email().catch(() => null),
       this.deps.optIns.discord().catch(() => null),
+      ops.alerts(15).catch(() => null),
+      ops.opsReports(10).catch(() => null),
     ]);
     // Count current players only (a deleted account's row may linger briefly).
     const count = (ids: string[] | null) =>
@@ -103,6 +107,8 @@ export class AdminService {
       jobFailures,
       cronRuns,
       errors,
+      alerts,
+      opsReports,
     };
   }
 }

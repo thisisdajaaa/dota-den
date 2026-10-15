@@ -34,6 +34,7 @@ constructors. `.env.example` lists every variable with its default.
 | `GROQ_API_KEY`            | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review |
 | `ADMIN_STEAM_IDS`         | comma list of SteamID64 | empty            | Users granted the admin role (manual patch import)                                           |
 | `CRON_SECRET`             | secret, 16+ chars       | unset            | Bearer secret Vercel Cron sends to `/api/cron/*`. Unset disables cron routes (503)           |
+| `ADMIN_ALERT_WEBHOOK_URL` | Discord webhook URL     | unset            | Owner alerts also go to this Discord channel. Only `https://discord.com/api/webhooks/…` URLs |
 | `AUTH_TEST_MODE`          | `true`/`false`          | `false`          | Fake identity provider for E2E and local dev. Refused when `NODE_ENV=production`             |
 | `FEATURE_DRAFT_ROOMS`     | `true`/`false`          | `true`           | Multiplayer draft rooms on or off                                                            |
 
