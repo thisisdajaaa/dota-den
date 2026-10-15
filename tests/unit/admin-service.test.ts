@@ -45,6 +45,8 @@ describe("AdminService", () => {
         jobFailures: async () => [],
         cronRuns: async () => Promise.reject(new Error("db")),
         errorGroups: async () => [],
+        alerts: async () => [],
+        opsReports: async () => Promise.reject(new Error("db")),
       },
       activity: {
         activeDays: async () =>
@@ -66,6 +68,9 @@ describe("AdminService", () => {
     ]);
     expect(o.users[0].profile).toBeNull();
     expect(o.cronRuns).toBeNull();
+    // A section that fails to load is null; the rest still shows.
+    expect(o.opsReports).toBeNull();
+    expect(o.alerts).toEqual([]);
     expect(o.totals).toMatchObject({ users: 2, newThisWeek: 1, withMatches: 1, listedPublicly: 1 });
     expect(o.retention).toMatchObject({ active1: 1, active7: 2, returning: 2 });
     // Only current players count.
@@ -82,7 +87,13 @@ describe("AdminService", () => {
         roomDraftCounts: async () => new Map(),
       },
       profiles: { publicProfile: async () => null },
-      ops: { jobFailures: async () => [], cronRuns: async () => [], errorGroups: async () => [] },
+      ops: {
+        jobFailures: async () => [],
+        cronRuns: async () => [],
+        errorGroups: async () => [],
+        alerts: async () => [],
+        opsReports: async () => [],
+      },
       activity: { activeDays: async () => Promise.reject(new Error("db")) },
       optIns: {
         notifications: async () => Promise.reject(new Error("db")),

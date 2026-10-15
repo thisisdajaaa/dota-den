@@ -1,0 +1,165 @@
+name: Restore drill
+
+# Weekly proof that the backups restore: downloads the latest nightly backup artifact,
+# decrypts it with BACKUP_PASSPHRASE, restores it into a throwaway MongoDB (a service
+# container; production is never touched) and checks that the key collections are there and
+# not empty. The outcome is reported to the app (POST /api/cron/backup-report), which alerts
+# the owner on failure. See docs/operations.md.
+on:
+  schedule:
+    - cron: "0 20 * * 0" # Sundays, two hours after the nightly backup (Monday 04:00 in the Philippines)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Lists the backup workflow's runs and downloads their artifacts.
+  actions: read
+
+concurrency:
+  group: restore-drill
+  cancel-in-progress: false
+
+env:
+  # A backup older than this means the nightly backup isn't running.
+  MAX_BACKUP_AGE_HOURS: "36"
+  # Must exist and hold documents after the restore.
+  KEY_COLLECTIONS: "users player_match_facts match_sync_state patches cron_runs"
+  # Left out of the dump on purpose (they rebuild on their own; sessions are secrets).
+  EXCLUDED_COLLECTIONS: "auth_sessions auth_nonces draft_meta_cache"
+
+jobs:
+  drill:
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 30
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Install MongoDB Database Tools
+        run: |
+          curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-100.12.2.tgz | tar xz
+          echo "$PWD/mongodb-database-tools-ubuntu2404-x86_64-100.12.2/bin" >> "$GITHUB_PATH"
+
+      - name: Download the latest backup
+        id: download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest=$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/backup.yml/runs?status=success&per_page=1" \
+            --jq '.workflow_runs[0] | "\(.id) \(.created_at)"' || true)
+          read -r run_id created <<<"$latest" || true
+          if [ -z "${run_id:-}" ] || [ "$run_id" = "null" ]; then
+            echo "DRILL_PROBLEM=No successful backup run found." >> "$GITHUB_ENV"
+            echo "::error::No successful backup run found"; exit 1
+          fi
+          age_h=$(( ( $(date -u +%s) - $(date -u -d "$created" +%s) ) / 3600 ))
+          echo "Latest successful backup: run $run_id, $age_h h old"
+          if [ "$age_h" -gt "$MAX_BACKUP_AGE_HOURS" ]; then
+            echo "DRILL_PROBLEM=The latest successful backup is ${age_h} h old (run ${run_id})." >> "$GITHUB_ENV"
+            echo "::error::The latest successful backup is $age_h h old"; exit 1
+          fi
+          gh run download "$run_id" -R "$GITHUB_REPOSITORY" -D backup
+          file=$(find backup -name 'dota-den-*.archive.gz.gpg' | sort | tail -n 1)
+          if [ -z "$file" ]; then
+            echo "DRILL_PROBLEM=Backup run ${run_id} has no backup artifact (expired?)." >> "$GITHUB_ENV"
+            echo "::error::No backup artifact in run $run_id"; exit 1
+          fi
+          ls -lh "$file"
+          echo "BACKUP_FILE=$file" >> "$GITHUB_ENV"
+          echo "BACKUP_RUN=$run_id" >> "$GITHUB_ENV"
+
+      - name: Decrypt and restore into the service container
+        id: restore
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_PASSPHRASE" || {
+            echo "DRILL_PROBLEM=BACKUP_PASSPHRASE is not set." >> "$GITHUB_ENV"
+            echo "::error::BACKUP_PASSPHRASE is not set"; exit 1
+          }
+          if ! gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --decrypt \
+            -o dump.archive.gz "$BACKUP_FILE" 3<<<"$BACKUP_PASSPHRASE"; then
+            echo "DRILL_PROBLEM=The backup couldn't be decrypted (wrong passphrase or corrupt file)." >> "$GITHUB_ENV"
+            exit 1
+          fi
+          if ! mongorestore --uri="mongodb://127.0.0.1:27017" --gzip --archive=dump.archive.gz \
+            --nsInclude='dota_den.*' --drop; then
+            echo "DRILL_PROBLEM=mongorestore failed." >> "$GITHUB_ENV"
+            exit 1
+          fi
+          # The decrypted dump holds user data: don't leave it on the runner.
+          rm -f dump.archive.gz
+
+      - name: Check the restored collections
+        id: check
+        env:
+          MONGO_CONTAINER: ${{ job.services.mongo.id }}
+        run: |
+          set -euo pipefail
+          counts=$(docker exec "$MONGO_CONTAINER" mongosh --quiet dota_den --eval '
+            const out = {};
+            for (const c of db.getCollectionNames()) out[c] = db.getCollection(c).estimatedDocumentCount();
+            print(JSON.stringify(out));')
+          echo "$counts" | jq .
+          problems=()
+          summary=()
+          for c in $KEY_COLLECTIONS; do
+            n=$(echo "$counts" | jq --arg c "$c" '.[$c] // 0')
+            summary+=("$c: $n")
+            [ "$n" -gt 0 ] || problems+=("$c is missing or empty")
+          done
+          for c in $EXCLUDED_COLLECTIONS; do
+            if echo "$counts" | jq -e --arg c "$c" 'has($c)' > /dev/null; then
+              problems+=("$c should not be in the backup")
+            fi
+          done
+          total=$(echo "$counts" | jq 'length')
+          joined=$(printf '%s, ' "${summary[@]}")
+          details="Backup run ${BACKUP_RUN}: ${total} collections; ${joined%, }"
+          if [ "${#problems[@]}" -gt 0 ]; then
+            listed=$(printf '%s; ' "${problems[@]}")
+            echo "DRILL_PROBLEM=${listed%; } (${details})" >> "$GITHUB_ENV"
+            printf '::error::%s\n' "${problems[@]}"
+            exit 1
+          fi
+          echo "DRILL_DETAILS=$details" >> "$GITHUB_ENV"
+          echo "$details"
+
+      - name: Report the outcome to the app
+        if: always()
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://dota-den.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::CRON_SECRET is not set for the production environment; outcome not reported."
+            exit 0
+          fi
+          if [ "$STATUS" = "success" ]; then
+            ok=true
+            details="${DRILL_DETAILS:-Restored and checked.}"
+          else
+            ok=false
+            details="${DRILL_PROBLEM:-Restore drill ${STATUS}.}"
+          fi
+          body=$(jq -n --arg job restore-drill --argjson ok "$ok" --arg details "${details:0:1900}" \
+            --arg runUrl "$RUN_URL" '{job: $job, ok: $ok, details: $details, runUrl: $runUrl}')
+          # The secret goes through curl's config on stdin, never the command line.
+          printf 'header = "Authorization: Bearer %s"\n' "$CRON_SECRET" |
+            curl -sS --fail-with-body --retry 3 --retry-all-errors --max-time 60 -K - \
+              -H "content-type: application/json" --data "$body" \
+              "${APP_URL%/}/api/cron/backup-report"

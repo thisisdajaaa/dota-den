@@ -3,6 +3,7 @@ import type { Logger } from "@/common/logging/logger";
 import { bucketedKey } from "../domain/job";
 import type {
   CacheWarmPort,
+  CronMonitorPort,
   CronRunsRepositoryPort,
   DiscordFeedPort,
   EmailDigestPort,
@@ -24,6 +25,8 @@ const NOTIFY_MIN_MS = 4_000;
 /** Discord posts get at most this long, and only start with this much left for them. */
 const DISCORD_MAX_MS = 15_000;
 const DISCORD_MIN_MS = 2_000;
+/** The owner-alert checks after a run get at most this long (the function stops at 60s). */
+const MONITOR_MAX_MS = 8_000;
 
 type Trigger = "cron" | "admin";
 
@@ -42,17 +45,39 @@ export class CronService {
       weeklyEmail?: EmailDigestPort;
       patches: PatchImportPort;
       caches: CacheWarmPort;
+      /** Optional: checks each finished run and alerts the owner (failures, stale jobs). */
+      monitor?: CronMonitorPort;
       queue: () => JobQueue;
       logger: Pick<Logger, "info" | "warn">;
     },
   ) {}
 
-  /** Records a run: started now, finished with `done`. Never throws. */
+  /** Records a run: started now, finished with `done`, then checked for alerts. Never throws. */
   private async track(name: string, trigger: Trigger) {
     const id = await this.deps.runs.start(name, trigger).catch(() => null);
     return async (result: { ok: boolean; summary: Record<string, unknown> }) => {
       if (id) await this.deps.runs.finish(id, result).catch(() => {});
+      await this.monitor(name, result);
     };
+  }
+
+  private async monitor(name: string, result: { ok: boolean; summary: Record<string, unknown> }) {
+    const monitor = this.deps.monitor;
+    if (!monitor) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        this.deps.logger.warn("cron_monitor_timeout", { name });
+        resolve();
+      }, MONITOR_MAX_MS);
+    });
+    await Promise.race([
+      monitor.cronFinished(name, result).catch((error: unknown) => {
+        this.deps.logger.warn("cron_monitor_failed", { name, error });
+      }),
+      timeout,
+    ]);
+    clearTimeout(timer);
   }
 
   /**
@@ -168,7 +193,7 @@ export class CronService {
       throw new UpstreamUnavailableError("The official patch feed is unavailable right now.");
     }
     const failed = result.value.filter((o) => o.outcome === "failed");
-    // Parser failures should alert (spec §10): log at warn with the reasons.
+    // Parser failures alert the owner (spec §10) through the monitor; also logged with reasons.
     if (failed.length > 0) this.deps.logger.warn("patch_import_degraded", { ...log, failed });
     await done({
       ok: failed.length === 0,

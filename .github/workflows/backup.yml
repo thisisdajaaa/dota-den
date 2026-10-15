@@ -3,6 +3,9 @@ name: Database backup
 # Nightly encrypted backup of the production database, kept as a workflow artifact for 30
 # days. The repo is public, so the dump is encrypted (AES-256) with BACKUP_PASSPHRASE before
 # upload; artifacts are useless without it. Restore steps: docs/operations.md.
+# Every run reports its outcome to the app (POST /api/cron/backup-report with CRON_SECRET), so
+# a failed backup alerts the owner and shows on the admin page. The weekly restore drill
+# (restore-drill.yml) proves the dumps restore.
 on:
   schedule:
     - cron: "0 18 * * *" # 02:00 in the Philippines
@@ -27,6 +30,7 @@ jobs:
           echo "$PWD/mongodb-database-tools-ubuntu2404-x86_64-100.12.2/bin" >> "$GITHUB_PATH"
 
       - name: Dump and encrypt
+        id: dump
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
@@ -43,11 +47,46 @@ jobs:
                 --symmetric --cipher-algo AES256 -o "$name" 3<<<"$BACKUP_PASSPHRASE"
           ls -lh "$name"
           echo "BACKUP_FILE=$name" >> "$GITHUB_ENV"
+          echo "BACKUP_SIZE=$(du -h "$name" | cut -f1)" >> "$GITHUB_ENV"
 
       - name: Upload
+        id: upload
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BACKUP_FILE }}
           path: ${{ env.BACKUP_FILE }}
           retention-days: 30
           if-no-files-found: error
+
+      # Always runs, so failures (and cancellations) reach the owner too. Needs CRON_SECRET in
+      # the production environment (the same value as in Vercel); APP_URL is an optional
+      # environment variable (defaults to production).
+      - name: Report the outcome to the app
+        if: always()
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://dota-den.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          STATUS: ${{ job.status }}
+          DUMP: ${{ steps.dump.outcome }}
+          UPLOAD: ${{ steps.upload.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::CRON_SECRET is not set for the production environment; outcome not reported."
+            exit 0
+          fi
+          if [ "$STATUS" = "success" ]; then
+            ok=true
+            details="${BACKUP_FILE:-unknown file} (${BACKUP_SIZE:-unknown size})"
+          else
+            ok=false
+            details="Backup ${STATUS}: dump ${DUMP:-skipped}, upload ${UPLOAD:-skipped}."
+          fi
+          body=$(jq -n --arg job backup --argjson ok "$ok" --arg details "$details" \
+            --arg runUrl "$RUN_URL" '{job: $job, ok: $ok, details: $details, runUrl: $runUrl}')
+          # The secret goes through curl's config on stdin, never the command line.
+          printf 'header = "Authorization: Bearer %s"\n' "$CRON_SECRET" |
+            curl -sS --fail-with-body --retry 3 --retry-all-errors --max-time 60 -K - \
+              -H "content-type: application/json" --data "$body" \
+              "${APP_URL%/}/api/cron/backup-report"

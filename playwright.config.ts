@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import webpush from "web-push";
+import { E2E_CRON_SECRET } from "./tests/e2e/support/cron";
 import { E2E_RESEND_WEBHOOK_SECRET } from "./tests/e2e/support/resend-webhook";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
@@ -74,6 +75,10 @@ export default defineConfig({
         EMAIL_TOKEN_SECRET: "",
         // Bounce and complaint webhooks: tests sign fake Resend events with this test secret.
         RESEND_WEBHOOK_SECRET: E2E_RESEND_WEBHOOK_SECRET,
+        // Cron routes and the backup report (tests send this as the bearer secret).
+        CRON_SECRET: E2E_CRON_SECRET,
+        // Never post owner alerts to a real Discord channel from tests.
+        ADMIN_ALERT_WEBHOOK_URL: "",
       },
     },
   ],

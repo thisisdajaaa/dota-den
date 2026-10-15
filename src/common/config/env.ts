@@ -157,6 +157,18 @@ const EnvSchema = z
       .optional(),
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
+    /**
+     * Owner alerts also go to this Discord webhook (a private channel), besides admins' devices.
+     * Only Discord webhook URLs are accepted: the server POSTs to it.
+     */
+    ADMIN_ALERT_WEBHOOK_URL: z
+      .string()
+      .trim()
+      .regex(
+        /^https:\/\/(discord\.com|discordapp\.com|ptb\.discord\.com|canary\.discord\.com)\/api\/webhooks\/\d{17,20}\/[A-Za-z0-9_-]{40,100}$/,
+        "ADMIN_ALERT_WEBHOOK_URL must be a Discord webhook URL (https://discord.com/api/webhooks/<id>/<token>)",
+      )
+      .optional(),
     ...TUNING,
 
     // ---- Redis and background jobs (Upstash, ADR 0008). All optional. -----------------
