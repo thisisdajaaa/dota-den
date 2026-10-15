@@ -2,16 +2,25 @@ import Image from "next/image";
 import { cn } from "cn";
 import { MEDALS, type RankTier } from "../domain/rank-tier";
 
-const BASE = "https://www.opendota.com/assets/images/dota2/rank_icons";
+/**
+ * Valve's medal art (via OpenDota, ~45 KB PNGs) resized by /img/rank/{name}-{width}.webp.
+ * Widths 64, 128 and 256 cover shown sizes up to 128 px at 2×.
+ */
+export const RANK_IMAGE_WIDTHS = [64, 128, 256] as const;
 
-function medalImage(rank: RankTier): string {
+function rankImage(name: string, size: number): string {
+  const width = RANK_IMAGE_WIDTHS.find((w) => w >= size * 2) ?? 256;
+  return `/img/rank/${name}-${width}.webp`;
+}
+
+function medalImage(rank: RankTier, size: number): string {
   const tier = MEDALS.indexOf(rank.medal) + 1;
   if (rank.medal === "Immortal" && rank.leaderboardRank !== null) {
     // Valve's distinct medals for the top 10 and top 100.
-    if (rank.leaderboardRank <= 10) return `${BASE}/rank_icon_8c.png`;
-    if (rank.leaderboardRank <= 100) return `${BASE}/rank_icon_8b.png`;
+    if (rank.leaderboardRank <= 10) return rankImage("rank_icon_8c", size);
+    if (rank.leaderboardRank <= 100) return rankImage("rank_icon_8b", size);
   }
-  return `${BASE}/rank_icon_${tier}.png`;
+  return rankImage(`rank_icon_${tier}`, size);
 }
 
 export function rankLabel(rank: RankTier): string {
@@ -43,7 +52,7 @@ export function RankMedal({
       style={{ width: size, height: size }}
     >
       <Image
-        src={medalImage(rank)}
+        src={medalImage(rank, size)}
         alt=""
         width={size}
         height={size}
@@ -51,7 +60,7 @@ export function RankMedal({
       />
       {rank.stars > 0 && (
         <Image
-          src={`${BASE}/rank_star_${rank.stars}.png`}
+          src={rankImage(`rank_star_${rank.stars}`, size)}
           alt=""
           width={size}
           height={size}

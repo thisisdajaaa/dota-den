@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cn } from "cn";
 import type { HeroInfo } from "../matches.ports";
+import { heroThumb } from "./hero-image";
 
 const SIZES = {
   xs: "h-6 w-[2.67rem]",
@@ -38,7 +39,7 @@ export function HeroPortrait({
     >
       {hero?.imageUrl ? (
         <Image
-          src={hero.imageUrl}
+          src={heroThumb(hero.imageUrl, width)}
           alt=""
           width={width}
           height={Math.round((width * 9) / 16)}

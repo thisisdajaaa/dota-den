@@ -52,9 +52,17 @@ test("unknown and malformed heroes show not found", async ({ page }) => {
   }
 });
 
-test("images load straight from the CDN, not through the image optimizer", async ({ page }) => {
+test("hero images are small resized copies, never through Vercel's image optimizer", async ({
+  page,
+}) => {
   await page.goto("/guides");
-  const src = await page.locator("img").first().getAttribute("src");
-  expect(src).toMatch(/^https:\/\/cdn\.cloudflare\.steamstatic\.com\//);
+  // Vercel's optimizer has a monthly quota (issue #1): our own resize route instead.
   expect(await page.locator('img[src*="/_next/image"]').count()).toBe(0);
+  // A real hero (the fixture also has made-up ones that Steam's CDN doesn't have).
+  const src = await page.locator('img[src^="/img/hero/antimage-"]').first().getAttribute("src");
+  expect(src).toMatch(/^\/img\/hero\/antimage-\d+\.webp$/);
+  const res = await page.request.get(src!);
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toBe("image/webp");
+  expect((await res.body()).length).toBeLessThan(15_000);
 });
