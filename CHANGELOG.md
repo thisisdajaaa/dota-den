@@ -4,6 +4,13 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-16
+
+- Servers moved next to the database (Hong Kong): pages respond in about 0.3 s instead of 0.5 s+
+- Hero and rank images resized (~95% smaller): /draft 9.1 MB to 0.9 MB, live pages 4.3 MB to 0.7 MB
+- Live game pages show the score at once; Twitch streams load after
+- No more layout jumps on the home and match pages
+
 ## 2026-10-15
 
 - Who you lose to: matchups from your own games (fixes #25)
