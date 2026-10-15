@@ -3,10 +3,12 @@ import type { Logger } from "@/common/logging/logger";
 import { bucketedKey } from "../domain/job";
 import type {
   CacheWarmPort,
+  CronMonitorPort,
   CronRunsRepositoryPort,
   DiscordFeedPort,
   EmailDigestPort,
   JobQueue,
+  MatchExtrasPort,
   MatchSyncPort,
   MedalPort,
   NotificationsPort,
@@ -15,7 +17,9 @@ import type {
 import type { MatchSyncRunDto, PatchRefreshDto } from "../dtos/responses/cron-run.dto";
 
 /** Total time for one match sync run; Vercel stops the function at 60s. */
-const RUN_BUDGET_MS = 50_000;
+// 46 s, not 50: the owner-alert checks after the run get up to MONITOR_MAX_MS more, and the
+// whole function must finish inside Vercel's 60 s.
+const RUN_BUDGET_MS = 46_000;
 /** Syncing stops starting new accounts (and older-history pages) after this. */
 const SYNC_BUDGET_MS = 38_000;
 const DAY_MS = 24 * 3_600_000;
@@ -24,6 +28,11 @@ const NOTIFY_MIN_MS = 4_000;
 /** Discord posts get at most this long, and only start with this much left for them. */
 const DISCORD_MAX_MS = 15_000;
 const DISCORD_MIN_MS = 2_000;
+/** Match details for the extras get at most this long, and only start with this much left. */
+const EXTRAS_MAX_MS = 8_000;
+const EXTRAS_MIN_MS = 2_000;
+/** The owner-alert checks after a run get at most this long (the function stops at 60s). */
+const MONITOR_MAX_MS = 8_000;
 
 type Trigger = "cron" | "admin";
 
@@ -34,6 +43,8 @@ export class CronService {
       runs: CronRunsRepositoryPort;
       matches: MatchSyncPort;
       medals: MedalPort;
+      /** Optional: a few match details per player for the hero coaching extras. */
+      extras?: MatchExtrasPort;
       /** Optional: posts new matches to players' Discord feeds once the syncs are done. */
       discord?: DiscordFeedPort;
       /** Optional: sends the morning notifications once the syncs are done. */
@@ -42,17 +53,39 @@ export class CronService {
       weeklyEmail?: EmailDigestPort;
       patches: PatchImportPort;
       caches: CacheWarmPort;
+      /** Optional: checks each finished run and alerts the owner (failures, stale jobs). */
+      monitor?: CronMonitorPort;
       queue: () => JobQueue;
       logger: Pick<Logger, "info" | "warn">;
     },
   ) {}
 
-  /** Records a run: started now, finished with `done`. Never throws. */
+  /** Records a run: started now, finished with `done`, then checked for alerts. Never throws. */
   private async track(name: string, trigger: Trigger) {
     const id = await this.deps.runs.start(name, trigger).catch(() => null);
     return async (result: { ok: boolean; summary: Record<string, unknown> }) => {
       if (id) await this.deps.runs.finish(id, result).catch(() => {});
+      await this.monitor(name, result);
     };
+  }
+
+  private async monitor(name: string, result: { ok: boolean; summary: Record<string, unknown> }) {
+    const monitor = this.deps.monitor;
+    if (!monitor) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        this.deps.logger.warn("cron_monitor_timeout", { name });
+        resolve();
+      }, MONITOR_MAX_MS);
+    });
+    await Promise.race([
+      monitor.cronFinished(name, result).catch((error: unknown) => {
+        this.deps.logger.warn("cron_monitor_failed", { name, error });
+      }),
+      timeout,
+    ]);
+    clearTimeout(timer);
   }
 
   /**
@@ -79,6 +112,24 @@ export class CronService {
           medals++;
         }
       }
+      // A few match details per player (capped per day), leaving the posts and notifications
+      // their minimum.
+      const forExtras = Math.min(
+        EXTRAS_MAX_MS,
+        RUN_BUDGET_MS - (Date.now() - started) - DISCORD_MIN_MS - NOTIFY_MIN_MS,
+      );
+      const extras =
+        this.deps.extras && forExtras >= EXTRAS_MIN_MS
+          ? await this.deps.extras
+              .backfillMany(
+                results.filter((r) => r.outcome !== "skipped_time").map((r) => r.accountId32),
+                { budgetMs: forExtras },
+              )
+              .catch((error: unknown) => {
+                this.deps.logger.warn("match_extras_run_failed", { error });
+                return null;
+              })
+          : null;
       // Discord first (time-sensitive), leaving the notifications their minimum.
       const forDiscord = Math.min(
         DISCORD_MAX_MS,
@@ -121,6 +172,7 @@ export class CronService {
         skipped: results.filter((r) => r.outcome === "skipped_time" || r.outcome === "cooldown")
           .length,
         medals,
+        extras,
         discord,
         notifications,
         digests,
@@ -168,7 +220,7 @@ export class CronService {
       throw new UpstreamUnavailableError("The official patch feed is unavailable right now.");
     }
     const failed = result.value.filter((o) => o.outcome === "failed");
-    // Parser failures should alert (spec §10): log at warn with the reasons.
+    // Parser failures alert the owner (spec §10) through the monitor; also logged with reasons.
     if (failed.length > 0) this.deps.logger.warn("patch_import_degraded", { ...log, failed });
     await done({
       ok: failed.length === 0,

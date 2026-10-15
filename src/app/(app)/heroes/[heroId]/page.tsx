@@ -20,6 +20,7 @@ import {
   unavailableCopy,
 } from "@/modules/heroes/ui/hero-sections";
 import { BuildCard } from "@/modules/heroes/ui/build-card";
+import { TimingsCard, WhatWorksCard } from "@/modules/heroes/ui/coaching-cards";
 import { ProgressCard } from "@/modules/heroes/ui/progress-card";
 import { guideService } from "@/modules/guides";
 import { getViewerTimeZone } from "@/common/http/request-context";
@@ -167,7 +168,18 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
             <ItemsSection details={details} name={name} />
           </Suspense>
           <Suspense fallback={null}>
+            <WhatWorksSection details={details} name={name} />
+          </Suspense>
+          <Suspense fallback={null}>
             <BuildSection details={details} heroId={heroId} name={name} />
+          </Suspense>
+          <Suspense fallback={null}>
+            <TimingsSection
+              service={service}
+              accountId32={user.accountId32}
+              heroId={heroId}
+              name={name}
+            />
           </Suspense>
         </div>
         <div className="lg:col-span-2">
@@ -306,6 +318,43 @@ async function BuildSection({
   return (
     <BuildCard rows={rows} items={items} heroLabel={name} yourGames={res.value.items.withData} />
   );
+}
+
+/** Items' win rates with and without (from the same upstream call as the items card). */
+async function WhatWorksSection({ details, name }: { details: DetailsResult; name: string }) {
+  const [res, items] = await Promise.all([
+    details,
+    matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
+  ]);
+  // Hidden while there's no purchase data at all; the items card already says why.
+  if (!res.ok || !res.value.impact || !res.value.items?.enough) return null;
+  const byKey = new Map([...items.values()].map((i) => [i.key, i]));
+  return <WhatWorksCard impact={res.value.impact} items={byKey} heroLabel={name} />;
+}
+
+/** Item timings and lanes from the stored extras of your parsed games (no upstream call). */
+async function TimingsSection({
+  service,
+  accountId32,
+  heroId,
+  name,
+}: {
+  service: HeroesService;
+  accountId32: number;
+  heroId: number;
+  name: string;
+}) {
+  const [coaching, items] = await Promise.all([
+    service.coaching(accountId32, heroId).catch((error: unknown) => {
+      logger.error("hero_section_failed", { section: "coaching", error });
+      return null;
+    }),
+    matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
+  ]);
+  // Nothing to say without any parsed game on the hero.
+  if (!coaching || coaching.parsedGames === 0) return null;
+  const byKey = new Map([...items.values()].map((i) => [i.key, i]));
+  return <TimingsCard coaching={coaching} items={byKey} heroLabel={name} />;
 }
 
 async function ItemsSection({ details, name }: { details: DetailsResult; name: string }) {

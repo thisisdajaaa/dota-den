@@ -18,6 +18,30 @@ describe("parseEnv", () => {
     );
   });
 
+  it("accepts only Discord webhook URLs for owner alerts", () => {
+    const hook = `https://discord.com/api/webhooks/123456789012345678/${"a".repeat(68)}`;
+    expect(parseEnv({ ...base, ADMIN_ALERT_WEBHOOK_URL: hook }).ADMIN_ALERT_WEBHOOK_URL).toBe(hook);
+    expect(parseEnv(base).ADMIN_ALERT_WEBHOOK_URL).toBeUndefined();
+    for (const bad of [
+      hook.replace("https:", "http:"),
+      hook.replace("discord.com", "discord.com.evil.example"),
+      hook.replace("discord.com", "discord.com:8443"),
+      `${hook}?wait=true`,
+      "https://hooks.slack.com/services/T000/B000/XXXX",
+      "https://169.254.169.254/latest/meta-data",
+    ]) {
+      expect(() => parseEnv({ ...base, ADMIN_ALERT_WEBHOOK_URL: bad })).toThrow(
+        expect.objectContaining({
+          message: expect.stringMatching(/ADMIN_ALERT_WEBHOOK_URL/),
+        }),
+      );
+    }
+    // The error names the variable, never the secret token.
+    expect(() =>
+      parseEnv({ ...base, ADMIN_ALERT_WEBHOOK_URL: hook.replace("https:", "http:") }),
+    ).toThrow(expect.objectContaining({ message: expect.not.stringContaining("a".repeat(68)) }));
+  });
+
   it("does not echo secret values in errors", () => {
     const secret = "mongodb+srv://user:hunter2@cluster";
     expect(() => parseEnv({ MONGODB_URI: secret, APP_URL: "not a url" })).toThrow(

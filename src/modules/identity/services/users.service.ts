@@ -10,6 +10,8 @@ export interface UsersStore {
   setProfileVisibility(id: string, visibility: ProfileVisibility, now: Date): Promise<boolean>;
   setLanguage(id: string, language: string, now: Date): Promise<boolean>;
   adminRows(): Promise<AdminUserRow[]>;
+  /** Users with the admin role. */
+  admins(): Promise<User[]>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }
@@ -100,6 +102,11 @@ export class UsersService {
 
   adminRows() {
     return this.deps.users.adminRows();
+  }
+
+  /** Users with the admin role (owner alerts go to them). */
+  admins() {
+    return this.deps.users.admins();
   }
 
   /** Your account (no session tokens). */

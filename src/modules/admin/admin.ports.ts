@@ -1,3 +1,4 @@
+import type { OpsReport, OwnerAlert } from "@/modules/alerts";
 import type { ErrorGroup } from "@/modules/errors";
 import type { CronRun, JobFailure } from "@/modules/jobs";
 
@@ -52,9 +53,15 @@ export interface AdminProfileSource {
 
 export type CronRunView = CronRun;
 export type JobFailureView = JobFailure;
+export type OwnerAlertView = OwnerAlert;
+export type OpsReportView = OpsReport;
 
 export interface AdminOpsSource {
   jobFailures(): Promise<JobFailureView[]>;
   cronRuns(limit: number): Promise<CronRunView[]>;
   errorGroups(days: number): Promise<ErrorGroup[]>;
+  /** Owner alerts that went out, newest first. */
+  alerts(limit: number): Promise<OwnerAlertView[]>;
+  /** Backup and restore-drill outcomes, newest first. */
+  opsReports(limit: number): Promise<OpsReportView[]>;
 }

@@ -3,6 +3,9 @@
  * Usage: npm run db:indexes  (reads MONGODB_URI / MONGODB_DB_NAME from the environment)
  */
 import { getDb, getMongoClient } from "@/common/db/mongo";
+import { AlertLogRepository } from "@/modules/alerts/repositories/alert-log.repository";
+import { AlertThrottleRepository } from "@/modules/alerts/repositories/alert-throttle.repository";
+import { OpsReportsRepository } from "@/modules/alerts/repositories/ops-reports.repository";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { PracticeRepository } from "@/modules/practice/practice.repository";
@@ -29,6 +32,7 @@ import { DraftRoomsRepository } from "@/modules/drafts/repositories/draft-rooms.
 import { MatchDraftReadsRepository } from "@/modules/drafts/repositories/match-draft-reads.repository";
 import { ReplayReadsRepository } from "@/modules/report/repositories/replay-reads.repository";
 import { MatchFactsRepository } from "@/modules/matches/repositories/matches.repository";
+import { MatchExtrasRepository } from "@/modules/matches/repositories/match-extras.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
@@ -64,11 +68,15 @@ async function main(): Promise<void> {
   await new ErrorsRepository(async () => db).ensureIndexes();
   await new JobRunsRepository(async () => db).ensureIndexes();
   await new CronRunsRepository(async () => db).ensureIndexes();
+  await new AlertLogRepository(async () => db).ensureIndexes();
+  await new AlertThrottleRepository(async () => db).ensureIndexes();
+  await new OpsReportsRepository(async () => db).ensureIndexes();
   await new DraftRoomsRepository(async () => db).ensureIndexes();
   await new MatchDraftReadsRepository(async () => db).ensureIndexes();
   await new DraftHistoryRepository(async () => db).ensureIndexes();
   await new ActivityRepository(async () => db).ensureIndexes();
   await new MatchFactsRepository(async () => db).ensureIndexes();
+  await new MatchExtrasRepository(async () => db).ensureIndexes();
   await new ReplayReadsRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();

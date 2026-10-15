@@ -5,7 +5,7 @@ import { getDb } from "@/common/db/mongo";
 import { matchesService } from "@/modules/matches";
 import { mmrInsightsService } from "@/modules/mmr";
 import { sessionService } from "@/modules/sessions";
-import { MAX_HEROES } from "./domain/share";
+import { MAX_HEROES, toJourneyShare } from "./domain/share";
 import { SharesRepository } from "./repositories/shares.repository";
 import { SharesController } from "./shares.controller";
 import { SharesService } from "./services/shares.service";
@@ -53,6 +53,8 @@ export const sharesService = new SharesService({
         best: recap.best,
       };
     },
+    // Medal only: toJourneyShare copies no MMR from the journey.
+    journey: async (owner, range) => toJourneyShare(await mmrInsightsService.journey(owner, range)),
     playerName: async (accountId32) =>
       (await matchesService.playerProfile(accountId32))?.personaName ?? null,
   },

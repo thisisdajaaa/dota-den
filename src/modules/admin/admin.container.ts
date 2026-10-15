@@ -1,4 +1,5 @@
 import "server-only";
+import { ownerAlerts, opsMonitor } from "@/modules/alerts";
 import { draftHistoryRepository } from "@/modules/drafts";
 import { errorsService } from "@/modules/errors";
 import { usersService } from "@/modules/identity";
@@ -31,5 +32,7 @@ export const adminService = new AdminService({
     jobFailures: () => jobRunsRepository.recentFailures(),
     cronRuns: (limit) => cronRunsRepository.recent(limit),
     errorGroups: (days) => errorsService.recentGroups(days),
+    alerts: (limit) => ownerAlerts.recent(limit),
+    opsReports: (limit) => opsMonitor.recentReports(limit),
   },
 });

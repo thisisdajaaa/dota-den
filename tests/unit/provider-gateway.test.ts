@@ -146,12 +146,21 @@ describe("ProviderGateway", () => {
       openForMs: 10_000,
       maxRetries: 0,
     });
+    expect(gw.health()).toEqual({
+      circuitOpen: false,
+      consecutiveFailures: 0,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+    });
     await gw.getJson("https://x/1");
     await gw.getJson("https://x/2");
     expect(await gw.getJson("https://x/3")).toEqual({ ok: false, kind: "circuit_open" });
     expect(fetch).toHaveBeenCalledTimes(2);
+    // Owner alerts read this snapshot: open, with the last failure and no success yet.
+    expect(gw.health()).toMatchObject({ circuitOpen: true, lastSuccessAt: null, lastFailureAt: 0 });
     advance(10_001);
     expect((await gw.getJson("https://x/3")).ok).toBe(true);
+    expect(gw.health()).toMatchObject({ circuitOpen: false, lastSuccessAt: 10_001 });
   });
 });
 

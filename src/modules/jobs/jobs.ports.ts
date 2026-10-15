@@ -41,6 +41,14 @@ export interface CronRunsRepositoryPort {
   finish(id: string, result: { ok: boolean; summary: Record<string, unknown> }): Promise<void>;
 }
 
+/** Told about every finished cron run (owner alerts). Must not throw. */
+export interface CronMonitorPort {
+  cronFinished(
+    name: string,
+    result: { ok: boolean; summary: Record<string, unknown> },
+  ): Promise<void>;
+}
+
 /** What the jobs feature needs from the matches feature. */
 export interface MatchSyncPort {
   sync(accountId32: number): Promise<
@@ -55,6 +63,14 @@ export interface MatchSyncPort {
     budgetMs: number;
     maxPages: number;
   }): Promise<Array<{ accountId32: number; outcome: string }>>;
+}
+
+/** Per-match extras (item timings, lanes) from parsed games, a few per player per day. */
+export interface MatchExtrasPort {
+  backfillMany(
+    accountIds: readonly number[],
+    opts: { budgetMs: number },
+  ): Promise<{ accounts: number; fetched: number; parsed: number; stoppedEarly: boolean }>;
 }
 
 export interface MedalPort {

@@ -96,6 +96,34 @@ describe("CronService", () => {
     expect(finished[0].ok).toBe(true);
   });
 
+  it("fills a few match extras for the accounts it reached, within a small budget", async () => {
+    const { repo } = runs();
+    const summary = { accounts: 2, fetched: 4, parsed: 3, stoppedEarly: false };
+    const backfillMany = vi.fn(async () => summary);
+    const svc = new CronService({
+      runs: repo,
+      matches: {
+        sync: async () => ({ ok: true, value: { backfillComplete: true } }),
+        syncDue: async () => [
+          { accountId32: 1, outcome: "synced" },
+          { accountId32: 2, outcome: "skipped_time" },
+          { accountId32: 3, outcome: "cooldown" },
+        ],
+      },
+      medals: { currentRankTier: async () => null, record: async () => {} },
+      extras: { backfillMany },
+      patches: { importLatest: async () => ({ ok: true, value: [] }) },
+      caches: { warmDraftData: async () => [], warmMeta: async () => [] },
+      queue: () => queue().q,
+      logger,
+    });
+    const run = await svc.runMatchSync("cron");
+    expect(run.extras).toEqual(summary);
+    const [ids, opts] = backfillMany.mock.calls[0] as unknown as [number[], { budgetMs: number }];
+    expect(ids).toEqual([1, 3]);
+    expect(opts.budgetMs).toBeLessThanOrEqual(8_000);
+  });
+
   it("sends the morning notifications after the sync, and survives them failing", async () => {
     const summary = {
       users: 2,
@@ -127,7 +155,7 @@ describe("CronService", () => {
       const run = await svc.runMatchSync("cron");
       const budget = (runDaily.mock.calls[0] as unknown as [{ budgetMs: number }])[0].budgetMs;
       expect(budget).toBeGreaterThan(40_000);
-      expect(budget).toBeLessThanOrEqual(50_000);
+      expect(budget).toBeLessThanOrEqual(46_000);
       expect(run.synced).toBe(1);
       expect(finished[0].ok).toBe(true);
       expect(run.notifications).toEqual(expected);

@@ -47,4 +47,27 @@ export class CronRunsRepository implements CronRunsRepositoryPort {
     const docs = await (await this.col()).find({}).sort({ startedAt: -1 }).limit(limit).toArray();
     return docs.map(({ _id, ...rest }) => ({ id: _id.toHexString(), ...rest }));
   }
+
+  /**
+   * When each named job last completed ok on Vercel's schedule (runs from the admin page don't
+   * count), and when the first scheduled run on record started. For owner alerts.
+   */
+  async freshness(
+    names: readonly string[],
+  ): Promise<{ lastOkAt: Map<string, Date>; firstRunAt: Date | null }> {
+    const col = await this.col();
+    const [last, first] = await Promise.all([
+      col
+        .aggregate<{ _id: string; at: Date | null }>([
+          { $match: { trigger: "cron", ok: true, name: { $in: [...names] } } },
+          { $group: { _id: "$name", at: { $max: "$finishedAt" } } },
+        ])
+        .toArray(),
+      col.find({ trigger: "cron" }).sort({ startedAt: 1 }).limit(1).toArray(),
+    ]);
+    return {
+      lastOkAt: new Map(last.flatMap((r) => (r.at ? [[r._id, r.at] as const] : []))),
+      firstRunAt: first[0]?.startedAt ?? null,
+    };
+  }
 }

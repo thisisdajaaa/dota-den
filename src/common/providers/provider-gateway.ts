@@ -70,16 +70,38 @@ export interface CallOptions {
   isolated?: boolean;
 }
 
+/** How the upstream looked to this instance lately (for owner alerts). */
+export interface GatewayHealth {
+  circuitOpen: boolean;
+  consecutiveFailures: number;
+  /** Last answer that counted as healthy (ms epoch), or null if none yet. */
+  lastSuccessAt: number | null;
+  /** Last failure that counted toward the circuit (ms epoch), or null if none yet. */
+  lastFailureAt: number | null;
+}
+
 export class ProviderGateway {
   private readonly cache = new Map<string, CacheEntry>();
   private readonly inFlight = new Map<string, Promise<GatewayResponse>>();
   private consecutiveFailures = 0;
   private openUntil = 0;
+  private lastSuccessAt: number | null = null;
+  private lastFailureAt: number | null = null;
 
   constructor(private readonly opts: GatewayOptions) {}
 
   private get now(): number {
     return (this.opts.now ?? Date.now)();
+  }
+
+  /** A snapshot of this instance's view of the upstream (circuit state, last success/failure). */
+  health(): GatewayHealth {
+    return {
+      circuitOpen: this.openUntil > this.now,
+      consecutiveFailures: this.consecutiveFailures,
+      lastSuccessAt: this.lastSuccessAt,
+      lastFailureAt: this.lastFailureAt,
+    };
   }
 
   async getJson(
@@ -253,10 +275,12 @@ export class ProviderGateway {
 
   private recordSuccess(): void {
     this.consecutiveFailures = 0;
+    this.lastSuccessAt = this.now;
   }
 
   private recordFailure(res: GatewayResponse): GatewayResponse {
     this.consecutiveFailures++;
+    this.lastFailureAt = this.now;
     if (this.consecutiveFailures >= (this.opts.failureThreshold ?? 5)) {
       this.openUntil = this.now + (this.opts.openForMs ?? 30_000);
       this.consecutiveFailures = 0;

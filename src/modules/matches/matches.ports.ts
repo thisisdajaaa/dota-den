@@ -30,6 +30,7 @@ export type {
   LineupFilter,
 } from "./domain/read-models";
 import type { MatchDetail } from "./domain/match-detail";
+import type { MatchExtras } from "./domain/match-extras";
 import type { MatchListFilter } from "./schemas/match-list-filter.schema";
 import type { PatchTimelineEntry } from "./domain/patch-assignment";
 import type { PlayerMatchFact, Provenance } from "./domain/player-match-fact";
@@ -172,4 +173,28 @@ export interface OpenDotaMatchesSource
     page: { offset: number; limit: number },
     opts?: { cacheTtlMs?: number; includedAccountId?: number },
   ): Promise<Result<ImportedPage, ProviderError>>;
+}
+
+/** An imported parsed game whose extras aren't stored yet. */
+export interface PendingExtras {
+  matchId: string;
+  heroId: number;
+  side: "radiant" | "dire";
+  result: "win" | "loss";
+  startedAt: Date;
+}
+
+/** Stored per-match extras (match_extras) and the parsed games still waiting for them. */
+export interface MatchExtrasStore {
+  /** Your parsed imported games with no extras stored yet, newest first. */
+  pendingParsed(accountId32: number, limit: number): Promise<PendingExtras[]>;
+  /** Match details fetched for you since `since` (the daily cap). */
+  fetchedSince(accountId32: number, since: Date): Promise<number>;
+  save(extras: MatchExtras, fetchedAt: Date): Promise<void>;
+  /** Your stored extras from parsed replays on one hero, newest first. */
+  forHero(accountId32: number, heroId: number): Promise<MatchExtras[]>;
+  /** Your imported games on the hero that OpenDota has parsed (stored or not). */
+  parsedGamesOnHero(accountId32: number, heroId: number): Promise<number>;
+  exportForOwner(owner: { accountId32: number }): Promise<Array<Record<string, unknown>>>;
+  deleteForOwner(owner: { accountId32: number }): Promise<number>;
 }
