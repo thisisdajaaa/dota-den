@@ -74,6 +74,59 @@ export const admin = {
     adminsOnly: "Admins only.",
     syncFailed: "The sync failed.",
   },
+  alerts: {
+    title: "Alerts",
+    body: "Problems that need you: a daily job that failed or stopped running, OpenDota down for a while, a failed backup or restore drill. Each goes to admins' devices with notifications on (and the Discord channel in ADMIN_ALERT_WEBHOOK_URL), at most once every 6 hours per problem.",
+    test: "Send a test alert",
+    sending: "Sending…",
+    testSent: "Sent to {devices} admin devices · Discord: {webhook}.",
+    testNoDevices:
+      "Sent, but no admin device has notifications on (Account → Notifications) · Discord: {webhook}.",
+    testFailed: "The test alert couldn't be sent.",
+    adminsOnly: "Admins only.",
+    webhook: { sent: "sent", failed: "failed", off: "not set up" },
+    recent: "Recent alerts",
+    none: "No alerts in the last 30 days.",
+    unavailable: "Unavailable right now.",
+    delivered: "{devices} devices · Discord: {webhook}",
+    reports: "Backups and restore drills",
+    reportsNone:
+      "No reports yet. The backup and restore-drill workflows report here after each run.",
+    jobs: { backup: "Nightly backup", restoreDrill: "Restore drill" },
+    ok: "OK",
+    failed: "Failed",
+    viewRun: "View run",
+    messages: {
+      cron_failed: {
+        title: "Daily job failed: {cron}",
+        body: "The {cron} run failed: {error}",
+      },
+      match_sync_failures: {
+        title: "Match sync: {failed} of {accounts} accounts failed",
+        body: "{percent}% of the accounts the daily sync tried failed. Check the admin page.",
+      },
+      patch_import: {
+        title: "Patch import degraded",
+        body: "{failed} patch notes couldn't be imported (the parser may need an update).",
+      },
+      cron_stale: {
+        title: "Daily job stopped: {cron}",
+        body: "{cron} hasn't completed in {hours} hours. Check Vercel Cron and CRON_SECRET.",
+      },
+      opendota_down: {
+        title: "OpenDota looks down",
+        body: "Calls have been failing for {minutes} minutes. Syncs and pages fall back until it recovers.",
+      },
+      backup_failed: {
+        title: "{job} failed",
+        body: "{details}",
+      },
+      test: {
+        title: "Test alert",
+        body: "Owner alerts reach this device.",
+      },
+    },
+  },
   errors: {
     title: "Recent errors",
     body: "Errors users hit in the last 7 days, grouped. Server errors come from page renders and API routes; browser errors from the app's error pages. Kept for 30 days.",

@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
+import { opsMonitor } from "@/modules/alerts";
 import { discordFeedService } from "@/modules/discord";
 import { draftInsights } from "@/modules/drafts";
 import { emailDigest } from "@/modules/email";
@@ -81,6 +82,11 @@ export const cronService = new CronService({
   weeklyEmail: { runDaily: (opts) => emailDigest.runDaily(opts) },
   patches: { importLatest: () => patchImportService.importLatest() },
   caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
+  monitor: {
+    cronFinished: async (name, result) => {
+      await opsMonitor.cronFinished(name, result);
+    },
+  },
   queue: jobQueue,
   logger,
 });

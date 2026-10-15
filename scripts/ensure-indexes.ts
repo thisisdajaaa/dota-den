@@ -3,6 +3,9 @@
  * Usage: npm run db:indexes  (reads MONGODB_URI / MONGODB_DB_NAME from the environment)
  */
 import { getDb, getMongoClient } from "@/common/db/mongo";
+import { AlertLogRepository } from "@/modules/alerts/repositories/alert-log.repository";
+import { AlertThrottleRepository } from "@/modules/alerts/repositories/alert-throttle.repository";
+import { OpsReportsRepository } from "@/modules/alerts/repositories/ops-reports.repository";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { PracticeRepository } from "@/modules/practice/practice.repository";
@@ -65,6 +68,9 @@ async function main(): Promise<void> {
   await new ErrorsRepository(async () => db).ensureIndexes();
   await new JobRunsRepository(async () => db).ensureIndexes();
   await new CronRunsRepository(async () => db).ensureIndexes();
+  await new AlertLogRepository(async () => db).ensureIndexes();
+  await new AlertThrottleRepository(async () => db).ensureIndexes();
+  await new OpsReportsRepository(async () => db).ensureIndexes();
   await new DraftRoomsRepository(async () => db).ensureIndexes();
   await new MatchDraftReadsRepository(async () => db).ensureIndexes();
   await new DraftHistoryRepository(async () => db).ensureIndexes();

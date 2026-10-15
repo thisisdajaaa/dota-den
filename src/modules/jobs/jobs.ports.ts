@@ -41,6 +41,14 @@ export interface CronRunsRepositoryPort {
   finish(id: string, result: { ok: boolean; summary: Record<string, unknown> }): Promise<void>;
 }
 
+/** Told about every finished cron run (owner alerts). Must not throw. */
+export interface CronMonitorPort {
+  cronFinished(
+    name: string,
+    result: { ok: boolean; summary: Record<string, unknown> },
+  ): Promise<void>;
+}
+
 /** What the jobs feature needs from the matches feature. */
 export interface MatchSyncPort {
   sync(accountId32: number): Promise<

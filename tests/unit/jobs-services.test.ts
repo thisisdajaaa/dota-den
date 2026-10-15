@@ -155,7 +155,7 @@ describe("CronService", () => {
       const run = await svc.runMatchSync("cron");
       const budget = (runDaily.mock.calls[0] as unknown as [{ budgetMs: number }])[0].budgetMs;
       expect(budget).toBeGreaterThan(40_000);
-      expect(budget).toBeLessThanOrEqual(50_000);
+      expect(budget).toBeLessThanOrEqual(46_000);
       expect(run.synced).toBe(1);
       expect(finished[0].ok).toBe(true);
       expect(run.notifications).toEqual(expected);

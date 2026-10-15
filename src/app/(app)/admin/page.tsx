@@ -13,6 +13,7 @@ import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import { RunSyncButton } from "./run-sync-button";
+import { TestAlertButton } from "./test-alert-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -38,6 +39,8 @@ export default async function AdminPage() {
     jobFailures: failures,
     errors,
     cronRuns,
+    alerts,
+    opsReports,
   } = await adminService.overview(now);
 
   return (
@@ -256,6 +259,96 @@ export default async function AdminPage() {
             })}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="admin-alerts" id="alerts" className="panel space-y-4 p-5">
+        <div>
+          <h2 id="admin-alerts" className="text-lg font-semibold">
+            {t("admin.alerts.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("admin.alerts.body")}</p>
+        </div>
+        <TestAlertButton />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">{t("admin.alerts.recent")}</h3>
+            {alerts === null ? (
+              <p className="text-sm text-muted-foreground">{t("admin.alerts.unavailable")}</p>
+            ) : alerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("admin.alerts.none")}</p>
+            ) : (
+              <ul className="divide-y divide-white/[0.05] rounded-lg border border-white/[0.06] text-sm">
+                {alerts.map((a) => (
+                  <li key={a.id} className="px-3 py-2">
+                    <p className="flex flex-wrap items-baseline gap-x-2">
+                      <span
+                        className={cn(
+                          "font-medium",
+                          a.kind === "test" ? "text-foreground" : "text-loss",
+                        )}
+                      >
+                        {t(`admin.alerts.messages.${a.kind}.title`, a.vars)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{formatAgo(a.at, now)}</span>
+                    </p>
+                    <p className="text-xs break-words text-muted-foreground">
+                      {t(`admin.alerts.messages.${a.kind}.body`, a.vars)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("admin.alerts.delivered", {
+                        devices: a.devices,
+                        webhook: t(`admin.alerts.webhook.${a.webhook}`),
+                      })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">{t("admin.alerts.reports")}</h3>
+            {opsReports === null ? (
+              <p className="text-sm text-muted-foreground">{t("admin.alerts.unavailable")}</p>
+            ) : opsReports.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("admin.alerts.reportsNone")}</p>
+            ) : (
+              <ul className="divide-y divide-white/[0.05] rounded-lg border border-white/[0.06] text-sm">
+                {opsReports.map((r) => (
+                  <li key={r.id} className="px-3 py-2">
+                    <p className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-medium">
+                        {r.job === "backup"
+                          ? t("admin.alerts.jobs.backup")
+                          : t("admin.alerts.jobs.restoreDrill")}
+                      </span>
+                      <span className={cn("text-xs", r.ok ? "text-win" : "text-loss")}>
+                        {r.ok ? t("admin.alerts.ok") : t("admin.alerts.failed")}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {date(r.at)} · {formatAgo(r.at, now)}
+                      </span>
+                      {r.runUrl && (
+                        <a
+                          href={r.runUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-gold hover:underline"
+                        >
+                          {t("admin.alerts.viewRun")}
+                        </a>
+                      )}
+                    </p>
+                    {r.details && (
+                      <p className="font-mono text-xs break-words text-muted-foreground">
+                        {r.details}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </section>
 
       <section aria-labelledby="admin-errors" className="panel overflow-hidden">

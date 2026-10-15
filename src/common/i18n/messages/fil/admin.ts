@@ -76,6 +76,59 @@ export const admin: MessageTree<typeof en> = {
     adminsOnly: "Para sa admin lang.",
     syncFailed: "Pumalya ang sync.",
   },
+  alerts: {
+    title: "Mga alerto",
+    body: "Mga problemang kailangan ka: daily job na pumalya o tumigil, OpenDota na down nang matagal, backup o restore drill na pumalya. Pumupunta ito sa mga device ng admin na naka-on ang notification (at sa Discord channel sa ADMIN_ALERT_WEBHOOK_URL), hanggang isang beses kada 6 na oras bawat problema.",
+    test: "Magpadala ng test na alerto",
+    sending: "Ipinapadala…",
+    testSent: "Naipadala sa {devices} device ng admin · Discord: {webhook}.",
+    testNoDevices:
+      "Naipadala, pero walang device ng admin na naka-on ang notification (Account → Notifications) · Discord: {webhook}.",
+    testFailed: "Hindi maipadala ang test na alerto.",
+    adminsOnly: "Para sa admin lang.",
+    webhook: { sent: "naipadala", failed: "pumalya", off: "hindi naka-set up" },
+    recent: "Mga bagong alerto",
+    none: "Walang alerto sa nakaraang 30 araw.",
+    unavailable: "Hindi available ngayon.",
+    delivered: "{devices} device · Discord: {webhook}",
+    reports: "Mga backup at restore drill",
+    reportsNone:
+      "Wala pang report. Nagre-report dito ang backup at restore-drill workflow pagkatapos ng bawat run.",
+    jobs: { backup: "Gabi-gabing backup", restoreDrill: "Restore drill" },
+    ok: "OK",
+    failed: "Pumalya",
+    viewRun: "Tingnan ang run",
+    messages: {
+      cron_failed: {
+        title: "Pumalya ang daily job: {cron}",
+        body: "Pumalya ang run ng {cron}: {error}",
+      },
+      match_sync_failures: {
+        title: "Match sync: pumalya ang {failed} sa {accounts} account",
+        body: "Pumalya ang {percent}% ng mga account na sinubukan ng daily sync. Tingnan ang admin page.",
+      },
+      patch_import: {
+        title: "May problema sa patch import",
+        body: "Hindi ma-import ang {failed} patch note (baka kailangang i-update ang parser).",
+      },
+      cron_stale: {
+        title: "Tumigil ang daily job: {cron}",
+        body: "Hindi natapos ang {cron} sa loob ng {hours} oras. Tingnan ang Vercel Cron at CRON_SECRET.",
+      },
+      opendota_down: {
+        title: "Mukhang down ang OpenDota",
+        body: "{minutes} minuto nang pumapalya ang mga request. Gagamit muna ng fallback ang sync at mga page hanggang bumalik ito.",
+      },
+      backup_failed: {
+        title: "Pumalya ang {job}",
+        body: "{details}",
+      },
+      test: {
+        title: "Test na alerto",
+        body: "Umaabot sa device na ito ang mga alerto para sa owner.",
+      },
+    },
+  },
   errors: {
     title: "Mga bagong error",
     body: "Mga error na naranasan ng users sa nakaraang 7 araw, naka-grupo. Galing ang server errors sa page renders at API routes; ang browser errors sa error pages ng app. Itinatago nang 30 araw.",

@@ -76,6 +76,59 @@ export const admin: MessageTree<typeof en> = {
     adminsOnly: "Para sa admin ra.",
     syncFailed: "Napakyas ang sync.",
   },
+  alerts: {
+    title: "Mga alerto",
+    body: "Mga problema nga nagkinahanglan nimo: daily job nga napakyas o mihunong, OpenDota nga down og dugay, backup o restore drill nga napakyas. Moadto kini sa mga device sa admin nga naka-on ang notification (ug sa Discord channel sa ADMIN_ALERT_WEBHOOK_URL), kausa ra matag 6 ka oras kada problema.",
+    test: "Pagpadala og test nga alerto",
+    sending: "Gipadala…",
+    testSent: "Napadala sa {devices} ka device sa admin · Discord: {webhook}.",
+    testNoDevices:
+      "Napadala, pero walay device sa admin nga naka-on ang notification (Account → Notifications) · Discord: {webhook}.",
+    testFailed: "Dili mapadala ang test nga alerto.",
+    adminsOnly: "Para sa admin ra.",
+    webhook: { sent: "napadala", failed: "napakyas", off: "wala na-set up" },
+    recent: "Bag-ong mga alerto",
+    none: "Walay alerto sulod sa miaging 30 ka adlaw.",
+    unavailable: "Dili available karon.",
+    delivered: "{devices} ka device · Discord: {webhook}",
+    reports: "Mga backup ug restore drill",
+    reportsNone:
+      "Wala pay report. Mo-report diri ang backup ug restore-drill workflow human sa matag run.",
+    jobs: { backup: "Gabii-gabii nga backup", restoreDrill: "Restore drill" },
+    ok: "OK",
+    failed: "Napakyas",
+    viewRun: "Tan-awa ang run",
+    messages: {
+      cron_failed: {
+        title: "Napakyas ang daily job: {cron}",
+        body: "Napakyas ang run sa {cron}: {error}",
+      },
+      match_sync_failures: {
+        title: "Match sync: napakyas ang {failed} sa {accounts} ka account",
+        body: "Napakyas ang {percent}% sa mga account nga gisulayan sa daily sync. Tan-awa ang admin page.",
+      },
+      patch_import: {
+        title: "Adunay problema sa patch import",
+        body: "Dili ma-import ang {failed} ka patch note (basin kinahanglan i-update ang parser).",
+      },
+      cron_stale: {
+        title: "Mihunong ang daily job: {cron}",
+        body: "Wala nahuman ang {cron} sulod sa {hours} ka oras. Tan-awa ang Vercel Cron ug CRON_SECRET.",
+      },
+      opendota_down: {
+        title: "Morag down ang OpenDota",
+        body: "{minutes} ka minuto nang napakyas ang mga request. Mogamit una og fallback ang sync ug mga page hangtod mobalik kini.",
+      },
+      backup_failed: {
+        title: "Napakyas ang {job}",
+        body: "{details}",
+      },
+      test: {
+        title: "Test nga alerto",
+        body: "Moabot sa kini nga device ang mga alerto para sa owner.",
+      },
+    },
+  },
   errors: {
     title: "Bag-ong mga error",
     body: "Mga error nga naagian sa users sulod sa miaging 7 ka adlaw, gi-grupo. Ang server errors gikan sa page renders ug API routes; ang browser errors gikan sa error pages sa app. Tipigan og 30 ka adlaw.",
