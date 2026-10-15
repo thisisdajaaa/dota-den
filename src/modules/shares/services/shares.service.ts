@@ -29,6 +29,9 @@ export class SharesService {
     if (request.kind === "session") {
       snapshot = await this.deps.sources.session(owner, request.ref);
       ref = request.ref;
+    } else if (request.kind === "journey") {
+      snapshot = await this.deps.sources.journey(owner, request.range);
+      ref = request.range;
     } else {
       const week = await this.deps.sources.week(owner, timeZone);
       snapshot = week;
