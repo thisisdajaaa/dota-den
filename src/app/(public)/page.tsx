@@ -49,7 +49,7 @@ async function LatestPatchCard() {
   return (
     <Link
       href={`/patches/${latest.version}`}
-      className="panel group relative block w-full max-w-md p-6 transition-[transform,border-color] hover:-translate-y-1 hover:border-gold/30"
+      className="panel group relative block min-h-[21rem] w-full max-w-md p-6 transition-[transform,border-color] hover:-translate-y-1 hover:border-gold/30"
       aria-label={t("home.patch.aria", { version: latest.version })}
     >
       <div
@@ -171,7 +171,8 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
           </div>
         </div>
         <div className="flex justify-center lg:justify-end">
-          <Suspense fallback={<Skeleton className="h-64 w-full max-w-md rounded-2xl" />}>
+          {/* Same height as the card (up to 3 rows of portraits), so nothing below jumps. */}
+          <Suspense fallback={<Skeleton className="h-[21rem] w-full max-w-md rounded-2xl" />}>
             <LatestPatchCard />
           </Suspense>
         </div>
