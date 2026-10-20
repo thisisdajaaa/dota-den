@@ -41,6 +41,8 @@ async function expectFits(page: Page, path: string) {
 }
 
 test("public pages fit a phone screen, and guests get navigation", async ({ page }) => {
+  // Many pages in a row, each compiled on first visit by the dev server: slow on CI.
+  test.setTimeout(120_000);
   for (const path of [
     "/",
     "/meta",

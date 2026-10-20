@@ -1,14 +1,32 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // A second synthetic identity (the fixture's "Fixture Peer", account 40001).
 const GUEST_STEAM_ID = "76561197960305729";
 
-async function banFirstAvailable(page: Page) {
+/** Another player's page sees a change on its next poll (every second, slower on CI). */
+const SYNCED = { timeout: 30_000 };
+
+/**
+ * Clicks until the click has an effect. On a slow machine a button can be clicked before
+ * the page's JavaScript is attached; the click is then lost, so try again.
+ */
+async function clickUntil(button: Locator, effect: () => Promise<void>) {
+  await expect(async () => {
+    await button.click();
+    await effect();
+  }).toPass({ timeout: 30_000, intervals: [500, 1000, 2000] });
+}
+
+async function banFirstAvailable(page: Page, nextStep: string) {
   const grid = page.getByRole("region", { name: "Heroes" });
-  await grid.getByRole("button", { name: /^ban / }).first().click();
+  await clickUntil(grid.getByRole("button", { name: /^ban / }).first(), () =>
+    expect(page.getByText(nextStep, { exact: true })).toBeVisible({ timeout: 5000 }),
+  );
 }
 
 test("two captains draft live in a room while a spectator watches", async ({ browser }) => {
+  // Three people on a live, polling page: longer than one page's worth of steps on CI.
+  test.setTimeout(120_000);
   const host = await browser.newContext();
   const guest = await browser.newContext();
   const hostPage = await host.newPage();
@@ -34,16 +52,19 @@ test("two captains draft live in a room while a spectator watches", async ({ bro
   // The guest joins through the link and takes the open seat.
   await guestPage.goto(roomUrl);
   const guestLobby = guestPage.getByRole("region", { name: "Lobby" });
-  await guestLobby.getByRole("button", { name: "Take seat" }).click();
-  await expect(guestLobby).toContainText("Waiting for the host to start");
+  await clickUntil(guestLobby.getByRole("button", { name: "Take seat" }), () =>
+    expect(guestLobby).toContainText("Waiting for the host to start", { timeout: 5000 }),
+  );
 
   // The host sees the guest arrive (polling) and starts.
-  await expect(hostLobby).toContainText("Fixture Peer");
-  await hostLobby.getByRole("button", { name: "Start draft" }).click();
+  await expect(hostLobby).toContainText("Fixture Peer", SYNCED);
+  await clickUntil(hostLobby.getByRole("button", { name: "Start draft" }), () =>
+    expect(hostPage.getByText("Step 1 of 24", { exact: true })).toBeVisible({ timeout: 5000 }),
+  );
 
   // Radiant (host) has first pick, so the host bans first; the guest can't act yet.
   await expect(hostPage.getByText("Step 1 of 24", { exact: true })).toBeVisible();
-  await expect(guestPage.getByText("Step 1 of 24", { exact: true })).toBeVisible();
+  await expect(guestPage.getByText("Step 1 of 24", { exact: true })).toBeVisible(SYNCED);
   await expect(
     guestPage
       .getByRole("region", { name: "Heroes" })
@@ -51,15 +72,15 @@ test("two captains draft live in a room while a spectator watches", async ({ bro
       .first(),
   ).toBeDisabled();
 
-  await banFirstAvailable(hostPage);
-  await expect(guestPage.getByText("Step 2 of 24", { exact: true })).toBeVisible();
+  await banFirstAvailable(hostPage, "Step 2 of 24");
+  await expect(guestPage.getByText("Step 2 of 24", { exact: true })).toBeVisible(SYNCED);
 
   // A spectator (signed out) can watch but not draft.
   const spectator = await browser.newContext();
   const watchPage = await spectator.newPage();
   await watchPage.goto(roomUrl);
   await expect(watchPage.getByText(/You're watching this draft/)).toBeVisible();
-  await expect(watchPage.getByText("Step 2 of 24", { exact: true })).toBeVisible();
+  await expect(watchPage.getByText("Step 2 of 24", { exact: true })).toBeVisible(SYNCED);
 
   await host.close();
   await guest.close();
