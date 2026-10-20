@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongo:
-        image: mongo:8
+        image: mongo:7.0 # 8.x crashes on Linux 6.19+ kernels (SERVER-121912)
         ports: ["27017:27017"]
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
@@ -55,7 +55,7 @@ jobs:
     needs: verify
     services:
       mongo:
-        image: mongo:8
+        image: mongo:7.0 # 8.x crashes on Linux 6.19+ kernels (SERVER-121912)
         ports: ["27017:27017"]
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
