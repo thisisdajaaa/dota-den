@@ -49,6 +49,9 @@ const DAY_MS = 24 * 3_600_000;
  * per UTC day. Plain INCR counters, so a burst across instances can overshoot by a call or
  * two at a window edge; that's fine for staying under a provider's quota.
  */
+/** Share of the daily OpenDota budget signed-out visitors may use. */
+export const DEFAULT_GUEST_SHARE = 0.4;
+
 export class RedisUpstreamBudget implements UpstreamBudget {
   constructor(
     private readonly redis: RedisLike,
@@ -57,7 +60,14 @@ export class RedisUpstreamBudget implements UpstreamBudget {
       perMinute: number;
       perDay: number;
       now?: () => number;
-      onExhausted?: (window: "minute" | "day") => void;
+      onExhausted?: (window: "minute" | "day" | "guest_day") => void;
+      /**
+       * Who the call is for. Signed-out visitors ("guest": crawlers, link previews, guests)
+       * may use at most `guestShare` of the daily budget, so they can never use up what
+       * signed-in players' syncs need. Without it every call is a member call.
+       */
+      lane?: () => Promise<"guest" | "member">;
+      guestShare?: number;
     },
   ) {}
 
@@ -72,9 +82,18 @@ export class RedisUpstreamBudget implements UpstreamBudget {
     const now = (this.opts.now ?? Date.now)();
     const minuteLeft = MINUTE_MS - (now % MINUTE_MS);
     const dayLeft = DAY_MS - (now % DAY_MS);
+    const day = Math.floor(now / DAY_MS);
+    if (this.opts.lane && (await this.opts.lane().catch(() => "member")) === "guest") {
+      const cap = Math.floor(this.opts.perDay * (this.opts.guestShare ?? DEFAULT_GUEST_SHARE));
+      // Checked first: a refused guest call doesn't count against everyone's budget.
+      if ((await this.count(`${this.opts.prefix}:g:${day}`, dayLeft + 1_000)) > cap) {
+        this.opts.onExhausted?.("guest_day");
+        return { allowed: false, retryAfterMs: dayLeft };
+      }
+    }
     const [perMinute, perDay] = await Promise.all([
       this.count(`${this.opts.prefix}:m:${Math.floor(now / MINUTE_MS)}`, minuteLeft + 1_000),
-      this.count(`${this.opts.prefix}:d:${Math.floor(now / DAY_MS)}`, dayLeft + 1_000),
+      this.count(`${this.opts.prefix}:d:${day}`, dayLeft + 1_000),
     ]);
     if (perDay > this.opts.perDay) {
       this.opts.onExhausted?.("day");
