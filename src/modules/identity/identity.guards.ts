@@ -3,11 +3,12 @@ import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { env } from "@/common/config/env";
 import { ForbiddenError, UnauthorizedError } from "@/common/errors/app-error";
+import { SESSION_COOKIE } from "@/common/http/session-cookie";
 import { logger } from "@/common/logging/logger";
 import type { User } from "./domain/user";
 import { authService } from "./identity.container";
 
-export const SESSION_COOKIE = "dd_session";
+export { SESSION_COOKIE };
 export const STATE_COOKIE = "dd_oid_state";
 
 export function sessionCookieOptions(expires: Date) {

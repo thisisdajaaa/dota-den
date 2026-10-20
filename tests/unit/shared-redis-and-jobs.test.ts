@@ -86,6 +86,40 @@ describe("RedisUpstreamBudget", () => {
     await budget.take();
     expect(await budget.take()).toMatchObject({ allowed: false });
   });
+
+  it("caps signed-out visitors at their share, leaving the rest for signed-in players", async () => {
+    let lane: "guest" | "member" = "guest";
+    const onExhausted = vi.fn();
+    const budget = new RedisUpstreamBudget(fakeRedis(), {
+      prefix: "b",
+      perMinute: 1_000,
+      perDay: 10,
+      guestShare: 0.4,
+      lane: async () => lane,
+      now: () => 0,
+      onExhausted,
+    });
+    for (let i = 0; i < 4; i++) expect((await budget.take()).allowed).toBe(true);
+    // Guests have used their 4 of 10; more guest calls are refused...
+    for (let i = 0; i < 5; i++) expect((await budget.take()).allowed).toBe(false);
+    expect(onExhausted).toHaveBeenCalledWith("guest_day");
+    // ...without eating into the shared budget: members still get the other 6.
+    lane = "member";
+    for (let i = 0; i < 6; i++) expect((await budget.take()).allowed).toBe(true);
+    expect((await budget.take()).allowed).toBe(false);
+  });
+
+  it("treats a failing lane check as a member call", async () => {
+    const budget = new RedisUpstreamBudget(fakeRedis(), {
+      prefix: "b",
+      perMinute: 100,
+      perDay: 10,
+      guestShare: 0,
+      lane: async () => Promise.reject(new Error("no request")),
+      now: () => 0,
+    });
+    expect((await budget.take()).allowed).toBe(true);
+  });
 });
 
 describe("ProviderGateway with a shared cache and budget", () => {
