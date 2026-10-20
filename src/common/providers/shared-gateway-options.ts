@@ -1,11 +1,26 @@
 import "server-only";
 import { env, openDotaBudget } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
+import { cookies } from "next/headers";
 import { getRedis } from "@/common/cache/redis";
+import { SESSION_COOKIE } from "@/common/http/session-cookie";
 import type { GatewayOptions } from "./provider-gateway";
 import { RedisResponseCache, RedisUpstreamBudget } from "./redis-gateway-store";
 
 let lastErrorLogAt = 0;
+
+/**
+ * A call made while rendering a page for someone without a sign-in cookie is a guest call.
+ * Outside a request (cron, background jobs) there are no cookies: those are member calls.
+ * Only the cookie's presence is checked; that's enough to tell crawlers from players.
+ */
+async function lane(): Promise<"guest" | "member"> {
+  try {
+    return (await cookies()).has(SESSION_COOKIE) ? "member" : "guest";
+  } catch {
+    return "member";
+  }
+}
 
 /**
  * Shared cache (and, for OpenDota, the global call budget) for a gateway when Upstash Redis
@@ -28,6 +43,7 @@ export function sharedGatewayOptions(
             perMinute,
             perDay,
             onExhausted: (window) => logger.warn("opendota_budget_exhausted", { window }),
+            lane,
           })
         : undefined,
     onSharedError: ({ op, error }) => {
