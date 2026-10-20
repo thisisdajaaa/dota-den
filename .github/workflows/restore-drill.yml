@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 30
     services:
       mongo:
-        image: mongo:8
+        image: mongo:7.0  # 8.x crashes on Linux 6.19+ kernels (SERVER-121912)
         ports:
           - 27017:27017
         options: >-
