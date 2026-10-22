@@ -260,6 +260,7 @@ function setup(
   // Users u1..u5 have accounts; account 99 is a friend without a Dota Den account.
   const users = ["u1", "u2", "u3", "u4", "u5"].map(accountOf);
   const roomQueries: TotalsQuery[] = [];
+  const profileLookups: number[][] = [];
   const service = new LeaderboardService({
     activity,
     rooms: {
@@ -274,10 +275,22 @@ function setup(
       publicUserIds: async () => opts.listed ?? users.map((u) => u.userId),
     },
     profiles: {
-      profile: async (id) =>
-        id === 3
-          ? null // OpenDota couldn't provide this one
-          : { personaName: `Player ${id}`, avatarUrl: null, rankTier: 54, leaderboardRank: null },
+      profiles: async (ids) => {
+        profileLookups.push([...ids]);
+        return new Map(
+          ids.map((id) => [
+            id,
+            id === 3
+              ? null // OpenDota couldn't provide this one
+              : {
+                  personaName: `Player ${id}`,
+                  avatarUrl: null,
+                  rankTier: 54,
+                  leaderboardRank: null,
+                },
+          ]),
+        );
+      },
     },
     friends: {
       friendAccountIds: async () => ({
@@ -299,7 +312,7 @@ function setup(
       rulesetVersion: 1,
       completedAt: at,
     });
-  return { service, activity, draft, roomQueries };
+  return { service, activity, draft, roomQueries, profileLookups };
 }
 
 const viewer = { userId: "u1", accountId32: 1 };
@@ -401,6 +414,14 @@ describe("LeaderboardService", () => {
       now: NOW,
     });
     expect(view.rows[0].player).toMatchObject({ name: "Saved u3", rankTier: null });
+  });
+
+  it("looks up every shown player's profile in one batch", async () => {
+    const { service, draft, profileLookups } = setup();
+    for (const [i, u] of ["u1", "u2", "u3", "u4", "u5"].entries()) draft(u, `h${i}`, NOW);
+    await service.board({ viewer, kind: "drafts", scope: "everyone", period: "all", now: NOW });
+    expect(profileLookups).toHaveLength(1);
+    expect([...profileLookups[0]].sort()).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("reports when you have no friends with accounts", async () => {

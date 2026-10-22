@@ -101,6 +101,13 @@ export class InMemoryPatchRepository implements PatchesPort {
   }
 }
 
+const EMPTY_REFRESH_STATE: PatchRefreshState = {
+  lastAttemptAt: null,
+  lastSuccessAt: null,
+  lastDegradedAt: null,
+  failedVersions: [],
+};
+
 export class InMemoryRefreshState implements PatchRefreshStatePort {
   state: PatchRefreshState | null = null;
 
@@ -111,11 +118,23 @@ export class InMemoryRefreshState implements PatchRefreshStatePort {
   async tryClaim(now: Date, minIntervalMs: number): Promise<boolean> {
     const last = this.state?.lastAttemptAt;
     if (last && now.getTime() - last.getTime() < minIntervalMs) return false;
-    this.state = { lastSuccessAt: this.state?.lastSuccessAt ?? null, lastAttemptAt: now };
+    this.state = { ...(this.state ?? EMPTY_REFRESH_STATE), lastAttemptAt: now };
     return true;
   }
 
   async recordSuccess(now: Date): Promise<void> {
-    this.state = { lastAttemptAt: this.state?.lastAttemptAt ?? now, lastSuccessAt: now };
+    this.state = {
+      ...(this.state ?? { ...EMPTY_REFRESH_STATE, lastAttemptAt: now }),
+      lastSuccessAt: now,
+      failedVersions: [],
+    };
+  }
+
+  async recordDegraded(now: Date, failedVersions: string[]): Promise<void> {
+    this.state = {
+      ...(this.state ?? { ...EMPTY_REFRESH_STATE, lastAttemptAt: now }),
+      lastDegradedAt: now,
+      failedVersions,
+    };
   }
 }

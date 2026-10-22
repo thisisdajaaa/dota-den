@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
@@ -31,6 +32,14 @@ export const playersService = lazy(
       follows: followService,
       safeAvatar: steamAvatar,
       snapshots: playerProfilesRepository,
+      // Old saved profiles are shown at once and refreshed once the response is sent.
+      defer: (task) => {
+        try {
+          after(task);
+        } catch {
+          // Outside a request there is no "after": skip it; the next page view refreshes.
+        }
+      },
       logger,
     }),
 );

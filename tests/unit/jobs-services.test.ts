@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UpstreamUnavailableError } from "@/common/errors/app-error";
 import type { JobQueue, MatchSyncPort } from "@/modules/jobs/jobs.ports";
 import { CronService } from "@/modules/jobs/services/cron.service";
@@ -18,6 +18,7 @@ describe("JobsService backfill", () => {
       matches: { sync, syncDue: async () => [] },
       backfillCooldownMs: 120_000,
       warmDraftData: async () => [],
+      warmMeta: async () => [],
       logger,
       now: () => 0,
     });
@@ -264,5 +265,125 @@ describe("CronService", () => {
       UpstreamUnavailableError,
     );
     expect(finished[0]).toMatchObject({ ok: false, summary: { error: "unavailable" } });
+  });
+
+  describe("time budgets", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const never = <T>() => new Promise<T>(() => {});
+    const patchCron = (over: {
+      importLatest?: () => Promise<{ ok: true; value: Array<{ outcome: string }> }>;
+      warmDraftData?: () => Promise<Array<{ key: string; ok: boolean }>>;
+      warmMeta?: () => Promise<Array<{ key: string; ok: boolean }>>;
+      durable?: boolean;
+    }) => {
+      const { finished, repo } = runs();
+      const { q, enqueue } = queue(over.durable ?? false);
+      const warmMeta = vi.fn(over.warmMeta ?? (async () => [{ key: "duos", ok: true }]));
+      const svc = new CronService({
+        runs: repo,
+        matches: {
+          sync: async () => ({ ok: true, value: { backfillComplete: true } }),
+          syncDue: async () => [],
+        },
+        medals: { currentRankTier: async () => null, record: async () => {} },
+        patches: { importLatest: over.importLatest ?? (async () => ({ ok: true, value: [] })) },
+        caches: { warmDraftData: over.warmDraftData ?? (async () => []), warmMeta },
+        queue: () => q,
+        logger,
+      });
+      return { svc, finished, enqueue, warmMeta };
+    };
+
+    it("records a patch import that runs out of time instead of being cut off", async () => {
+      const { svc, finished, warmMeta } = patchCron({ importLatest: never });
+      const run = svc.runPatchRefresh("cron", "req1");
+      const failure = expect(run).rejects.toBeInstanceOf(UpstreamUnavailableError);
+      await vi.advanceTimersByTimeAsync(46_000);
+      await failure;
+      expect(finished[0]).toMatchObject({
+        ok: false,
+        summary: { error: "timed_out", meta: "skipped_time" },
+      });
+      expect(warmMeta).not.toHaveBeenCalled();
+    });
+
+    it("stops waiting for slow draft data in time for the Meta queries", async () => {
+      const { svc, finished, warmMeta } = patchCron({
+        importLatest: async () => ({ ok: true, value: [{ outcome: "unchanged" }] }),
+        warmDraftData: never,
+      });
+      const run = svc.runPatchRefresh("cron", "req1");
+      await vi.advanceTimersByTimeAsync(31_000);
+      await expect(run).resolves.toEqual({ outcomes: [{ outcome: "unchanged" }] });
+      expect(warmMeta).toHaveBeenCalledOnce();
+      expect(finished[0]).toMatchObject({
+        ok: true,
+        summary: { tournaments: "timed_out", meta: [{ key: "duos", ok: true }] },
+      });
+    });
+
+    it("caps the Meta queries at the time left", async () => {
+      const { svc, finished } = patchCron({ warmMeta: never });
+      const run = svc.runPatchRefresh("cron", "req1");
+      await vi.advanceTimersByTimeAsync(46_000);
+      await run;
+      expect(finished[0]).toMatchObject({ ok: true, summary: { meta: "timed_out" } });
+    });
+
+    it("queues both tournament refreshes when the queue is durable", async () => {
+      const { svc, enqueue, warmMeta, finished } = patchCron({ durable: true });
+      await svc.runPatchRefresh("cron", "req1");
+      expect(enqueue.mock.calls.map((c) => c[0])).toEqual(["draft-meta-warm", "meta-warm"]);
+      expect(warmMeta).not.toHaveBeenCalled();
+      expect(finished[0]).toMatchObject({ ok: true, summary: { meta: "queued" } });
+    });
+
+    it("records the run as finished when the import throws", async () => {
+      const { svc, finished } = patchCron({
+        importLatest: async () => {
+          throw new Error("db down");
+        },
+      });
+      await expect(svc.runPatchRefresh("cron", "req1")).rejects.toThrow("db down");
+      expect(finished[0]).toMatchObject({ ok: false, summary: { error: "db down" } });
+    });
+
+    it("doesn't let a slow medal lookup near the end overrun the run", async () => {
+      const { finished, repo } = runs();
+      const lookups: number[] = [];
+      const svc = new CronService({
+        runs: repo,
+        matches: {
+          sync: async () => ({ ok: true, value: { backfillComplete: true } }),
+          syncDue: async () => [
+            { accountId32: 1, outcome: "synced" },
+            { accountId32: 2, outcome: "synced" },
+            { accountId32: 3, outcome: "synced" },
+          ],
+        },
+        medals: {
+          // The first lookup takes 40s and the second hangs: it gets the 6s left, no more.
+          currentRankTier: (id) => {
+            lookups.push(id);
+            return id === 1
+              ? new Promise((r) => setTimeout(() => r({ rankTier: 55 }), 40_000))
+              : never();
+          },
+          record: async () => {},
+        },
+        patches: { importLatest: async () => ({ ok: true, value: [] }) },
+        caches: { warmDraftData: async () => [], warmMeta: async () => [] },
+        queue: () => queue().q,
+        logger,
+      });
+      vi.setSystemTime(0);
+      const run = svc.runMatchSync("cron");
+      await vi.advanceTimersByTimeAsync(46_000);
+      await expect(run).resolves.toMatchObject({ medals: 1, durationMs: 46_000 });
+      expect(lookups).toEqual([1, 2]);
+      expect(finished[0].ok).toBe(true);
+    });
   });
 });

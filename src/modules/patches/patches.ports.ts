@@ -69,7 +69,12 @@ export interface PatchesPort {
 
 export interface PatchRefreshState {
   lastAttemptAt: Date | null;
+  /** The last run that imported every version. */
   lastSuccessAt: Date | null;
+  /** The last run that imported some versions while others failed. */
+  lastDegradedAt: Date | null;
+  /** The versions that failed in the last degraded run (empty after a clean run). */
+  failedVersions: string[];
 }
 
 /** Tracks scheduled/lazy refresh runs so page loads don't hammer upstream. */
@@ -78,6 +83,8 @@ export interface PatchRefreshStatePort {
   /** Atomically claim a run unless one was attempted within `minIntervalMs`. */
   tryClaim(now: Date, minIntervalMs: number): Promise<boolean>;
   recordSuccess(now: Date): Promise<void>;
+  /** A run that finished with some versions failing: retried later, not on every page load. */
+  recordDegraded(now: Date, failedVersions: string[]): Promise<void>;
 }
 
 export interface PatchListItem {

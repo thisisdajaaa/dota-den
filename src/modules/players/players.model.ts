@@ -16,6 +16,9 @@ export interface PlayerProfileDoc {
   rankTier: number | null;
   leaderboardRank: number | null;
   fetchedAt: Date;
+  /** Start of the latest public match (null: none listed), when it has been looked up. */
+  lastMatchAt?: Date | null;
+  lastMatchFetchedAt?: Date;
 }
 
 export interface FollowDoc extends PlayerFollow {

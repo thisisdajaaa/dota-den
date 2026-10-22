@@ -66,9 +66,15 @@ export async function TrackedPlayers({
                             {t("players.tracked.lastMatch", { ago: formatAgo(p.lastMatchAt, now) })}
                           </time>
                         ) : (
-                          t("players.tracked.noRecent")
+                          // undefined: not looked up yet, so claim nothing.
+                          p.lastMatchAt === null && t("players.tracked.noRecent")
                         )}
-                        {rank && <span className="sm:hidden"> · {rankLabel(rank)}</span>}
+                        {rank && (
+                          <span className="sm:hidden">
+                            {p.lastMatchAt !== undefined && " · "}
+                            {rankLabel(rank)}
+                          </span>
+                        )}
                       </span>
                     </span>
                   </Link>

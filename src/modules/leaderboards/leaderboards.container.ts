@@ -57,16 +57,21 @@ export const leaderboardService = lazy(
       rooms: { totals: async (query) => draftHistoryService.captainTotals(query) },
       accounts,
       profiles: {
-        profile: async (accountId32) => {
-          const p = await playersService.publicProfile(accountId32);
-          return p
-            ? {
-                personaName: p.personaName,
-                avatarUrl: p.avatarUrl,
-                rankTier: p.rankTier,
-                leaderboardRank: p.leaderboardRank,
-              }
-            : null;
+        profiles: async (accountIds) => {
+          const found = await playersService.publicProfiles(accountIds);
+          return new Map(
+            [...found].map(([id, p]) => [
+              id,
+              p
+                ? {
+                    personaName: p.personaName,
+                    avatarUrl: p.avatarUrl,
+                    rankTier: p.rankTier,
+                    leaderboardRank: p.leaderboardRank,
+                  }
+                : null,
+            ]),
+          );
         },
       },
       friends,
@@ -80,7 +85,7 @@ export const rankedWeekService = new RankedWeekService({
     recordFor: (id) => rankedWeekFor(openDotaGateway(), openDotaConfig(), id),
     bestHero: (id) => bestHeroThisWeek(openDotaGateway(), openDotaConfig(), id),
   },
-  profiles: { publicProfile: (id) => playersService.publicProfile(id) },
+  profiles: { publicProfiles: (ids) => playersService.publicProfiles(ids) },
 });
 
 export const leaderboardsController = new LeaderboardsController({ activity: activityService });

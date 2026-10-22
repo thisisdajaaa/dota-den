@@ -20,8 +20,12 @@ import type {
 } from "./together.ports";
 import type { PairAnalysis, SharedMatchRow, TogetherOverview } from "./dtos/responses/together.dto";
 
-/** Match details fetched per request at most; later visits continue where this one stopped. */
-export const MAX_NEW_DETAILS = 30;
+/**
+ * Match details fetched per request at most; later visits continue where this one stopped.
+ * Classifications are stored, so each match is fetched once ever: a small cap keeps a visit
+ * to a few seconds and a fraction of OpenDota's 60 calls a minute.
+ */
+export const MAX_NEW_DETAILS = 12;
 /** Match details fetched in parallel (be gentle with the upstream). */
 export const DETAIL_CONCURRENCY = 4;
 

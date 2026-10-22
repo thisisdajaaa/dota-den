@@ -47,6 +47,9 @@ interface RefreshStateDoc {
   _id: string;
   lastAttemptAt: Date | null;
   lastSuccessAt: Date | null;
+  /** Missing on documents written before degraded runs were recorded. */
+  lastDegradedAt?: Date | null;
+  failedVersions?: string[];
 }
 
 const REFRESH_STATE_ID = "valve";
@@ -296,7 +299,14 @@ export class PatchRefreshStateRepository implements PatchRefreshStatePort {
 
   async get(): Promise<PatchRefreshState | null> {
     const doc = await (await this.col()).findOne({ _id: REFRESH_STATE_ID });
-    return doc ? { lastAttemptAt: doc.lastAttemptAt, lastSuccessAt: doc.lastSuccessAt } : null;
+    return doc
+      ? {
+          lastAttemptAt: doc.lastAttemptAt,
+          lastSuccessAt: doc.lastSuccessAt,
+          lastDegradedAt: doc.lastDegradedAt ?? null,
+          failedVersions: doc.failedVersions ?? [],
+        }
+      : null;
   }
 
   async tryClaim(now: Date, minIntervalMs: number): Promise<boolean> {
@@ -327,7 +337,20 @@ export class PatchRefreshStateRepository implements PatchRefreshStatePort {
       await this.col()
     ).updateOne(
       { _id: REFRESH_STATE_ID },
-      { $set: { lastSuccessAt: now }, $setOnInsert: { lastAttemptAt: now } },
+      { $set: { lastSuccessAt: now, failedVersions: [] }, $setOnInsert: { lastAttemptAt: now } },
+      { upsert: true },
+    );
+  }
+
+  async recordDegraded(now: Date, failedVersions: string[]): Promise<void> {
+    await (
+      await this.col()
+    ).updateOne(
+      { _id: REFRESH_STATE_ID },
+      {
+        $set: { lastDegradedAt: now, failedVersions },
+        $setOnInsert: { lastAttemptAt: now, lastSuccessAt: null },
+      },
       { upsert: true },
     );
   }

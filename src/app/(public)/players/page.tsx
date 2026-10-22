@@ -9,7 +9,7 @@ import type { Messages } from "@/common/i18n/messages";
 import type { Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
-import type { TrackedPlayersPage } from "@/modules/players";
+import type { FollowOwner, TrackedPlayersPage } from "@/modules/players";
 import type { PlayerProviderError as ProviderError } from "@/modules/players";
 import { MAX_FOLLOWS_PER_USER } from "@/modules/players/domain/follow";
 import { parsePlayerQuery, type LookupError } from "@/modules/players/domain/player-lookup";
@@ -50,14 +50,6 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
   const nameLookup = lookup?.ok && lookup.value.kind === "name" ? lookup.value : null;
 
   const viewer = await getCurrentUser({ tolerateErrors: true });
-  const tracked = viewer
-    ? await playersService
-        .trackedPlayers(ownerOf(viewer), trackedPage)
-        .catch((e: unknown): TrackedPlayersPage | "error" => {
-          logger.error("tracked_players_failed", { error: e });
-          return "error";
-        })
-    : null;
   const now = new Date();
   const pageHref = (page: number) => {
     const sp = new URLSearchParams();
@@ -83,19 +75,16 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
         </Notice>
       )}
 
-      {tracked === "error" ? (
-        <Notice icon="alert" role="alert">
-          {t("players.page.trackedError")}
-        </Notice>
-      ) : (
-        tracked && (
-          <TrackedPlayers
-            data={tracked}
-            limit={MAX_FOLLOWS_PER_USER}
+      {viewer && (
+        // Profiles OpenDota hasn't given us yet can take a moment: don't hold up the page.
+        <Suspense key={trackedPage} fallback={<TrackedSkeleton t={t} />}>
+          <TrackedSection
+            owner={ownerOf(viewer)}
+            page={trackedPage}
             now={now}
             pageHref={pageHref}
           />
-        )
+        </Suspense>
       )}
 
       {nameLookup?.vanity && (
@@ -141,6 +130,54 @@ function Notice({
       />
       <span>{children}</span>
     </p>
+  );
+}
+
+async function TrackedSection({
+  owner,
+  page,
+  now,
+  pageHref,
+}: {
+  owner: FollowOwner;
+  page: number;
+  now: Date;
+  pageHref: (page: number) => string;
+}) {
+  const tracked = await playersService
+    .trackedPlayers(owner, page)
+    .catch((e: unknown): TrackedPlayersPage | "error" => {
+      logger.error("tracked_players_failed", { error: e });
+      return "error";
+    });
+  if (tracked === "error") {
+    const t = await getT();
+    return (
+      <Notice icon="alert" role="alert">
+        {t("players.page.trackedError")}
+      </Notice>
+    );
+  }
+  return (
+    <TrackedPlayers data={tracked} limit={MAX_FOLLOWS_PER_USER} now={now} pageHref={pageHref} />
+  );
+}
+
+function TrackedSkeleton({ t }: { t: Translator<Messages> }) {
+  return (
+    <section className="panel space-y-3 p-5" aria-busy aria-label={t("players.tracked.loading")}>
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-5 w-40" />
+      {Array.from({ length: 4 }, (_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <Skeleton className="size-10 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40 max-w-full" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 

@@ -35,29 +35,36 @@ export class GroupPageService {
     return this.deps.now?.() ?? new Date();
   }
 
-  /** Check the stalest member pairs (at most MAX_PAIRS_PER_VISIT), then read the cache. */
+  /**
+   * Check the stalest member pairs (at most MAX_PAIRS_PER_VISIT, side by side), then read the
+   * cache.
+   */
   async party(group: Group): Promise<GroupPartyDto> {
     const ids = group.members.map((m) => m.accountId32);
     const pairs = memberPairs(ids);
     const refreshed = await this.deps.repository.pairsRefreshedAt(group.id);
     const now = this.now();
+    // The pairs are independent: check them side by side (each one is a list call, then its
+    // match details a few at a time).
+    const checks = await Promise.all(
+      pairsToRefresh(pairs, refreshed, now).map(async (p) => ({
+        p,
+        res: await this.deps.party.analysePair(p[0], p[1], { maxNewDetails: DETAILS_PER_PAIR }),
+      })),
+    );
     let upstreamBusy = false;
     const done: string[] = [];
-    for (const [a, b] of pairsToRefresh(pairs, refreshed, now)) {
-      const res = await this.deps.party.analysePair(a, b, { maxNewDetails: DETAILS_PER_PAIR });
+    for (const { p, res } of checks) {
       if (!res.ok) {
-        // Busy or down: stop for this visit. Anything else (e.g. no match data) is final.
-        if (res.error.type === "rate_limited" || res.error.type === "unavailable") {
+        // Busy or down: try again next visit. Anything else (e.g. no match data) is final.
+        if (res.error.type === "rate_limited" || res.error.type === "unavailable")
           upstreamBusy = true;
-          break;
-        }
-        done.push(pairKey([a, b]));
+        else done.push(pairKey(p));
         continue;
       }
       if (res.value.interrupted) upstreamBusy = true;
       // Only fresh once every shared match is classified; otherwise continue next visit.
-      if (res.value.pending === 0) done.push(pairKey([a, b]));
-      if (res.value.interrupted) break;
+      if (res.value.pending === 0) done.push(pairKey(p));
     }
     await this.deps.repository.markPairsRefreshed(group.id, done, now);
 

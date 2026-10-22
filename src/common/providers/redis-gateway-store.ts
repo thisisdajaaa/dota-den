@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { promisify } from "node:util";
+import { gunzip, gzip } from "node:zlib";
 import type { GatewayResponse, SharedResponseCache, UpstreamBudget } from "./provider-gateway";
 
 /** The slice of the Upstash client these adapters use (so tests can pass a fake). */
@@ -9,8 +11,30 @@ export interface RedisLike {
   pexpire(key: string, ms: number): Promise<unknown>;
 }
 
-/** Responses larger than this aren't shared (Upstash caps request size; big bodies are rare). */
+/**
+ * Stored entries larger than this (after compression) aren't shared: Upstash caps request
+ * size, and a few responses are big (OpenDota's ability constants are about 1.3 MB of JSON).
+ */
 export const MAX_SHARED_BODY_BYTES = 512 * 1024;
+/**
+ * Entries larger than this are stored gzipped (base64, behind COMPRESSED_PREFIX): JSON
+ * shrinks about five-fold. Smaller ones stay plain JSON, not worth the CPU.
+ */
+export const COMPRESS_OVER_BYTES = 16 * 1024;
+/** Marks a gzipped entry; plain entries are JSON objects, so they start with "{". */
+const COMPRESSED_PREFIX = "gz:";
+
+const gzipAsync = promisify(gzip);
+const gunzipAsync = promisify(gunzip);
+
+async function compress(raw: string): Promise<string> {
+  return COMPRESSED_PREFIX + (await gzipAsync(raw)).toString("base64");
+}
+
+async function decompress(stored: string): Promise<string> {
+  const zipped = Buffer.from(stored.slice(COMPRESSED_PREFIX.length), "base64");
+  return (await gunzipAsync(zipped)).toString("utf8");
+}
 
 /**
  * Upstream responses shared by every instance. Keys are a hash of the URL, so API keys in
@@ -27,8 +51,10 @@ export class RedisResponseCache implements SharedResponseCache {
   }
 
   async get(url: string): Promise<{ value: GatewayResponse; expiresAt: number } | null> {
-    const raw = await this.redis.get(this.key(url));
-    if (!raw) return null;
+    const stored = await this.redis.get(this.key(url));
+    if (!stored) return null;
+    // Plain entries are read as before; a corrupt one throws and the gateway fails open.
+    const raw = stored.startsWith(COMPRESSED_PREFIX) ? await decompress(stored) : stored;
     const parsed = JSON.parse(raw) as { value: GatewayResponse; expiresAt: number };
     return parsed && typeof parsed.expiresAt === "number" ? parsed : null;
   }
@@ -36,9 +62,11 @@ export class RedisResponseCache implements SharedResponseCache {
   async set(url: string, value: GatewayResponse, ttlMs: number, retainMs?: number): Promise<void> {
     const now = (this.opts.now ?? Date.now)();
     const raw = JSON.stringify({ value, expiresAt: now + ttlMs });
-    if (Buffer.byteLength(raw) > MAX_SHARED_BODY_BYTES) return;
+    const stored = Buffer.byteLength(raw) > COMPRESS_OVER_BYTES ? await compress(raw) : raw;
+    // Checked after compression: that's what goes over the wire.
+    if (Buffer.byteLength(stored) > MAX_SHARED_BODY_BYTES) return;
     // Kept past expiry (when asked) so the gateway can serve it if the upstream fails.
-    await this.redis.set(this.key(url), raw, { px: Math.max(ttlMs, retainMs ?? ttlMs) });
+    await this.redis.set(this.key(url), stored, { px: Math.max(ttlMs, retainMs ?? ttlMs) });
   }
 }
 

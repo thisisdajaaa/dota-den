@@ -10,6 +10,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { BACKFILL_COOLDOWN_MS, MatchSyncService, SYNC_COOLDOWN_MS } from "@/modules/matches";
 import type { DashboardFilter } from "@/modules/matches/domain/read-models";
 import { matchQueries, matchesService } from "@/modules/matches";
+import { playersService } from "@/modules/players";
 import { summarizeMatches } from "@/modules/matches/domain/match-summary";
 import { DashboardFilters } from "@/modules/matches/ui/dashboard-filters";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
@@ -41,6 +42,9 @@ import { PatchDigestSection, PatchDigestSkeleton } from "./patch-digest-section"
 import { StandingSection } from "./standing-section";
 import { TeammatesSection } from "./teammates-section";
 
+/** Games in the recent matches card. */
+const RECENT_MATCHES = 12;
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return { title: t("dashboard.title") };
@@ -65,26 +69,32 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const queries = matchQueries;
   const owner = { userId: user.id, accountId32: user.accountId32 };
   const timeZone = getViewerTimeZone();
-  const [status, { facts, latestPatch }, profile, heroes, latestSession, tz, notify, checklist] =
-    await Promise.all([
-      queries.importStatus(user.accountId32),
-      queries.dashboardFacts(user.accountId32, filter, now),
-      matchesService.playerProfile(user.accountId32),
-      matchesService.heroMap(),
-      // Optional card: a sessions failure must not take down the dashboard.
-      sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
-      timeZone,
-      // Optional: only decides whether to invite the player to turn notifications on.
-      notificationService.status(user.id).catch(() => null),
-      // Optional card: a failure just hides the checklist.
-      timeZone
-        .then((zone) =>
-          onboardingService.checklist({ ...owner, createdAt: user.createdAt }, zone.timeZone),
-        )
-        .catch(() => null),
-    ]);
-  // Medal history needs no typing: note the medal each visit (after the page is sent).
-  if (profile) after(() => medalService.record(user.accountId32, profile.rankTier));
+  const [status, view, banner, heroes, latestSession, tz, notify, checklist] = await Promise.all([
+    queries.importStatus(user.accountId32),
+    queries.dashboardView(user.accountId32, filter, now, RECENT_MATCHES),
+    // The saved copy when there is one: the banner doesn't wait on OpenDota.
+    playersService.quickProfile(user.accountId32),
+    matchesService.heroMap(),
+    // Optional card: a sessions failure must not take down the dashboard.
+    sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
+    timeZone,
+    // Optional: only decides whether to invite the player to turn notifications on.
+    notificationService.status(user.id).catch(() => null),
+    // Optional card: a failure just hides the checklist.
+    timeZone
+      .then((zone) =>
+        onboardingService.checklist({ ...owner, createdAt: user.createdAt }, zone.timeZone),
+      )
+      .catch(() => null),
+  ]);
+  const { facts, recent, latestPatch } = view;
+  const profile = banner.profile;
+  // Medal history needs no typing: note the medal each visit (after the page is sent), from a
+  // live profile only. A saved banner copy is refreshed first.
+  after(async () => {
+    const live = banner.saved ? await playersService.refreshProfile(user.accountId32) : profile;
+    if (live) await medalService.record(user.accountId32, live.rankTier);
+  });
 
   // Every hero in view (the card sorts and expands client-side).
   const summary = summarizeMatches(facts, { topHeroes: Number.POSITIVE_INFINITY });
@@ -234,7 +244,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                 </div>
               </div>
 
-              <RecentMatchesCard matches={facts.slice(0, 12)} heroes={heroes} now={now} />
+              <RecentMatchesCard matches={recent} heroes={heroes} now={now} />
             </>
           )}
         </>

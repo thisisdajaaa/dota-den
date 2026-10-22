@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ConflictError, ForbiddenError, NotFoundError } from "@/common/errors/app-error";
 import { err, ok } from "@/common/result";
 import {
+  DETAILS_PER_PAIR,
   MAX_GROUP_MEMBERS,
   MAX_GROUPS_PER_USER,
   type Group,
@@ -263,8 +264,8 @@ describe("GroupPageService", () => {
 
     const first = await service.party(group);
     expect(calls).toEqual([
-      [1, 2, 15],
-      [1, 3, 15],
+      [1, 2, DETAILS_PER_PAIR],
+      [1, 3, DETAILS_PER_PAIR],
     ]);
     expect(first.stats.record).toEqual({ games: 2, decided: 2, wins: 2 });
     expect(first).toMatchObject({ pairsTotal: 3, pairsUnchecked: 2, upstreamBusy: false });
@@ -275,23 +276,47 @@ describe("GroupPageService", () => {
     expect(calls.map(([a, b]) => `${a}:${b}`)).toEqual(["1:2", "2:3"]);
   });
 
-  it("stops checking when OpenDota is busy", async () => {
+  it("checks the visit's pairs in parallel", async () => {
+    let inFlight = 0;
+    let most = 0;
+    const service = new GroupPageService({
+      repository: new MemoryGroups(),
+      party: {
+        sameTeamAmong: async () => [],
+        analysePair: async () => {
+          most = Math.max(most, ++inFlight);
+          await new Promise((r) => setTimeout(r, 5));
+          inFlight--;
+          return ok({ pending: 0, interrupted: false });
+        },
+      },
+      games: { recentHeroes: async () => [], rankedResults: async () => [] },
+    });
+    const res = await service.party(group);
+    expect(most).toBe(2);
+    expect(res).toMatchObject({ pairsUnchecked: 1, upstreamBusy: false });
+  });
+
+  it("leaves busy pairs for the next visit and keeps the ones that finished", async () => {
     const repo = new MemoryGroups();
     let calls = 0;
     const service = new GroupPageService({
       repository: repo,
       party: {
         sameTeamAmong: async () => [],
-        analysePair: async () => {
+        analysePair: async (a, b) => {
           calls++;
-          return err({ type: "rate_limited", retryAfterMs: null });
+          return a === 1 && b === 2
+            ? err({ type: "rate_limited", retryAfterMs: null })
+            : ok({ pending: 0, interrupted: false });
         },
       },
       games: { recentHeroes: async () => [], rankedResults: async () => [] },
     });
     const res = await service.party(group);
-    expect(calls).toBe(1);
-    expect(res).toMatchObject({ upstreamBusy: true, pairsUnchecked: 3 });
+    expect(calls).toBe(2);
+    expect(res).toMatchObject({ upstreamBusy: true, pairsUnchecked: 2 });
+    expect(Object.keys(await repo.pairsRefreshedAt(group.id))).toEqual(["1:3"]);
   });
 
   it("builds who plays what and the weekly board from members' games", async () => {

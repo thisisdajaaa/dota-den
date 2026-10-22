@@ -8,6 +8,14 @@ export interface ReportGamesSource {
   games(accountId32: number, days: number): Promise<ReportGame[] | null>;
 }
 
+/**
+ * Your games imported by the match sync, between two instants: the fallback when OpenDota
+ * can't be read. They carry no per-game GPM, damage or lane data, and no replay flag.
+ */
+export interface ImportedGamesSource {
+  games(accountId32: number, range: { from: Date; to: Date }): Promise<ReportGame[]>;
+}
+
 /** One parsed match's lane outcome and objectives for the player; null when unreadable. */
 export interface ReplaySource {
   read(matchId: string, accountId32: number): Promise<ReplaySummary | null>;
