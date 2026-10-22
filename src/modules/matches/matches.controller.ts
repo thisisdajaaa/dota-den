@@ -11,7 +11,7 @@ import { requestId } from "@/common/http/http";
 import { ServiceResponse } from "@/common/http/service-response";
 import type { Logger } from "@/common/logging/logger";
 import { requireUser } from "@/modules/identity";
-import type { MatchSyncService } from "./services/match-sync.service";
+import { ON_VISIT_HISTORY_BUDGET_MS, type MatchSyncService } from "./services/match-sync.service";
 import type { MatchesService } from "./services/matches.service";
 
 const MatchParams = z.object({ matchId: z.string().regex(/^\d{6,20}$/, "Invalid match id") });
@@ -40,7 +40,9 @@ export class MatchesController {
   sync = handler({ guard: requireUser }, async ({ req, user }) => {
     const { accountId32 } = user;
     const started = Date.now();
-    const result = await this.deps.sync.sync(accountId32);
+    const result = await this.deps.sync.sync(accountId32, {
+      deadline: started + ON_VISIT_HISTORY_BUDGET_MS,
+    });
     const log = { requestId: requestId(req), accountId32, durationMs: Date.now() - started };
     if (result.ok) {
       this.deps.logger.info("match_sync_completed", { ...log, ...result.value });
