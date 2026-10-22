@@ -57,7 +57,12 @@ export class PatchesController {
 
   /** PUT /api/v1/me/patch-watchlist: replace your watchlist. */
   putWatchlist = handler(
-    { guard: requireUser, body: WatchlistSchema, invalidMessage: "Invalid body" },
+    {
+      guard: requireUser,
+      rateLimit: { name: "patch-watchlist", limit: 30, windowMs: 60_000 },
+      body: WatchlistSchema,
+      invalidMessage: "Invalid body",
+    },
     async ({ user, body }) => {
       const result = await this.deps.watchlists.replace(user.id, body);
       if (!result.ok)
