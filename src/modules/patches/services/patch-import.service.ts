@@ -29,6 +29,11 @@ export const MAX_IMPORT_COUNT = 20;
 export const PATCH_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 /** Minimum gap between refresh attempts, so failures don't retry on every page load. */
 export const PATCH_RETRY_AFTER_MS = 10 * 60 * 1000;
+/**
+ * After a run where some versions imported and others failed (e.g. a version Valve lists
+ * without a publish date), retry the failing ones this often rather than every 10 minutes.
+ */
+export const PATCH_DEGRADED_RETRY_AFTER_MS = 6 * 60 * 60 * 1000;
 
 const describe = (e: ProviderError): string =>
   e.type === "unavailable" || e.type === "invalid_payload" ? `${e.type}: ${e.cause}` : e.type;
@@ -58,9 +63,14 @@ export class PatchImportService {
     const outcomes: ImportOutcome[] = [];
     // Sequential on purpose: small n, and it keeps upstream load polite.
     for (const entry of newest) outcomes.push(await this.importOne(entry.version, entry));
-    // A failed version leaves the run "unsuccessful" so the lazy refresh retries it (throttled).
-    if (outcomes.every((o) => o.outcome !== "failed"))
-      await this.deps.refreshState.recordSuccess(this.now());
+    const failed = outcomes.filter((o) => o.outcome === "failed").map((o) => o.version);
+    if (failed.length === 0) await this.deps.refreshState.recordSuccess(this.now());
+    // Some versions imported: note the failing ones and retry them at the slower degraded
+    // interval, so one permanently bad version doesn't re-import everything every 10 minutes.
+    // When every version failed (likely an outage), nothing is recorded: the lazy refresh
+    // keeps retrying at the normal throttle.
+    else if (failed.length < outcomes.length)
+      await this.deps.refreshState.recordDegraded(this.now(), failed);
     return ok(outcomes);
   }
 
@@ -79,8 +89,9 @@ export class PatchImportService {
   }
 
   /**
-   * Import the latest patches when none are stored or the last successful run is stale.
-   * Attempts are throttled across instances through the refresh state.
+   * Import the latest patches when none are stored, or when the last clean run is stale and
+   * no degraded run (some versions failed) happened recently. Attempts are throttled across
+   * instances through the refresh state.
    */
   async refreshIfStale(): Promise<RefreshResult> {
     const now = this.now();
@@ -88,8 +99,11 @@ export class PatchImportService {
       this.deps.refreshState.get(),
       this.deps.patches.count(),
     ]);
-    const last = state?.lastSuccessAt?.getTime();
-    const stale = count === 0 || last === undefined || now.getTime() - last >= PATCH_STALE_AFTER_MS;
+    const since = (d: Date | null | undefined) => (d ? now.getTime() - d.getTime() : Infinity);
+    const stale =
+      count === 0 ||
+      (since(state?.lastSuccessAt) >= PATCH_STALE_AFTER_MS &&
+        since(state?.lastDegradedAt) >= PATCH_DEGRADED_RETRY_AFTER_MS);
     if (!stale) return { ran: false, reason: "fresh" };
     if (!(await this.deps.refreshState.tryClaim(now, PATCH_RETRY_AFTER_MS)))
       return { ran: false, reason: "recently_attempted" };

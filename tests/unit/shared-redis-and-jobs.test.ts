@@ -252,6 +252,7 @@ describe("jobs", () => {
         "draft-meta-warm": async () => {
           throw new Error("boom");
         },
+        "meta-warm": handler,
       },
       runs: repo,
     });

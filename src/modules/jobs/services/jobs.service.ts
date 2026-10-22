@@ -16,6 +16,8 @@ export class JobsService {
       /** Wait between history chunks (the sync cooldown). */
       backfillCooldownMs: number;
       warmDraftData: () => Promise<Array<{ key: string; ok: boolean }>>;
+      /** The Meta page's slow tournament queries. */
+      warmMeta: () => Promise<Array<{ key: string; ok: boolean }>>;
       logger: Pick<Logger, "info">;
       now?: () => number;
     },
@@ -26,6 +28,7 @@ export class JobsService {
     return {
       "match-backfill": (payload) => this.backfillChunk(payload),
       "draft-meta-warm": () => this.warmDraftData(),
+      "meta-warm": () => this.warmMeta(),
     };
   }
 
@@ -79,6 +82,14 @@ export class JobsService {
     const failed = results.filter((r) => !r.ok).map((r) => r.key);
     this.deps.logger.info("draft_meta_refreshed", { results });
     if (failed.length) throw new Error(`draft data refresh failed: ${failed.join(", ")}`);
+  }
+
+  /** Refresh the Meta page's cached tournament queries. */
+  async warmMeta(): Promise<void> {
+    const results = await this.deps.warmMeta();
+    const failed = results.filter((r) => !r.ok).map((r) => r.key);
+    this.deps.logger.info("meta_caches_refreshed", { results });
+    if (failed.length) throw new Error(`meta cache refresh failed: ${failed.join(", ")}`);
   }
 
   private now() {

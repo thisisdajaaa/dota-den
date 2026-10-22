@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  PATCH_DEGRADED_RETRY_AFTER_MS,
   PATCH_RETRY_AFTER_MS,
   PATCH_STALE_AFTER_MS,
   PatchImportService,
@@ -205,6 +206,48 @@ describe("PatchImportService.refreshIfStale", () => {
     expect(await service.refreshIfStale()).toEqual({ ran: false, reason: "recently_attempted" });
 
     valve.state.status = 200;
+    clock.now = new Date(clock.now.getTime() + PATCH_RETRY_AFTER_MS);
+    expect((await service.refreshIfStale()).ran).toBe(true);
+  });
+
+  it("retries a version that keeps failing at the slower degraded interval", async () => {
+    const { service, valve, clock, refreshState } = setup();
+    valve.state.details.delete("7.41e");
+    const first = await service.refreshIfStale();
+    expect(first.ran && first.result.ok && first.result.value.map((o) => o.outcome)).toEqual([
+      "inserted",
+      "failed",
+      "inserted",
+    ]);
+    expect(refreshState.state).toMatchObject({ lastSuccessAt: null, failedVersions: ["7.41e"] });
+
+    // Past the normal throttle, a degraded run still counts as fresh.
+    clock.now = new Date(clock.now.getTime() + PATCH_RETRY_AFTER_MS);
+    expect(await service.refreshIfStale()).toEqual({ ran: false, reason: "fresh" });
+
+    clock.now = new Date(clock.now.getTime() + PATCH_DEGRADED_RETRY_AFTER_MS);
+    const second = await service.refreshIfStale();
+    expect(second.ran).toBe(true);
+    expect(refreshState.state?.failedVersions).toEqual(["7.41e"]);
+
+    // Once the version imports, the run is clean again.
+    valve.state.details.set("7.41e", patchDetail("7.41e"));
+    clock.now = new Date(clock.now.getTime() + PATCH_DEGRADED_RETRY_AFTER_MS);
+    expect((await service.refreshIfStale()).ran).toBe(true);
+    expect(refreshState.state).toMatchObject({ lastSuccessAt: clock.now, failedVersions: [] });
+    clock.now = new Date(clock.now.getTime() + PATCH_DEGRADED_RETRY_AFTER_MS);
+    expect(await service.refreshIfStale()).toEqual({ ran: false, reason: "fresh" });
+  });
+
+  it("keeps the normal throttle when every version fails", async () => {
+    const { service, valve, clock, refreshState } = setup();
+    valve.state.details.clear();
+    const first = await service.refreshIfStale();
+    expect(
+      first.ran && first.result.ok && first.result.value.every((o) => o.outcome === "failed"),
+    ).toBe(true);
+    expect(refreshState.state).toMatchObject({ lastSuccessAt: null, lastDegradedAt: null });
+
     clock.now = new Date(clock.now.getTime() + PATCH_RETRY_AFTER_MS);
     expect((await service.refreshIfStale()).ran).toBe(true);
   });

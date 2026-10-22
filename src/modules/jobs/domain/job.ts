@@ -4,7 +4,7 @@
  * duplicated delivery does nothing (ADR 0008).
  */
 
-export const JOB_NAMES = ["match-backfill", "draft-meta-warm"] as const;
+export const JOB_NAMES = ["match-backfill", "draft-meta-warm", "meta-warm"] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
 export const isJobName = (v: unknown): v is JobName =>
