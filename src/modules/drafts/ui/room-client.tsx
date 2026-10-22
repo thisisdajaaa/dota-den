@@ -25,6 +25,11 @@ import type { DraftHero } from "./types";
 
 const POLL_VISIBLE_MS = 1_000;
 const POLL_HIDDEN_MS = 5_000;
+/** A finished room only needs to notice a rematch (and the result panel polls on its own). */
+const POLL_COMPLETED_MS = 5_000;
+const POLL_COMPLETED_HIDDEN_MS = 30_000;
+/** Unreachable server: back off up to this, instead of retrying every second. */
+const POLL_MAX_BACKOFF_MS = 15_000;
 
 /** A live multiplayer draft room. The server is authoritative; this view polls and resyncs. */
 export function RoomClient({
@@ -66,7 +71,7 @@ export function RoomClient({
     }
   }, []);
 
-  const poll = useCallback(async () => {
+  const poll = useCallback(async (): Promise<boolean> => {
     try {
       const body = await apiRequest<
         { unchanged: true; serverNow: number } | { room: RoomView; events: EventView[] }
@@ -80,17 +85,29 @@ export function RoomClient({
         offset.current = body.serverNow - Date.now();
         setServerNow(body.serverNow);
       }
+      return true;
     } catch {
       setConnected(false);
+      return false;
     }
   }, [apply]);
 
-  // Poll ~1s while visible, slower in the background; resync immediately on refocus.
+  // Poll ~1s while visible, slower in the background or once the draft is over, and back off
+  // while the server is unreachable; resync immediately on refocus.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    let failures = 0;
     const loop = async () => {
-      await poll();
-      timer = setTimeout(loop, document.hidden ? POLL_HIDDEN_MS : POLL_VISIBLE_MS);
+      failures = (await poll()) ? 0 : failures + 1;
+      const done = roomRef.current.status === "completed";
+      const base = done
+        ? document.hidden
+          ? POLL_COMPLETED_HIDDEN_MS
+          : POLL_COMPLETED_MS
+        : document.hidden
+          ? POLL_HIDDEN_MS
+          : POLL_VISIBLE_MS;
+      timer = setTimeout(loop, Math.min(base * 2 ** failures, Math.max(base, POLL_MAX_BACKOFF_MS)));
     };
     timer = setTimeout(loop, POLL_VISIBLE_MS);
     const onVisible = () => !document.hidden && void poll();

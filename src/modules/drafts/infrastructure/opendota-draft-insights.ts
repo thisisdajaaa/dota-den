@@ -141,6 +141,12 @@ export function toSynergy(body: unknown): SynergyTable | null {
 }
 
 /** OpenDota public stats. Ancient, Divine and Immortal brackets (6-8) are combined. */
+/**
+ * Explorer refreshes in flight, by query key, per gateway. The insights object is built per
+ * request but the gateway lives for the whole instance, so this spans requests.
+ */
+const refreshing = new WeakMap<ProviderGateway, Map<string, Promise<unknown>>>();
+
 export class OpenDotaDraftInsights implements DraftInsights {
   private readonly now: () => number;
 
@@ -161,6 +167,11 @@ export class OpenDotaDraftInsights implements DraftInsights {
       /** How long a cached tournament query counts as fresh. */
       freshMs?: number;
       now?: () => number;
+      /**
+       * Keeps a refresh running after the response is sent (e.g. Next's `after`). Without it,
+       * a serverless function may be frozen before a background refresh finishes.
+       */
+      background?: (task: Promise<unknown>) => void;
     },
   ) {
     this.now = opts.now ?? Date.now;
@@ -245,9 +256,9 @@ export class OpenDotaDraftInsights implements DraftInsights {
   private async explore(key: string, sql: string): Promise<unknown> {
     const cached = await this.opts.cache?.get(key).catch(() => null);
     if (cached && this.now() - cached.fetchedAt.getTime() < this.freshMs) return cached.body;
-    const fetching = this.fetchAndStore(key, sql);
+    const fetching = this.refresh(key, sql);
     if (cached) {
-      void fetching;
+      this.keepRunning(fetching);
       return cached.body;
     }
     const budget = this.opts.budgetMs ?? BUDGET_MS;
@@ -256,10 +267,30 @@ export class OpenDotaDraftInsights implements DraftInsights {
       timer = setTimeout(() => resolve(null), budget);
     });
     try {
-      return await Promise.race([fetching, timeout]);
+      const body = await Promise.race([fetching, timeout]);
+      // Out of time: answer without it, but let the query finish and fill the cache.
+      if (body === null) this.keepRunning(fetching);
+      return body;
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  /** One refresh per query at a time on this instance: each explorer query takes seconds. */
+  private refresh(key: string, sql: string): Promise<unknown> {
+    const gateway = this.opts.explorer ?? this.gateway;
+    let inFlight = refreshing.get(gateway);
+    if (!inFlight) refreshing.set(gateway, (inFlight = new Map()));
+    const running = inFlight.get(key);
+    if (running) return running;
+    const task = this.fetchAndStore(key, sql).finally(() => inFlight.delete(key));
+    inFlight.set(key, task);
+    return task;
+  }
+
+  private keepRunning(task: Promise<unknown>): void {
+    if (this.opts.background) this.opts.background(task);
+    else void task;
   }
 
   private async fetchAndStore(key: string, sql: string): Promise<unknown> {

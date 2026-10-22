@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChevronRight, ExternalLink } from "lucide-react";
@@ -29,13 +30,22 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
   const cursor = typeof raw === "string" && parsePatchVersion(raw).ok ? raw : null;
   const t = await getT();
 
-  await patchesService.ensureFresh();
   const queries = patchesService;
-  const [page, user, heroes] = await Promise.all([
+  const listed = await Promise.all([
     queries.list({ cursor, limit: 12 }),
     getCurrentUser({ tolerateErrors: true }),
     matchesService.heroMap(),
   ]);
+  const [, user, heroes] = listed;
+  let [page] = listed;
+  if (page.items.length === 0 && !cursor) {
+    // Nothing imported yet: this visit has to wait for the first import.
+    await patchesService.ensureFresh();
+    page = await queries.list({ cursor, limit: 12 });
+  } else {
+    // A refresh (a full import when stale) never holds up the page; the next visit sees it.
+    after(() => patchesService.ensureFresh());
+  }
 
   const latest = !cursor ? page.items[0] : undefined;
   const latestPatch = latest ? await queries.getByVersion(latest.version) : null;

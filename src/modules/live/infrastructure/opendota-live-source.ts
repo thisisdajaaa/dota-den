@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { ProviderGateway } from "@/common/providers/provider-gateway";
 import type { LiveSource } from "../live.ports";
 import type { LiveGame } from "../domain/live-game";
+import { LIVE_CACHE_SECONDS } from "../domain/live-policy";
 
 const num = z.coerce.number();
 const LiveSchema = z.array(
@@ -51,7 +52,9 @@ export class OpenDotaLiveSource implements LiveSource {
   }
 
   async games(): Promise<LiveGame[] | null> {
-    const res = await this.gateway.getJson(this.url("/live"), { cacheTtlMs: 20_000 });
+    const res = await this.gateway.getJson(this.url("/live"), {
+      cacheTtlMs: LIVE_CACHE_SECONDS * 1000,
+    });
     if (!res.ok) return null;
     const parsed = LiveSchema.safeParse(res.body);
     if (!parsed.success) return null;

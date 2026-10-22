@@ -28,6 +28,13 @@ export function openDotaGateway(): ProviderGateway {
     ...sharedGatewayOptions("opendota"),
     timeoutMs: OPENDOTA_TIMEOUT_MS,
     maxRetries: OPENDOTA_MAX_RETRIES,
+    onStale: ({ url, failure, ageMs }) =>
+      logger.warn("provider_stale_served", {
+        provider: "opendota",
+        path: new URL(url).pathname,
+        failure,
+        ageMs,
+      }),
     onRequest: ({ url, status, durationMs, attempt }) =>
       logger.info("provider_request", {
         provider: "opendota",

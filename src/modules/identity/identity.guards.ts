@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import { cache } from "react";
 import { env } from "@/common/config/env";
 import { ForbiddenError, UnauthorizedError } from "@/common/errors/app-error";
 import { SESSION_COOKIE } from "@/common/http/session-cookie";
@@ -22,6 +23,12 @@ export function sessionCookieOptions(expires: Date) {
 }
 
 /**
+ * One session lookup per render: the layout, the app shell and the page all ask for the
+ * user, and each lookup is two database reads. Read-only (no rotation), so sharing is safe.
+ */
+const resolveSessionOnce = cache((token: string) => authService.resolveSession(token));
+
+/**
  * For Server Components: read-only session lookup (cookies can't be set during render).
  * With `tolerateErrors`, a database failure yields null instead of throwing; used by
  * chrome like the header so an outage doesn't take down public pages.
@@ -33,7 +40,7 @@ export async function getCurrentUser(
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
-    return (await authService.resolveSession(token))?.user ?? null;
+    return (await resolveSessionOnce(token))?.user ?? null;
   } catch (e) {
     if (!opts.tolerateErrors) throw e;
     logger.error("session_lookup_failed", { error: e });
