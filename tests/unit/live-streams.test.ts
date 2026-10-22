@@ -133,11 +133,28 @@ describe("stream lists", () => {
     expect(languageCode("TL")).toBe("fil");
     expect(languageCode("fil")).toBe("fil");
     expect(languageCode("")).toBe("other");
-    const streams = [{ language: "tl" }, { language: "fil" }, { language: "en" }];
+    // Regional variants count as their base language, whatever the separator or case.
+    expect(languageCode("zh-hk")).toBe("zh");
+    expect(languageCode("zh_TW")).toBe("zh");
+    expect(languageCode("pt-BR")).toBe("pt");
+    expect(languageCode("EN-gb")).toBe("en");
+    expect(languageCode("tl-PH")).toBe("fil");
+    expect(languageCode(" ru ")).toBe("ru");
+    expect(languageCode("-")).toBe("other");
+    const streams = [
+      { language: "tl" },
+      { language: "fil" },
+      { language: "en" },
+      { language: "zh-hk" },
+      { language: "zh" },
+      { language: "zh-tw" },
+    ];
     expect(languageOptions(streams)).toEqual([
+      { code: "zh", streams: 3 },
       { code: "fil", streams: 2 },
       { code: "en", streams: 1 },
     ]);
+    expect(inLanguage(streams, "zh")).toHaveLength(3);
     expect(inLanguage(streams, "fil")).toHaveLength(2);
   });
 

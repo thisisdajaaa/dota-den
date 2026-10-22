@@ -3,6 +3,7 @@ import type { mmr as en } from "../en/mmr";
 
 export const mmr: MessageTree<typeof en> = {
   page: {
+    loading: "Nilo-load ang MMR mo",
     title: "MMR journal",
     kicker: "Progreso",
     description:
@@ -182,6 +183,7 @@ export const mmr: MessageTree<typeof en> = {
     best: "Pinakamahusay",
   },
   journey: {
+    loading: "Nilo-load ang rank journey mo",
     link: "Rank journey",
     title: "Rank journey",
     kicker: "Pag-unlad",

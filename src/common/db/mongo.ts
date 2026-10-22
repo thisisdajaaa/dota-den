@@ -10,10 +10,16 @@ const cache: MongoCache = (globalForMongo.__ddMongo ??= {});
 
 export async function getMongoClient(): Promise<MongoClient> {
   if (cache.client) return cache.client;
-  const { MONGODB_URI, MONGODB_MAX_POOL_SIZE } = env();
+  const { MONGODB_URI, MONGODB_MAX_POOL_SIZE, MONGODB_TIMEOUT_MS } = env();
   cache.connecting ??= new MongoClient(MONGODB_URI, {
     maxPoolSize: MONGODB_MAX_POOL_SIZE,
     serverSelectionTimeoutMS: 5_000,
+    // Serverless: close connections idle for a minute, so a frozen instance doesn't hold a
+    // pool of sockets open against Atlas's connection limit.
+    maxIdleTimeMS: 60_000,
+    // One limit per operation (client-side operation timeout), so a slow query fails the
+    // request instead of running until the function is killed.
+    timeoutMS: MONGODB_TIMEOUT_MS,
     appName: "dota-den",
   })
     .connect()

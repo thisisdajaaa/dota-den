@@ -8,14 +8,15 @@ constructors. `.env.example` lists every variable with its default.
 
 ## Core
 
-| Variable                | Type                                    | Default        | Required            | Used for                                                   |
-| ----------------------- | --------------------------------------- | -------------- | ------------------- | ---------------------------------------------------------- |
-| `APP_URL`               | URL                                     | none           | yes                 | Canonical origin: OpenID return URL and same-origin checks |
-| `MONGODB_URI`           | string                                  | none           | yes                 | MongoDB connection string (least-privilege user)           |
-| `MONGODB_DB_NAME`       | string                                  | `dota_den_dev` | no                  | Database name (`dota_den` in staging and production)       |
-| `MONGODB_MAX_POOL_SIZE` | int 1-100                               | `10`           | no                  | Driver pool size per server instance                       |
-| `LOG_LEVEL`             | `debug` \| `info` \| `warn` \| `error`  | `info`         | no                  | Structured JSON logs                                       |
-| `NODE_ENV`              | `development` \| `test` \| `production` | `development`  | set by the platform |                                                            |
+| Variable                | Type                                    | Default        | Required            | Used for                                                                                                                         |
+| ----------------------- | --------------------------------------- | -------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`               | URL                                     | none           | yes                 | Canonical origin: OpenID return URL and same-origin checks                                                                       |
+| `MONGODB_URI`           | string                                  | none           | yes                 | MongoDB connection string (least-privilege user)                                                                                 |
+| `MONGODB_DB_NAME`       | string                                  | `dota_den_dev` | no                  | Database name (`dota_den` in staging and production)                                                                             |
+| `MONGODB_MAX_POOL_SIZE` | int 1-100                               | `10`           | no                  | Driver pool size per server instance                                                                                             |
+| `MONGODB_TIMEOUT_MS`    | int 0-600000                            | `10000`        | no                  | Time limit per database operation (driver `timeoutMS`); `0` turns it off. `npm run db:indexes` sets 0 (index builds can be slow) |
+| `LOG_LEVEL`             | `debug` \| `info` \| `warn` \| `error`  | `info`         | no                  | Structured JSON logs                                                                                                             |
+| `NODE_ENV`              | `development` \| `test` \| `production` | `development`  | set by the platform |                                                                                                                                  |
 
 ## Upstreams and auth
 
@@ -43,13 +44,14 @@ constructors. `.env.example` lists every variable with its default.
 
 ## AI
 
-| Variable                     | Type           | Default               | Used for                                                                                 |
-| ---------------------------- | -------------- | --------------------- | ---------------------------------------------------------------------------------------- |
-| `DRAFT_AI_MODEL`             | string         | `openai/gpt-oss-120b` | Groq model for the AI captain and review                                                 |
-| `MMR_VISION_MODEL`           | string         | `qwen/qwen3.8-27b`    | Groq vision model that reads an MMR from a screenshot (MMR dialog); needs `GROQ_API_KEY` |
-| `DRAFT_AI_MOVE_TIMEOUT_MS`   | int            | `15000`               | Timeout for one AI captain move (falls back to the top-ranked hero)                      |
-| `DRAFT_AI_REVIEW_TIMEOUT_MS` | int            | `30000`               | Timeout for one AI review                                                                |
-| `DRAFT_AI_REVIEW_ENABLED`    | `true`/`false` | `true`                | Turn the AI review off without removing the key                                          |
+| Variable                     | Type           | Default               | Used for                                                                                                                                                                                                                                                             |
+| ---------------------------- | -------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DRAFT_AI_MODEL`             | string         | `openai/gpt-oss-120b` | Groq model for the AI captain and review                                                                                                                                                                                                                             |
+| `MMR_VISION_MODEL`           | string         | `qwen/qwen3.8-27b`    | Groq vision model that reads an MMR from a screenshot (MMR dialog); needs `GROQ_API_KEY`                                                                                                                                                                             |
+| `DRAFT_AI_MOVE_TIMEOUT_MS`   | int            | `15000`               | Timeout for one AI captain move (falls back to the top-ranked hero)                                                                                                                                                                                                  |
+| `DRAFT_AI_REVIEW_TIMEOUT_MS` | int            | `30000`               | Timeout for one AI review                                                                                                                                                                                                                                            |
+| `DRAFT_AI_REVIEW_ENABLED`    | `true`/`false` | `true`                | Turn the AI review off without removing the key                                                                                                                                                                                                                      |
+| `DRAFT_AI_BUDGET_PER_DAY`    | int            | `2000`                | Groq calls the AI captain and review may make per UTC day, across instances (Redis; per instance without it). Past it, the captain plays its data-driven pick and the review says it's unavailable. Logs `llm_budget_usage` at 50/80/100% and `llm_budget_exhausted` |
 
 ## Operator tuning
 
