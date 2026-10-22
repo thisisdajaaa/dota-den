@@ -39,7 +39,7 @@ test("guests see the real product, a player lookup and the latest patch's change
 
   // One row of features, each going somewhere real.
   const features = page.getByRole("region", { name: "One place for your Dota between games" });
-  await expect(features.getByRole("link", { name: /Watch live games/ })).toHaveAttribute(
+  await expect(features.getByRole("link", { name: /Watch Dota live/ })).toHaveAttribute(
     "href",
     "/live",
   );
