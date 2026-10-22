@@ -90,6 +90,8 @@ export class RedisUpstreamBudget implements UpstreamBudget {
       perDay: number;
       now?: () => number;
       onExhausted?: (window: "minute" | "day" | "guest_day") => void;
+      /** Once per day each, when a daily count reaches 50%, 80% and 100% of its cap. */
+      onMilestone?: (event: { window: "day" | "guest_day"; used: number; cap: number }) => void;
       /**
        * Who the call is for. Signed-out visitors ("guest": crawlers, link previews, guests)
        * may use at most `guestShare` of the daily budget, so they can never use up what
@@ -107,6 +109,13 @@ export class RedisUpstreamBudget implements UpstreamBudget {
     return n;
   }
 
+  /** Exactly one call reaches each milestone count, so each is reported once per day. */
+  private milestone(window: "day" | "guest_day", used: number, cap: number): void {
+    if (!this.opts.onMilestone || cap <= 0) return;
+    if ([0.5, 0.8, 1].some((f) => used === Math.max(1, Math.floor(cap * f))))
+      this.opts.onMilestone({ window, used, cap });
+  }
+
   async take(): Promise<{ allowed: boolean; retryAfterMs: number | null }> {
     const now = (this.opts.now ?? Date.now)();
     const minuteLeft = MINUTE_MS - (now % MINUTE_MS);
@@ -115,7 +124,9 @@ export class RedisUpstreamBudget implements UpstreamBudget {
     if (this.opts.lane && (await this.opts.lane().catch(() => "member")) === "guest") {
       const cap = Math.floor(this.opts.perDay * (this.opts.guestShare ?? DEFAULT_GUEST_SHARE));
       // Checked first: a refused guest call doesn't count against everyone's budget.
-      if ((await this.count(`${this.opts.prefix}:g:${day}`, dayLeft + 1_000)) > cap) {
+      const guestUsed = await this.count(`${this.opts.prefix}:g:${day}`, dayLeft + 1_000);
+      this.milestone("guest_day", guestUsed, cap);
+      if (guestUsed > cap) {
         this.opts.onExhausted?.("guest_day");
         return { allowed: false, retryAfterMs: dayLeft };
       }
@@ -124,6 +135,7 @@ export class RedisUpstreamBudget implements UpstreamBudget {
       this.count(`${this.opts.prefix}:m:${Math.floor(now / MINUTE_MS)}`, minuteLeft + 1_000),
       this.count(`${this.opts.prefix}:d:${day}`, dayLeft + 1_000),
     ]);
+    this.milestone("day", perDay, this.opts.perDay);
     if (perDay > this.opts.perDay) {
       this.opts.onExhausted?.("day");
       return { allowed: false, retryAfterMs: dayLeft };

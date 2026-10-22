@@ -8,6 +8,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 - Kick streams on Watch live next to Twitch: in the grid, in search, and to follow
 - Security: Next.js 16.4.2 (fixes a critical image-optimizer flaw and a Server Actions DoS)
+- Background imports run on their own (QStash) and no longer use the guest share of the OpenDota budget
 
 ## 2026-10-22
 

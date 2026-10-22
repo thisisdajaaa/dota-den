@@ -128,6 +128,27 @@ describe("RedisUpstreamBudget", () => {
     expect(redis.pexpire).toHaveBeenCalledTimes(2);
   });
 
+  it("reports each daily milestone once, for the guest share and the whole day", async () => {
+    const onMilestone = vi.fn();
+    const budget = new RedisUpstreamBudget(fakeRedis(), {
+      prefix: "b",
+      perMinute: 1_000,
+      perDay: 20,
+      now: () => 0,
+      lane: async () => "guest",
+      guestShare: 0.5, // a guest cap of 10
+      onMilestone,
+    });
+    for (let i = 0; i < 12; i++) await budget.take();
+    expect(onMilestone.mock.calls.map(([e]) => e)).toEqual([
+      { window: "guest_day", used: 5, cap: 10 },
+      { window: "guest_day", used: 8, cap: 10 },
+      // The guest share is counted first; refused guest calls never reach the day count.
+      { window: "guest_day", used: 10, cap: 10 },
+      { window: "day", used: 10, cap: 20 },
+    ]);
+  });
+
   it("enforces the daily limit too", async () => {
     const budget = new RedisUpstreamBudget(fakeRedis(), {
       prefix: "b",

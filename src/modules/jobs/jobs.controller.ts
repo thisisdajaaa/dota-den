@@ -7,6 +7,7 @@ import {
 } from "@/common/errors/app-error";
 import { handler } from "@/common/http/controller";
 import { requireCron } from "@/common/http/cron-auth";
+import { asBackgroundWork } from "@/common/providers/background-work";
 import { requestId } from "@/common/http/http";
 import { ServiceResponse } from "@/common/http/service-response";
 import type { Logger } from "@/common/logging/logger";
@@ -56,7 +57,10 @@ export class JobsController {
     if (!message.success) throw new ValidationError("Invalid job message");
 
     const started = Date.now();
-    const outcome = await this.deps.runner().run(name, message.data.payload, message.data.dedupKey);
+    // Verified QStash work: its upstream calls are member calls, not a guest's.
+    const outcome = await asBackgroundWork(() =>
+      this.deps.runner().run(name, message.data.payload, message.data.dedupKey),
+    );
     this.deps.logger.info("job_run", {
       name,
       status: outcome.status,
@@ -69,13 +73,16 @@ export class JobsController {
 
   /** GET /api/cron/matches (Vercel Cron, daily): every player's matches and medal. */
   cronMatches = handler({ guard: requireCron }, async () =>
-    ServiceResponse.success(await this.deps.cron.runMatchSync("cron"), "Match sync finished"),
+    ServiceResponse.success(
+      await asBackgroundWork(() => this.deps.cron.runMatchSync("cron")),
+      "Match sync finished",
+    ),
   );
 
   /** GET /api/cron/patches (Vercel Cron, daily): patches and cached tournament data. */
   cronPatches = handler({ guard: requireCron }, async ({ req }) =>
     ServiceResponse.success(
-      await this.deps.cron.runPatchRefresh("cron", requestId(req)),
+      await asBackgroundWork(() => this.deps.cron.runPatchRefresh("cron", requestId(req))),
       "Patch refresh finished",
     ),
   );
