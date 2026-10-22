@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { after } from "next/server";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
+import { dailyCallBudget } from "@/common/llm/call-budget";
 import { GroqClient } from "@/common/llm/groq-client";
 import { logger } from "@/common/logging/logger";
 import {
@@ -14,6 +15,7 @@ import { activityService } from "@/modules/leaderboards";
 import { matchesService } from "@/modules/matches";
 import { DraftRoomsController } from "./draft-rooms.controller";
 import { DraftsController } from "./drafts.controller";
+import { BudgetedDraftAdvisor } from "./infrastructure/budgeted-draft-advisor";
 import { GroqDraftAdvisor } from "./infrastructure/groq-draft-advisor";
 import { OpenDotaAbilityCatalog } from "./infrastructure/opendota-ability-catalog";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
@@ -76,12 +78,16 @@ export function draftInsights(): OpenDotaDraftInsights {
  */
 export async function getAiOpponent(): Promise<AiOpponentService> {
   const config = env();
+  // Moves and reviews share one daily Groq budget (signed-out players can call both).
   const advisor = config.GROQ_API_KEY
-    ? new GroqDraftAdvisor(new GroqClient({ apiKey: config.GROQ_API_KEY }), {
-        model: config.DRAFT_AI_MODEL,
-        moveTimeoutMs: config.DRAFT_AI_MOVE_TIMEOUT_MS,
-        reviewTimeoutMs: config.DRAFT_AI_REVIEW_TIMEOUT_MS,
-      })
+    ? new BudgetedDraftAdvisor(
+        new GroqDraftAdvisor(new GroqClient({ apiKey: config.GROQ_API_KEY }), {
+          model: config.DRAFT_AI_MODEL,
+          moveTimeoutMs: config.DRAFT_AI_MOVE_TIMEOUT_MS,
+          reviewTimeoutMs: config.DRAFT_AI_REVIEW_TIMEOUT_MS,
+        }),
+        dailyCallBudget("drafts", config.DRAFT_AI_BUDGET_PER_DAY),
+      )
     : null;
   return new AiOpponentService({
     advisor,

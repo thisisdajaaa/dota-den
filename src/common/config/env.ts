@@ -62,6 +62,8 @@ const TUNING = {
   DRAFT_AI_MOVE_TIMEOUT_MS: positiveInt(15_000, 120_000),
   DRAFT_AI_REVIEW_TIMEOUT_MS: positiveInt(30_000, 300_000),
   DRAFT_AI_REVIEW_ENABLED: flag(true),
+  /** Groq calls the AI captain and review may make per UTC day, across every instance. */
+  DRAFT_AI_BUDGET_PER_DAY: positiveInt(2_000, 1_000_000),
 
   // Leaderboards.
   LEADERBOARD_ROW_LIMIT: positiveInt(50, 500),
