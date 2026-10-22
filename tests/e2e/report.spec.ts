@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { pickDate } from "./support/date-picker";
 
 test("the battle report sums up your games over a period", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
@@ -57,8 +58,14 @@ test("a custom range is a shareable URL", async ({ page }) => {
   const form = page.getByRole("form", { name: "Custom range" });
   const day = (offset: number) =>
     new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10);
-  await form.getByLabel("From").fill(day(5));
-  await form.getByLabel("To").fill(day(1));
+  // Pick To first: From can't be after it.
+  await pickDate(page, form.getByRole("button", { name: /^To/ }), day(1));
+  await pickDate(page, form.getByRole("button", { name: /^From/ }), day(5));
+  await expect(form.getByRole("button", { name: /^From/ })).toHaveAccessibleName(
+    new RegExp(
+      `^From ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${day(5)}T12:00:00Z`))}$`,
+    ),
+  );
   await form.getByRole("button", { name: "Show range" }).click();
   await expect(page).toHaveURL(new RegExp(`/report\\?from=${day(5)}&to=${day(1)}$`));
   await expect(

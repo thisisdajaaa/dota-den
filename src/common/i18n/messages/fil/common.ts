@@ -33,6 +33,17 @@ export const common: MessageTree<typeof en> = {
     disclaimer:
       "Ang Dota Den ay hindi opisyal na proyekto ng mga fan. Hindi ito kaugnay o inendorso ng Valve Corporation. Ang Dota 2 ay rehistradong trademark ng Valve Corporation. Ang data ng mga laro ay galing sa OpenDota kung mayroon; ang patch notes ay naka-link sa opisyal na pinagmulan nito.",
   },
+  datePicker: {
+    pick: "Pumili ng petsa",
+    time: "Oras",
+    previousMonth: "Nakaraang buwan",
+    nextMonth: "Susunod na buwan",
+    month: "Buwan",
+    year: "Taon",
+    navigation: "Palitan ang buwan",
+    today: "Ngayon",
+    selected: "napili",
+  },
   language: { label: "Wika", saved: "Napalitan ang wika" },
   actions: {
     save: "I-save",

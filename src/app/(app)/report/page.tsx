@@ -30,7 +30,7 @@ import {
   RolesCard,
   SidesCard,
 } from "@/modules/report/ui/report-sections";
-import { addDays } from "@/common/time/day-key";
+import { ReportRangeFields } from "@/modules/report/ui/report-range-fields";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -112,30 +112,17 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
           aria-label={t("report.customRange")}
         >
           {tab !== "overview" && <input type="hidden" name="tab" value={tab} />}
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            {t("report.from")}
-            <input
-              type="date"
-              name="from"
-              required
-              defaultValue={range.from}
-              min={addDays(today, -MAX_LOOKBACK_DAYS)}
-              max={today}
-              className="h-8 rounded-md border border-white/10 bg-background px-2 text-sm text-foreground"
-            />
-          </label>
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            {t("report.to")}
-            <input
-              type="date"
-              name="to"
-              required
-              defaultValue={range.to}
-              max={today}
-              className="h-8 rounded-md border border-white/10 bg-background px-2 text-sm text-foreground"
-            />
-          </label>
-          <Button type="submit" variant="outline" size="sm">
+          <ReportRangeFields
+            // A new range from the URL (e.g. a preset link) resets the pickers.
+            key={`${range.from}:${range.to}`}
+            from={range.from}
+            to={range.to}
+            today={today}
+            maxRangeDays={MAX_RANGE_DAYS}
+            maxLookbackDays={MAX_LOOKBACK_DAYS}
+            labels={{ from: t("report.from"), to: t("report.to") }}
+          />
+          <Button type="submit" variant="outline" className="h-10 sm:h-8">
             {t("report.showRange")}
           </Button>
         </form>
