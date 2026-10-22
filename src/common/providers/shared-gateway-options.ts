@@ -4,6 +4,7 @@ import { logger } from "@/common/logging/logger";
 import { cookies } from "next/headers";
 import { getRedis } from "@/common/cache/redis";
 import { SESSION_COOKIE } from "@/common/http/session-cookie";
+import { isBackgroundWork } from "./background-work";
 import type { GatewayOptions } from "./provider-gateway";
 import { RedisResponseCache, RedisUpstreamBudget } from "./redis-gateway-store";
 
@@ -11,10 +12,12 @@ let lastErrorLogAt = 0;
 
 /**
  * A call made while rendering a page for someone without a sign-in cookie is a guest call.
- * Outside a request (cron, background jobs) there are no cookies: those are member calls.
- * Only the cookie's presence is checked; that's enough to tell crawlers from players.
+ * Background work (verified jobs, cron runs, which arrive as cookie-less requests) and calls
+ * outside a request are member calls. Only the cookie's presence is checked; that's enough
+ * to tell crawlers from players.
  */
-async function lane(): Promise<"guest" | "member"> {
+export async function lane(): Promise<"guest" | "member"> {
+  if (isBackgroundWork()) return "member";
   try {
     return (await cookies()).has(SESSION_COOKIE) ? "member" : "guest";
   } catch {
@@ -43,6 +46,7 @@ export function sharedGatewayOptions(
             perMinute,
             perDay,
             onExhausted: (window) => logger.warn("opendota_budget_exhausted", { window }),
+            onMilestone: (usage) => logger.info("opendota_budget_usage", usage),
             lane,
           })
         : undefined,
