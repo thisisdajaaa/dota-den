@@ -222,3 +222,69 @@ export function laneCandidates(
     .slice(0, limit)
     .map((h) => h.id);
 }
+
+/**
+ * The Meta overview's hero pools. Without lane data (one call per hero), mid can't be told
+ * from offlane, nor soft support from hard support, so the overview groups them honestly.
+ * `rankAs` is the position whose catalog-role rule picks the pool's heroes.
+ */
+export const OVERVIEW_POOLS = [
+  { key: "carry", positions: [1], rankAs: 1 },
+  { key: "core", positions: [2, 3], rankAs: 2 },
+  { key: "support", positions: [4, 5], rankAs: 4 },
+] as const satisfies ReadonlyArray<{
+  key: string;
+  positions: readonly Position[];
+  rankAs: Position;
+}>;
+
+export type OverviewPoolKey = (typeof OVERVIEW_POOLS)[number]["key"];
+
+export interface OverviewPool {
+  key: OverviewPoolKey;
+  positions: readonly Position[];
+  heroes: RankedHero[];
+}
+
+/**
+ * Best heroes per pool from the public high-rank stats alone (no lane or tournament data):
+ * the same scoring as {@link rankHeroes} without the lane and pro terms. A hero is listed
+ * once, under the first pool it fits (carries are often played mid too).
+ */
+export function overviewPools(
+  heroes: ReadonlyArray<{ id: number; roles: readonly string[] }>,
+  stats: readonly HeroPublicStats[],
+  limit: number,
+): OverviewPool[] {
+  const byId = new Map(stats.map((s) => [s.heroId, s]));
+  const allPicksTrend = totalPickTrend(stats);
+  const shown = new Set<number>();
+  return OVERVIEW_POOLS.map((pool) => {
+    const ranked = rankHeroes(
+      pool.rankAs,
+      heroes
+        .filter((h) => !shown.has(h.id))
+        .map((h) => ({
+          heroId: h.id,
+          roles: h.roles,
+          publicStats: byId.get(h.id) ?? null,
+          lanes: null,
+        })),
+      { pro: null, allPicksTrend },
+    ).slice(0, limit);
+    ranked.forEach((h) => shown.add(h.heroId));
+    return { key: pool.key, positions: pool.positions, heroes: ranked };
+  });
+}
+
+/** Heroes most picked or banned in tournaments, most contested first. */
+export function mostContested(
+  pro: ProDrafts,
+  limit: number,
+): Array<ProDraftHero & { contestRate: number }> {
+  if (pro.drafts <= 0) return [];
+  return [...pro.heroes]
+    .map((h) => ({ ...h, contestRate: Math.min(1, (h.picks + h.bans) / pro.drafts) }))
+    .sort((a, b) => b.picks + b.bans - (a.picks + a.bans) || a.heroId - b.heroId)
+    .slice(0, limit);
+}
