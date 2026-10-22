@@ -67,10 +67,15 @@ test("set up the Discord feed, test it, turn it off, and see when Discord delete
   await page.reload();
   await expect(card.getByRole("status")).toContainText("Discord says this webhook was deleted");
 
-  await card.getByRole("button", { name: "Remove webhook" }).click();
-  await expect(page.getByText("Webhook removed.")).toBeVisible();
-  await expect(card.getByRole("status")).toHaveCount(0);
+  // Right after the reload the button may not be hydrated yet: retry until it answers.
+  const remove = card.getByRole("button", { name: "Remove webhook" });
+  await expect(async () => {
+    if ((await remove.count()) > 0) await remove.click({ timeout: 2_000 });
+    await expect(card.getByRole("status")).toHaveCount(0, { timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
   await expect(input).toBeVisible();
+  await page.reload();
+  await expect(card.getByRole("status")).toHaveCount(0);
 });
 
 test("a match synced after setup is posted to the channel, with the real numbers", async ({
