@@ -4,11 +4,13 @@ import type {
   LockOutcome,
   MatchProvider,
   MatchFactsPort,
+  ProviderCallOptions,
   SyncState,
   SyncStatesPort,
 } from "@/modules/matches/matches.ports";
 import {
   BACKFILL_COOLDOWN_MS,
+  HISTORY_PAGE_CALL,
   HISTORY_REFRESH_INTERVAL_MS,
   MatchSyncService,
   PERIODIC_REFRESH_INTERVAL_MS,
@@ -49,14 +51,20 @@ function imported(i: number, overrides: Partial<ImportedPlayerMatch> = {}): Impo
 /** Upstream history, newest first, like OpenDota. */
 class FakeUpstream implements MatchProvider {
   calls: Array<{ offset: number; limit: number }> = [];
+  callOptions: Array<ProviderCallOptions | undefined> = [];
   refreshRequests = 0;
   failOnCall: number | null = null;
   constructor(public history: ImportedPlayerMatch[]) {}
   add(m: ImportedPlayerMatch) {
     this.history.unshift(m);
   }
-  async fetchPlayerMatches(_id: number, page: { offset: number; limit: number }) {
+  async fetchPlayerMatches(
+    _id: number,
+    page: { offset: number; limit: number },
+    call?: ProviderCallOptions,
+  ) {
     this.calls.push(page);
+    this.callOptions.push(call);
     if (this.failOnCall === this.calls.length)
       return err({ type: "unavailable" as const, cause: "boom" });
     return ok({
@@ -147,7 +155,10 @@ class MemorySyncState implements SyncStatesPort {
   }
 }
 
-function setup(historySize: number, opts: { pageSize?: number; maxPages?: number } = {}) {
+function setup(
+  historySize: number,
+  opts: { pageSize?: number; historyPageSize?: number; maxPages?: number } = {},
+) {
   let now = new Date("2026-09-29T12:00:00Z");
   const history = Array.from({ length: historySize }, (_, i) => imported(historySize - 1 - i));
   const upstream = new FakeUpstream(history);
@@ -162,6 +173,7 @@ function setup(historySize: number, opts: { pageSize?: number; maxPages?: number
     syncState,
     now: () => now,
     pageSize: opts.pageSize ?? 10,
+    historyPageSize: opts.historyPageSize,
     maxPages: opts.maxPages ?? 3,
   });
   return {
@@ -378,7 +390,7 @@ describe("MatchSyncService", () => {
 
   it("releases the lock without recording a sync when the provider fails", async () => {
     const ctx = setup(30);
-    ctx.upstream.failOnCall = 2;
+    ctx.upstream.failOnCall = 1;
     expect(await ctx.service.sync(ACCOUNT)).toMatchObject({
       ok: false,
       error: { type: "provider" },
@@ -387,6 +399,52 @@ describe("MatchSyncService", () => {
     // Immediately retryable.
     ctx.upstream.failOnCall = null;
     expect((await ctx.service.sync(ACCOUNT)).ok).toBe(true);
+  });
+
+  it("keeps a first import's pages when a later page fails, and carries on next time", async () => {
+    const ctx = setup(25);
+    ctx.upstream.failOnCall = 2;
+    const first = await ctx.service.sync(ACCOUNT);
+    expect(first.ok && first.value).toMatchObject({ fetched: 10, backfillComplete: false });
+    // No more calls to a failing upstream in this sync (not even the history refresh).
+    expect(ctx.upstream.calls).toHaveLength(2);
+    expect(ctx.upstream.refreshRequests).toBe(0);
+    expect((await ctx.syncState.get())?.backfillOffset).toBe(10);
+
+    ctx.upstream.failOnCall = null;
+    ctx.advance(BACKFILL_COOLDOWN_MS + 1);
+    const second = await ctx.service.sync(ACCOUNT);
+    expect(second.ok && second.value.backfillComplete).toBe(true);
+    expect(ctx.facts.byKey.size).toBe(25);
+  });
+
+  it("still fails a known history when a new-matches page fails, so no gap is recorded", async () => {
+    const ctx = setup(25, { maxPages: 2 });
+    await ctx.service.sync(ACCOUNT);
+    const newest = (await ctx.syncState.get())?.newestStartedAt;
+    for (let i = 100; i < 115; i++) ctx.upstream.add(imported(i));
+    ctx.advance(SYNC_COOLDOWN_MS + 1);
+    ctx.upstream.failOnCall = ctx.upstream.calls.length + 2; // the second new-matches page
+    expect(await ctx.service.sync(ACCOUNT)).toMatchObject({
+      ok: false,
+      error: { type: "provider" },
+    });
+    expect((await ctx.syncState.get())?.newestStartedAt).toEqual(newest);
+  });
+
+  it("walks history in big pages and new matches in small ones, with slow-call limits", async () => {
+    const ctx = setup(1_200, { pageSize: 100, historyPageSize: 500 });
+    const first = await ctx.service.sync(ACCOUNT);
+    expect(first.ok && first.value).toMatchObject({ fetched: 1_200, backfillComplete: true });
+    expect(ctx.upstream.calls.map((c) => c.limit)).toEqual([500, 500, 500]);
+
+    for (let i = 2_000; i < 2_003; i++) ctx.upstream.add(imported(i));
+    ctx.advance(SYNC_COOLDOWN_MS + 1);
+    const before = ctx.upstream.calls.length;
+    const res = await ctx.service.sync(ACCOUNT);
+    expect(res.ok && res.value.inserted).toBe(3);
+    expect(ctx.upstream.calls.slice(before).map((c) => c.limit)).toEqual([100]);
+    expect(ctx.upstream.callOptions.every((o) => o === HISTORY_PAGE_CALL)).toBe(true);
   });
 
   it("imports with unknown patch labels when the patch timeline is unavailable", async () => {

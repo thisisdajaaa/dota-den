@@ -3,7 +3,7 @@ export const live = {
   title: "Live games",
   kicker: "Live",
   description:
-    "League and pro games happening now, from the game's spectator feed (league games run about 15 minutes behind), and the highest-MMR public games. Open a game for a live read of its draft. Refreshes every 30 seconds.",
+    "League and pro games happening now, from the game's spectator feed (league games run about 15 minutes behind), and the highest-MMR public games. Open a game for a live read of its draft. Refreshes every minute.",
   unavailable: "The live feed is unavailable right now. Try again in a minute.",
   league: "League games",
   noLeague: "No league games are live right now.",

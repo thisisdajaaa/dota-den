@@ -92,6 +92,30 @@ describe("tournament data caching", () => {
     expect(getJson).toHaveBeenCalledTimes(1);
   });
 
+  it("runs one refresh per stale query at a time and hands it to the background runner", async () => {
+    let finish: (v: unknown) => void = () => {};
+    const getJson = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ ok: true, status: 200, body: pairRows });
+        }),
+    );
+    const gateway = { getJson } as unknown as ProviderGateway;
+    const stale = { rows: [{ h1: 1, h2: 2, games: 9, wins: 1 }] };
+    const { cache, store } = memoryCache({ "pro-pairs-v1": { body: stale, ageMs: 13 * HOUR } });
+    const background = vi.fn();
+    const make = () =>
+      new OpenDotaDraftInsights(gateway, { ...base, cache, now: () => 0, background });
+    // Two requests (each builds its own insights) see the same stale cache.
+    await make().synergy();
+    await make().synergy();
+    expect(getJson).toHaveBeenCalledTimes(1);
+    expect(background).toHaveBeenCalledTimes(2);
+    finish(undefined);
+    await background.mock.calls[0][0];
+    expect(store.get("pro-pairs-v1")?.body).toBe(pairRows);
+  });
+
   it("goes without the data when a cold query exceeds the budget", async () => {
     const getJson = vi.fn(() => new Promise(() => {}));
     const gateway = { getJson } as unknown as ProviderGateway;

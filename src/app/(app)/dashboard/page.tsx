@@ -64,7 +64,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
   const queries = matchQueries;
   const owner = { userId: user.id, accountId32: user.accountId32 };
-  const [status, { facts, latestPatch }, profile, heroes, latestSession, tz, notify] =
+  const timeZone = getViewerTimeZone();
+  const [status, { facts, latestPatch }, profile, heroes, latestSession, tz, notify, checklist] =
     await Promise.all([
       queries.importStatus(user.accountId32),
       queries.dashboardFacts(user.accountId32, filter, now),
@@ -72,14 +73,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       matchesService.heroMap(),
       // Optional card: a sessions failure must not take down the dashboard.
       sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
-      getViewerTimeZone(),
+      timeZone,
       // Optional: only decides whether to invite the player to turn notifications on.
       notificationService.status(user.id).catch(() => null),
+      // Optional card: a failure just hides the checklist.
+      timeZone
+        .then((zone) =>
+          onboardingService.checklist({ ...owner, createdAt: user.createdAt }, zone.timeZone),
+        )
+        .catch(() => null),
     ]);
-  // Optional card: a failure just hides the checklist.
-  const checklist = await onboardingService
-    .checklist({ ...owner, createdAt: user.createdAt }, tz.timeZone)
-    .catch(() => null);
   // Medal history needs no typing: note the medal each visit (after the page is sent).
   if (profile) after(() => medalService.record(user.accountId32, profile.rankTier));
 

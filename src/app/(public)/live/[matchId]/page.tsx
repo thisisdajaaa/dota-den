@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
-import { liveService } from "@/modules/live";
+import { LIVE_CACHE_SECONDS, liveService } from "@/modules/live";
 import { clock, draftComplete, sideHeroes, type LiveGame } from "@/modules/live/domain/live-game";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { leadLabel, LineupRow } from "@/modules/live/ui/live-game-card";
@@ -57,7 +57,7 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
   return (
     <div className="space-y-6">
       {back}
-      <AutoRefresh seconds={30} />
+      <AutoRefresh seconds={LIVE_CACHE_SECONDS} />
       <PageHeader
         kicker={game.leagueName ?? (game.leagueId ? t("live.leagueGame") : t("live.publicGame"))}
         title={

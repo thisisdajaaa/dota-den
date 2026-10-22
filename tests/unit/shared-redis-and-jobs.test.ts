@@ -4,7 +4,7 @@ import { JobRunner } from "@/modules/jobs/services/job-runner.service";
 import { bucketedKey, isJobName } from "@/modules/jobs/domain/job";
 import { InlineJobQueue } from "@/modules/jobs/infrastructure/inline-job-queue";
 import { QStashJobQueue } from "@/modules/jobs/infrastructure/qstash-job-queue";
-import { ProviderGateway } from "@/common/providers/provider-gateway";
+import { ProviderGateway, type GatewayResponse } from "@/common/providers/provider-gateway";
 import {
   MAX_SHARED_BODY_BYTES,
   RedisResponseCache,
@@ -145,6 +145,42 @@ describe("ProviderGateway with a shared cache and budget", () => {
       body: { cached: true },
     });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("keeps shared answers past expiry and serves them when the upstream fails", async () => {
+    let t = 0;
+    const store = new Map<string, unknown>();
+    const set = vi.fn(
+      async (k: string, v: unknown, _ttlMs: number, _retainMs?: number) => void store.set(k, v),
+    );
+    const sharedCache = {
+      get: async (k: string) =>
+        (store.get(k) as { value: GatewayResponse; expiresAt: number } | undefined) ?? null,
+      set: async (k: string, value: GatewayResponse, ttlMs: number, retainMs?: number) => {
+        await set(k, { value, expiresAt: t + ttlMs }, ttlMs, retainMs);
+      },
+    };
+    const writer = new ProviderGateway({
+      name: "t",
+      fetch: async () => ok(),
+      now: () => t,
+      sharedCache,
+    });
+    await writer.getJson("https://x/a", { cacheTtlMs: 1_000 });
+    expect(set.mock.calls[0].slice(2)).toEqual([1_000, 2_000]);
+    // Another instance, after expiry, with the upstream down.
+    t = 1_500;
+    const reader = new ProviderGateway({
+      name: "t",
+      fetch: async () => new Response("{}", { status: 503 }),
+      now: () => t,
+      maxRetries: 0,
+      sharedCache,
+    });
+    expect(await reader.getJson("https://x/a", { cacheTtlMs: 1_000 })).toMatchObject({
+      ok: true,
+      body: { a: 1 },
+    });
   });
 
   it("fails open when the shared store errors, and reports it", async () => {

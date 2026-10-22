@@ -50,10 +50,19 @@ export interface ImportedPage {
   rejectedCount: number;
 }
 
+/** Per-call limits for a slow upstream request (timeout, retries, circuit isolation). */
+export interface ProviderCallOptions {
+  timeoutMs?: number;
+  maxRetries?: number;
+  /** Failures don't count toward the provider's circuit breaker. */
+  isolated?: boolean;
+}
+
 export interface MatchProvider {
   fetchPlayerMatches(
     accountId32: number,
     page: { offset: number; limit: number },
+    call?: ProviderCallOptions,
   ): Promise<Result<ImportedPage, ProviderError>>;
   fetchPlayerProfile(accountId32: number): Promise<Result<PlayerProfileSnapshot, ProviderError>>;
   /**
@@ -171,7 +180,7 @@ export interface OpenDotaMatchesSource
   fetchPlayerMatches(
     accountId32: number,
     page: { offset: number; limit: number },
-    opts?: { cacheTtlMs?: number; includedAccountId?: number },
+    opts?: { cacheTtlMs?: number; includedAccountId?: number } & ProviderCallOptions,
   ): Promise<Result<ImportedPage, ProviderError>>;
 }
 
