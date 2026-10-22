@@ -133,6 +133,10 @@ renders its RSC payload as inline scripts without a nonce (a nonce would force e
 Browser code only calls our own API; OpenDota, Groq, Upstash and push services are called from the server. Add a host
 to the lists in `security-headers.ts` whenever a new image CDN or embed appears.
 
+One report is expected and harmless: on pages with zod-validated forms (e.g. `/draft`), zod probes whether `eval` is
+allowed (`Function("")` inside a try) and falls back to its non-eval path when it isn't. `next dev` allows
+`'unsafe-eval'` (and websockets for hot reload), so check a production build (`npm run build && npm start`) as well.
+
 **Moving to enforcing.** With no report endpoint, violations show in the browser console as
 `[Report Only] Refused to …`. Open the home page, `/meta`, `/guides/<hero>`, `/live` (with a stream playing), `/draft`,
 a match, the dashboard and the account page in Chrome with DevTools open and check the console; the E2E spec
