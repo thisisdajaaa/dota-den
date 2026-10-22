@@ -1,6 +1,7 @@
 import { Award } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { Achievement } from "../domain/achievements";
 
 /** Achievements with their tiers, current value and progress to the next tier. */
@@ -26,8 +27,7 @@ export async function AchievementsCard({ items }: { items: Achievement[] }) {
           const top = a.tier > 0 ? a.tiers[a.tier - 1] : null;
           const prev = top ?? 0;
           const title = t(`achievements.items.${a.id}.title`);
-          const describe = (n: number) =>
-            t(`achievements.items.${a.id}.description`, { n: n.toLocaleString("en-US") });
+          const describe = (n: number) => plural(t, `achievements.items.${a.id}.description`, n);
           const pct =
             a.next === null ? 100 : Math.min(100, ((a.value - prev) / (a.next - prev)) * 100);
           return (

@@ -4,7 +4,13 @@ import type { matches as en } from "../en/matches";
 export const matches: MessageTree<typeof en> = {
   sides: { radiant: "Radiant", dire: "Dire" },
   result: { win: "Panalo", loss: "Talo" },
-  queue: { solo: "Solo", party: "Party", unknown: "Hindi alam" },
+  queue: {
+    solo: "Solo",
+    party: "Party",
+    unknown: "Hindi alam",
+    partyOf: "Party ({n})",
+    partyOfTitle: "Nag-queue bilang party ng {n} player",
+  },
   rows: {
     hero: "Hero",
     result: "Resulta",
@@ -23,7 +29,7 @@ export const matches: MessageTree<typeof en> = {
   },
   form: {
     kicker: "Kamakailang porma",
-    title: "Huling {n} laro",
+    title: { one: "Huling laro", other: "Huling {n} laro" },
     winsShort: "{n}W",
     lossesShort: "{n}L",
     winLetter: "W",
@@ -36,11 +42,11 @@ export const matches: MessageTree<typeof en> = {
   queueSplit: {
     kicker: "Solo vs party",
     title: "Win rate ayon sa queue",
-    known: "Alam ang queue sa {known} sa {total} laro",
+    known: "Alam ang queue sa {known} sa {total}",
     soloHint: "Mag-isa kang nag-queue",
     partyHint: "Nag-queue ka kasama ang mga kaibigan",
     unknownHint: "Hindi ito naitala ng Dota",
-    record: "{wins} panalo · {losses} talo",
+    record: "{wins} · {losses}",
     fewGames: "kaunting laro",
     games: { one: "1 laro", other: "{n} laro" },
     tooFew: ", kulang pa para husgahan",
@@ -49,13 +55,13 @@ export const matches: MessageTree<typeof en> = {
   heroPool: {
     kicker: "Hero pool",
     title: "Mga hero mo",
-    played: "{n} hero ang nilaro",
+    played: { one: "1 hero ang nilaro", other: "{n} hero ang nilaro" },
     sortLabel: "Ayusin ang mga hero ayon sa",
     sorts: { games: "Pinakamadalas", winrate: "Win rate", kda: "KDA", recent: "Pinakabago" },
     hiddenNote:
       "Ipinapakita ang mga hero na may {min}+ laro; {hidden} na mas kaunti ang hindi isinama para hindi manguna ang isa o dalawang suwerteng laro.",
     empty: "Wala pang hero na may {min}+ laro sa view na ito.",
-    games: "{n} laro",
+    games: { one: "1 laro", other: "{n} laro" },
     kda: "KDA {value}",
     showFewer: "Ipakita nang mas kaunti",
     showAll: "Ipakita lahat ng {n} hero",
@@ -89,7 +95,7 @@ export const matches: MessageTree<typeof en> = {
     fallbackName: "Player {id}",
     account: "Account {id}",
     signatureHero: "Signature hero",
-    signatureStats: "{games} laro · {rate} win rate",
+    signatureStats: "{games} · {rate} win rate",
   },
   sync: {
     importingHistory: "Ini-import ang kasaysayan ng laro…",
@@ -271,9 +277,12 @@ export const matches: MessageTree<typeof en> = {
     fewGames: "{games} lang ang tugma, kulang pa para husgahan ang win rate.",
     totalsNote:
       "Kasama sa kabuuang ito ang lahat ng larong tugma sa mga filter mo, hindi lang sa page na ito. Ang linya ay 50%.",
+    emptyTitle: "Wala pang laro",
+    emptyBody:
+      "Lalabas dito ang mga laro mo kapag na-import na mula sa OpenDota. Makikita sa overview mo kung kumusta na ang sync.",
+    goToOverview: "Pumunta sa overview",
     noMatches: "Walang nakitang laro",
     noneFiltered: "Walang tugma sa mga filter na ito.",
-    noneImported: "Wala pang na-import na laro. Pumunta sa buod mo para mag-sync.",
     backToNewest: "Bumalik sa pinakabago",
     newestFirst: "Pinakabago muna",
     older: "Mas lumang laro",

@@ -79,7 +79,7 @@ export function HeroGrid({
               <h3 className="mb-1.5 text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">
                 {t(`drafts.heroGrid.attrs.${attr}`)}
               </h3>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(3.4rem,1fr))] gap-1">
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(3.4rem,1fr))] gap-1 touch:grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))]">
                 {group.map((h) => {
                   const taken = unavailable.has(h.id);
                   return (
@@ -97,7 +97,7 @@ export function HeroGrid({
                             : t("drafts.heroGrid.choose", { action: actionLabel, hero: h.name })
                         }
                         className={cn(
-                          "group relative block aspect-[16/9] w-full overflow-hidden rounded bg-muted ring-1 ring-white/[0.06] transition",
+                          "group relative block aspect-[16/9] w-full overflow-hidden rounded bg-muted ring-1 ring-white/[0.06] transition touch:min-h-11",
                           taken
                             ? "cursor-not-allowed opacity-25 grayscale"
                             : "hover:z-10 hover:scale-110 hover:ring-2 hover:ring-gold focus-visible:z-10 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-gold",

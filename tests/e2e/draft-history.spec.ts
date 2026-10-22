@@ -32,7 +32,7 @@ test("finished room drafts are saved to both captains' history with a reported r
   await expect(hostPage.getByRole("link", { name: "Your draft history" })).toBeVisible();
   await hostPage.getByRole("combobox", { name: "Draft mode" }).click();
   await hostPage.getByRole("option", { name: "Simple practice" }).click();
-  await hostPage.getByRole("checkbox", { name: /Captain's Mode timer/ }).uncheck();
+  await hostPage.getByRole("switch", { name: /Captain's Mode timer/ }).uncheck();
   await hostPage.getByRole("button", { name: "Create room" }).click();
   await expect(hostPage).toHaveURL(/\/draft\/rooms\/[A-Za-z0-9]{10}$/);
   const roomUrl = hostPage.url();

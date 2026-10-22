@@ -13,6 +13,7 @@ export const groups: MessageTree<typeof en> = {
     kicker: "Ang stack mo",
     description:
       "Isang page para sa mga kaibigang ka-queue mo: ang record ninyo bilang party, ang pinakamahusay ninyong lineup, kung sino ang naglalaro ng ano at isang lingguhang board.",
+    emptyTitle: "Gumawa ng grupo para sa stack mo",
     empty: "Wala ka pang grupo. Gumawa ng isa at ipadala ang invite link sa stack mo.",
     owner: "May-ari",
     open: "Buksan ang {name}",
@@ -113,7 +114,7 @@ export const groups: MessageTree<typeof en> = {
     title: "Mga hero sa huling 30 araw",
     description: "Ang pinakamadalas na hero ng bawat miyembro, mula sa mga na-import nilang laro.",
     none: "Walang na-import na laro sa huling 30 araw.",
-    games: "{n} laro",
+    games: { one: "1 laro", other: "{n} laro" },
   },
   board: {
     kicker: "Ngayong linggo",

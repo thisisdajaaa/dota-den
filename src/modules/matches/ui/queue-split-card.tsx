@@ -5,7 +5,7 @@ import { plural } from "@/common/i18n/translate";
 import { Badge } from "@/components/ui/badge";
 import type { MatchSummary, WinRecord } from "../domain/match-summary";
 import { MIN_SAMPLE } from "../domain/match-summary";
-import { formatPercent, partyName } from "./format";
+import { formatPercent } from "./format";
 import { WinRateBar } from "./win-rate-bar";
 
 async function Row({ label, record, hint }: { label: string; record: WinRecord; hint?: string }) {
@@ -26,7 +26,10 @@ async function Row({ label, record, hint }: { label: string; record: WinRecord; 
       <div className="text-right sm:w-40">
         <div className="text-base font-semibold tabular-nums">{formatPercent(record.winRate)}</div>
         <div className="text-[0.7rem] whitespace-nowrap text-muted-foreground tabular-nums">
-          {t("matches.queueSplit.record", { wins: record.wins, losses: record.losses })}
+          {t("matches.queueSplit.record", {
+            wins: plural(t, "common.count.wins", record.wins),
+            losses: plural(t, "common.count.losses", record.losses),
+          })}
           {record.games > 0 && record.lowSample && (
             <Badge variant="outline" className="ml-1.5 h-4 px-1 text-[0.6rem]">
               {t("matches.queueSplit.fewGames")}
@@ -52,7 +55,10 @@ export async function QueueSplitCard({ summary }: { summary: MatchSummary }) {
           </h2>
         </div>
         <span className="text-xs text-muted-foreground tabular-nums">
-          {t("matches.queueSplit.known", { known: classified, total: overall.games })}
+          {t("matches.queueSplit.known", {
+            known: classified,
+            total: plural(t, "common.count.games", overall.games),
+          })}
         </span>
       </div>
 
@@ -84,7 +90,12 @@ export async function QueueSplitCard({ summary }: { summary: MatchSummary }) {
                 p.lowSample && "border-dashed opacity-70",
               )}
             >
-              <span className="font-medium">{partyName(p.partySize)}</span>{" "}
+              <span
+                className="font-medium"
+                title={t("matches.queue.partyOfTitle", { n: p.partySize })}
+              >
+                {t("matches.queue.partyOf", { n: p.partySize })}
+              </span>{" "}
               <span className="font-semibold tabular-nums">{formatPercent(p.winRate)}</span>{" "}
               <span className="text-muted-foreground tabular-nums">
                 · {plural(t, "matches.queueSplit.games", p.games)}

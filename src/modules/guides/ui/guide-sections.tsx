@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
@@ -290,7 +291,7 @@ export async function Counters({
 }) {
   const t = await getT();
   const noneText = t("guides.counters.none");
-  const gamesText = (n: number) => t("guides.counters.games", { n: n.toLocaleString("en-US") });
+  const gamesText = (n: number) => plural(t, "guides.counters.games", n);
   return (
     <section aria-labelledby="guide-counters" className="panel space-y-4 p-5">
       <div>

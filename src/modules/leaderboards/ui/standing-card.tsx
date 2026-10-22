@@ -33,7 +33,7 @@ export async function StandingCard({ standings }: { standings: StandingView[] })
                 href={leaderboardHref({ board: s.kind, scope: "friends", period: "all" })}
                 className="group flex items-center gap-3 rounded-lg bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.05]"
               >
-                <span className="font-display text-2xl font-bold text-gold tabular-nums">
+                <span className="text-2xl font-bold text-gold tabular-nums">
                   {s.rank === null ? "—" : `#${s.rank}`}
                 </span>
                 <span className="min-w-0 flex-1">

@@ -45,7 +45,8 @@ export async function LaneBreakdownCard({
       id="lane-breakdown"
       kicker={t("heroes.lanes.kicker")}
       title={t("heroes.lanes.title")}
-      footer={sampleLine(view, t)}
+      // Nothing in the window: "your last 0 games · 0 placed…" says nothing the body doesn't.
+      footer={b.total > 0 ? sampleLine(view, t) : undefined}
     >
       {played.length === 0 ? (
         <Unavailable>
@@ -98,7 +99,7 @@ export async function LaneBreakdownCard({
                         <li key={h.heroId}>
                           <Link
                             href={`/heroes/${h.heroId}`}
-                            className="flex items-center gap-2 rounded-md border border-white/[0.06] py-1 pr-2 pl-1 text-xs hover:border-gold/30"
+                            className="flex items-center gap-2 rounded-md border border-white/[0.06] py-1 pr-2 pl-1 text-xs hover:border-gold/30 touch:min-h-11"
                           >
                             <HeroPortrait hero={hero} heroId={h.heroId} size="xs" />
                             {heroName(hero, h.heroId)}

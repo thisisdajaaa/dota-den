@@ -4,7 +4,7 @@ test("live games list league and top public games, with a live read of the draft
   page,
 }) => {
   await page.goto("/live");
-  await expect(page.getByRole("heading", { level: 1, name: "Live games" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Watch live" })).toBeVisible();
   const league = page.getByRole("region", { name: "League games" });
   await expect(league).toContainText("Fixture Invitational");
   await expect(league).toContainText("Fixture Falcons vs Fixture Titans");

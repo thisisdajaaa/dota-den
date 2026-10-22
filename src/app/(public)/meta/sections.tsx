@@ -4,10 +4,20 @@ import type { Messages } from "@/common/i18n/messages";
 import type { Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
-import type { DuosView, TopHeroesView } from "@/modules/meta/dtos/responses/meta.dto";
+import type {
+  ContestedView,
+  DuosView,
+  OverviewView,
+  TopHeroesView,
+} from "@/modules/meta/dtos/responses/meta.dto";
 import type { LatestPatchResult, MetaSourceError as SourceError } from "@/modules/meta";
 import type { Position } from "@/modules/meta/domain/position";
 import { LaneDuosCard } from "@/modules/meta/ui/lane-duos-card";
+import {
+  ContestedCard,
+  MetaOverviewCards,
+  MetaOverviewFootnote,
+} from "@/modules/meta/ui/meta-overview";
 import { MetaSection, Unavailable } from "@/modules/meta/ui/meta-section";
 import { PatchTipsCard } from "@/modules/meta/ui/patch-tips-card";
 import { TopHeroesCard } from "@/modules/meta/ui/top-heroes-card";
@@ -143,4 +153,38 @@ export async function PatchLine({ patch }: { patch: Promise<LatestPatchResult> }
       })}
     </p>
   );
+}
+
+/** The role-group overview cards plus their source note (spans the grid). */
+export async function OverviewSection({
+  overview,
+  catalog,
+}: {
+  overview: Promise<Loaded<OverviewView>>;
+  catalog: Promise<Map<number, HeroInfo>>;
+}) {
+  const [res, cat, t] = await Promise.all([overview, catalog, getT()]);
+  if (!res.ok)
+    return (
+      <div className="panel sm:col-span-2 lg:col-span-3">
+        <Unavailable>{unavailableCopy(t, res.error, "heroStats")}</Unavailable>
+      </div>
+    );
+  return <MetaOverviewCards view={res.value} catalog={cat} />;
+}
+
+export async function OverviewFootnote({ overview }: { overview: Promise<Loaded<OverviewView>> }) {
+  const res = await overview;
+  return res.ok ? <MetaOverviewFootnote view={res.value} now={new Date()} /> : null;
+}
+
+export async function ContestedSection({
+  contested,
+  catalog,
+}: {
+  contested: Promise<Loaded<ContestedView>>;
+  catalog: Promise<Map<number, HeroInfo>>;
+}) {
+  const [res, cat] = await Promise.all([contested, catalog]);
+  return <ContestedCard view={res.ok ? res.value : null} catalog={cat} now={new Date()} />;
 }

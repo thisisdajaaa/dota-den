@@ -419,7 +419,7 @@ function HeroTable({ rows, heroes }: { rows: OutlookHero[]; heroes: Map<number, 
                   {pct(h.winRate)}
                   {h.games !== null && (
                     <span className="block text-[0.65rem] text-muted-foreground">
-                      {t("drafts.heroTable.games", { n: h.games.toLocaleString("en-US") })}
+                      {plural(t, "drafts.heroTable.games", h.games)}
                     </span>
                   )}
                 </td>

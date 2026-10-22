@@ -4,7 +4,10 @@ import type { goals as en } from "../en/goals";
 export const goals: MessageTree<typeof en> = {
   title: "Mga goal karong semanaha",
   lastDay: "Katapusang adlaw sa semana",
-  daysLeft: "{n} ka adlaw na lang karong semanaha",
+  daysLeft: {
+    one: "1 ka adlaw na lang karong semanaha",
+    other: "{n} ka adlaw na lang karong semanaha",
+  },
   edit: "I-edit",
   setGoals: "Paghimo og goal",
   addGoal: "Pagdugang og goal",
@@ -40,14 +43,17 @@ export const goals: MessageTree<typeof en> = {
   },
   describe: {
     winRate: "Modaog sa labing menos {target}% sa mga ranked game",
-    maxPerSession: "Magdula og dili molapas sa {target} ka ranked game matag session",
+    maxPerSession: {
+      one: "Magdula og dili molapas sa 1 ka ranked game matag session",
+      other: "Magdula og dili molapas sa {n} ka ranked game matag session",
+    },
     logAfterSessions: "I-log ang imong MMR human sa matag session",
-    heroGames: "Idula si {hero} sa {target} ka beses",
+    heroGames: { one: "Idula si {hero} sa makausa", other: "Idula si {hero} sa {n} ka beses" },
   },
   progress: {
     needGames: "{games} / {min} ka duwa sa dili pa maihap",
     winRate: "{rate}% ({wins}–{losses})",
-    longestSession: "Pinakataas nga session: {games} ka duwa",
+    longestSession: "Pinakataas nga session: {games}",
     noSessions: "Wala pay session",
     sessionsLogged: "{logged} / {total} ka session ang na-log",
     heroGames: "{played} / {target} ka duwa",

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { segmentTouchTarget } from "@/components/segmented-links";
 import { useT } from "@/common/i18n/client";
 import { GAP_OPTIONS, type GapMinutes } from "../domain/session";
 
@@ -59,6 +60,7 @@ export function GapSelector({ value }: { value: GapMinutes }) {
               aria-checked={active}
               onClick={() => void choose(g)}
               className={cn(
+                segmentTouchTarget,
                 "rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                 active
                   ? "bg-gold/15 text-gold shadow-[inset_0_0_0_1px_oklch(0.8_0.13_80/0.3)]"

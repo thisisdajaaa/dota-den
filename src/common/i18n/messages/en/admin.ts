@@ -79,7 +79,10 @@ export const admin = {
     body: "Problems that need you: a daily job that failed or stopped running, OpenDota down for a while, a failed backup or restore drill. Each goes to admins' devices with notifications on (and the Discord channel in ADMIN_ALERT_WEBHOOK_URL), at most once every 6 hours per problem.",
     test: "Send a test alert",
     sending: "Sending…",
-    testSent: "Sent to {devices} admin devices · Discord: {webhook}.",
+    testSent: {
+      one: "Sent to 1 admin device · Discord: {webhook}.",
+      other: "Sent to {n} admin devices · Discord: {webhook}.",
+    },
     testNoDevices:
       "Sent, but no admin device has notifications on (Account → Notifications) · Discord: {webhook}.",
     testFailed: "The test alert couldn't be sent.",
@@ -88,7 +91,7 @@ export const admin = {
     recent: "Recent alerts",
     none: "No alerts in the last 30 days.",
     unavailable: "Unavailable right now.",
-    delivered: "{devices} devices · Discord: {webhook}",
+    delivered: "{devices} · Discord: {webhook}",
     reports: "Backups and restore drills",
     reportsNone:
       "No reports yet. The backup and restore-drill workflows report here after each run.",
@@ -102,12 +105,12 @@ export const admin = {
         body: "The {cron} run failed: {error}",
       },
       match_sync_failures: {
-        title: "Match sync: {failed} of {accounts} accounts failed",
+        title: "Match sync failures: {failed} / {accounts} accounts",
         body: "{percent}% of the accounts the daily sync tried failed. Check the admin page.",
       },
       patch_import: {
         title: "Patch import degraded",
-        body: "{failed} patch notes couldn't be imported (the parser may need an update).",
+        body: "Patch notes that couldn't be imported: {failed} (the parser may need an update).",
       },
       cron_stale: {
         title: "Daily job stopped: {cron}",

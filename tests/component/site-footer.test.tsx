@@ -15,6 +15,6 @@ describe("SiteFooter", () => {
 
   it("offers the language switch", () => {
     render(<SiteFooter />);
-    expect(screen.getByRole("combobox", { name: "Language" })).toHaveValue("en");
+    expect(screen.getByRole("combobox", { name: "Language" })).toHaveTextContent("English");
   });
 });

@@ -41,9 +41,9 @@ export const heroes: MessageTree<typeof en> = {
     descriptionEmpty:
       "Mogawas diri ang mga hero nga imong gidula kung na-import na ang imong mga match.",
     emptyTitle: "Wala pay hero",
-    emptyBefore: "Wala pa mi naka-import sa imong mga match. Ang imong",
-    emptyLink: "overview",
-    emptyAfter: "ang magsugod sa import.",
+    emptyBody:
+      "Makita dinhi ang mga hero nga imong gidula kung na-import na ang imong mga duwa. Ang imong overview ang mosugod sa import ug didto nimo makita kung unsa na kini.",
+    emptyLink: "Adto sa overview",
     loading: "Gi-load ang mga hero",
     loadingSuggestions: "Gi-load ang mga gisugyot nga hero",
     loadingLanes: "Gi-load kung asa ka nagdula",
@@ -135,7 +135,7 @@ export const heroes: MessageTree<typeof en> = {
     emptyWorstAllies:
       "Walay kauban nga hero nga adunay {min}+ ka duwa diin mas kanunay kang mapildi.",
     record: "{wins}–{losses}",
-    rowLabel: "{name}: {wins} ka daog, {losses} ka pildi ({rate}) sa {games}",
+    rowLabel: "{name}: {wins}, {losses} ({rate}) sa {games}",
     playedInto: "Imong gidula",
     playedIntoItem: "{name} {wins}–{losses}",
     footer:

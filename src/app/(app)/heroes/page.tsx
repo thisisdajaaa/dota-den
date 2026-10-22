@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Swords } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
@@ -48,7 +49,7 @@ export default async function HeroesPage() {
           rows.length > 0 && (
             <Link
               href="/heroes/matchups"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-card/60 px-3 py-1.5 text-sm font-medium text-gold hover:bg-gold/10"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-card/60 px-3 py-1.5 text-sm font-medium text-gold hover:bg-gold/10 touch:min-h-11"
             >
               <Swords aria-hidden className="size-4" />
               {t("heroes.own.link")}
@@ -60,17 +61,12 @@ export default async function HeroesPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           {rows.length === 0 ? (
-            <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
-              <Swords aria-hidden className="size-8 text-gold" />
-              <h2 className="text-lg font-semibold">{t("heroes.index.emptyTitle")}</h2>
-              <p className="max-w-md text-sm text-muted-foreground">
-                {t("heroes.index.emptyBefore")}{" "}
-                <Link href="/dashboard" className="text-gold hover:underline">
-                  {t("heroes.index.emptyLink")}
-                </Link>{" "}
-                {t("heroes.index.emptyAfter")}
-              </p>
-            </section>
+            <EmptyState
+              icon={Swords}
+              title={t("heroes.index.emptyTitle")}
+              description={t("heroes.index.emptyBody")}
+              action={{ href: "/dashboard", label: t("heroes.index.emptyLink") }}
+            />
           ) : (
             <HeroGrid rows={rows} heroes={heroes} now={new Date()} />
           )}

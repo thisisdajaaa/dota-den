@@ -18,6 +18,12 @@ export const report = {
   imported:
     "OpenDota didn't answer, so this report uses the games we've imported for you so far. GPM, damage, last hits, roles and replay stats come only from OpenDota and are left out until it's back.",
   noGames: "No public games between {from} and {to}.",
+  empty: {
+    title: "No games in this range",
+    hint: "The report reads your public match history from OpenDota. If games you played are missing, check that “Expose Public Match Data” is on in Dota 2.",
+    longer: "Show the last {n} days",
+    overview: "Check your sync on the overview",
+  },
   tiles: {
     games: "Games played",
     heroes: "Heroes played",
@@ -31,7 +37,7 @@ export const report = {
   },
   sides: {
     title: "Radiant vs Dire",
-    record: "{wins} wins · {losses} losses",
+    record: "{wins} · {losses}",
     higher: "{points} points higher as {side}.",
   },
   records: {
@@ -67,7 +73,7 @@ export const report = {
   },
   roles: {
     title: "Roles",
-    help: "From the {withData} of your {games} games with a parsed replay (lane data comes only from parsed replays).",
+    help: "From the {withData} of your {games} with a parsed replay (lane data comes only from parsed replays).",
     share: "{share}% of games · {rate} wins",
     names: { safeLane: "Safe lane", mid: "Mid", offLane: "Off lane", jungle: "Jungle" },
   },
@@ -75,7 +81,7 @@ export const report = {
     title: "Calendar",
     played: "Played on {played} of {days} days · darker = more games",
     aria: "Games per day from {from} to {to}",
-    day: "{date}: {games} games, {wins}–{losses}",
+    day: "{date}: {games}, {wins}–{losses}",
     moreWins: "more wins than losses",
     moreLosses: "more losses",
   },

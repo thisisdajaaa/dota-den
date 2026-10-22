@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, History, Info } from "lucide-react";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
@@ -66,16 +67,12 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
       )}
 
       {page.items.length === 0 ? (
-        <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
-          <span className="grid size-14 place-items-center rounded-full bg-gold/10 text-gold ring-1 ring-gold/30">
-            <History aria-hidden className="size-6" />
-          </span>
-          <h2 className="text-lg font-semibold">{t("sessions.page.emptyTitle")}</h2>
-          <p className="max-w-md text-sm text-muted-foreground">{t("sessions.page.emptyBody")}</p>
-          <Link href="/dashboard" className="text-sm text-gold hover:underline">
-            {t("sessions.page.emptyLink")}
-          </Link>
-        </section>
+        <EmptyState
+          icon={History}
+          title={t("sessions.page.emptyTitle")}
+          description={t("sessions.page.emptyBody")}
+          action={{ href: "/dashboard", label: t("sessions.page.emptyLink") }}
+        />
       ) : (
         <section className="panel overflow-hidden" aria-labelledby="sessions-title">
           <div className="flex items-baseline justify-between gap-3 p-5 pb-3">

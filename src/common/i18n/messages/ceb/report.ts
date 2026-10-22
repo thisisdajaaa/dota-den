@@ -20,6 +20,12 @@ export const report: MessageTree<typeof en> = {
   imported:
     "Wala motubag ang OpenDota, mao nga kini nga report gikan sa mga duwa nga na-import na namo para nimo. Ang GPM, damage, last hits, roles ug replay stats gikan ra sa OpenDota ug wala sa una hangtod mobalik kini.",
   noGames: "Walay public nga duwa gikan {from} hangtod {to}.",
+  empty: {
+    title: "Walay duwa niini nga range",
+    hint: "Gibasa sa report ang imong public nga match history gikan sa OpenDota. Kung naay kulang nga duwa, tan-awa kung naka-on ang “Expose Public Match Data” sa Dota 2.",
+    longer: "Ipakita ang miaging {n} ka adlaw",
+    overview: "Tan-awa ang sync sa overview",
+  },
   tiles: {
     games: "Mga duwa nga gidula",
     heroes: "Mga hero nga gidula",
@@ -33,7 +39,7 @@ export const report: MessageTree<typeof en> = {
   },
   sides: {
     title: "Radiant vs Dire",
-    record: "{wins} ka daog · {losses} ka pildi",
+    record: "{wins} · {losses}",
     higher: "{points} ka puntos nga mas taas isip {side}.",
   },
   records: {
@@ -69,7 +75,7 @@ export const report: MessageTree<typeof en> = {
   },
   roles: {
     title: "Mga role",
-    help: "Gikan sa {withData} sa imong {games} ka duwa nga naay na-parse nga replay (sa na-parse nga replay ra gikan ang lane data).",
+    help: "Gikan sa {withData} sa imong {games} nga naay na-parse nga replay (sa na-parse nga replay ra gikan ang lane data).",
     share: "{share}% sa mga duwa · {rate} daog",
     names: { safeLane: "Safe lane", mid: "Mid", offLane: "Off lane", jungle: "Jungle" },
   },
@@ -77,7 +83,7 @@ export const report: MessageTree<typeof en> = {
     title: "Kalendaryo",
     played: "Nagduwa sa {played} sa {days} ka adlaw · mas ngitngit = mas daghang duwa",
     aria: "Mga duwa matag adlaw gikan {from} hangtod {to}",
-    day: "{date}: {games} ka duwa, {wins}–{losses}",
+    day: "{date}: {games}, {wins}–{losses}",
     moreWins: "mas daghang daog kaysa pildi",
     moreLosses: "mas daghang pildi",
   },

@@ -133,32 +133,32 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <SkipLink />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-white/[0.06] bg-background/60 backdrop-blur-xl lg:flex">
-        <div className="flex h-16 items-center px-5">
+        <div className="flex h-16 shrink-0 items-center px-5">
           <Brand />
         </div>
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="px-3 pb-2 text-[0.65rem] font-semibold tracking-[0.18em] text-muted-foreground/70 uppercase">
-            {t("system.shell.menu")}
-          </p>
+        {/* The nav scrolls on short windows; the user card below stays pinned. */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
           <SidebarNav enabled={navFor(user)} />
         </div>
-        <div className="space-y-3 border-t border-white/[0.06] p-4">
+        <div className="shrink-0 space-y-2 border-t border-white/[0.06] bg-background/80 px-4 py-3">
           <InstallButton className="w-full gap-2" />
           <div className="flex items-center gap-3">
             {avatar}
-            <div className="min-w-0 flex-1 truncate text-sm font-medium">{name}</div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{name}</div>
+              {rank ? (
+                <div className="flex items-center gap-1 text-xs font-semibold text-gold">
+                  <RankMedal rank={rank} size={20} />
+                  <span className="truncate">{rankLabel(rank)}</span>
+                </div>
+              ) : (
+                <div className="truncate text-xs text-muted-foreground">
+                  {t("system.shell.account", { id: user.accountId32 })}
+                </div>
+              )}
+            </div>
             <SignOutButton />
           </div>
-          {rank ? (
-            <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-1">
-              <RankMedal rank={rank} size={40} />
-              <span className="text-xs font-semibold text-gold">{rankLabel(rank)}</span>
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground">
-              {t("system.shell.account", { id: user.accountId32 })}
-            </div>
-          )}
         </div>
       </aside>
 

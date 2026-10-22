@@ -20,6 +20,12 @@ export const report: MessageTree<typeof en> = {
   imported:
     "Hindi sumagot ang OpenDota, kaya ang report na ito ay mula sa mga larong na-import na namin para sa iyo. Ang GPM, damage, last hits, roles at replay stats ay galing lang sa OpenDota at wala muna hanggang bumalik ito.",
   noGames: "Walang public na laro mula {from} hanggang {to}.",
+  empty: {
+    title: "Walang laro sa range na ito",
+    hint: "Binabasa ng report ang public na match history mo mula sa OpenDota. Kung may kulang na laro, tingnan kung naka-on ang “Expose Public Match Data” sa Dota 2.",
+    longer: "Ipakita ang huling {n} araw",
+    overview: "Tingnan ang sync sa overview",
+  },
   tiles: {
     games: "Mga nilarong laro",
     heroes: "Mga nilarong hero",
@@ -33,7 +39,7 @@ export const report: MessageTree<typeof en> = {
   },
   sides: {
     title: "Radiant vs Dire",
-    record: "{wins} panalo · {losses} talo",
+    record: "{wins} · {losses}",
     higher: "{points} puntos na mas mataas bilang {side}.",
   },
   records: {
@@ -69,7 +75,7 @@ export const report: MessageTree<typeof en> = {
   },
   roles: {
     title: "Mga role",
-    help: "Mula sa {withData} sa {games} laro mo na may na-parse na replay (sa mga na-parse na replay lang galing ang lane data).",
+    help: "Mula sa {withData} sa {games} mo na may na-parse na replay (sa mga na-parse na replay lang galing ang lane data).",
     share: "{share}% ng laro · {rate} panalo",
     names: { safeLane: "Safe lane", mid: "Mid", offLane: "Off lane", jungle: "Jungle" },
   },
@@ -77,7 +83,7 @@ export const report: MessageTree<typeof en> = {
     title: "Kalendaryo",
     played: "Naglaro sa {played} sa {days} araw · mas madilim = mas maraming laro",
     aria: "Mga laro kada araw mula {from} hanggang {to}",
-    day: "{date}: {games} laro, {wins}–{losses}",
+    day: "{date}: {games}, {wins}–{losses}",
     moreWins: "mas maraming panalo kaysa talo",
     moreLosses: "mas maraming talo",
   },

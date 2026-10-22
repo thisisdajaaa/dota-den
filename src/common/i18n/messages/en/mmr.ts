@@ -52,7 +52,7 @@ export const mmr = {
     rankedGames: { one: "1 ranked game", other: "{n} ranked games" },
     wl: "{wins}W {losses}L",
     loggedDot: "MMR logged this day",
-    record: "{wins} wins · {losses} losses",
+    record: "{wins} · {losses}",
     noRankedGames: "No ranked games",
   },
   day: {
@@ -79,7 +79,7 @@ export const mmr = {
       "Exact figures come from your own entries, when every game between two of them was on one hero.",
     logNote: "Log your MMR before and after a run of games on one hero to see its exact change.",
     empty: "No ranked games in this period.",
-    aria: "{name}: {wins} wins, {losses} losses, about {mmr} MMR (estimate)",
+    aria: "{name}: {wins}, {losses}, about {mmr} MMR (estimate)",
     games: { one: "1 game", other: "{n} games" },
     sparkline: "{name} estimated climb, game by game",
     exact: { one: "Exact {delta} / 1 game", other: "Exact {delta} / {n} games" },
@@ -232,7 +232,7 @@ export const mmr = {
     record: "{wins}W {losses}L",
     noGames: "No ranked games imported for this stretch.",
     mostPlayed: "Most played",
-    heroRecord: "{name}: {wins} wins, {losses} losses",
+    heroRecord: "{name}: {wins}, {losses}",
     rangeRecord: "Ranked in this range: {games}, {record}.",
     empty:
       "Nothing here yet. We check your medal when you open the overview and every day, and logged MMR shows up once you add entries in the MMR journal.",

@@ -31,47 +31,55 @@ export const home: MessageTree<typeof en> = {
     body: "Tingnan kung paano ka talaga maglaro nang solo kumpara sa stack mo, ano ang binago ng bawat patch sa mga hero mo, at mag-practice ng draft bago ang larong mahalaga.",
     signIn: "Mag-sign in gamit ang Steam",
     privacy: "Hindi namin nakikita ang password mo. Private ang data mo bilang default.",
+    lookupLabel: "O hanapin ang kahit sinong player, kahit hindi naka-sign in",
+    example: "Tingnan ang halimbawang profile",
+    exampleWho: "Yatoro, isang pro carry",
   },
   patch: {
     aria: "Pinakabagong patch {version}: basahin ang notes",
     kicker: "Pinakabagong patch",
-    changed: "{heroes} hero at {items} item ang binago",
+    changed: "{heroes} at {items} ang binago",
     heroesAria: "Ilan sa mga hero na binago",
     read: "Basahin ang patch notes",
+    topChanges: "Mga hero na pinakamaraming binago",
+    noHeroChanges: "Walang pagbabago sa mga hero sa patch na ito.",
+    more: { one: "+1 pang linya", other: "+{n} pang linya" },
+    metaCta: "Tingnan kung ano ang malakas ngayon",
   },
-  loop: {
-    kicker: "Ang loop",
-    title: "Mula patch day hanggang sa susunod mong session",
-    patch: {
-      title: "Basahin ang patch",
-      body: "Tingnan kung aling mga pagbabago ang tumatama sa hero pool mo.",
-    },
-    draft: {
-      title: "Mag-draft kasama ang mga kaibigan",
-      body: "Mag-practice ng pick at ban na parang Captain's Mode.",
-    },
-    review: {
-      title: "Mag-review nang magkasama",
-      body: "Resulta ng solo at party, kasama ang sample size.",
-    },
-    experiment: {
-      title: "Itakda ang susunod na eksperimento",
-      body: "Pumili ng isang bagay na susubukan sa susunod na session.",
-    },
+  preview: {
+    label: "Preview ng Meta page gamit ang data ngayong araw",
+    address: "dota-den.com/meta",
+    kicker: "Meta",
+    title: "Ano ang malakas ngayon",
+    live: "Totoong data",
+    source: "High-rank na laro sa OpenDota · na-update {ago}",
+    open: "Buksan ang Meta",
+    unavailable:
+      "Hindi available ang hero stats ngayon. Lalabas ito sa Meta page kapag sumagot na ang OpenDota.",
+    loading: "Nilo-load ang meta ngayong araw",
   },
   features: {
-    title: "Mga feature",
+    kicker: "Ano ang makukuha mo",
+    title: "Iisang lugar para sa Dota mo sa pagitan ng mga laro",
     party: {
       title: "Solo vs party, tapat",
-      body: "Bawat match ay may label na solo, party o unknown, kasama ang pinagmulan. Hindi kailanman binibilang na solo ang kulang na data.",
-    },
-    patches: {
-      title: "Patch hub",
-      body: "Opisyal na patch notes na naka-link sa pinagmulan, naka-filter sa mga hero na talagang nilalaro mo.",
+      body: "Hati ang mga match mo sa solo, party at unknown, kasama kung saan galing ang bawat label. Hindi kailanman binibilang na solo ang kulang na data.",
+      cta: "Mag-sign in para makita ang sa iyo",
     },
     draft: {
       title: "Draft practice",
-      body: "Pick/ban drills nang mag-isa o kasama ang mga kaibigan, may malinaw na dahilan sa halip na pekeng win odds.",
+      body: "Pick at ban drills at challenges na parang Captain's Mode, mag-isa o sa isang room kasama ang mga kaibigan. May dahilan, walang pekeng win odds.",
+      cta: "Magsimula ng draft",
+    },
+    guides: {
+      title: "Mga hero guide",
+      body: "Ano ang binibili ng mga pro sa bawat hero at ano ang itsura ng magandang laro, galing sa totoong pro matches.",
+      cta: "Tingnan ang mga guide",
+    },
+    live: {
+      title: "Manood ng Dota nang live",
+      body: "Mga live na Dota 2 stream na mapapanood mo rito kasama ang chat, ang mga streamer na fina-follow mo, at ang mga pro at top public game na nangyayari ngayon.",
+      cta: "Tingnan ang live",
     },
   },
 };

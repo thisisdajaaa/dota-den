@@ -1,4 +1,5 @@
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { PlayerAvatar } from "@/modules/players/ui/player-avatar";
@@ -38,7 +39,9 @@ export async function HeroesCard({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {r.games > 0 ? t("groups.heroes.games", { n: r.games }) : t("groups.heroes.none")}
+                  {r.games > 0
+                    ? plural(t, "groups.heroes.games", r.games)
+                    : t("groups.heroes.none")}
                 </p>
               </div>
               {r.heroes.length > 0 && (

@@ -73,7 +73,7 @@ export const email = {
     heroFallback: "Hero #{id}",
     rankedGames: { one: "1 ranked game", other: "{n} ranked games" },
     achievement: "New achievement last week: {title} ({description}).",
-    tilt: "Last week you lost {streak} ranked games in a row in one session. In your games so far, after {k} losses in a row you've won {rate} of {games} games, against {baseline} overall.",
+    tilt: "Last week you lost {streak} ranked games in a row in one session. In your games so far, after {k} losses in a row you've won {rate} of {games}, against {baseline} overall.",
     action: "Open your dashboard",
     why: "You're getting this because you turned on the weekly email on Dota Den.",
     unsubscribe: "Unsubscribe",

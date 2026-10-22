@@ -12,29 +12,37 @@ export const practice: MessageTree<typeof en> = {
   openMatch: "Ablihi ang duwa",
   status: { done: "Nahuman na", broken: "Naguba karong semanaha", open: "Padayon pa" },
   step: {
-    practiceHero: "Duwaa si {hero} sa {target} ka ranked nga duwa",
+    practiceHero: {
+      one: "Duwaa si {hero} sa 1 ka ranked nga duwa",
+      other: "Duwaa si {hero} sa {n} ka ranked nga duwa",
+    },
     stopAfterLosses: "Hunonga ang session human sa {streak} ka sunod-sunod nga pildi",
     reviewLoss: "Balikan ang imong pildi isip {hero} niadtong {date}",
     logMmr: "I-log ang imong MMR human sa matag session",
   },
   why: {
-    highRank: "{rate}% win rate sa tag-as nga rank isip Pos {position} ({games} ka duwa).",
+    highRank: "{rate}% win rate sa tag-as nga rank isip Pos {position} ({games}).",
     contest: "Gipili o gi-ban sa {rate}% sa bag-ong mga pro draft.",
     metaList: "Duol sa ibabaw sa listahan sa hero para sa Pos {position}.",
     counter:
-      "Kusog kini batok kang {nemesis}, nga nagpildi nimo sa mga {loss}% sa imong mga duwa batok niya ({games} ka duwa).",
+      "Kusog kini batok kang {nemesis}, nga nagpildi nimo sa mga {loss}% sa imong mga duwa batok niya ({games}).",
     stopAfterLosses:
       "Human sa {streak} ka sunod-sunod nga pildi, nidaog ka sa {after}% sa {afterGames} ka ranked nga duwa nga imong gipadayon, batok sa {baseline}% sa kinatibuk-an ({baselineGames} ka duwa).",
     reviewLoss:
       "Ang imong pinakaulahing ranked nga pildi ({kills}/{deaths}/{assists}). Pagdugang og note o sa tag nga “reviewed” sa panid sa duwa aron matsekan kini.",
-    logMmr:
-      "Nag-log ka og MMR human sa {logged} sa imong ulahing {sessions} ka ranked nga session.",
+    logMmr: {
+      one: "Nag-log ka og MMR human sa {logged} sa imong ulahing 1 ka ranked nga session.",
+      other: "Nag-log ka og MMR human sa {logged} sa imong ulahing {n} ka ranked nga session.",
+    },
     logMmrBasic:
       "Kung mag-log ka human sa matag session, makita sa imong mga session ang tinuod nga kausaban sa imong MMR.",
   },
   progress: {
     heroGames: "{played} / {target} ka duwa",
-    kept: "Nasunod sa tanang {sessions} ka session hangtod karon",
+    kept: {
+      one: "Nasunod sa bugtong nga session hangtod karon",
+      other: "Nasunod sa tanang {n} ka session hangtod karon",
+    },
     broken: "Gipadayon human sa {streak} ka pildi sa {broken} sa {sessions} ka session",
     noSessions: "Wala pay ranked nga session karong semanaha",
     reviewed: "Nabalikan na",

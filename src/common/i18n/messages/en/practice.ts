@@ -10,27 +10,33 @@ export const practice = {
   openMatch: "Open the match",
   status: { done: "Done", broken: "Broken this week", open: "In progress" },
   step: {
-    practiceHero: "Play {hero} in {target} ranked games",
+    practiceHero: {
+      one: "Play {hero} in 1 ranked game",
+      other: "Play {hero} in {n} ranked games",
+    },
     stopAfterLosses: "End the session after {streak} losses in a row",
     reviewLoss: "Review your {hero} loss from {date}",
     logMmr: "Log your MMR after each session",
   },
   why: {
-    highRank: "{rate}% win rate at high ranks as Pos {position} ({games} games).",
+    highRank: "{rate}% win rate at high ranks as Pos {position} ({games}).",
     contest: "Picked or banned in {rate}% of recent pro drafts.",
     metaList: "Near the top of the Pos {position} hero list.",
     counter:
-      "It does well against {nemesis}, who beats you in about {loss}% of your games against them ({games} games).",
+      "It does well against {nemesis}, who beats you in about {loss}% of your games against them ({games}).",
     stopAfterLosses:
       "After {streak} losses in a row you won {after}% of the {afterGames} ranked games you played on, against {baseline}% overall ({baselineGames} games).",
     reviewLoss:
       "Your latest ranked loss ({kills}/{deaths}/{assists}). Add a note or the “reviewed” tag on the match page to tick it.",
-    logMmr: "You logged MMR after {logged} of your last {sessions} ranked sessions.",
+    logMmr: {
+      one: "You logged MMR after {logged} of your last 1 ranked session.",
+      other: "You logged MMR after {logged} of your last {n} ranked sessions.",
+    },
     logMmrBasic: "Logging after each session lets your sessions show your real MMR change.",
   },
   progress: {
     heroGames: "{played} / {target} games",
-    kept: "Kept in all {sessions} sessions so far",
+    kept: { one: "Kept in your only session so far", other: "Kept in all {n} sessions so far" },
     broken: "Played on after {streak} losses in {broken} of {sessions} sessions",
     noSessions: "No ranked sessions yet this week",
     reviewed: "Reviewed",

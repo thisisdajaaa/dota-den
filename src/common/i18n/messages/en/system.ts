@@ -7,9 +7,15 @@ export const system = {
     retry: "Try again",
     pageTitle: "Something went wrong · Dota Den",
   },
+  notFound: {
+    title: "Page not found",
+    body: "This link is broken or the page has moved. Try one of these instead.",
+    home: "Go home",
+    meta: "What's strong now",
+    pageTitle: "Page not found",
+  },
   shell: {
     skip: "Skip to content",
-    menu: "Menu",
     account: "Account {id}",
     player: "Player {id}",
   },

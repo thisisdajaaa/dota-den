@@ -6,6 +6,14 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-22
 
+- Watch live: Dota 2 streams to watch right on /live with chat, streamer search, and following
+- Date pickers for the battle report range and MMR entries
+- A new home page: a live look at the meta, player lookup without signing in, a fuller patch card
+- The meta page shows the strongest heroes per role right away
+- A guided first dashboard while your games import, and clear empty states everywhere
+- Phones: 44px tap targets, a single Filters button on matches, a shorter dashboard
+- Correct counts ("1 win", "1 item"), "Party (2)" everywhere, a grouped sidebar
+- "Sign in required" has a sign-in button and brings you back to the page you wanted
 - Players, leaderboards, friends and groups read saved profiles: no more waiting on OpenDota per row
 - Player, meta and battle report pages show at once and stream each section in
 - Battle report falls back to your imported games when OpenDota is down

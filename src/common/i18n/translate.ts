@@ -31,8 +31,16 @@ export function translator<T>(messages: MessageTree<T>, fallback: MessageTree<T>
 
 /**
  * Count phrases: messages store `{ one: "1 game", other: "{n} games" }` under `key`; pick by n.
- * Filipino and Cebuano usually use the same text for both.
+ * Filipino and Cebuano usually use the same text for both. Extra `vars` fill other placeholders.
  */
-export function plural<T>(t: Translator<T>, key: string, n: number): string {
-  return t(`${key}.${n === 1 ? "one" : "other"}` as never, { n: n.toLocaleString("en-US") });
+export function plural<T>(
+  t: Translator<T>,
+  key: string,
+  n: number,
+  vars?: Record<string, string | number>,
+): string {
+  return t(`${key}.${n === 1 ? "one" : "other"}` as never, {
+    ...vars,
+    n: n.toLocaleString("en-US"),
+  });
 }

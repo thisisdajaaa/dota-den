@@ -38,9 +38,9 @@ export const heroes = {
       "{heroes} across your {games}. Open a hero for your record, trend, matchups and items on it.",
     descriptionEmpty: "Heroes you play show up here once your matches are imported.",
     emptyTitle: "No heroes yet",
-    emptyBefore: "We haven't imported any of your matches yet. Your",
-    emptyLink: "overview",
-    emptyAfter: "starts the import.",
+    emptyBody:
+      "Heroes you play show up here once your matches are imported. Your overview starts the import and shows how it's going.",
+    emptyLink: "Go to overview",
     loading: "Loading heroes",
     loadingSuggestions: "Loading hero suggestions",
     loadingLanes: "Loading where you play",
@@ -125,7 +125,7 @@ export const heroes = {
     emptyBestAllies: "No allied hero with {min}+ games where you win half or more.",
     emptyWorstAllies: "No allied hero with {min}+ games where you lose more than you win.",
     record: "{wins}–{losses}",
-    rowLabel: "{name}: {wins} wins, {losses} losses ({rate}) in {games}",
+    rowLabel: "{name}: {wins}, {losses} ({rate}) in {games}",
     playedInto: "You played",
     playedIntoItem: "{name} {wins}–{losses}",
     footer:

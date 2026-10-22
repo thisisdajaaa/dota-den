@@ -21,6 +21,19 @@ export const common = {
     account: "Account",
     admin: "Admin",
     more: "More",
+    sections: { you: "You", community: "Community", tools: "Tools", settings: "Settings" },
+  },
+  /** Count phrases for `plural(t, "common.count.<noun>", n)`. */
+  count: {
+    wins: { one: "1 win", other: "{n} wins" },
+    losses: { one: "1 loss", other: "{n} losses" },
+    games: { one: "1 game", other: "{n} games" },
+    heroes: { one: "1 hero", other: "{n} heroes" },
+    items: { one: "1 item", other: "{n} items" },
+    matches: { one: "1 match", other: "{n} matches" },
+    sessions: { one: "1 session", other: "{n} sessions" },
+    devices: { one: "1 device", other: "{n} devices" },
+    accounts: { one: "1 account", other: "{n} accounts" },
   },
   auth: {
     signIn: "Sign in",
@@ -31,7 +44,24 @@ export const common = {
     disclaimer:
       "Dota Den is an unofficial fan project. It is not affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation. Match data is provided by OpenDota where available; patch notes link to their official source.",
   },
+  datePicker: {
+    pick: "Pick a date",
+    time: "Time",
+    previousMonth: "Previous month",
+    nextMonth: "Next month",
+    month: "Month",
+    year: "Year",
+    navigation: "Change month",
+    today: "Today",
+    selected: "selected",
+  },
   language: { label: "Language", saved: "Language changed" },
+  filters: {
+    button: "Filters",
+    title: "Filters",
+    activeCount: "{count} active",
+    done: "Done",
+  },
   actions: {
     save: "Save",
     saving: "Saving…",
