@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { CalendarSearch } from "lucide-react";
 import { getT } from "@/common/i18n/server";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
@@ -35,6 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const MIN_ROLE_GAMES = 5;
+const LONGEST_PRESET = Math.max(...REPORT_PERIODS);
 const TABS = ["overview", "heroes"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -147,9 +150,20 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
           {t("report.unavailable")}
         </p>
       ) : view.report.games === 0 ? (
-        <p className="panel p-5 text-sm text-muted-foreground">
-          {t("report.noGames", { from: fmt(view.from), to: fmt(view.to) })}
-        </p>
+        <EmptyState
+          icon={CalendarSearch}
+          title={t("report.empty.title")}
+          description={`${t("report.noGames", { from: fmt(view.from), to: fmt(view.to) })} ${t("report.empty.hint")}`}
+          // Next step: a wider window, or (already the widest preset) the sync status.
+          action={
+            range.preset !== LONGEST_PRESET
+              ? {
+                  href: href({ days: String(LONGEST_PRESET), ...tabQuery }),
+                  label: t("report.empty.longer", { n: LONGEST_PRESET }),
+                }
+              : { href: "/dashboard", label: t("report.empty.overview") }
+          }
+        />
       ) : tab === "heroes" ? (
         <HeroTable rows={view.report.heroes} heroes={heroes} />
       ) : (

@@ -13,6 +13,7 @@ export const groups: MessageTree<typeof en> = {
     kicker: "Ang stack mo",
     description:
       "Isang page para sa mga kaibigang ka-queue mo: ang record ninyo bilang party, ang pinakamahusay ninyong lineup, kung sino ang naglalaro ng ano at isang lingguhang board.",
+    emptyTitle: "Gumawa ng grupo para sa stack mo",
     empty: "Wala ka pang grupo. Gumawa ng isa at ipadala ang invite link sa stack mo.",
     owner: "May-ari",
     open: "Buksan ang {name}",

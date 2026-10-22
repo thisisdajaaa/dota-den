@@ -19,6 +19,12 @@ export const report: MessageTree<typeof en> = {
   unavailable:
     "Hindi available ang report ngayon (hindi sumagot ang OpenDota). Subukan ulit pagkalipas ng isang minuto.",
   noGames: "Walang public na laro mula {from} hanggang {to}.",
+  empty: {
+    title: "Walang laro sa range na ito",
+    hint: "Binabasa ng report ang public na match history mo mula sa OpenDota. Kung may kulang na laro, tingnan kung naka-on ang “Expose Public Match Data” sa Dota 2.",
+    longer: "Ipakita ang huling {n} araw",
+    overview: "Tingnan ang sync sa overview",
+  },
   tiles: {
     games: "Mga nilarong laro",
     heroes: "Mga nilarong hero",

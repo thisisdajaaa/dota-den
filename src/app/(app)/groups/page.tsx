@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { ShieldCheck } from "lucide-react";
+import { Handshake, ShieldCheck } from "lucide-react";
 import { getT } from "@/common/i18n/server";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { groupsService } from "@/modules/groups";
@@ -18,6 +19,17 @@ export default async function GroupsPage() {
   if (!user) return null;
   const t = await getT();
   const groups = await groupsService.listMine(user);
+  const shares = (
+    <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="shares">
+      <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
+      <div className="space-y-1">
+        <h2 id="shares" className="font-semibold">
+          {t("groups.shares.title")}
+        </h2>
+        <p className="text-muted-foreground">{t("groups.shares.body")}</p>
+      </div>
+    </section>
+  );
 
   return (
     <div className="space-y-6">
@@ -26,21 +38,25 @@ export default async function GroupsPage() {
         title={t("groups.page.title")}
         description={t("groups.page.description")}
       />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <section className="panel p-5 lg:col-span-3" aria-label={t("groups.page.title")}>
-          <GroupsList groups={groups} />
-        </section>
-        <div className="space-y-6 lg:col-span-2">
-          <CreateGroupForm atCap={groups.length >= MAX_GROUPS_PER_USER} />
-          <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="shares">
-            <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
-            <div className="space-y-1">
-              <h2 id="shares" className="font-semibold">
-                {t("groups.shares.title")}
-              </h2>
-              <p className="text-muted-foreground">{t("groups.shares.body")}</p>
-            </div>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
+        {groups.length === 0 ? (
+          // No group yet: the create form is the page's one next step.
+          <EmptyState
+            icon={Handshake}
+            title={t("groups.page.emptyTitle")}
+            description={t("groups.page.empty")}
+            className="lg:col-span-3"
+          >
+            <CreateGroupForm atCap={false} bare />
+          </EmptyState>
+        ) : (
+          <section className="panel p-5 lg:col-span-3" aria-label={t("groups.page.title")}>
+            <GroupsList groups={groups} />
           </section>
+        )}
+        <div className="space-y-6 lg:col-span-2">
+          {groups.length > 0 && <CreateGroupForm atCap={groups.length >= MAX_GROUPS_PER_USER} />}
+          {shares}
         </div>
       </div>
     </div>

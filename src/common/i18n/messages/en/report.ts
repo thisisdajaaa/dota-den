@@ -17,6 +17,12 @@ export const report = {
   unavailable:
     "The report is unavailable right now (OpenDota didn't answer). Try again in a minute.",
   noGames: "No public games between {from} and {to}.",
+  empty: {
+    title: "No games in this range",
+    hint: "The report reads your public match history from OpenDota. If games you played are missing, check that “Expose Public Match Data” is on in Dota 2.",
+    longer: "Show the last {n} days",
+    overview: "Check your sync on the overview",
+  },
   tiles: {
     games: "Games played",
     heroes: "Heroes played",

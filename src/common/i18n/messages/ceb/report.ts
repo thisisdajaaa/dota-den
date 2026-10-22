@@ -19,6 +19,12 @@ export const report: MessageTree<typeof en> = {
   unavailable:
     "Dili available ang report karon (wala motubag ang OpenDota). Sulayi pag-usab human sa usa ka minuto.",
   noGames: "Walay public nga duwa gikan {from} hangtod {to}.",
+  empty: {
+    title: "Walay duwa niini nga range",
+    hint: "Gibasa sa report ang imong public nga match history gikan sa OpenDota. Kung naay kulang nga duwa, tan-awa kung naka-on ang “Expose Public Match Data” sa Dota 2.",
+    longer: "Ipakita ang miaging {n} ka adlaw",
+    overview: "Tan-awa ang sync sa overview",
+  },
   tiles: {
     games: "Mga duwa nga gidula",
     heroes: "Mga hero nga gidula",
