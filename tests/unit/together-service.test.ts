@@ -6,7 +6,7 @@ import type {
   SharedMatch,
   TogetherMatchesPort,
 } from "@/modules/together/together.ports";
-import { TogetherService } from "@/modules/together/together.service";
+import { MAX_NEW_DETAILS, TogetherService } from "@/modules/together/together.service";
 import type { AccountPair, PairClassification } from "@/modules/together/domain/pair";
 import type { Seat } from "@/modules/together/domain/relation";
 
@@ -165,6 +165,19 @@ describe("TogetherService.analysePair", () => {
     await run(30);
     // Everything cached: the last revisit made no match-detail calls.
     expect(calls).toHaveLength(7);
+  });
+
+  it("by default fetches at most MAX_NEW_DETAILS per visit and says the rest are pending", async () => {
+    const matches = Array.from({ length: MAX_NEW_DETAILS + 5 }, (_, i) => shared(i));
+    const { reader, calls } = seatReader(() => ({ me: party, friend: party }));
+    const repo = new MemoryRepo();
+    const first = await service({ matches, reader, repo }).svc.analysePair(ME, FRIEND);
+    expect(calls).toHaveLength(MAX_NEW_DETAILS);
+    expect(first.ok && first.value).toMatchObject({ pending: 5, interrupted: false });
+    // Stored classifications aren't fetched again: the next visit reads only the rest.
+    const second = await service({ matches, reader, repo }).svc.analysePair(ME, FRIEND);
+    expect(calls).toHaveLength(MAX_NEW_DETAILS + 5);
+    expect(second.ok && second.value.pending).toBe(0);
   });
 
   it("stops on a busy upstream without caching, but remembers permanent failures", async () => {

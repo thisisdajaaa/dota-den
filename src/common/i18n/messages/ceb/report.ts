@@ -5,7 +5,6 @@ export const report: MessageTree<typeof en> = {
   title: "Battle report",
   heading: "Imong battle report",
   description: "{from} hangtod {to}: tanan nimong public nga duwa, gikan sa OpenDota.",
-  descriptionFallback: "Imong mga duwa sulod sa usa ka panahon, gikan sa OpenDota.",
   period: "Panahon",
   lastDays: "Miaging {n} ka adlaw",
   custom: "Custom",
@@ -18,6 +17,8 @@ export const report: MessageTree<typeof en> = {
   tabs: { overview: "Kinatibuk-an", heroes: "Mga hero" },
   unavailable:
     "Dili available ang report karon (wala motubag ang OpenDota). Sulayi pag-usab human sa usa ka minuto.",
+  imported:
+    "Wala motubag ang OpenDota, mao nga kini nga report gikan sa mga duwa nga na-import na namo para nimo. Ang GPM, damage, last hits, roles ug replay stats gikan ra sa OpenDota ug wala sa una hangtod mobalik kini.",
   noGames: "Walay public nga duwa gikan {from} hangtod {to}.",
   tiles: {
     games: "Mga duwa nga gidula",
@@ -100,6 +101,8 @@ export const report: MessageTree<typeof en> = {
         "Gikan sa {n} ka na-parse nga replay ({parsed} sa mga duwa niining panahona ang na-parse{more}).",
     },
     more: "; naay mabasa pa matag bisita",
+    unavailable:
+      "Dili available ang replay stats karon (wala motubag ang OpenDota). Sulayi pag-usab human sa usa ka minuto.",
   },
   lanes: {
     title: "Resulta sa lane",

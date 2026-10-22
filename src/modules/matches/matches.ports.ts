@@ -148,6 +148,8 @@ export interface MatchQueries {
   ): Promise<MatchListPage>;
   /** Ranked results in a time range (for the MMR calendar). */
   rankedResults(accountId32: number, range: { from: Date; to: Date }): Promise<RankedResultRow[]>;
+  /** Every imported game (all types) that started in a time range, oldest first. */
+  factsBetween(accountId32: number, range: { from: Date; to: Date }): Promise<DashboardFact[]>;
   /** Heroes this account has imported matches on, most played first. */
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;

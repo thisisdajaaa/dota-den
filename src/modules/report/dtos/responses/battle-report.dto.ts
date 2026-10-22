@@ -13,6 +13,15 @@ export interface BattleReportView {
   /** The period of the same length just before, for comparison. */
   previous: { from: string; to: string; totals: PeriodTotals };
   current: PeriodTotals;
-  /** Lane outcomes and objectives from parsed replays read so far. */
-  replays: { aggregate: ReplayAggregate; parsedInPeriod: number };
+  /**
+   * Where the games came from: OpenDota's match list, or (when OpenDota couldn't be read) the
+   * games our match sync imported, which have no GPM, damage, lane or replay data.
+   */
+  source: "opendota" | "imported";
+}
+
+/** Lane outcomes and objectives from parsed replays read so far (streamed after the totals). */
+export interface ReportReplaysView {
+  aggregate: ReplayAggregate;
+  parsedInPeriod: number;
 }

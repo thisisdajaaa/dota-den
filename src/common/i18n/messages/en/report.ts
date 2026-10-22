@@ -3,7 +3,6 @@ export const report = {
   title: "Battle report",
   heading: "Your battle report",
   description: "{from} to {to}: all your public games, from OpenDota.",
-  descriptionFallback: "Your games over a period, from OpenDota.",
   period: "Period",
   lastDays: "Last {n} days",
   custom: "Custom",
@@ -16,6 +15,8 @@ export const report = {
   tabs: { overview: "Overview", heroes: "Heroes" },
   unavailable:
     "The report is unavailable right now (OpenDota didn't answer). Try again in a minute.",
+  imported:
+    "OpenDota didn't answer, so this report uses the games we've imported for you so far. GPM, damage, last hits, roles and replay stats come only from OpenDota and are left out until it's back.",
   noGames: "No public games between {from} and {to}.",
   tiles: {
     games: "Games played",
@@ -97,6 +98,8 @@ export const report = {
       other: "From {n} parsed replays ({parsed} of this period's games are parsed{more}).",
     },
     more: "; more are read each visit",
+    unavailable:
+      "Replay stats are unavailable right now (OpenDota didn't answer). Try again in a minute.",
   },
   lanes: {
     title: "Lane results",
