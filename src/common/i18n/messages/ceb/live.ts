@@ -5,7 +5,7 @@ export const live: MessageTree<typeof en> = {
   title: "Mga live nga duwa",
   kicker: "Live",
   description:
-    "Mga league ug pro nga duwa nga nahitabo karon, gikan sa spectator feed sa duwa (mga 15 ka minuto nga ulahi ang league games), ug ang mga public nga duwa nga pinakataas og MMR. Ablihi ang usa ka duwa para sa live nga pagbasa sa draft niini. Mo-refresh matag 30 segundos.",
+    "Mga league ug pro nga duwa nga nahitabo karon, gikan sa spectator feed sa duwa (mga 15 ka minuto nga ulahi ang league games), ug ang mga public nga duwa nga pinakataas og MMR. Ablihi ang usa ka duwa para sa live nga pagbasa sa draft niini. Mo-refresh matag minuto.",
   unavailable: "Dili available ang live feed karon. Sulayi pag-usab human sa usa ka minuto.",
   league: "Mga league nga duwa",
   noLeague: "Walay live nga league game karon.",

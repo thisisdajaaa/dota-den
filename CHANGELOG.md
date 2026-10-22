@@ -4,6 +4,15 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-22
+
+- The sync status no longer shows "Sync paused" after every successful sync
+- Match history imports about 5x faster, and a failed page no longer starts the import over
+- When OpenDota is down or busy, pages show the last good data instead of going empty
+- Live pages refresh every minute and stop in an untouched tab (far fewer OpenDota calls)
+- Signed-in pages make one session lookup instead of three
+- /patches no longer waits for a patch import; finished draft rooms poll less
+
 ## 2026-10-16
 
 - Hero coaching: items you win more with, your item timings and lane results (fixes #29)

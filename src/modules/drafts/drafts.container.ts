@@ -1,5 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
+import { after } from "next/server";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { GroqClient } from "@/common/llm/groq-client";
@@ -58,6 +59,14 @@ export function draftInsights(): OpenDotaDraftInsights {
     proDays: config.DRAFT_PRO_WINDOW_DAYS,
     synergyDays: config.DRAFT_SYNERGY_WINDOW_DAYS,
     freshMs: config.DRAFT_META_FRESH_HOURS * 3_600_000,
+    background: (task) => {
+      try {
+        after(task);
+      } catch {
+        // Outside a request (cron): the caller awaits its own work; let this one run.
+        void task;
+      }
+    },
   });
 }
 

@@ -8,7 +8,19 @@
 /** Cache shared by all instances (e.g. Redis). Implementations may throw; we fail open. */
 export interface SharedResponseCache {
   get(key: string): Promise<{ value: GatewayResponse; expiresAt: number } | null>;
-  set(key: string, value: GatewayResponse, ttlMs: number): Promise<void>;
+  /** Fresh for `ttlMs`; kept for `retainMs` (≥ ttlMs) so it can be served stale on failure. */
+  set(key: string, value: GatewayResponse, ttlMs: number, retainMs?: number): Promise<void>;
+}
+
+/** The most a cached answer is served past its expiry when the upstream fails. */
+export const MAX_STALE_MS = 24 * 3_600_000;
+
+/**
+ * How long past expiry a cached answer may stand in for a failed call: as long again as it
+ * was fresh, capped. A day-old hero list beats an empty one; a minute-old live list is fine.
+ */
+export function staleWindow(ttlMs: number): number {
+  return Math.min(ttlMs, MAX_STALE_MS);
 }
 
 /** Global call budget. `take` reserves one upstream call; false when exhausted. */
@@ -50,6 +62,8 @@ export interface GatewayOptions {
   sharedCache?: SharedResponseCache;
   /** Checked before every upstream call (each retry counts). */
   budget?: UpstreamBudget;
+  /** The upstream failed and an expired cached answer was served instead. */
+  onStale?: (event: { url: string; failure: string; ageMs: number }) => void;
   /** Shared cache or budget store failed; the gateway carried on without it. */
   onSharedError?: (event: { op: "cache_get" | "cache_set" | "budget"; error: unknown }) => void;
 }
@@ -136,6 +150,8 @@ export class ProviderGateway {
     } & CallOptions,
   ): Promise<GatewayResponse> {
     const shared = opts.cacheTtlMs ? this.opts.sharedCache : undefined;
+    // An expired answer, kept in case the upstream fails now.
+    let stale = opts.cacheTtlMs ? this.cache.get(url) : undefined;
     if (shared) {
       const hit = await shared.get(url).catch((error: unknown) => {
         this.opts.onSharedError?.({ op: "cache_get", error });
@@ -145,15 +161,31 @@ export class ProviderGateway {
         this.cache.set(url, hit);
         return hit.value;
       }
+      if (hit && (!stale || hit.expiresAt > stale.expiresAt)) stale = hit;
     }
     const res = await this.execute(url, opts.headers, opts);
+    if (
+      !res.ok &&
+      res.kind !== "not_found" &&
+      stale?.value.ok &&
+      opts.cacheTtlMs &&
+      this.now - stale.expiresAt <= staleWindow(opts.cacheTtlMs)
+    ) {
+      const fetchedAt = stale.value.fetchedAt;
+      this.opts.onStale?.({
+        url,
+        failure: res.kind,
+        ageMs: fetchedAt === undefined ? 0 : this.now - fetchedAt,
+      });
+      return stale.value;
+    }
     const cacheable = res.ok ? (opts.cacheIf?.(res.body) ?? true) : res.kind === "not_found";
     const ttl = res.ok && opts.cacheTtlFor ? opts.cacheTtlFor(res.body) : opts.cacheTtlMs;
     if (ttl && cacheable) {
       // Remember when it was fetched, so readers of the cache can show its real age.
       const value = res.ok ? { ...res, fetchedAt: this.now } : res;
       this.cache.set(url, { expiresAt: this.now + ttl, value });
-      await shared?.set(url, value, ttl).catch((error: unknown) => {
+      await shared?.set(url, value, ttl, ttl + staleWindow(ttl)).catch((error: unknown) => {
         this.opts.onSharedError?.({ op: "cache_set", error });
       });
     }

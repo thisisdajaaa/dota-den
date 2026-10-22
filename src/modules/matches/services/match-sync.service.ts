@@ -18,6 +18,17 @@ import { BACKFILL_COOLDOWN_MS, SYNC_COOLDOWN_MS } from "../domain/sync-policy";
 export { BACKFILL_COOLDOWN_MS, SYNC_COOLDOWN_MS };
 export const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
 export const PAGE_SIZE = 100;
+/**
+ * Page size for walking a history (first imports, older matches, lineups). The upstream reads
+ * the player's whole history for every page whatever its size, so big pages cost about the
+ * same as small ones and need far fewer calls.
+ */
+export const HISTORY_PAGE_SIZE = 500;
+/**
+ * History pages can be slow for long histories: allow more time, retry once, and keep a slow
+ * history from tripping the circuit breaker for every other OpenDota feature.
+ */
+export const HISTORY_PAGE_CALL = { timeoutMs: 20_000, maxRetries: 1, isolated: true } as const;
 /** While nothing is imported: how often we may ask the upstream to refetch the history. */
 export const HISTORY_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 /**
@@ -28,6 +39,11 @@ export const PERIODIC_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Time for the upstream to finish a refresh before we re-walk the whole history. */
 export const RESCAN_DELAY_MS = 15 * 60 * 1000;
 export const MAX_PAGES_PER_SYNC = 5;
+/**
+ * A sync the player is waiting on stops walking older history after this long; the rest
+ * continues on the next sync (new matches always come first and aren't cut short).
+ */
+export const ON_VISIT_HISTORY_BUDGET_MS = 25_000;
 
 export function toFact(
   m: ImportedPlayerMatch,
@@ -52,7 +68,10 @@ export class MatchSyncService {
       facts: MatchFactsPort;
       syncState: SyncStatesPort;
       now?: () => Date;
+      /** Page size for new matches on a known history. */
       pageSize?: number;
+      /** Page size for walking history (defaults to `pageSize` when only that is set). */
+      historyPageSize?: number;
       maxPages?: number;
     },
   ) {
@@ -78,7 +97,8 @@ export class MatchSyncService {
       deadline?: number;
     } = {},
   ): Promise<Result<SyncSummary, SyncError>> {
-    const pageSize = this.deps.pageSize ?? PAGE_SIZE;
+    const headPageSize = this.deps.pageSize ?? PAGE_SIZE;
+    const historyPageSize = this.deps.historyPageSize ?? this.deps.pageSize ?? HISTORY_PAGE_SIZE;
     let budget = opts.maxPages ?? this.deps.maxPages ?? MAX_PAGES_PER_SYNC;
 
     const lock = await this.deps.syncState.acquire(accountId32, {
@@ -122,6 +142,10 @@ export class MatchSyncService {
       let backfillOffset = fresh || rescan ? 0 : state.backfillOffset;
       let offset = 0;
       let newCount = 0;
+      // A first import is all history, so it walks in history-sized pages.
+      const pageSize = fresh ? historyPageSize : headPageSize;
+      // Set when a page fails after some progress: keep it and stop calling the upstream.
+      let upstreamFailed = false;
 
       // Head: walk from the newest match until we reach one we already have.
       while (budget > 0) {
@@ -136,7 +160,13 @@ export class MatchSyncService {
           break;
         const page = await this.fetchPage(accountId32, offset, pageSize, entries, summary);
         budget--;
-        if (!page.ok) return this.fail(accountId32, page.error);
+        if (!page.ok) {
+          // A first import keeps the pages it already has and carries on next time. A known
+          // history can't: newer pages already read could leave a gap of new games.
+          if (!fresh || offset === 0) return this.fail(accountId32, page.error);
+          upstreamFailed = true;
+          break;
+        }
         const { facts, rawCount } = page.value;
         for (const f of facts) {
           if (!newestStartedAt || f.startedAt > newestStartedAt) newestStartedAt = f.startedAt;
@@ -159,14 +189,23 @@ export class MatchSyncService {
       else backfillOffset += newCount;
 
       // Backfill: continue into older history.
-      while (budget > 0 && !summary.backfillComplete) {
+      while (budget > 0 && !summary.backfillComplete && !upstreamFailed) {
         if (opts.deadline !== undefined && this.now().getTime() >= opts.deadline) break;
-        const page = await this.fetchPage(accountId32, backfillOffset, pageSize, entries, summary);
+        const page = await this.fetchPage(
+          accountId32,
+          backfillOffset,
+          historyPageSize,
+          entries,
+          summary,
+        );
         budget--;
         // Older history can wait: keep what this sync already imported and try again later.
-        if (!page.ok) break;
-        backfillOffset += pageSize;
-        if (page.value.rawCount < pageSize) summary.backfillComplete = true;
+        if (!page.ok) {
+          upstreamFailed = true;
+          break;
+        }
+        backfillOffset += historyPageSize;
+        if (page.value.rawCount < historyPageSize) summary.backfillComplete = true;
       }
 
       // Lineups: games imported before lineups were kept are re-read, a page at a time, from
@@ -182,15 +221,21 @@ export class MatchSyncService {
           summary.lineupsComplete = true;
           break;
         }
-        if (budget <= 0) break;
+        if (budget <= 0 || upstreamFailed) break;
         if (opts.deadline !== undefined && this.now().getTime() >= opts.deadline) break;
-        const page = await this.fetchPage(accountId32, lineupOffset, pageSize, entries, summary);
+        const page = await this.fetchPage(
+          accountId32,
+          lineupOffset,
+          historyPageSize,
+          entries,
+          summary,
+        );
         budget--;
         // Lineups can wait too: carry on next time.
         if (!page.ok) break;
-        lineupOffset += pageSize;
+        lineupOffset += historyPageSize;
         // The whole history has been re-read: games left without lineups have none upstream.
-        if (page.value.rawCount < pageSize) summary.lineupsComplete = true;
+        if (page.value.rawCount < historyPageSize) summary.lineupsComplete = true;
       }
 
       // Ask the upstream to fetch the full history from Steam: on first sync, every 6h while
@@ -201,7 +246,7 @@ export class MatchSyncService {
       const refreshDue =
         !historyRefreshRequestedAt ||
         this.now().getTime() - historyRefreshRequestedAt.getTime() >= interval;
-      if (refreshDue) {
+      if (refreshDue && !upstreamFailed) {
         const requested = await this.deps.provider.requestHistoryRefresh(accountId32);
         if (requested.ok) {
           historyRefreshRequestedAt = this.now();
@@ -274,7 +319,11 @@ export class MatchSyncService {
     timeline: readonly PatchTimelineEntry[],
     summary: SyncSummary,
   ): Promise<Result<{ facts: PlayerMatchFact[]; rawCount: number }, ProviderError>> {
-    const page = await this.deps.provider.fetchPlayerMatches(accountId32, { offset, limit });
+    const page = await this.deps.provider.fetchPlayerMatches(
+      accountId32,
+      { offset, limit },
+      HISTORY_PAGE_CALL,
+    );
     if (!page.ok) return page;
     const facts = page.value.matches.map((m) => toFact(m, timeline));
     const written = await this.deps.facts.upsertMany(facts);

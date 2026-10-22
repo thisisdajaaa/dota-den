@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AlertTriangle } from "lucide-react";
 import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
-import { liveService } from "@/modules/live";
+import { LIVE_CACHE_SECONDS, liveService } from "@/modules/live";
 import { AutoRefresh } from "@/modules/live/ui/auto-refresh";
 import { LiveGameCard } from "@/modules/live/ui/live-game-card";
 import { matchesService } from "@/modules/matches";
@@ -25,7 +25,7 @@ export default async function LivePage() {
         title={t("live.title")}
         description={t("live.description")}
       />
-      <AutoRefresh seconds={30} />
+      <AutoRefresh seconds={LIVE_CACHE_SECONDS} />
       {!overview ? (
         <section
           role="alert"

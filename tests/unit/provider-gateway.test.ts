@@ -140,6 +140,39 @@ describe("ProviderGateway", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  it("serves the last good answer when the upstream fails after it expires", async () => {
+    const onStale = vi.fn();
+    const { gw, advance } = gateway([json({ v: 1 }), json({}, 503), json({}, 503), json({}, 503)], {
+      onStale,
+      maxRetries: 2,
+    });
+    const opts = { cacheTtlMs: 60_000 };
+    await gw.getJson("https://x/h", opts);
+    advance(90_000); // expired 30s ago: within the stale window (as long again as the TTL)
+    expect(await gw.getJson("https://x/h", opts)).toMatchObject({ ok: true, body: { v: 1 } });
+    expect(onStale).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "https://x/h", failure: "failed" }),
+    );
+  });
+
+  it("doesn't serve an answer past the stale window, or stand in for a not-found", async () => {
+    const { gw, advance } = gateway([
+      json({ v: 1 }),
+      json({}, 503),
+      json({}, 503),
+      json({}, 503),
+      json({ v: 2 }),
+      json({}, 404),
+    ]);
+    const opts = { cacheTtlMs: 60_000 };
+    await gw.getJson("https://x/h", opts);
+    advance(200_000); // 140s past expiry: too old
+    expect(await gw.getJson("https://x/h", opts)).toMatchObject({ ok: false, kind: "failed" });
+    await gw.getJson("https://x/h", opts); // { v: 2 }
+    advance(61_000);
+    expect(await gw.getJson("https://x/h", opts)).toMatchObject({ kind: "not_found" });
+  });
+
   it("opens the circuit after repeated failures and recovers after the open window", async () => {
     const { gw, fetch, advance } = gateway([json({}, 400), json({}, 400), json({ ok: 1 })], {
       failureThreshold: 2,

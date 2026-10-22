@@ -33,11 +33,12 @@ export class RedisResponseCache implements SharedResponseCache {
     return parsed && typeof parsed.expiresAt === "number" ? parsed : null;
   }
 
-  async set(url: string, value: GatewayResponse, ttlMs: number): Promise<void> {
+  async set(url: string, value: GatewayResponse, ttlMs: number, retainMs?: number): Promise<void> {
     const now = (this.opts.now ?? Date.now)();
     const raw = JSON.stringify({ value, expiresAt: now + ttlMs });
     if (Buffer.byteLength(raw) > MAX_SHARED_BODY_BYTES) return;
-    await this.redis.set(this.key(url), raw, { px: ttlMs });
+    // Kept past expiry (when asked) so the gateway can serve it if the upstream fails.
+    await this.redis.set(this.key(url), raw, { px: Math.max(ttlMs, retainMs ?? ttlMs) });
   }
 }
 

@@ -5,7 +5,7 @@ export const live: MessageTree<typeof en> = {
   title: "Mga live na laro",
   kicker: "Live",
   description:
-    "Mga league at pro na laro na nangyayari ngayon, mula sa spectator feed ng laro (mga 15 minutong huli ang league games), at ang mga public na laro na may pinakamataas na MMR. Buksan ang isang laro para sa live na pagsusuri ng draft nito. Nagre-refresh kada 30 segundo.",
+    "Mga league at pro na laro na nangyayari ngayon, mula sa spectator feed ng laro (mga 15 minutong huli ang league games), at ang mga public na laro na may pinakamataas na MMR. Buksan ang isang laro para sa live na pagsusuri ng draft nito. Nagre-refresh kada minuto.",
   unavailable: "Hindi available ang live feed ngayon. Subukan ulit pagkalipas ng isang minuto.",
   league: "Mga league na laro",
   noLeague: "Walang live na league game ngayon.",

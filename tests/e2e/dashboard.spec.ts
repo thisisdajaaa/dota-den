@@ -128,12 +128,14 @@ test("sync waits out a busy OpenDota and tries again by itself", async ({ page }
       busyNext = false;
       await route.fulfill({
         status: 429,
+        // The ServiceResponse envelope the API really sends.
         json: {
-          error: {
-            code: "rate_limited",
-            message: "OpenDota is busy right now.",
-            details: { reason: "upstream_rate_limited", retryAt: new Date().toISOString() },
-          },
+          success: false,
+          message: "OpenDota is busy right now.",
+          data: null,
+          statusCode: 429,
+          code: "rate_limited",
+          details: { reason: "upstream_rate_limited", retryAt: new Date().toISOString() },
         },
       });
     } else {

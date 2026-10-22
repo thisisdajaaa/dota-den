@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -66,45 +67,20 @@ export function SyncControl({
     // Pressing "Sync now" starts the automatic retries over.
     if (manual) retries.current = 0;
     setStatus("syncing");
+    let s: SyncSummary;
     try {
-      const res = await fetch("/api/v1/me/matches/sync", { method: "POST" });
-      const body: unknown = await res.json().catch(() => null);
-      if (res.ok) {
-        retries.current = 0;
-        const s = body as SyncSummary;
-        const stillEmpty = awaitingRef.current && s.fetched === 0;
-        awaitingRef.current = stillEmpty;
-        setAwaiting(stillEmpty);
-        setImporting(!s.backfillComplete);
-        importingRef.current = !s.backfillComplete || stillEmpty;
-        if (s.inserted > 0) {
-          toast.success(
-            t(s.inserted === 1 ? "matches.sync.imported.one" : "matches.sync.imported.other", {
-              n: s.inserted,
-            }),
-          );
-        } else if (manual) {
-          toast(t("matches.sync.upToDate"));
-        }
-        router.refresh();
-        if (!s.backfillComplete) {
-          setStatus("waiting");
-          schedule(backfillCooldownMs + 1_000);
-        } else if (stillEmpty) {
-          setStatus("waiting");
-          schedule(recheckMs + 1_000);
-        } else {
-          setStatus("idle");
-        }
+      s = await apiRequest<SyncSummary>("/api/v1/me/matches/sync", { method: "POST" });
+    } catch (e) {
+      if (!(e instanceof ApiClientError)) {
+        setStatus("error");
+        if (manual) toast.error(t("matches.sync.network"));
         return;
       }
-      const details = (
-        body as { error?: { details?: { retryAt?: string; reason?: string } } } | null
-      )?.error?.details;
+      const details = e.details as { retryAt?: string; reason?: string } | undefined;
       const retryAt = details?.retryAt;
       // OpenDota busy (rate limited) or down: wait and try again a few times before giving up.
-      const upstreamBusy = res.status === 429 && details?.reason === "upstream_rate_limited";
-      if ((upstreamBusy || res.status >= 500) && retries.current < MAX_AUTO_RETRIES) {
+      const upstreamBusy = e.status === 429 && details?.reason === "upstream_rate_limited";
+      if ((upstreamBusy || e.status >= 500) && retries.current < MAX_AUTO_RETRIES) {
         retries.current++;
         setStatus("busy");
         if (manual) toast(t("matches.sync.busyToast"));
@@ -115,7 +91,7 @@ export function SyncControl({
         );
         return;
       }
-      if (res.status === 429 && retryAt && !upstreamBusy) {
+      if (e.status === 429 && retryAt && !upstreamBusy) {
         // Cooldown: quietly try again once it passes if history is still importing.
         if (manual) toast(t("matches.sync.cooldown"));
         setStatus(importingRef.current ? "waiting" : "idle");
@@ -124,20 +100,41 @@ export function SyncControl({
         }
         return;
       }
-      if (res.status === 409) {
+      if (e.status === 409) {
         // Another sync (e.g. a background import chunk) is running: check again shortly.
         setStatus(importingRef.current ? "waiting" : "idle");
         if (importingRef.current) schedule(15_000);
         return;
       }
-      const message =
-        (body as { error?: { message?: string } } | null)?.error?.message ??
-        t("matches.sync.failed");
       setStatus("error");
-      if (manual) toast.error(message);
-    } catch {
-      setStatus("error");
-      if (manual) toast.error(t("matches.sync.network"));
+      if (manual) toast.error(e.message || t("matches.sync.failed"));
+      return;
+    }
+
+    retries.current = 0;
+    const stillEmpty = awaitingRef.current && s.fetched === 0;
+    awaitingRef.current = stillEmpty;
+    setAwaiting(stillEmpty);
+    setImporting(!s.backfillComplete);
+    importingRef.current = !s.backfillComplete || stillEmpty;
+    if (s.inserted > 0) {
+      toast.success(
+        t(s.inserted === 1 ? "matches.sync.imported.one" : "matches.sync.imported.other", {
+          n: s.inserted,
+        }),
+      );
+    } else if (manual) {
+      toast(t("matches.sync.upToDate"));
+    }
+    router.refresh();
+    if (!s.backfillComplete) {
+      setStatus("waiting");
+      schedule(backfillCooldownMs + 1_000);
+    } else if (stillEmpty) {
+      setStatus("waiting");
+      schedule(recheckMs + 1_000);
+    } else {
+      setStatus("idle");
     }
   }
 
