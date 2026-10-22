@@ -8,9 +8,7 @@ export const live: MessageTree<typeof en> = {
     "Mga live nga Dota 2 stream nga imong matan-aw dinhi mismo, ang mga streamer nga imong gi-follow, ug ang mga league ug top public nga duwa nga nahitabo karon. Mo-refresh matag minuto.",
   unavailable: "Dili available ang live feed karon. Sulayi pag-usab human sa usa ka minuto.",
   league: "Mga league nga duwa",
-  noLeague: "Walay live nga league game karon.",
   topPublic: "Mga public nga duwa nga pinakataas og MMR",
-  noPublic: "Wala pay na-report karon.",
   leagueGame: "League game",
   publicGame: "Public nga duwa",
   versus: "{radiant} vs {dire}",
@@ -45,16 +43,19 @@ export const live: MessageTree<typeof en> = {
       "Mogawas ang pagbasa sa draft kung naka-pick na og lima ka hero ang duha ka team.",
   },
   games: {
-    title: "Mga live nga duwa",
+    title: "Mga live nga duwa nga naka-stream",
     subtitle:
-      "Gikan sa spectator feed sa duwa: mga 15 ka minuto nga ulahi ang league games. Ablihi ang usa ka duwa para sa live nga pagbasa sa draft niini.",
+      "Mga pro ug top public nga duwa nga adunay nag-stream sa Twitch o Kick, sumala sa titulo sa stream. Mga 15 ka minuto nga ulahi ang league games. Ablihi ang usa aron tan-awon ug basahon ang draft niini nga live.",
+    none: "Walay live nga duwa nga naka-stream karon. Tan-awa ang mga stream sa ibabaw.",
+    streamsUnknown:
+      "Wala motubag ang mga streaming site, mao nga dili namo mahibal-an kung unsang mga duwa ang naka-stream karon.",
   },
   hub: {
     loading: "Gi-load ang mga live stream…",
     streams: {
       title: "Live karon",
       subtitle:
-        "Mga Dota 2 stream, ang pinakadaghang nagtan-aw una. Pili og usa aron tan-awon dinhi.",
+        "Mga Dota 2 stream sa Twitch ug Kick, ang pinakadaghang nagtan-aw una. Pili og usa aron tan-awon dinhi.",
       language: "Pinulongan",
       allLanguages: "Tanang pinulongan ({n})",
       languageOption: "{name} ({n})",
@@ -62,7 +63,8 @@ export const live: MessageTree<typeof en> = {
       showMore: "Ipakita ang {n} pa",
       showing: "Gipakita ang {shown} sa {total} ka stream",
       none: "Walay nag-stream og Dota 2 karon.",
-      empty: "Walay Dota 2 stream niini nga pinulongan karon. Sulayi ang laing pinulongan.",
+      siteTitle: "Live sa {platform}",
+      siteEmpty: "Walay {platform} stream niini nga pinulongan karon.",
       unavailable:
         "Wala motubag ang mga streaming site karon, busa dili malista ang mga stream. Mobalik sila sa sunod nga refresh.",
       notConfigured: "Wala pa ma-set up ang listahan sa mga stream niini nga server.",

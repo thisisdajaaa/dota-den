@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-23
 
+- Watch live: Twitch and Kick streams in their own sections, so Kick is easy to find
+- Live games only lists games someone is streaming on Twitch or Kick
 - Meta overview: heroes are placed by where they're actually played (no more mid heroes listed as carries)
 - One sign-in button on the "Sign in required" page
 - Kick streams on Watch live next to Twitch: in the grid, in search, and to follow

@@ -36,11 +36,16 @@ test("guests browse live streams, filter by language and watch one in the page",
 
   const streams = page.getByRole("region", { name: "Live now" });
   const cards = streams.getByRole("button", { name: /^Watch / });
+  // One section per site, so Twitch's big streams can't bury Kick's.
+  const twitch = streams.getByRole("region", { name: /Live on Twitch/ });
+  const kick = streams.getByRole("region", { name: /Live on Kick/ });
+  const twitchCards = twitch.getByRole("button", { name: /^Watch / });
   // Most watched first.
-  await expect(cards.first()).toHaveAccessibleName("Watch RankedGrinder");
-  await expect(cards.nth(1)).toHaveAccessibleName("Watch FixtureCasts");
-  await expect(streams).toContainText("Showing 12 of 30 streams");
-  await expect(streams).toContainText("30K watching");
+  await expect(twitchCards.first()).toHaveAccessibleName("Watch RankedGrinder");
+  await expect(twitchCards.nth(1)).toHaveAccessibleName("Watch FixtureCasts");
+  await expect(twitch).toContainText("Showing 8 of 28 streams");
+  await expect(twitch).toContainText("30K watching");
+  await expect(kick).toContainText("Showing 2 of 2 streams");
   // The live game a title mentions, labelled as a guess.
   const guess = streams.getByRole("link", {
     name: "Fixture Falcons vs Fixture Titans: open the live game (a guess from the stream title)",
@@ -50,15 +55,17 @@ test("guests browse live streams, filter by language and watch one in the page",
 
   await clickUntil(
     page,
-    () => streams.getByRole("button", { name: "Show 12 more" }).click({ timeout: 2_000 }),
-    () => expect(streams).toContainText("Showing 24 of 30 streams", { timeout: 3_000 }),
+    () => twitch.getByRole("button", { name: "Show 8 more" }).click({ timeout: 2_000 }),
+    () => expect(twitch).toContainText("Showing 16 of 28 streams", { timeout: 3_000 }),
   );
-  await streams.getByRole("button", { name: "Show 6 more" }).click();
-  await expect(streams).toContainText("Showing 30 of 30 streams");
+  await twitch.getByRole("button", { name: "Show 8 more" }).click();
+  await twitch.getByRole("button", { name: "Show 4 more" }).click();
+  await expect(twitch).toContainText("Showing 28 of 28 streams");
   await expect(streams.getByRole("button", { name: /^Show \d+ more$/ })).toHaveCount(0);
   // Twitch says "tl" and Kick "fil": one Filipino option holds both.
   await streams.getByLabel("Language").selectOption("fil");
-  await expect(streams).toContainText("Showing 2 of 2 streams");
+  await expect(twitch).toContainText("Showing 1 of 1 streams");
+  await expect(kick).toContainText("Showing 1 of 1 streams");
   await expect(cards).toHaveCount(2);
   await expect(cards.first()).toHaveAccessibleName("Watch PinoyDota");
   await streams.getByLabel("Language").selectOption("");

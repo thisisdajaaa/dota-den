@@ -8,6 +8,10 @@ export interface WatchOptions {
 }
 
 export interface LiveOverview {
+  /** League games someone is streaming. */
   league: LiveGame[];
+  /** Top public games someone is streaming. */
   topPublic: LiveGame[];
+  /** False when no streaming site answered, so watchable games couldn't be found. */
+  streamsKnown: boolean;
 }
