@@ -150,6 +150,36 @@ export class PlayersService {
     );
   }
 
+  /**
+   * A profile to show without waiting on OpenDota (your own dashboard banner): the saved copy
+   * whatever its age, else fetched now and saved. `saved: true` means it may be out of date,
+   * so call refreshProfile once the page is sent.
+   */
+  async quickProfile(
+    accountId32: number,
+  ): Promise<{ profile: PlayerProfileSnapshot | null; saved: boolean }> {
+    const saved = this.deps.snapshots
+      ? await this.deps.snapshots.getMany([accountId32]).catch(() => null)
+      : null;
+    const copy = saved?.get(accountId32);
+    if (copy) {
+      const { fetchedAt: _at, ...p } = copy;
+      return { profile: { ...p, avatarUrl: this.deps.safeAvatar(p.avatarUrl) }, saved: true };
+    }
+    return { profile: await this.refreshProfile(accountId32), saved: false };
+  }
+
+  /** A profile fetched now (and saved); null when OpenDota can't provide it. */
+  async refreshProfile(accountId32: number): Promise<PlayerProfileSnapshot | null> {
+    const res = await this.deps.profiles.fetchPlayerProfile(accountId32);
+    if (!res.ok) {
+      this.warnOnError("player_profile_failed", { accountId32 }, res);
+      return null;
+    }
+    await this.deps.snapshots?.save(res.value, this.deps.now?.() ?? new Date()).catch(() => {});
+    return { ...res.value, avatarUrl: this.deps.safeAvatar(res.value.avatarUrl) };
+  }
+
   /** The owner's tracked players, newest first, with live public details for one page. */
   async trackedPlayers(owner: FollowOwner, page = 1): Promise<TrackedPlayersPage> {
     const follows = await this.deps.follows.list(owner);

@@ -78,3 +78,41 @@ describe("public profile snapshots", () => {
     expect(fetchPlayerProfile).toHaveBeenCalledWith(3);
   });
 });
+
+describe("quick profile (your own banner)", () => {
+  it("uses a saved copy of any age without calling OpenDota", async () => {
+    const old = new Date(now.getTime() - 20 * 24 * 3_600_000);
+    const { svc, fetchPlayerProfile } = setup([{ ...profile(1, "saved"), fetchedAt: old }]);
+    const got = await svc.quickProfile(1);
+    expect(got).toEqual({ profile: profile(1, "saved"), saved: true });
+    expect(fetchPlayerProfile).not.toHaveBeenCalled();
+  });
+
+  it("fetches and saves when there's no saved copy", async () => {
+    const { svc, store } = setup([]);
+    expect(await svc.quickProfile(1)).toEqual({ profile: profile(1, "fresh 1"), saved: false });
+    expect(store.get(1)?.fetchedAt).toEqual(now);
+  });
+
+  it("fetches when the saved copies can't be read, and is null when OpenDota fails too", async () => {
+    const { svc, snapshots } = setup([], [2]);
+    vi.mocked(snapshots.getMany).mockRejectedValue(new Error("db down"));
+    expect((await svc.quickProfile(1)).profile?.personaName).toBe("fresh 1");
+    expect(await svc.quickProfile(2)).toEqual({ profile: null, saved: false });
+  });
+
+  it("refreshes a saved copy, and keeps it when OpenDota fails", async () => {
+    const old = new Date(now.getTime() - 60_000);
+    const { svc, store } = setup(
+      [
+        { ...profile(1, "old"), fetchedAt: old },
+        { ...profile(2, "old"), fetchedAt: old },
+      ],
+      [2],
+    );
+    expect((await svc.refreshProfile(1))?.personaName).toBe("fresh 1");
+    expect(store.get(1)).toEqual({ ...profile(1, "fresh 1"), fetchedAt: now });
+    expect(await svc.refreshProfile(2)).toBeNull();
+    expect(store.get(2)?.personaName).toBe("old");
+  });
+});
