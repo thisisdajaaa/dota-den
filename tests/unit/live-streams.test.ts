@@ -18,6 +18,7 @@ import {
   languageOptions,
   mergeStreams,
   thumbnail,
+  languageCode,
 } from "@/modules/live/domain/streams";
 import type { LiveStream } from "@/modules/live/domain/watch";
 
@@ -126,6 +127,18 @@ describe("stream lists", () => {
       "twitch:a",
       "twitch:same",
     ]);
+  });
+
+  it('treats Twitch\'s "tl" and Kick\'s "fil" as one language', () => {
+    expect(languageCode("TL")).toBe("fil");
+    expect(languageCode("fil")).toBe("fil");
+    expect(languageCode("")).toBe("other");
+    const streams = [{ language: "tl" }, { language: "fil" }, { language: "en" }];
+    expect(languageOptions(streams)).toEqual([
+      { code: "fil", streams: 2 },
+      { code: "en", streams: 1 },
+    ]);
+    expect(inLanguage(streams, "fil")).toHaveLength(2);
   });
 
   it("lists languages by number of streams and filters by one", () => {

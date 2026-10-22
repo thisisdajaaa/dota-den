@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, Radio, TvMinimal } from "lucide-react";
 import { useLocale, useT } from "@/common/i18n/client";
 import { channelKey } from "../domain/platform";
-import { inLanguage, languageOptions } from "../domain/streams";
+import { inLanguage, languageCode, languageOptions } from "../domain/streams";
 import type { LiveStream, StreamGameHint } from "../domain/watch";
 import { StreamCard } from "./stream-card";
 
@@ -119,7 +119,7 @@ export function StreamsGrid({
                 stream={s}
                 hint={hints[channelKey(s.platform, s.channel)]}
                 playing={watching === channelKey(s.platform, s.channel)}
-                languageName={languageName(s.language)}
+                languageName={languageName(languageCode(s.language))}
                 onWatch={() => onWatch(s)}
                 follow={followControl?.(s)}
               />
