@@ -4,8 +4,9 @@ import { buildSitemap } from "@/common/utils/sitemap";
 import { matchesService } from "@/modules/matches";
 import { patchesService } from "@/modules/patches";
 
-// Rebuilt at most every six hours; crawlers read the cached copy.
-export const revalidate = 21600;
+// Built per request, not at build time: the build has no stored patches (and shouldn't call
+// OpenDota). Crawlers fetch it a few times a day; each build is a few small cached reads.
+export const dynamic = "force-dynamic";
 
 /** Most patches a sitemap lists (newest first), in pages of the API's largest size. */
 const MAX_PATCH_PAGES = 6;
