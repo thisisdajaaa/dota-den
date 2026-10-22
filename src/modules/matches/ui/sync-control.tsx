@@ -21,6 +21,8 @@ type Status = "idle" | "syncing" | "waiting" | "busy" | "error";
 /** Automatic retries when OpenDota is busy or down, before showing "paused". */
 const MAX_AUTO_RETRIES = 4;
 const UNAVAILABLE_RETRY_MS = 90_000;
+/** Another sync is running: a sync takes seconds, so look again soon. */
+const BUSY_RECHECK_MS = 5_000;
 
 /**
  * Keeps the signed-in player's matches fresh without a button press:
@@ -53,6 +55,8 @@ export function SyncControl({
   const awaitingRef = useRef(awaitingHistory);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retries = useRef(0);
+  // Another tab's sync was running when this one asked: show its result once it's done.
+  const behind = useRef(false);
   const started = useRef(false);
   // Timers call through this ref so a scheduled retry always runs the latest `sync`.
   const syncRef = useRef<(manual: boolean) => Promise<void>>(async () => {});
@@ -94,6 +98,10 @@ export function SyncControl({
       if (e.status === 429 && retryAt && !upstreamBusy) {
         // Cooldown: quietly try again once it passes if history is still importing.
         if (manual) toast(t("matches.sync.cooldown"));
+        if (behind.current) {
+          behind.current = false;
+          router.refresh();
+        }
         setStatus(importingRef.current ? "waiting" : "idle");
         if (importingRef.current) {
           schedule(Math.max(1_000, new Date(retryAt).getTime() - Date.now() + 1_000));
@@ -101,9 +109,11 @@ export function SyncControl({
         return;
       }
       if (e.status === 409) {
-        // Another sync (e.g. a background import chunk) is running: check again shortly.
+        // Another sync (another tab, or a background import chunk) is running: check again
+        // shortly, then refresh to show what it imported.
+        behind.current = true;
         setStatus(importingRef.current ? "waiting" : "idle");
-        if (importingRef.current) schedule(15_000);
+        schedule(BUSY_RECHECK_MS);
         return;
       }
       setStatus("error");
@@ -112,6 +122,7 @@ export function SyncControl({
     }
 
     retries.current = 0;
+    behind.current = false;
     const stillEmpty = awaitingRef.current && s.fetched === 0;
     awaitingRef.current = stillEmpty;
     setAwaiting(stillEmpty);
