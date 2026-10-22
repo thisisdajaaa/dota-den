@@ -1,8 +1,13 @@
 import { ImageResponse } from "next/og";
+import { clientKey, rateLimit } from "@/common/http/rate-limit";
+import { asGuestWork } from "@/common/providers/background-work";
 import { OG, OG_SIZE, OgFrame, OgHero } from "@/components/og/og-frame";
 import { matchesService } from "@/modules/matches";
 
 const size = OG_SIZE;
+
+/** Per client IP. Real previews come from a CDN cache; this stops id-walking crawlers. */
+const RATE_LIMIT = { limit: 60, windowMs: 60_000 };
 
 const duration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
@@ -81,10 +86,18 @@ async function render(matchId: string) {
 
 /**
  * GET /og/match/:matchId: the match preview at a stable URL (page metadata, Discord posts).
- * Finished matches don't change, so it's cached for a week.
+ * Finished matches don't change, so it's cached for a week. Mostly fetched by link-preview
+ * bots, so its OpenDota calls always use the guest share of the budget.
  */
-export async function GET(_req: Request, { params }: { params: Promise<{ matchId: string }> }) {
-  const { image, found } = await render((await params).matchId);
+export async function GET(req: Request, { params }: { params: Promise<{ matchId: string }> }) {
+  const { limit, windowMs } = RATE_LIMIT;
+  if (!(await rateLimit(`og-match:${clientKey(req)}`, limit, windowMs)))
+    return new Response("Too many requests", {
+      status: 429,
+      headers: { "retry-after": String(windowMs / 1000), "cache-control": "no-store" },
+    });
+  const matchId = (await params).matchId;
+  const { image, found } = await asGuestWork(() => render(matchId));
   image.headers.set(
     "cache-control",
     found
