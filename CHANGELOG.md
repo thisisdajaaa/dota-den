@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-23
+
+- Kick streams on Watch live next to Twitch: in the grid, in search, and to follow
+
 ## 2026-10-22
 
 - Watch live: Dota 2 streams to watch right on /live with chat, streamer search, and following
