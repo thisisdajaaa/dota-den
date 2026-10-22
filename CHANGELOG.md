@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-22
 
+- The sync status no longer shows "Sync paused" after every successful sync
 - Match history imports about 5x faster, and a failed page no longer starts the import over
 - When OpenDota is down or busy, pages show the last good data instead of going empty
 - Live pages refresh every minute and stop in an untouched tab (far fewer OpenDota calls)
