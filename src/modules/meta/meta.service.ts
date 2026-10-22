@@ -12,8 +12,9 @@ import {
   MIN_PRO_DRAFTS,
   type LaneStats,
   type ProDrafts,
+  type RankedHero,
 } from "./domain/meta-stats";
-import { deriveRole, type Position } from "./domain/position";
+import { deriveRole, POSITIONS, type Position } from "./domain/position";
 import type { MetaHero, MetaStatsSource, PlayerLaneHistory, SourceError } from "./meta.ports";
 import type { LatestPatchResult, LatestPatchSource } from "./meta.ports";
 import type {
@@ -152,20 +153,22 @@ export class MetaService {
   }
 
   /**
-   * Best heroes per pool from the cached public hero stats only: one upstream call for every
-   * pool, no per-hero lane fan-out. Picking a role gives the lane-checked ranking.
+   * Best heroes per pool from the same lane-checked ranking as a picked role, so a hero sits
+   * where it's actually played (role tags call Outworld Devourer a carry; lane data says mid).
+   * Lane data is cached per hero for a day and warmed by the daily job, so this is cache reads.
    */
   async overview(limit = OVERVIEW_HEROES): Promise<Result<OverviewView, SourceError>> {
-    const heroes = await this.deps.heroes();
-    if (heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
-    const pub = await this.deps.stats.heroStats();
-    if (!pub.ok) return pub;
-    if (pub.value.value.length === 0)
-      return err({ type: "invalid_payload", cause: "no hero stats" });
-    return ok({
-      pools: overviewPools(heroes, pub.value.value, limit),
-      fetchedAt: pub.value.fetchedAt,
+    const results = await Promise.all(POSITIONS.map((p) => this.topHeroes(p)));
+    const byPosition = new Map<Position, RankedHero[]>();
+    let fetchedAt: Date | null = null;
+    POSITIONS.forEach((p, i) => {
+      const r = results[i];
+      if (!r.ok) return;
+      byPosition.set(p, r.value.heroes);
+      fetchedAt ??= r.value.sources.publicFetchedAt;
     });
+    if (fetchedAt === null) return results[0] as Result<never, SourceError>;
+    return ok({ pools: overviewPools(byPosition, limit), fetchedAt });
   }
 
   /** The heroes most picked or banned in recent tournaments (one cached explorer query). */
@@ -223,9 +226,17 @@ export class MetaService {
       stats.proDrafts().catch(() => null),
       stats.proLaneDuos().catch(() => null),
     ]);
+    // Every position's lane data (about 130 heroes, once a day, from the member budget), so
+    // the overview and role pages read a warm cache instead of making visitors wait.
+    const lanes = [];
+    for (const p of POSITIONS) lanes.push(await this.topHeroes(p).catch(() => null));
     return [
       { key: "proDrafts", ok: drafts?.ok ?? false },
       { key: "proLaneDuos", ok: duos?.ok ?? false },
+      {
+        key: "laneRoles",
+        ok: lanes.every((r) => r?.ok === true && r.value.sources.lane === "ok"),
+      },
     ];
   }
 }

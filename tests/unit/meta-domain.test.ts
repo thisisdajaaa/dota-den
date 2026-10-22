@@ -424,36 +424,40 @@ describe("patch tips", () => {
 });
 
 describe("meta overview", () => {
-  const catalog = [
-    { id: 1, roles: CARRY },
-    { id: 2, roles: CARRY },
-    { id: 3, roles: INITIATOR },
-    { id: 4, roles: INITIATOR },
-    { id: 5, roles: SUPPORT },
-    { id: 6, roles: SUPPORT },
-    { id: 7, roles: SUPPORT },
-  ];
-  const all = [
-    stats(1, 50_000, 0.55),
-    stats(2, 50_000, 0.52),
-    stats(3, 50_000, 0.54),
-    stats(4, 50_000, 0.5),
-    stats(5, 50_000, 0.53),
-    stats(6, 50_000, 0.51),
-    // No stats for hero 7: left out, never guessed.
-  ];
+  const ranked = (heroId: number, score: number, share: number | null): RankedHero => ({
+    heroId,
+    score,
+    highRank: null,
+    lane: share === null ? null : { games: 500, wins: 270, rate: 0.54, adjusted: 0.53, share },
+    laneKnown: share !== null,
+    pro: null,
+    trend: null,
+  });
 
-  it("ranks each pool by high-rank win rate, using catalog roles only", () => {
-    const pools = overviewPools(catalog, all, 2);
+  it("lists each hero once, in the pool where it plays most, best first", () => {
+    // Hero 76 is tagged Carry, so it shows up in the Pos 1 ranking, but plays 94% mid.
+    const pools = overviewPools(
+      new Map([
+        [1, [ranked(76, 0.6, 0.04), ranked(1, 0.55, 0.8), ranked(2, 0.5, 0.7)]],
+        [2, [ranked(76, 0.58, 0.94), ranked(3, 0.52, 0.85)]],
+        [3, [ranked(4, 0.54, 0.86), ranked(1, 0.4, 0.1)]],
+        [4, [ranked(5, 0.53, 0.6)]],
+        [5, [ranked(6, 0.51, 0.82), ranked(5, 0.5, 0.3)]],
+      ]),
+      2,
+    );
     expect(pools.map((p) => p.key)).toEqual(["carry", "core", "support"]);
     expect(pools.map((p) => p.positions)).toEqual([[1], [2, 3], [4, 5]]);
     expect(pools[0].heroes.map((h) => h.heroId)).toEqual([1, 2]);
-    // Carries can play mid too, but each hero is listed once.
-    expect(pools[1].heroes.map((h) => h.heroId)).toEqual([3, 4]);
+    expect(pools[1].heroes.map((h) => h.heroId)).toEqual([76, 4]);
     expect(pools[2].heroes.map((h) => h.heroId)).toEqual([5, 6]);
-    expect(pools.flatMap((p) => p.heroes).every((h) => h.lane === null && h.pro === null)).toBe(
-      true,
-    );
+  });
+
+  it("keeps the other pools when a position's ranking is missing", () => {
+    const pools = overviewPools(new Map([[1, [ranked(1, 0.55, null)]]]), 3);
+    expect(pools[0].heroes.map((h) => h.heroId)).toEqual([1]);
+    expect(pools[1].heroes).toEqual([]);
+    expect(pools[2].heroes).toEqual([]);
   });
 
   it("lists the most picked or banned tournament heroes first", () => {

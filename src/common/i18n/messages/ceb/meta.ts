@@ -115,7 +115,7 @@ export const meta: MessageTree<typeof en> = {
     kicker: "Dali nga tan-aw",
     title: "Pinakakusgan nga mga hero karon",
     description:
-      "Pinakataas nga win rate sa Ancient hangtod Immortal para sa matag klase sa role, ug ang gagmay nga sample gibira paingon sa 50%. Pili og role sa ibabaw para sa tibuok ranking nga adunay lane data ug tournament.",
+      "Ang labing maayong mga hero sa Ancient hangtod Immortal para sa matag klase sa role, sumala kung asa gyud sila gidula. Pili og role sa ibabaw para sa tibuok ranking nga adunay tournament.",
     loading: "Nag-load sa overview sa meta",
     pools: {
       carry: "Mga carry",
@@ -126,7 +126,7 @@ export const meta: MessageTree<typeof en> = {
     winRate: "{rate} win rate",
     fullRanking: "Tibuok ranking:",
     source:
-      "Gikan sa mga public nga duwa sa OpenDota, na-update {ago}. Kung walay lane data, dili mailhan kung mid o offlane, o soft o hard support, mao nga gihiusa sila; kausa ra makita ang matag hero.",
+      "Gikan sa mga high-rank nga duwa ug lane data sa OpenDota, na-update {ago}. Kausa ra makita ang matag hero, sa role diin siya kanunay gidula.",
     empty: "Kulang pa ang data para niini nga grupo karon.",
     contested: {
       kicker: "Mga tournament",
