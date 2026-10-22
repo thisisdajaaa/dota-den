@@ -112,6 +112,34 @@ repo. Rotate a secret by setting the new value in Vercel (and GitHub if CI uses 
 Rotating `CRON_SECRET` means updating it in Vercel and in the GitHub `production` environment (the backup and
 restore-drill workflows report with it); rotating the MongoDB password needs `MONGODB_URI` updated in both places.
 
+## Security headers
+
+`next.config.ts` adds these to every response (built by `src/common/http/security-headers.ts`, unit-tested in
+`tests/unit/security-headers.test.ts`):
+
+| Header                                | Value                                                                                                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X-Content-Type-Options`              | `nosniff`                                                                                                                                                  |
+| `Referrer-Policy`                     | `strict-origin-when-cross-origin`                                                                                                                          |
+| `X-Frame-Options`                     | `DENY` (nothing of ours is framed; link previews are `/og` images)                                                                                         |
+| `Permissions-Policy`                  | autoplay, fullscreen and picture-in-picture only for us and the Twitch/Kick players; web share for us; camera, microphone, location and other hardware off |
+| `Strict-Transport-Security`           | `max-age=63072000` (no `includeSubDomains`)                                                                                                                |
+| `Content-Security-Policy-Report-Only` | the policy below, reported but **not enforced**                                                                                                            |
+
+The policy allows our own origin plus: images from `cdn.cloudflare.steamstatic.com`, `avatars.steamstatic.com`,
+`www.opendota.com`, `*.jtvnw.net` and `kick.com`/`*.kick.com`; frames from `player.twitch.tv`, `www.twitch.tv` (chat)
+and `player.kick.com`; `frame-ancestors 'none'`, `object-src 'none'`. Scripts need `'unsafe-inline'` because Next.js
+renders its RSC payload as inline scripts without a nonce (a nonce would force every page to render per request).
+Browser code only calls our own API; OpenDota, Groq, Upstash and push services are called from the server. Add a host
+to the lists in `security-headers.ts` whenever a new image CDN or embed appears.
+
+**Moving to enforcing.** With no report endpoint, violations show in the browser console as
+`[Report Only] Refused to …`. Open the home page, `/meta`, `/guides/<hero>`, `/live` (with a stream playing), `/draft`,
+a match, the dashboard and the account page in Chrome with DevTools open and check the console; the E2E spec
+`tests/e2e/security-headers.spec.ts` checks the main public pages the same way. Once a deploy has run clean for a week
+or so, rename the header to `Content-Security-Policy` in `securityHeaders()` (and its unit test), deploy to staging,
+click through the same pages, then release. To roll back, rename it again; nothing else depends on it.
+
 ## Refreshing the draft calibration
 
 Run `npm run draft:calibrate` locally (ideally with `OPENDOTA_API_KEY`), review the printed held-out accuracy, and
