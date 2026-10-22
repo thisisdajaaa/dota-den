@@ -7,6 +7,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 ## 2026-10-23
 
 - Kick streams on Watch live next to Twitch: in the grid, in search, and to follow
+- Security: Next.js 16.4.2 (fixes a critical image-optimizer flaw and a Server Actions DoS)
 
 ## 2026-10-22
 
