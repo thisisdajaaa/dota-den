@@ -9,6 +9,7 @@ import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { RankMedal } from "@/modules/matches/ui/rank-medal";
 import { PlayerAvatar } from "@/modules/players/ui/player-avatar";
+import { PlusBadge } from "@/modules/plus/ui/plus-badge";
 import type { BoardView, PlayerView } from "../dtos/responses/leaderboard-views.dto";
 import type { BoardKind } from "../domain/ranking";
 type T = Translator<Messages>;
@@ -76,7 +77,7 @@ function statsOf(t: T, kind: BoardKind, row: Row): Stat[] {
   }
 }
 
-function PlayerCell({ t, player }: { t: T; player: PlayerView }) {
+function PlayerCell({ t, player, supporter }: { t: T; player: PlayerView; supporter: boolean }) {
   const rank = parseRankTier(player.rankTier, player.leaderboardRank);
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -89,6 +90,7 @@ function PlayerCell({ t, player }: { t: T; player: PlayerView }) {
           >
             {player.name}
           </Link>
+          {supporter && <PlusBadge />}
           {player.isYou && (
             <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-[0.65rem] font-semibold text-gold ring-1 ring-gold/40">
               {t("leaderboards.board.you")}
@@ -104,7 +106,17 @@ function PlayerCell({ t, player }: { t: T; player: PlayerView }) {
   );
 }
 
-function BoardRow({ t, kind, row }: { t: T; kind: BoardKind; row: Row }) {
+function BoardRow({
+  t,
+  kind,
+  row,
+  supporter,
+}: {
+  t: T;
+  kind: BoardKind;
+  row: Row;
+  supporter: boolean;
+}) {
   const podium = row.rank <= 3;
   return (
     <li
@@ -126,7 +138,7 @@ function BoardRow({ t, kind, row }: { t: T; kind: BoardKind; row: Row }) {
       >
         {row.rank}
       </span>
-      <PlayerCell t={t} player={row.player} />
+      <PlayerCell t={t} player={row.player} supporter={supporter} />
       <dl className="ml-12 grid w-full grid-cols-2 gap-x-4 gap-y-1 text-right sm:ml-0 sm:w-auto sm:grid-cols-3">
         {statsOf(t, kind, row).map((stat) => (
           <div
@@ -195,7 +207,14 @@ function Empty({
 }
 
 /** One leaderboard: ranked rows, your own row highlighted, honest empty states. */
-export async function LeaderboardBoard({ view }: { view: BoardView }) {
+export async function LeaderboardBoard({
+  view,
+  supporters = new Set(),
+}: {
+  view: BoardView;
+  /** Accounts with Plus: a supporter badge next to their name. */
+  supporters?: ReadonlySet<number>;
+}) {
   const t = await getT();
   const { kind, scope, period } = view;
   const week = period === "week";
@@ -258,7 +277,13 @@ export async function LeaderboardBoard({ view }: { view: BoardView }) {
         <>
           <ol className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
             {view.rows.map((row) => (
-              <BoardRow key={row.player.accountId32} t={t} kind={kind} row={row} />
+              <BoardRow
+                key={row.player.accountId32}
+                t={t}
+                kind={kind}
+                row={row}
+                supporter={supporters.has(row.player.accountId32)}
+              />
             ))}
           </ol>
           {view.youBelowCut && (
@@ -267,7 +292,12 @@ export async function LeaderboardBoard({ view }: { view: BoardView }) {
                 {t("leaderboards.board.yourPosition")}
               </p>
               <ol>
-                <BoardRow t={t} kind={kind} row={view.youBelowCut} />
+                <BoardRow
+                  t={t}
+                  kind={kind}
+                  row={view.youBelowCut}
+                  supporter={supporters.has(view.youBelowCut.player.accountId32)}
+                />
               </ol>
             </div>
           )}

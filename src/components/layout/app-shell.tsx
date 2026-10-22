@@ -9,6 +9,8 @@ import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { playersService } from "@/modules/players";
+import { plusService } from "@/modules/plus";
+import { PlusBadge } from "@/modules/plus/ui/plus-badge";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { getT } from "@/common/i18n/server";
 import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
@@ -36,9 +38,12 @@ const ENABLED: readonly NavKey[] = [
   "account",
 ];
 
-/** Admins also get the Admin page in their navigation. */
-const navFor = (user: { roles: readonly string[] }): readonly NavKey[] =>
-  user.roles.includes("admin") ? [...ENABLED, "admin"] : ENABLED;
+/** Admins also get the Admin page; Plus is listed while it's on sale (or for subscribers). */
+const navFor = (user: { roles: readonly string[] }, plus: boolean): readonly NavKey[] => [
+  ...ENABLED,
+  ...(plus ? (["plus"] as const) : []),
+  ...(user.roles.includes("admin") ? (["admin"] as const) : []),
+];
 
 async function Brand() {
   const t = await getT();
@@ -82,6 +87,7 @@ async function SkipLink() {
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const t = await getT();
   const user = await getCurrentUser({ tolerateErrors: true });
+  const onSale = plusService.offer().status === "available";
 
   if (!user) {
     return (
@@ -104,7 +110,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
           {children}
         </main>
-        <SiteFooter />
+        <SiteFooter showPlus={onSale} />
         {/* Room for the bottom tab bar, below the footer so it never covers it. */}
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] sm:hidden" />
         <MobileTabBar enabled={ENABLED} signedIn={false} />
@@ -114,10 +120,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   // The saved copy when there is one, so no page waits on OpenDota for the sidebar; it's
   // refreshed once the page is sent.
-  const [{ profile, saved }, tz] = await Promise.all([
+  const [{ profile, saved }, tz, isPlus] = await Promise.all([
     playersService.quickProfile(user.accountId32),
     getViewerTimeZone(),
+    // Chrome must never fail a page: no badge when the lookup fails.
+    plusService.isPlus(user.id).catch(() => false),
   ]);
+  const nav = navFor(user, onSale || isPlus);
   if (saved) after(() => playersService.refreshProfile(user.accountId32));
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
   const name = profile?.personaName ?? t("system.shell.player", { id: user.accountId32 });
@@ -138,14 +147,17 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         {/* The nav scrolls on short windows; the user card below stays pinned. */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
-          <SidebarNav enabled={navFor(user)} />
+          <SidebarNav enabled={nav} />
         </div>
         <div className="shrink-0 space-y-2 border-t border-white/[0.06] bg-background/80 px-4 py-3">
           <InstallButton className="w-full gap-2" />
           <div className="flex items-center gap-3">
             {avatar}
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">{name}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-sm font-medium">{name}</span>
+                {isPlus && <PlusBadge />}
+              </div>
               {rank ? (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gold">
                   <RankMedal rank={rank} size={20} />
@@ -166,6 +178,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <Brand />
         <div className="ml-auto flex items-center gap-1">
           <InstallButton className="mr-1 h-8 gap-1.5 px-2 text-xs" />
+          {isPlus && <PlusBadge className="mr-1" />}
           {avatar}
           <SignOutButton />
         </div>
@@ -178,11 +191,11 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         >
           {children}
         </main>
-        <SiteFooter />
+        <SiteFooter showPlus={onSale} />
         {/* Room for the bottom tab bar, below the footer so it never covers it. */}
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
       </div>
-      <MobileTabBar enabled={navFor(user)} signedIn />
+      <MobileTabBar enabled={nav} signedIn />
       <TimeZoneSync current={tz.known ? tz.timeZone : null} />
     </>
   );

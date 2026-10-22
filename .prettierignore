@@ -1,5 +1,6 @@
 .next
 .next-e2e
+.next-e2e-plain
 node_modules
 package-lock.json
 playwright-report

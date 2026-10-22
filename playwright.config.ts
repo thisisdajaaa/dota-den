@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import webpush from "web-push";
 import { E2E_CRON_SECRET } from "./tests/e2e/support/cron";
+import { E2E_PLUS_CHECKOUT, E2E_PLUS_WEBHOOK_SECRET } from "./tests/e2e/support/plus-webhook";
 import { E2E_RESEND_WEBHOOK_SECRET } from "./tests/e2e/support/resend-webhook";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
@@ -9,6 +10,9 @@ const baseURL = `http://localhost:${PORT}`;
 const FIXTURE_PORT = Number(process.env.FIXTURE_PORT ?? 3101);
 const fixtureURL = `http://localhost:${FIXTURE_PORT}`;
 const DB_NAME = process.env.E2E_DB_NAME ?? "dota_den_e2e";
+// A second app server with Plus left unconfigured (the default for a fresh deployment).
+const PLAIN_PORT = Number(process.env.E2E_PLAIN_PORT ?? PORT + 2);
+process.env.E2E_PLAIN_URL = `http://localhost:${PLAIN_PORT}`;
 // Throwaway Web Push keys so the notifications section is on in tests (nothing is committed).
 const vapid = webpush.generateVAPIDKeys();
 
@@ -83,6 +87,56 @@ export default defineConfig({
         CRON_SECRET: E2E_CRON_SECRET,
         // Never post owner alerts to a real Discord channel from tests.
         ADMIN_ALERT_WEBHOOK_URL: "",
+        // Dota Den Plus (ADR 0013): a fake Lemon Squeezy store. Tests sign webhooks with this
+        // test secret; checkout links only need to be well formed (nothing follows them).
+        BILLING_PROVIDER: "lemonsqueezy",
+        PLUS_ENABLED: "true",
+        LEMONSQUEEZY_WEBHOOK_SECRET: E2E_PLUS_WEBHOOK_SECRET,
+        LEMONSQUEEZY_CHECKOUT_URL_MONTHLY: E2E_PLUS_CHECKOUT.monthly,
+        LEMONSQUEEZY_CHECKOUT_URL_YEARLY: E2E_PLUS_CHECKOUT.yearly,
+        LEMONSQUEEZY_STORE_URL: "",
+        LEMONSQUEEZY_VARIANT_ID_MONTHLY: "501",
+        LEMONSQUEEZY_VARIANT_ID_YEARLY: "502",
+        LEMONSQUEEZY_TEST_MODE: "false",
+      },
+    },
+    {
+      // Plus unconfigured: the pricing page says "coming soon" and the webhook doesn't exist.
+      command: `npx next dev --port ${PLAIN_PORT}`,
+      url: `http://localhost:${PLAIN_PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        APP_URL: `http://localhost:${PLAIN_PORT}`,
+        MONGODB_URI: process.env.MONGODB_TEST_URI ?? "mongodb://127.0.0.1:27017",
+        MONGODB_DB_NAME: DB_NAME,
+        AUTH_TEST_MODE: "true",
+        NEXT_DIST_DIR: ".next-e2e-plain",
+        OPENDOTA_BASE_URL: `${fixtureURL}/api`,
+        VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
+        IMAGE_SOURCE_BASE_URL: `${fixtureURL}/images`,
+        GROQ_API_KEY: "",
+        UPSTASH_REDIS_REST_URL: "",
+        UPSTASH_REDIS_REST_TOKEN: "",
+        QSTASH_TOKEN: "",
+        QSTASH_CURRENT_SIGNING_KEY: "",
+        QSTASH_NEXT_SIGNING_KEY: "",
+        TWITCH_CLIENT_ID: "",
+        TWITCH_CLIENT_SECRET: "",
+        KICK_CLIENT_ID: "",
+        KICK_CLIENT_SECRET: "",
+        STEAM_WEB_API_KEY: "",
+        VAPID_PUBLIC_KEY: "",
+        VAPID_PRIVATE_KEY: "",
+        RESEND_API_KEY: "",
+        EMAIL_FROM: "",
+        RESEND_WEBHOOK_SECRET: "",
+        ADMIN_ALERT_WEBHOOK_URL: "",
+        BILLING_PROVIDER: "",
+        PLUS_ENABLED: "",
+        LEMONSQUEEZY_WEBHOOK_SECRET: "",
+        LEMONSQUEEZY_CHECKOUT_URL_MONTHLY: "",
+        LEMONSQUEEZY_CHECKOUT_URL_YEARLY: "",
       },
     },
   ],

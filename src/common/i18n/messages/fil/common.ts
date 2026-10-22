@@ -22,6 +22,7 @@ export const common: MessageTree<typeof en> = {
     leaderboards: "Leaderboards",
     account: "Account",
     admin: "Admin",
+    plus: "Plus",
     more: "Iba pa",
     sections: { you: "Ikaw", community: "Komunidad", tools: "Mga tool", settings: "Settings" },
   },
@@ -42,6 +43,9 @@ export const common: MessageTree<typeof en> = {
     signOut: "Mag-sign out",
   },
   footer: {
+    terms: "Mga tuntunin",
+    refunds: "Refund",
+    legal: "Legal",
     disclaimer:
       "Ang Dota Den ay hindi opisyal na proyekto ng mga fan. Hindi ito kaugnay o inendorso ng Valve Corporation. Ang Dota 2 ay rehistradong trademark ng Valve Corporation. Ang data ng mga laro ay galing sa OpenDota kung mayroon; ang patch notes ay naka-link sa opisyal na pinagmulan nito.",
   },

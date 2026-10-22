@@ -20,6 +20,7 @@ export const common = {
     leaderboards: "Leaderboards",
     account: "Account",
     admin: "Admin",
+    plus: "Plus",
     more: "More",
     sections: { you: "You", community: "Community", tools: "Tools", settings: "Settings" },
   },
@@ -41,6 +42,9 @@ export const common = {
     signOut: "Sign out",
   },
   footer: {
+    terms: "Terms",
+    refunds: "Refunds",
+    legal: "Legal",
     disclaimer:
       "Dota Den is an unofficial fan project. It is not affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation. Match data is provided by OpenDota where available; patch notes link to their official source.",
   },

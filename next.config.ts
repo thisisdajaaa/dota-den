@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // E2E runs compile from scratch: with the dev cache kept between runs, next dev 16.4
     // reloads every page over and over ("HMR hash mismatch") once sources have changed.
-    turbopackFileSystemCacheForDev: process.env.NEXT_DIST_DIR !== ".next-e2e",
+    turbopackFileSystemCacheForDev: !process.env.NEXT_DIST_DIR?.startsWith(".next-e2e"),
   },
   // Keep the dev-mode badge away from the sidebar's account chip.
   devIndicators: { position: "bottom-right" },
