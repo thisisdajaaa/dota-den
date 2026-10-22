@@ -1,7 +1,7 @@
-import { after } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChevronRight, ExternalLink } from "lucide-react";
+import { afterResponse } from "@/common/http/after-response";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import { PageHeader } from "@/components/page-header";
@@ -14,7 +14,8 @@ import { patchesService } from "@/modules/patches";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("patches.title") };
+  // Older pages (?cursor=) are the same list further back.
+  return { title: t("patches.title"), alternates: { canonical: "/patches" } };
 }
 
 function formatDate(d: Date): string {
@@ -45,7 +46,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
     page = await queries.list({ cursor, limit: 12 });
   } else {
     // A refresh (a full import when stale) never holds up the page; the next visit sees it.
-    after(() => patchesService.ensureFresh());
+    afterResponse("patches_refresh", () => patchesService.ensureFresh());
   }
 
   const latest = !cursor ? page.items[0] : undefined;

@@ -21,7 +21,16 @@ export async function generateMetadata({
 }: PageProps<"/patches/[version]">): Promise<Metadata> {
   const { version } = await params;
   const t = await getT();
-  return { title: t("patches.detail.metaTitle", { version }) };
+  let decoded = version;
+  try {
+    decoded = decodeURIComponent(version);
+  } catch {
+    // Malformed escapes: the page answers 404; the title just shows what was asked for.
+  }
+  return {
+    title: t("patches.detail.metaTitle", { version: decoded }),
+    alternates: { canonical: `/patches/${encodeURIComponent(decoded)}` },
+  };
 }
 
 export default async function PatchPage({ params }: PageProps<"/patches/[version]">) {

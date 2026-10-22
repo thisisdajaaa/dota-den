@@ -135,6 +135,7 @@ export const players: MessageTree<typeof en> = {
     search: "Pangitaa ang mga player",
   },
   compare: {
+    loading: "Gi-load ang pagtandi",
     title: "Itandi ang mga player",
     kicker: "Mga player",
     description:

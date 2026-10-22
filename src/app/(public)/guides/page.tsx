@@ -6,7 +6,11 @@ import { HeroPicker } from "@/modules/guides/ui/hero-picker";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("guides.title"), description: t("guides.description") };
+  return {
+    title: t("guides.title"),
+    description: t("guides.description"),
+    alternates: { canonical: "/guides" },
+  };
 }
 
 const ATTRS = ["str", "agi", "int", "all"] as const;

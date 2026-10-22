@@ -35,6 +35,9 @@ export const metadata: Metadata = {
   // Installed on iOS: full screen with the dark status bar, and our icon.
   appleWebApp: { capable: true, title: "Dota Den", statusBarStyle: "black-translucent" },
   icons: { apple: "/icons/apple-touch-icon.png" },
+  // Defaults for link previews; a page that sets its own openGraph or twitter replaces these.
+  openGraph: { siteName: "Dota Den", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

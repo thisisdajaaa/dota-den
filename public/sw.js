@@ -35,6 +35,18 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// A notification only ever opens a page of this site: a path like "/matches/1", never
+// "//other.site" or "/\other.site" (which browsers read as another host).
+function samePath(url) {
+  if (typeof url !== "string" || !url.startsWith("/") || url.startsWith("//") || url.includes("\\"))
+    return "/dashboard";
+  try {
+    return new URL(url, self.location.origin).origin === self.location.origin ? url : "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
+}
+
 // Push notifications (opt-in on the account page). The server sends
 // { title, body, url, tag } as JSON; anything else shows a generic notification.
 self.addEventListener("push", (event) => {
@@ -44,7 +56,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = {};
   }
-  const url = typeof data.url === "string" && data.url.startsWith("/") ? data.url : "/dashboard";
+  const url = samePath(data.url);
   event.waitUntil(
     self.registration.showNotification(typeof data.title === "string" ? data.title : "Dota Den", {
       body: typeof data.body === "string" ? data.body : "",
@@ -59,7 +71,7 @@ self.addEventListener("push", (event) => {
 // Opens the notification's page: focuses an open Dota Den tab when there is one.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url ?? "/dashboard", self.location.origin);
+  const target = new URL(samePath(event.notification.data?.url), self.location.origin);
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
       const open = windows.find((w) => new URL(w.url).origin === target.origin);

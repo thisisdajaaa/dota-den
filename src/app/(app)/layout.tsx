@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
+import { afterResponse } from "@/common/http/after-response";
 import { REQUEST_PATH_HEADER } from "@/common/http/request-path";
 import { getCurrentUser, usersService } from "@/modules/identity";
 import { safeReturnPath } from "@/modules/identity/domain/return-path";
@@ -15,6 +15,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     );
   }
   // For the admin page's retention numbers: one write per player per day, after the response.
-  after(() => usersService.recordVisit(user.id));
+  afterResponse("record_visit", () => usersService.recordVisit(user.id), { userId: user.id });
   return <>{children}</>;
 }

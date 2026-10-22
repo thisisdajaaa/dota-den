@@ -59,12 +59,25 @@ export interface LanguageOption {
   streams: number;
 }
 
+/** Streams on one site; every stream when `platform` is null. */
+export function onPlatform<T extends Pick<LiveStream, "platform">>(
+  streams: readonly T[],
+  platform: Platform | null,
+): T[] {
+  return platform ? streams.filter((s) => s.platform === platform) : [...streams];
+}
+
 /** Codes the sites spell differently for one language: Twitch says "tl", Kick "fil". */
 const SAME_LANGUAGE: Record<string, string> = { tl: "fil" };
 
-/** One code per language across sites ("other" when the site didn't say). */
+/**
+ * One code per language across sites: the base language only ("zh-hk" and "zh_TW" are both
+ * "zh", "pt-BR" is "pt"), with Twitch's "tl" read as "fil", and "other" when the site didn't
+ * say.
+ */
 export function languageCode(language: string): string {
-  const code = language.toLowerCase() || "other";
+  const code = language.trim().toLowerCase().split(/[-_]/)[0];
+  if (!code) return "other";
   return SAME_LANGUAGE[code] ?? code;
 }
 

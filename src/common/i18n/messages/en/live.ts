@@ -6,9 +6,7 @@ export const live = {
     "Live Dota 2 streams to watch right here, the streamers you follow, and the league and top public games happening now. Refreshes every minute.",
   unavailable: "The live feed is unavailable right now. Try again in a minute.",
   league: "League games",
-  noLeague: "No league games are live right now.",
   topPublic: "Highest-MMR public games",
-  noPublic: "None reported right now.",
   leagueGame: "League game",
   publicGame: "Public game",
   versus: "{radiant} vs {dire}",
@@ -42,15 +40,18 @@ export const live = {
     draftPending: "The draft analysis appears once both teams have picked all five heroes.",
   },
   games: {
-    title: "Live games",
+    title: "Live games on stream",
     subtitle:
-      "From the game's spectator feed: league games run about 15 minutes behind. Open a game for a live read of its draft.",
+      "Pro and top public games someone is streaming on Twitch or Kick, matched from the stream title. League games run about 15 minutes behind. Open one to watch it and read its draft live.",
+    none: "No live games are being streamed right now. Check the streams above.",
+    streamsUnknown:
+      "The streaming sites aren't answering, so we can't tell which games are on stream right now.",
   },
   hub: {
     loading: "Loading live streams…",
     streams: {
       title: "Live now",
-      subtitle: "Dota 2 streams, most watched first. Pick one to watch it here.",
+      subtitle: "Dota 2 streams on Twitch and Kick, most watched first. Pick one to watch it here.",
       language: "Language",
       allLanguages: "All languages ({n})",
       languageOption: "{name} ({n})",
@@ -58,7 +59,8 @@ export const live = {
       showMore: "Show {n} more",
       showing: "Showing {shown} of {total} streams",
       none: "No one is streaming Dota 2 right now.",
-      empty: "No Dota 2 streams in this language right now. Try another language.",
+      siteTitle: "Live on {platform}",
+      siteEmpty: "No {platform} streams in this language right now.",
       unavailable:
         "The streaming sites aren't answering right now, so streams can't be listed. They'll be back on the next refresh.",
       notConfigured: "Stream listings aren't set up on this server yet.",

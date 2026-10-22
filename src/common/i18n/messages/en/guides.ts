@@ -7,6 +7,7 @@ export const guides = {
   heroFallbackTitle: "Hero guide",
   unavailable: "Unavailable right now. Try again later.",
   index: {
+    loading: "Loading hero guides",
     kicker: "Guides",
     title: "Hero guides",
     description:
@@ -25,6 +26,7 @@ export const guides = {
     noMatch: "No hero matches “{query}”.",
   },
   hero: {
+    loading: "Loading the hero guide",
     back: "All heroes",
     kicker: "Hero guide",
     fallbackName: "Hero #{id}",

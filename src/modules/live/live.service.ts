@@ -47,12 +47,21 @@ export class LiveService {
     return this.deps.now?.() ?? Date.now();
   }
 
-  /** League games (with league names) and the highest-MMR public games; null if unavailable. */
+  /**
+   * League games (with league names) and the highest-MMR public games that someone is
+   * streaming on a configured site, so every game listed can be watched. Null if the game
+   * feed is unavailable; `streamsKnown` is false when no site answered (nothing is listed).
+   */
   async overview(): Promise<LiveOverview | null> {
-    const games = await this.deps.source.games();
+    const [games, streams] = await Promise.all([this.deps.source.games(), this.allStreams()]);
     if (!games) return null;
+    const watchable = (g: LiveGame) => streams !== null && matchStreams(g, streams).length > 0;
     const { league, topPublic } = splitLive(games);
-    return { league: await this.withLeagueNames(league), topPublic };
+    return {
+      league: await this.withLeagueNames(league.filter(watchable)),
+      topPublic: topPublic.filter(watchable),
+      streamsKnown: streams !== null,
+    };
   }
 
   /** One live game; null when it isn't live (anymore) or the feed is unavailable. */

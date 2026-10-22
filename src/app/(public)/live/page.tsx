@@ -21,7 +21,11 @@ import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("live.title"), description: t("live.description") };
+  return {
+    title: t("live.title"),
+    description: t("live.description"),
+    alternates: { canonical: "/live" },
+  };
 }
 
 export default async function LivePage() {
@@ -92,34 +96,37 @@ async function LiveGames() {
         </div>
       ) : (
         <>
-          <section aria-labelledby="live-league" className="space-y-3">
-            <h3 id="live-league" className="font-semibold">
-              {t("live.league")}
-            </h3>
-            {overview.league.length === 0 ? (
-              <p className="panel p-5 text-sm text-muted-foreground">{t("live.noLeague")}</p>
-            ) : (
+          {!overview.streamsKnown ? (
+            <p className="panel p-5 text-sm text-muted-foreground">
+              {t("live.games.streamsUnknown")}
+            </p>
+          ) : overview.league.length + overview.topPublic.length === 0 ? (
+            <p className="panel p-5 text-sm text-muted-foreground">{t("live.games.none")}</p>
+          ) : null}
+          {overview.league.length > 0 && (
+            <section aria-labelledby="live-league" className="space-y-3">
+              <h3 id="live-league" className="font-semibold">
+                {t("live.league")}
+              </h3>
               <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {overview.league.map((g) => (
                   <LiveGameCard key={g.matchId} game={g} heroes={heroes} />
                 ))}
               </ul>
-            )}
-          </section>
-          <section aria-labelledby="live-public" className="space-y-3">
-            <h3 id="live-public" className="font-semibold">
-              {t("live.topPublic")}
-            </h3>
-            {overview.topPublic.length === 0 ? (
-              <p className="panel p-5 text-sm text-muted-foreground">{t("live.noPublic")}</p>
-            ) : (
+            </section>
+          )}
+          {overview.topPublic.length > 0 && (
+            <section aria-labelledby="live-public" className="space-y-3">
+              <h3 id="live-public" className="font-semibold">
+                {t("live.topPublic")}
+              </h3>
               <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {overview.topPublic.map((g) => (
                   <LiveGameCard key={g.matchId} game={g} heroes={heroes} />
                 ))}
               </ul>
-            )}
-          </section>
+            </section>
+          )}
         </>
       )}
     </section>

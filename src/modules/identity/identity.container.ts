@@ -2,6 +2,7 @@ import "server-only";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
+import { registerSessionVerifier } from "@/common/providers/shared-gateway-options";
 import { lazy } from "@/common/utils/lazy";
 import { IdentityController } from "./identity.controller";
 import type { IdentityProvider, PersonaLookup } from "./identity.ports";
@@ -47,6 +48,10 @@ function buildAuthService(testSteamId?: string): AuthService {
 }
 
 export const authService = lazy(() => buildAuthService());
+
+// The OpenDota budget bills a call to the member lane only for a real session, not for any
+// request that merely carries a sign-in cookie (see lane() in shared-gateway-options).
+registerSessionVerifier(async (token) => (await authService.resolveSession(token)) !== null);
 
 export const usersService = new UsersService({
   users: usersRepository,

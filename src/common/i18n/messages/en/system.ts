@@ -5,6 +5,7 @@ export const system = {
     body: "This is on our side, not yours, and we've been told about it. Try again in a moment.",
     globalBody: "This is on our side, and we've been told about it.",
     retry: "Try again",
+    home: "Go home",
     pageTitle: "Something went wrong · Dota Den",
   },
   notFound: {

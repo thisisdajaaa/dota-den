@@ -11,6 +11,7 @@ export const guides: MessageTree<typeof en> = {
   heroFallbackTitle: "Hero guide",
   unavailable: "Hindi available ngayon. Subukan ulit mamaya.",
   index: {
+    loading: "Nilo-load ang mga hero guide",
     kicker: "Mga guide",
     title: "Mga hero guide",
     description:
@@ -30,6 +31,7 @@ export const guides: MessageTree<typeof en> = {
     noMatch: "Walang hero na tugma sa “{query}”.",
   },
   hero: {
+    loading: "Nilo-load ang hero guide",
     back: "Lahat ng hero",
     kicker: "Hero guide",
     fallbackName: "Hero #{id}",

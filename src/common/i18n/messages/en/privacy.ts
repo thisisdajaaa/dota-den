@@ -1,5 +1,6 @@
 /** UI copy for the privacy feature (the Account page). */
 export const privacy = {
+  loading: "Loading your account",
   title: "Account",
   kicker: "Settings and data",
   description:

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { LiveService } from "@/modules/live/live.service";
-import { type LiveSource } from "@/modules/live/live.ports";
+import { type LiveSource, type StreamDirectory } from "@/modules/live/live.ports";
 import {
   clock,
   draftComplete,
@@ -58,20 +58,52 @@ describe("live game helpers", () => {
   });
 });
 
+/** A streaming site with these live Dota 2 streams (null: the site isn't answering). */
+const site = (titles: string[] | null): StreamDirectory => ({
+  platform: "twitch",
+  liveDotaStreams: async () =>
+    titles?.map((title, i) => ({
+      platform: "twitch" as const,
+      channel: `caster${i}`,
+      userId: String(i + 1),
+      displayName: `Caster${i}`,
+      title,
+      viewers: 100,
+      language: "en",
+      thumbnailUrl: null,
+      avatarUrl: null,
+      startedAt: null,
+    })) ?? null,
+  searchChannels: async () => null,
+  liveByChannels: async () => null,
+  channelById: async () => ({ status: "unavailable" as const }),
+});
+
 describe("LiveService", () => {
-  it("adds league names and finds one game", async () => {
-    const source: LiveSource = {
-      games: async () => [
-        game({ matchId: "9", leagueId: 7 }),
-        game({ matchId: "8", averageMmr: 8_000 }),
-      ],
-      leagueName: vi.fn(async () => "Fixture Major"),
-    };
-    const svc = new LiveService({ source });
+  const source: LiveSource = {
+    games: async () => [
+      game({ matchId: "9", leagueId: 7, teams: { radiant: "Team Falcons", dire: "Tundra" } }),
+      game({ matchId: "7", leagueId: 8, teams: { radiant: "Nobody Streams", dire: "Us" } }),
+      game({ matchId: "8", averageMmr: 8_000 }),
+    ],
+    leagueName: vi.fn(async () => "Fixture Major"),
+  };
+
+  it("lists only games someone is streaming, with league names", async () => {
+    const svc = new LiveService({ source, directories: [site(["LIVE: Falcons vs Tundra"])] });
     const o = await svc.overview();
+    expect(o?.streamsKnown).toBe(true);
+    expect(o?.league.map((g) => g.matchId)).toEqual(["9"]);
     expect(o?.league[0].leagueName).toBe("Fixture Major");
+    // No stream mentions the public game: it isn't listed.
+    expect(o?.topPublic).toEqual([]);
     expect((await svc.game("9"))?.leagueName).toBe("Fixture Major");
     expect(await svc.game("404")).toBeNull();
+  });
+
+  it("lists nothing, and says so, when no streaming site answers", async () => {
+    const svc = new LiveService({ source, directories: [site(null)] });
+    expect(await svc.overview()).toMatchObject({ league: [], topPublic: [], streamsKnown: false });
   });
 
   it("is null when the feed is down", async () => {

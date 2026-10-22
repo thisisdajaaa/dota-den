@@ -19,7 +19,8 @@ import { followService, ownerOf, playersService } from "@/modules/players";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("players.page.title") };
+  // Searches (?q=) are views of this page, not pages of their own.
+  return { title: t("players.page.title"), alternates: { canonical: "/players" } };
 }
 
 const LOOKUP_ERRORS = {

@@ -8,9 +8,7 @@ export const live: MessageTree<typeof en> = {
     "Mga live na Dota 2 stream na puwede mong panoorin dito mismo, ang mga streamer na fina-follow mo, at ang mga league at top public na laro na nangyayari ngayon. Nagre-refresh kada minuto.",
   unavailable: "Hindi available ang live feed ngayon. Subukan ulit pagkalipas ng isang minuto.",
   league: "Mga league na laro",
-  noLeague: "Walang live na league game ngayon.",
   topPublic: "Mga public na laro na may pinakamataas na MMR",
-  noPublic: "Wala pang naiulat ngayon.",
   leagueGame: "League game",
   publicGame: "Public na laro",
   versus: "{radiant} vs {dire}",
@@ -45,16 +43,19 @@ export const live: MessageTree<typeof en> = {
       "Lalabas ang pagsusuri ng draft kapag naka-pick na ng limang hero ang dalawang team.",
   },
   games: {
-    title: "Mga live na laro",
+    title: "Mga live na laro na naka-stream",
     subtitle:
-      "Mula sa spectator feed ng laro: mga 15 minutong huli ang league games. Buksan ang isang laro para sa live na pagsusuri ng draft nito.",
+      "Mga pro at top public na laro na may nagsi-stream sa Twitch o Kick, batay sa pamagat ng stream. Mga 15 minutong huli ang league games. Buksan ang isa para panoorin at basahin ang draft nito nang live.",
+    none: "Walang live na larong naka-stream ngayon. Tingnan ang mga stream sa itaas.",
+    streamsUnknown:
+      "Hindi sumasagot ang mga streaming site, kaya hindi namin matukoy kung aling mga laro ang naka-stream ngayon.",
   },
   hub: {
     loading: "Nilo-load ang mga live stream…",
     streams: {
       title: "Live ngayon",
       subtitle:
-        "Mga Dota 2 stream, pinakamaraming nanonood muna. Pumili ng isa para panoorin dito.",
+        "Mga Dota 2 stream sa Twitch at Kick, pinakamaraming nanonood muna. Pumili ng isa para panoorin dito.",
       language: "Wika",
       allLanguages: "Lahat ng wika ({n})",
       languageOption: "{name} ({n})",
@@ -62,7 +63,8 @@ export const live: MessageTree<typeof en> = {
       showMore: "Ipakita ang {n} pa",
       showing: "Ipinapakita ang {shown} sa {total} stream",
       none: "Walang nagi-stream ng Dota 2 ngayon.",
-      empty: "Walang Dota 2 stream sa wikang ito ngayon. Subukan ang ibang wika.",
+      siteTitle: "Live sa {platform}",
+      siteEmpty: "Walang {platform} stream sa wikang ito ngayon.",
       unavailable:
         "Hindi sumasagot ang mga streaming site ngayon, kaya hindi mailista ang mga stream. Babalik sila sa susunod na refresh.",
       notConfigured: "Hindi pa naka-set up ang listahan ng mga stream sa server na ito.",

@@ -9,6 +9,7 @@ export const groups: MessageTree<typeof en> = {
     pair: { one: "1 pares", other: "{n} pares" },
   },
   page: {
+    loading: "Nilo-load ang mga group mo",
     title: "Mga grupo",
     kicker: "Ang stack mo",
     description:
