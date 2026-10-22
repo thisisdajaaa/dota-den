@@ -19,7 +19,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/draft">): P
   const { snapshot } = await searchParams;
   const t = await getT();
   if (typeof snapshot !== "string" || snapshot.length > 2_000)
-    return { title: t("drafts.pages.metaTitle") };
+    return { title: t("drafts.pages.metaTitle"), alternates: { canonical: "/draft" } };
   // Shared drafts get a preview image with both lineups and the report card.
   const image = `/api/og/draft?snapshot=${encodeURIComponent(snapshot)}`;
   return {

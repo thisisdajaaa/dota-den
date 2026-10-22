@@ -10,7 +10,10 @@ import { viewerChallengeStreak } from "@/modules/leaderboards";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("drafts.challengesPage.title") };
+  return {
+    title: t("drafts.challengesPage.title"),
+    alternates: { canonical: "/draft/challenges" },
+  };
 }
 
 const ICONS: Record<ChallengeType, typeof Swords> = {

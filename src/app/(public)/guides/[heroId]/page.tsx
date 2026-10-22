@@ -23,6 +23,7 @@ export async function generateMetadata({
     ? {
         title: t("guides.heroTitle", { name: hero.name }),
         description: t("guides.heroDescription", { name: hero.name }),
+        alternates: { canonical: `/guides/${hero.id}` },
       }
     : { title: t("guides.heroFallbackTitle") };
 }

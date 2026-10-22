@@ -21,7 +21,11 @@ import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("live.title"), description: t("live.description") };
+  return {
+    title: t("live.title"),
+    description: t("live.description"),
+    alternates: { canonical: "/live" },
+  };
 }
 
 export default async function LivePage() {

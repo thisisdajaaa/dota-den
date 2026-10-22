@@ -14,7 +14,8 @@ import { patchesService } from "@/modules/patches";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("patches.title") };
+  // Older pages (?cursor=) are the same list further back.
+  return { title: t("patches.title"), alternates: { canonical: "/patches" } };
 }
 
 function formatDate(d: Date): string {

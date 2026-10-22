@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, BookOpenText, Radio, Swords, Users, type LucideIcon } from "lucide-react";
@@ -19,6 +20,9 @@ import { PlayerSearchForm } from "@/modules/players/ui/player-search-form";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
+
+// Sign-in notices (?auth_error=, ?next=) are views of the home page, not pages of their own.
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const AUTH_ERRORS = ["state_mismatch", "provider_unavailable"] as const;
 

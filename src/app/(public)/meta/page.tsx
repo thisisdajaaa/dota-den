@@ -37,7 +37,8 @@ import {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("meta.title") };
+  // ?pos= views are the same page filtered: one canonical URL for all of them.
+  return { title: t("meta.title"), alternates: { canonical: "/meta" } };
 }
 
 export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
