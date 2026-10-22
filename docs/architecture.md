@@ -6,19 +6,19 @@ Dota Den is a modular monolith on Next.js 16 (App Router), deployed to Vercel, w
 
 Each feature lives in `src/modules/<feature>/` with the same anatomy ([ADR 0009](adr/0009-feature-module-anatomy.md)):
 
-| File or folder                             | Holds                                                                     |
-| ------------------------------------------ | ------------------------------------------------------------------------- |
-| `index.ts`                                 | The public API: what pages, routes and other features may import          |
-| `<feature>.container.ts`                   | Wiring: builds repositories → services → controllers, with env settings   |
-| `<feature>.controller.ts`                  | HTTP: guard, rate limit, zod validation, response envelope                |
-| `<feature>.service.ts`, `services/`        | Use cases, with dependencies passed into the constructor                  |
-| `<feature>.repository.ts`, `repositories/` | MongoDB access (no business rules)                                        |
-| `<feature>.model.ts`                       | Collection names and document shapes                                      |
-| `<feature>.ports.ts`                       | Interfaces the services depend on (storage, upstreams, other features)    |
-| `schemas/`, `dtos/`                        | zod request schemas; request and response types (+ mappers)               |
-| `domain/`                                  | Pure rules and calculations (no I/O; unit-tested)                         |
-| `infrastructure/`                          | Upstream adapters (OpenDota, Valve, Groq, Twitch, QStash) and LLM prompts |
-| `ui/`                                      | React components                                                          |
+| File or folder                             | Holds                                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------- |
+| `index.ts`                                 | The public API: what pages, routes and other features may import                |
+| `<feature>.container.ts`                   | Wiring: builds repositories → services → controllers, with env settings         |
+| `<feature>.controller.ts`                  | HTTP: guard, rate limit, zod validation, response envelope                      |
+| `<feature>.service.ts`, `services/`        | Use cases, with dependencies passed into the constructor                        |
+| `<feature>.repository.ts`, `repositories/` | MongoDB access (no business rules)                                              |
+| `<feature>.model.ts`                       | Collection names and document shapes                                            |
+| `<feature>.ports.ts`                       | Interfaces the services depend on (storage, upstreams, other features)          |
+| `schemas/`, `dtos/`                        | zod request schemas; request and response types (+ mappers)                     |
+| `domain/`                                  | Pure rules and calculations (no I/O; unit-tested)                               |
+| `infrastructure/`                          | Upstream adapters (OpenDota, Valve, Groq, Twitch, Kick, QStash) and LLM prompts |
+| `ui/`                                      | React components                                                                |
 
 Every route handler is one line (`export const PUT = goalsController.update;`) and every API returns the
 `ServiceResponse` envelope `{ success, message, data, statusCode }`. Browser code calls the API through

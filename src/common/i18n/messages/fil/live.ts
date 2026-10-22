@@ -125,6 +125,8 @@ export const live: MessageTree<typeof en> = {
       subtitle: "Maghanap ng streamer ayon sa pangalan ng channel, live man o hindi.",
       label: "Maghanap ng mga channel",
       placeholder: "Pangalan ng channel…",
+      kickNote:
+        "Sa Kick, i-type ang eksaktong pangalan ng channel. Tugma rin ang bahagi ng pangalan o title ng mga channel na live sa Dota 2.",
       liveOnly: "Live lang",
       hint: "Mag-type ng kahit 2 character.",
       searching: "Hinahanap…",

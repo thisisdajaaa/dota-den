@@ -54,6 +54,10 @@ export default defineConfig({
         TWITCH_CLIENT_SECRET: "fixture",
         TWITCH_API_BASE_URL: `${fixtureURL}/twitch/helix`,
         TWITCH_AUTH_URL: `${fixtureURL}/twitch/oauth2/token`,
+        KICK_CLIENT_ID: "fixture",
+        KICK_CLIENT_SECRET: "fixture",
+        KICK_API_BASE_URL: `${fixtureURL}/kick/public/v1`,
+        KICK_AUTH_URL: `${fixtureURL}/kick/oauth/token`,
         // Friends playing now: a dummy key against the fixture's fake Steam Web API.
         STEAM_WEB_API_KEY: "e2e-steam-key",
         STEAM_API_BASE_URL: `${fixtureURL}/steam`,

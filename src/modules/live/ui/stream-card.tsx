@@ -55,7 +55,7 @@ export function StreamCard({
         >
           <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-white/[0.06] to-black/40">
             {preview && !imageFailed ? (
-              // eslint-disable-next-line @next/next/no-img-element -- Twitch CDN preview, already sized
+              // eslint-disable-next-line @next/next/no-img-element -- Twitch or Kick CDN preview, already sized
               <img
                 src={preview}
                 alt=""

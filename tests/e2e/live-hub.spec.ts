@@ -3,11 +3,14 @@ import { expect, test, type Page } from "@playwright/test";
 // Its own identity: tests run in parallel and follows are per user.
 const LOGIN = "/api/v1/auth/steam/login?as=76561197960477001";
 
-/** Never load Twitch (or its images) from tests: the players and chats are stubbed. */
+/** Never load Twitch or Kick (or their images) from tests: the players and chats are stubbed. */
 async function stubTwitch(page: Page) {
   await page.route("https://player.twitch.tv/**", (r) => r.fulfill({ body: "" }));
   await page.route("https://www.twitch.tv/**", (r) => r.fulfill({ body: "" }));
   await page.route("https://static-cdn.jtvnw.net/**", (r) => r.fulfill({ status: 404 }));
+  await page.route("https://player.kick.com/**", (r) => r.fulfill({ body: "" }));
+  await page.route("https://kick.com/**", (r) => r.fulfill({ body: "" }));
+  await page.route("https://*.kick.com/**", (r) => r.fulfill({ status: 404 }));
 }
 
 /** Clicks until the click has an effect: a click before hydration does nothing. */
@@ -36,7 +39,7 @@ test("guests browse live streams, filter by language and watch one in the page",
   // Most watched first.
   await expect(cards.first()).toHaveAccessibleName("Watch RankedGrinder");
   await expect(cards.nth(1)).toHaveAccessibleName("Watch FixtureCasts");
-  await expect(streams).toContainText("Showing 12 of 28 streams");
+  await expect(streams).toContainText("Showing 12 of 30 streams");
   await expect(streams).toContainText("30K watching");
   // The live game a title mentions, labelled as a guess.
   const guess = streams.getByRole("link", {
@@ -48,10 +51,10 @@ test("guests browse live streams, filter by language and watch one in the page",
   await clickUntil(
     page,
     () => streams.getByRole("button", { name: "Show 12 more" }).click({ timeout: 2_000 }),
-    () => expect(streams).toContainText("Showing 24 of 28 streams", { timeout: 3_000 }),
+    () => expect(streams).toContainText("Showing 24 of 30 streams", { timeout: 3_000 }),
   );
-  await streams.getByRole("button", { name: "Show 4 more" }).click();
-  await expect(streams).toContainText("Showing 28 of 28 streams");
+  await streams.getByRole("button", { name: "Show 6 more" }).click();
+  await expect(streams).toContainText("Showing 30 of 30 streams");
   await expect(streams.getByRole("button", { name: /^Show \d+ more$/ })).toHaveCount(0);
   await streams.getByLabel("Language").selectOption("tl");
   await expect(streams).toContainText("Showing 1 of 1 streams");
@@ -84,6 +87,76 @@ test("guests browse live streams, filter by language and watch one in the page",
   await expect(page.locator('iframe[title="PinoyDota on Twitch"]')).toHaveAttribute(
     "src",
     /channel=pinoydota&parent=localhost/,
+  );
+});
+
+test("Kick streams play in Kick's player and Kick channels can be followed", async ({ page }) => {
+  await stubTwitch(page);
+  await page.goto("/api/v1/auth/steam/login?as=76561197960477003");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/live");
+
+  // In the grid among Twitch's, badged; mature streams are left out.
+  const streams = page.getByRole("region", { name: "Live now" });
+  const card = streams
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("button", { name: "Watch kickcaster" }) });
+  await expect(card).toContainText("Kick");
+  await expect(card).toContainText("5K watching");
+  await expect(streams.getByRole("button", { name: "Watch mature_kick" })).toHaveCount(0);
+
+  // Kick's player, and a link to its chat (Kick has no chat embed).
+  await clickUntil(
+    page,
+    () => card.getByRole("button", { name: "Watch kickcaster" }).click({ timeout: 2_000 }),
+    () => expect(page).toHaveURL(/\/live\?watch=kick(:|%3A)kickcaster$/, { timeout: 3_000 }),
+  );
+  const player = page.getByRole("region", { name: "kickcaster" });
+  await expect(player.locator('iframe[title="kickcaster on Kick"]')).toHaveAttribute(
+    "src",
+    "https://player.kick.com/kickcaster",
+  );
+  await expect(player.getByRole("link", { name: "Open chat on Kick" })).toHaveAttribute(
+    "href",
+    "https://kick.com/kickcaster",
+  );
+  await expect(player.getByRole("button", { name: /chat/i })).toHaveCount(0);
+
+  // Follow it from the grid, and an offline Kick channel found by its exact name.
+  const following = page.getByRole("region", { name: "Following" });
+  await streams.getByRole("button", { name: "Follow kickcaster" }).click();
+  await expect(following.getByRole("button", { name: "Watch kickcaster (live)" })).toBeVisible();
+  const search = page.getByRole("region", { name: "Find a streamer" });
+  await expect(search).toContainText("On Kick, type the exact channel name.");
+  await search.getByRole("searchbox", { name: "Search channels" }).fill("kickoffline");
+  const results = search.getByRole("list", { name: "Channels matching “kickoffline”" });
+  await expect(results.getByRole("link", { name: "Open kickoffline on Kick" })).toHaveAttribute(
+    "href",
+    "https://kick.com/kickoffline",
+  );
+  await results.getByRole("button", { name: "Follow kickoffline" }).click();
+  await expect(following.getByRole("link", { name: /kickoffline is offline/ })).toBeVisible();
+
+  const saved = await (await page.request.get("/api/v1/me/streamers")).json();
+  expect(
+    saved.data.channels.map(
+      (c: { platform: string; channelId: string; login: string; status: string }) => [
+        c.platform,
+        c.channelId,
+        c.login,
+        c.status,
+      ],
+    ),
+  ).toEqual([
+    ["kick", "7001", "kickcaster", "live"],
+    ["kick", "7100", "kickoffline", "offline"],
+  ]);
+
+  // A deep link plays a Kick channel straight away.
+  await page.goto("/live?watch=kick:kick_pinoy");
+  await expect(page.locator('iframe[title="kick_pinoy on Kick"]')).toHaveAttribute(
+    "src",
+    "https://player.kick.com/kick_pinoy",
   );
 });
 
