@@ -77,8 +77,8 @@ export const home: MessageTree<typeof en> = {
       cta: "Tan-awa ang mga guide",
     },
     live: {
-      title: "Tan-aw og live nga duwa",
-      body: "Mga league game ug ang pinakataas nga MMR nga public game nga nahitabo karon, adunay live nga basa sa matag draft.",
+      title: "Tan-awa ang Dota nga live",
+      body: "Mga live nga Dota 2 stream nga matan-aw nimo dinhi uban ang chat, ang mga streamer nga imong gi-follow, ug ang mga pro ug top public game nga nahitabo karon.",
       cta: "Tan-awa ang live",
     },
   },

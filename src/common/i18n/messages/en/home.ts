@@ -73,8 +73,8 @@ export const home = {
       cta: "Browse guides",
     },
     live: {
-      title: "Watch live games",
-      body: "League games and the highest-MMR public games happening now, with a live read of each draft.",
+      title: "Watch Dota live",
+      body: "Live Dota 2 streams to watch right here with chat, the streamers you follow, and the pro and top public games happening now.",
       cta: "See what's live",
     },
   },
