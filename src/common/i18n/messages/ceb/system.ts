@@ -9,6 +9,13 @@ export const system: MessageTree<typeof en> = {
     retry: "Sulayi pag-usab",
     pageTitle: "Naay sayop nga nahitabo · Dota Den",
   },
+  notFound: {
+    title: "Wala makit-i ang page",
+    body: "Guba ang link o nabalhin na ang page. Sulayi ang usa niini.",
+    home: "Balik sa home",
+    meta: "Unsa ang kusgan karon",
+    pageTitle: "Wala makit-i ang page",
+  },
   shell: {
     skip: "Laktaw sa sulod",
     menu: "Menu",
