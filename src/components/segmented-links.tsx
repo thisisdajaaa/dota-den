@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { cn } from "cn";
 
+/**
+ * Touch sizing for a segment (link or radio button) inside a segmented control:
+ * 40px tall with a 44px hit area on phones and coarse pointers; unchanged on desktop.
+ */
+export const segmentTouchTarget = "relative inline-flex items-center touch:min-h-10 touch:tap-area";
+
 /** URL-driven segmented control: each option is a link, so filters are shareable. */
 export function SegmentedLinks<T extends string>({
   label,
@@ -27,6 +33,7 @@ export function SegmentedLinks<T extends string>({
             scroll={false}
             aria-current={isActive ? "page" : undefined}
             className={cn(
+              segmentTouchTarget,
               "rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
               isActive
                 ? "bg-gold/15 text-gold shadow-[inset_0_0_0_1px_oklch(0.8_0.13_80/0.3)]"

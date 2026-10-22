@@ -5,6 +5,7 @@ import { ChevronRight, SearchX } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
+import { FilterSheet } from "@/components/filter-sheet";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { annotationsService } from "@/modules/annotations";
@@ -65,13 +66,15 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
   const { games, wins } = page.record;
   const rate = games === 0 ? null : wins / games;
   const resultLabel = filter.result === "win" || filter.result === "loss" ? filter.result : null;
-  const isFiltered =
-    filter.range !== "all" ||
-    filter.mode !== "all" ||
-    filter.queue !== "all" ||
-    filter.result !== "all" ||
-    filter.hero !== undefined ||
-    filter.tag !== undefined;
+  const activeFilters = [
+    filter.range !== "all",
+    filter.mode !== "all",
+    filter.queue !== "all",
+    filter.result !== "all",
+    filter.hero !== undefined,
+    filter.tag !== undefined,
+  ].filter(Boolean).length;
+  const isFiltered = activeFilters > 0;
 
   return (
     <div className="space-y-6">
@@ -81,95 +84,97 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
         description={t("matches.list.description")}
       />
 
-      <div
-        className="flex flex-wrap items-center gap-2"
-        role="group"
-        aria-label={t("matches.filters.label")}
+      <FilterSheet
+        label={t("matches.filters.label")}
+        activeCount={activeFilters}
+        className="flex-col items-stretch gap-6"
       >
-        <SegmentedLinks
-          label={t("matches.filters.timeRange")}
-          options={[
-            { value: "all", label: t("matches.filters.allTime") },
-            {
-              value: "patch",
-              label: page.latestPatch
-                ? t("matches.filters.patch", { version: page.latestPatch })
-                : t("matches.filters.currentPatch"),
-            },
-            { value: "30d", label: t("matches.filters.days30") },
-          ]}
-          active={filter.range}
-          href={(range) => withFilter({ range })}
-        />
-        <SegmentedLinks
-          label={t("matches.filters.queue")}
-          options={[
-            { value: "all", label: t("matches.filters.anyQueue") },
-            { value: "solo", label: t("matches.queue.solo") },
-            { value: "party", label: t("matches.queue.party") },
-            { value: "unknown", label: t("matches.queue.unknown") },
-          ]}
-          active={filter.queue}
-          href={(queue) => withFilter({ queue })}
-        />
-        <SegmentedLinks
-          label={t("matches.filters.result")}
-          options={[
-            { value: "all", label: t("matches.filters.anyResult") },
-            { value: "win", label: t("matches.filters.wins") },
-            { value: "loss", label: t("matches.filters.losses") },
-          ]}
-          active={filter.result}
-          href={(result) => withFilter({ result })}
-        />
-        <SegmentedLinks
-          label={t("matches.filters.gameType")}
-          options={[
-            { value: "all", label: t("matches.filters.allGames") },
-            { value: "ranked", label: t("matches.filters.ranked") },
-          ]}
-          active={filter.mode}
-          href={(mode) => withFilter({ mode })}
-        />
-        <HeroFilter options={heroOptions} value={filter.hero} hrefFor={heroHrefs} />
-        {isFiltered && (
-          <Link
-            href="/matches"
-            className="px-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            {t("matches.filters.clear")}
-          </Link>
-        )}
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedLinks
+            label={t("matches.filters.timeRange")}
+            options={[
+              { value: "all", label: t("matches.filters.allTime") },
+              {
+                value: "patch",
+                label: page.latestPatch
+                  ? t("matches.filters.patch", { version: page.latestPatch })
+                  : t("matches.filters.currentPatch"),
+              },
+              { value: "30d", label: t("matches.filters.days30") },
+            ]}
+            active={filter.range}
+            href={(range) => withFilter({ range })}
+          />
+          <SegmentedLinks
+            label={t("matches.filters.queue")}
+            options={[
+              { value: "all", label: t("matches.filters.anyQueue") },
+              { value: "solo", label: t("matches.queue.solo") },
+              { value: "party", label: t("matches.queue.party") },
+              { value: "unknown", label: t("matches.queue.unknown") },
+            ]}
+            active={filter.queue}
+            href={(queue) => withFilter({ queue })}
+          />
+          <SegmentedLinks
+            label={t("matches.filters.result")}
+            options={[
+              { value: "all", label: t("matches.filters.anyResult") },
+              { value: "win", label: t("matches.filters.wins") },
+              { value: "loss", label: t("matches.filters.losses") },
+            ]}
+            active={filter.result}
+            href={(result) => withFilter({ result })}
+          />
+          <SegmentedLinks
+            label={t("matches.filters.gameType")}
+            options={[
+              { value: "all", label: t("matches.filters.allGames") },
+              { value: "ranked", label: t("matches.filters.ranked") },
+            ]}
+            active={filter.mode}
+            href={(mode) => withFilter({ mode })}
+          />
+          <HeroFilter options={heroOptions} value={filter.hero} hrefFor={heroHrefs} />
+          {isFiltered && (
+            <Link
+              href="/matches"
+              className="inline-flex items-center px-2 text-xs text-muted-foreground hover:text-foreground touch:min-h-11"
+            >
+              {t("matches.filters.clear")}
+            </Link>
+          )}
+        </div>
 
-      {tags.length > 0 && (
-        <nav
-          aria-label={t("matches.list.yourTags")}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          <span className="mr-1 text-xs text-muted-foreground">
-            {t("matches.list.yourTagsPrefix")}
-          </span>
-          {tags.map((t) => {
-            const active = filter.tag === t.tag;
-            return (
-              <Link
-                key={t.tag}
-                href={withFilter({ tag: active ? undefined : t.tag })}
-                aria-current={active ? "true" : undefined}
-                className={cn(
-                  "rounded-full border px-2.5 py-0.5 text-xs",
-                  active
-                    ? "border-gold/50 bg-gold/15 text-gold"
-                    : "border-white/10 text-muted-foreground hover:border-gold/40 hover:text-gold",
-                )}
-              >
-                {t.tag} <span className="tabular-nums opacity-70">{t.matches}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      )}
+        {tags.length > 0 && (
+          <nav
+            aria-label={t("matches.list.yourTags")}
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            <span className="mr-1 text-xs text-muted-foreground">
+              {t("matches.list.yourTagsPrefix")}
+            </span>
+            {tags.map((t) => {
+              const active = filter.tag === t.tag;
+              return (
+                <Link
+                  key={t.tag}
+                  href={withFilter({ tag: active ? undefined : t.tag })}
+                  aria-current={active ? "true" : undefined}
+                  className={cn(
+                    "relative inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs touch:tap-area touch:min-h-10",
+                    active
+                      ? "border-gold/50 bg-gold/15 text-gold"
+                      : "border-white/10 text-muted-foreground hover:border-gold/40 hover:text-gold",
+                  )}
+                >
+                  {t.tag} <span className="tabular-nums opacity-70">{t.matches}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+      </FilterSheet>
 
       <Suspense fallback={null}>
         <DraftRecordSection accountId32={user.accountId32} />

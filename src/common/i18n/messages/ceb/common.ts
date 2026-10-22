@@ -45,6 +45,12 @@ export const common: MessageTree<typeof en> = {
     selected: "napili",
   },
   language: { label: "Pinulongan", saved: "Nausab ang pinulongan" },
+  filters: {
+    button: "Mga filter",
+    title: "Mga filter",
+    activeCount: "{count} aktibo",
+    done: "Human na",
+  },
   actions: {
     save: "I-save",
     saving: "Gi-save…",

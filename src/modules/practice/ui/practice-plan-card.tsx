@@ -31,7 +31,7 @@ function Status({ done }: { done: boolean | null }) {
 }
 
 const iconButton =
-  "grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-white/5 hover:text-foreground disabled:opacity-50";
+  "relative grid size-8 shrink-0 place-items-center rounded-md touch:size-10 touch:tap-area text-muted-foreground hover:bg-white/5 hover:text-foreground disabled:opacity-50";
 
 /** This week's practice steps, each with the numbers behind it and its progress. */
 export function PracticePlanCard({

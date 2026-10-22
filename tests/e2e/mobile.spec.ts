@@ -124,3 +124,35 @@ test("a whole practice draft works and fits on a phone", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Draft report card" })).toBeVisible();
   expect(await overflowing(page)).toEqual([]);
 });
+
+test("match filters fold into a sheet on a phone, with the same URLs", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await page.goto("/matches?queue=solo");
+  // One button instead of rows of pills; it counts the active filters.
+  const open = page.getByRole("button", { name: /^Filters/ });
+  await expect(open).toContainText("1");
+  await expect(page.getByRole("navigation", { name: "Result" })).toBeHidden();
+  await open.click();
+  const sheet = page.getByRole("dialog", { name: "Filters" });
+  await sheet.getByRole("link", { name: "Wins" }).click();
+  await expect(page).toHaveURL(/[?&]result=win/);
+  await expect(page).toHaveURL(/[?&]queue=solo/);
+  // The sheet stays open for the next pick, then closes on Done.
+  await expect(sheet.getByRole("link", { name: "Wins" })).toHaveAttribute("aria-current", "page");
+  await sheet.getByRole("button", { name: "Done" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(open).toContainText("2");
+});
+
+test("buttons and filter pills are tap-sized on a phone", async ({ page }) => {
+  await page.goto("/draft");
+  for (const control of [
+    page.getByRole("button", { name: "Start draft" }),
+    page.getByRole("combobox", { name: "Opponent" }),
+    page.getByRole("combobox", { name: "Language" }),
+  ]) {
+    const box = (await control.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  await expect(page.getByRole("switch", { name: "Timer" })).toBeVisible();
+});

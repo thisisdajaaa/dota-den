@@ -4,6 +4,35 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Touch layouts: a coarse pointer (phones, tablets) or a phone-width viewport.
+ * Shared controls grow to a 44px tap target here; desktop density is unchanged.
+ */
+@custom-variant touch {
+  @media (pointer: coarse) {
+    @slot;
+  }
+  @media (width < 40rem) {
+    @slot;
+  }
+}
+
+/*
+ * Grows the hit area to at least 44x44px around a visually smaller control,
+ * without changing layout. The element needs a positioning context (relative).
+ */
+@utility tap-area {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "cn";
+import { segmentTouchTarget } from "@/components/segmented-links";
 import { useT } from "@/common/i18n/client";
 import type { HeroInfo } from "../matches.ports";
 import {
@@ -75,6 +76,7 @@ export function HeroPoolCard({
             aria-checked={sort === o}
             onClick={() => setSort(o)}
             className={cn(
+              segmentTouchTarget,
               "rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
               sort === o ? "bg-gold/15 text-gold" : "text-muted-foreground hover:text-foreground",
             )}
