@@ -2,6 +2,7 @@ import type { MessageTree } from "../../translate";
 import type { privacy as en } from "../en/privacy";
 
 export const privacy: MessageTree<typeof en> = {
+  loading: "Gi-load ang imong account",
   title: "Account",
   kicker: "Settings ug data",
   description:

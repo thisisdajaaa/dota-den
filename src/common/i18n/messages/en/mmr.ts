@@ -1,6 +1,7 @@
 /** UI copy for the mmr feature. */
 export const mmr = {
   page: {
+    loading: "Loading your MMR",
     title: "MMR journal",
     kicker: "Progression",
     description:
@@ -177,6 +178,7 @@ export const mmr = {
     best: "Best",
   },
   journey: {
+    loading: "Loading your rank journey",
     link: "Rank journey",
     title: "Rank journey",
     kicker: "Progression",

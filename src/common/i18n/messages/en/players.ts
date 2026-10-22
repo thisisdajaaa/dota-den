@@ -127,6 +127,7 @@ export const players = {
     search: "Search players",
   },
   compare: {
+    loading: "Loading the comparison",
     title: "Compare players",
     kicker: "Players",
     description:

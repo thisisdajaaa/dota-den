@@ -7,6 +7,7 @@ export const groups = {
     pair: { one: "1 pair", other: "{n} pairs" },
   },
   page: {
+    loading: "Loading your groups",
     title: "Groups",
     kicker: "Your stack",
     description:
