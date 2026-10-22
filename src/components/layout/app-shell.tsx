@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { after } from "next/server";
 import { LogOut } from "lucide-react";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { InstallButton } from "@/components/pwa";
@@ -9,6 +8,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
 import { playersService } from "@/modules/players";
+import { afterResponse } from "@/common/http/after-response";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { getT } from "@/common/i18n/server";
 import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
@@ -118,7 +118,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     playersService.quickProfile(user.accountId32),
     getViewerTimeZone(),
   ]);
-  if (saved) after(() => playersService.refreshProfile(user.accountId32));
+  if (saved)
+    afterResponse("refresh_profile", () => playersService.refreshProfile(user.accountId32), {
+      accountId32: user.accountId32,
+    });
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
   const name = profile?.personaName ?? t("system.shell.player", { id: user.accountId32 });
   const avatar = (

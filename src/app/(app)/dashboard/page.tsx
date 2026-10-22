@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { after } from "next/server";
 import { Suspense } from "react";
+import { afterResponse } from "@/common/http/after-response";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import { CollapsibleSection } from "@/components/collapsible-section";
@@ -93,10 +93,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const profile = quick.profile;
   // Medal history needs no typing: note the medal each visit (after the page is sent), from a
   // live profile only. A saved banner copy is refreshed first.
-  after(async () => {
-    const live = quick.saved ? await playersService.refreshProfile(user.accountId32) : profile;
-    if (live) await medalService.record(user.accountId32, live.rankTier);
-  });
+  afterResponse(
+    "record_medal",
+    async () => {
+      const live = quick.saved ? await playersService.refreshProfile(user.accountId32) : profile;
+      if (live) await medalService.record(user.accountId32, live.rankTier);
+    },
+    { accountId32: user.accountId32 },
+  );
 
   // Every hero in view (the card sorts and expands client-side); 12 form tiles fill 6×2.
   const summary = summarizeMatches(facts, {

@@ -1,6 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
-import { after } from "next/server";
+import { afterResponse } from "@/common/http/after-response";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { dailyCallBudget } from "@/common/llm/call-budget";
@@ -63,7 +63,7 @@ export function draftInsights(): OpenDotaDraftInsights {
     freshMs: config.DRAFT_META_FRESH_HOURS * 3_600_000,
     background: (task) => {
       try {
-        after(task);
+        afterResponse("draft_insights_refresh", task);
       } catch {
         // Outside a request (cron): the caller awaits its own work; let this one run.
         void task;

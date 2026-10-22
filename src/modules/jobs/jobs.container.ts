@@ -1,6 +1,6 @@
 import "server-only";
 import { Client, Receiver } from "@upstash/qstash";
-import { after } from "next/server";
+import { afterResponse } from "@/common/http/after-response";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
@@ -47,7 +47,7 @@ function jobQueue(): JobQueue {
       const outcome = await jobRunner.run(name, payload, dedupKey);
       if (outcome.status === "failed") logger.warn("job_failed", { name, error: outcome.error });
     },
-    schedule: (task) => after(task),
+    schedule: (task) => afterResponse("inline_job", task),
   });
 }
 
