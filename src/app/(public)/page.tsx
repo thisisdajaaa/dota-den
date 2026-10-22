@@ -341,16 +341,19 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
           </h1>
           <p className="max-w-xl text-lg text-muted-foreground">{t("home.hero.body")}</p>
           <div className="flex flex-wrap items-center gap-4">
-            <Button
-              asChild
-              size="lg"
-              className="gap-2 shadow-[0_0_30px_-6px_oklch(0.8_0.13_80/0.6)]"
-            >
-              <a href={signInUrl}>
-                <SteamIcon className="size-4" />
-                {t("home.hero.signIn")}
-              </a>
-            </Button>
+            {/* The "Sign in required" banner above already has the button. */}
+            {!signInRequired && (
+              <Button
+                asChild
+                size="lg"
+                className="gap-2 shadow-[0_0_30px_-6px_oklch(0.8_0.13_80/0.6)]"
+              >
+                <a href={signInUrl}>
+                  <SteamIcon className="size-4" />
+                  {t("home.hero.signIn")}
+                </a>
+              </Button>
+            )}
             <span className="text-xs text-muted-foreground">{t("home.hero.privacy")}</span>
           </div>
           <div className="max-w-xl space-y-3 border-t border-white/[0.06] pt-6">

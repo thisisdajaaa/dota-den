@@ -11,6 +11,10 @@ test("guest is redirected away from the dashboard", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/auth_error=signed_out/);
   await expect(page.getByRole("main").getByRole("alert")).toContainText("Sign in required");
+  // One sign-in button in the page: the banner's (the hero's is hidden meanwhile).
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Sign in through Steam" }),
+  ).toHaveCount(1);
 });
 
 test("signing in from the redirect banner returns to the page you asked for", async ({ page }) => {
