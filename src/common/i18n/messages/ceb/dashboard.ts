@@ -31,6 +31,42 @@ export const dashboard: MessageTree<typeof en> = {
       body: "Wala pa gihapoy duwa ang OpenDota para niini nga account. Sa Dota 2, adto sa Settings → Options → Social ug i-on ang “Expose Public Match Data”. Gihangyo namo ang OpenDota nga kuhaon pag-usab ang imong kasaysayan matag pipila ka oras, ug makuha usab niini ang mga duwa nga imong dulaon sugod karon.",
     },
   },
+  firstRun: {
+    status: {
+      kicker: "Gikuha ang imong mga duwa",
+      stepsLabel: "Dagan sa import",
+      done: "Nahuman na:",
+      current: "Gihimo pa:",
+      todo: "Sunod:",
+      signedIn: "Naka-sign in pinaagi sa Steam",
+      requested: "Gihangyo sa OpenDota ang imong match history",
+      requestedAgo: "Gihangyo {ago}",
+      requestPending: "Mahitabo sa unang sync",
+      arrive: "Diri mogawas ang imong mga duwa",
+      arriveWaiting: "Gihulat pa nga mahuman ang OpenDota",
+      arriveNone: "Wala pay nakit-an. Public ba ang imong match history?",
+      lastChecked: "Katapusang gitan-aw {ago}",
+    },
+    wait: {
+      kicker: "Samtang naghulat",
+      title: "Mga mahimo nimong sulayan karon",
+      draft: {
+        title: "Sulayi ang draft",
+        body: "Pag-draft batok sa AI nga captain gamit ang tinuod nga rules sa Captain's Mode.",
+      },
+      meta: {
+        title: "Tan-awa ang meta",
+        body: "Ang mga hero nga labing maayo sa matag role sa bag-ong high-rank nga mga duwa.",
+      },
+      mmr: {
+        title: "I-log ang imong MMR",
+        body: "Isulat ang MMR nga makita nimo karon sa client, aron adunay sinugdanan ang imong pagsaka.",
+      },
+    },
+  },
+  plan: {
+    title: "Mga goal ug practice",
+  },
   lanes: {
     loading: "Gi-load kung asa ka nagdula",
     kicker: "Lanes ug roles",

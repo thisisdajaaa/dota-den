@@ -270,9 +270,12 @@ export const matches: MessageTree<typeof en> = {
     fewGames: "{games} ra ang mitugma, kulang pa aron mahukman ang win rate.",
     totalsNote:
       "Apil niini nga kinatibuk-an ang tanang duwa nga mitugma sa imong mga filter, dili lang niini nga page. Ang linya mao ang 50%.",
+    emptyTitle: "Wala pay duwa",
+    emptyBody:
+      "Makita dinhi ang imong mga duwa kung na-import na gikan sa OpenDota. Makita sa imong overview kung unsa na ang sync.",
+    goToOverview: "Adto sa overview",
     noMatches: "Walay nakit-ang duwa",
     noneFiltered: "Walay mitugma niini nga mga filter.",
-    noneImported: "Wala pay na-import nga duwa. Adto sa imong overview aron mo-sync.",
     backToNewest: "Balik sa pinakabag-o",
     newestFirst: "Pinakabag-o una",
     older: "Mas karaan nga duwa",

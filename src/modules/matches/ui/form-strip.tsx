@@ -31,8 +31,9 @@ export async function FormStrip({
           </span>
         </span>
       </div>
-      {/* Reads like a timeline: oldest top-left, newest bottom-right. */}
-      <ol className="grid grid-cols-10 gap-1.5">
+      {/* Reads like a timeline: oldest top-left, newest bottom-right. Six or twelve to a row,
+          so the dashboard's 12 games always fill whole rows. */}
+      <ol className="grid grid-cols-6 gap-1.5 md:grid-cols-12 lg:grid-cols-6">
         {[...form].reverse().map((f) => {
           const hero = heroes.get(f.heroId);
           const win = f.result === "win";

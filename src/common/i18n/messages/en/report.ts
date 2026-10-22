@@ -18,6 +18,12 @@ export const report = {
   imported:
     "OpenDota didn't answer, so this report uses the games we've imported for you so far. GPM, damage, last hits, roles and replay stats come only from OpenDota and are left out until it's back.",
   noGames: "No public games between {from} and {to}.",
+  empty: {
+    title: "No games in this range",
+    hint: "The report reads your public match history from OpenDota. If games you played are missing, check that “Expose Public Match Data” is on in Dota 2.",
+    longer: "Show the last {n} days",
+    overview: "Check your sync on the overview",
+  },
   tiles: {
     games: "Games played",
     heroes: "Heroes played",

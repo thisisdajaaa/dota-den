@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronRight, SearchX } from "lucide-react";
+import { ChevronRight, ScrollText, SearchX } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { annotationsService } from "@/modules/annotations";
@@ -175,60 +176,71 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
         <DraftRecordSection accountId32={user.accountId32} />
       </Suspense>
 
-      <section
-        className="panel grid grid-cols-1 gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center"
-        aria-label={t("matches.list.totalsLabel")}
-      >
-        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">
-          <div>
-            <div className="kicker">
+      {/* Totals only mean something once there's a match to count. */}
+      {page.matching > 0 && (
+        <section
+          className="panel grid grid-cols-1 gap-4 p-5 sm:grid-cols-[auto_1fr] sm:items-center"
+          aria-label={t("matches.list.totalsLabel")}
+        >
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">
+            <div>
+              <div className="kicker">
+                {resultLabel === "win"
+                  ? t("matches.list.showingWins")
+                  : resultLabel === "loss"
+                    ? t("matches.list.showingLosses")
+                    : t("matches.list.matches")}
+              </div>
+              <div className="text-2xl font-semibold sm:text-3xl">
+                {page.matching.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div className="kicker">{t("matches.list.record")}</div>
+              <div className="text-2xl font-semibold whitespace-nowrap sm:text-3xl">
+                <span className="text-win">{wins}</span>
+                <span className="text-muted-foreground"> – </span>
+                <span className="text-loss">{games - wins}</span>
+              </div>
+            </div>
+            <div>
+              <div className="kicker">{t("matches.list.winRate")}</div>
+              <div className="text-2xl font-semibold sm:text-3xl">{formatPercent(rate)}</div>
+            </div>
+          </div>
+          <div className="space-y-1.5 sm:pl-6">
+            <WinRateBar rate={rate} muted={games < MIN_SAMPLE} />
+            <p className="text-xs text-muted-foreground">
               {resultLabel === "win"
-                ? t("matches.list.showingWins")
+                ? t("matches.list.onlyWins")
                 : resultLabel === "loss"
-                  ? t("matches.list.showingLosses")
-                  : t("matches.list.matches")}
-            </div>
-            <div className="text-2xl font-semibold sm:text-3xl">
-              {page.matching.toLocaleString()}
-            </div>
+                  ? t("matches.list.onlyLosses")
+                  : games < MIN_SAMPLE && games > 0
+                    ? t("matches.list.fewGames", {
+                        games: plural(t, "matches.list.games", games),
+                      })
+                    : t("matches.list.totalsNote")}
+            </p>
           </div>
-          <div>
-            <div className="kicker">{t("matches.list.record")}</div>
-            <div className="text-2xl font-semibold whitespace-nowrap sm:text-3xl">
-              <span className="text-win">{wins}</span>
-              <span className="text-muted-foreground"> – </span>
-              <span className="text-loss">{games - wins}</span>
-            </div>
-          </div>
-          <div>
-            <div className="kicker">{t("matches.list.winRate")}</div>
-            <div className="text-2xl font-semibold sm:text-3xl">{formatPercent(rate)}</div>
-          </div>
-        </div>
-        <div className="space-y-1.5 sm:pl-6">
-          <WinRateBar rate={rate} muted={games < MIN_SAMPLE} />
-          <p className="text-xs text-muted-foreground">
-            {resultLabel === "win"
-              ? t("matches.list.onlyWins")
-              : resultLabel === "loss"
-                ? t("matches.list.onlyLosses")
-                : games < MIN_SAMPLE && games > 0
-                  ? t("matches.list.fewGames", {
-                      games: plural(t, "matches.list.games", games),
-                    })
-                  : t("matches.list.totalsNote")}
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {page.items.length === 0 ? (
-        <section className="panel grid place-items-center gap-3 px-6 py-16 text-center">
-          <SearchX aria-hidden className="size-8 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">{t("matches.list.noMatches")}</h2>
-          <p className="text-sm text-muted-foreground">
-            {isFiltered ? t("matches.list.noneFiltered") : t("matches.list.noneImported")}
-          </p>
-        </section>
+        isFiltered ? (
+          <EmptyState
+            icon={SearchX}
+            title={t("matches.list.noMatches")}
+            description={t("matches.list.noneFiltered")}
+            action={{ href: "/matches", label: t("matches.filters.clear") }}
+          />
+        ) : (
+          <EmptyState
+            icon={ScrollText}
+            title={t("matches.list.emptyTitle")}
+            description={t("matches.list.emptyBody")}
+            action={{ href: "/dashboard", label: t("matches.list.goToOverview") }}
+          />
+        )
       ) : (
         <section className="panel overflow-hidden" aria-label={t("matches.list.matches")}>
           <MatchRows matches={page.items} heroes={heroes} now={now} />

@@ -36,17 +36,18 @@ export async function PlayerBanner({
       className="panel relative isolate overflow-hidden"
       aria-label={t("matches.banner.label")}
     >
+      {/* Phones skip the art: at that width it sits right behind the sync status and medal. */}
       {signature?.hero.renderUrl && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-full [mask-image:linear-gradient(to_left,black_35%,transparent)] sm:w-[62%]"
+          className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden w-[62%] [mask-image:linear-gradient(to_left,black_35%,transparent)] sm:block"
         >
           <Image
             src={signature.hero.renderUrl}
             alt=""
             fill
-            sizes="(min-width: 1024px) 640px, 100vw"
-            className="scale-110 object-cover object-[center_8%] opacity-45 sm:opacity-70"
+            sizes="(min-width: 1024px) 640px, 62vw"
+            className="scale-110 object-cover object-[center_8%] opacity-70"
             priority
           />
         </div>
@@ -61,7 +62,7 @@ export async function PlayerBanner({
       />
 
       <div className="flex flex-col gap-6 p-5 sm:p-8">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="kicker">{kicker ?? t("matches.banner.kicker")}</p>
           {children}
         </div>

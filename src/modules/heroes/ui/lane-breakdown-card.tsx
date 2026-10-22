@@ -45,7 +45,8 @@ export async function LaneBreakdownCard({
       id="lane-breakdown"
       kicker={t("heroes.lanes.kicker")}
       title={t("heroes.lanes.title")}
-      footer={sampleLine(view, t)}
+      // Nothing in the window: "your last 0 games · 0 placed…" says nothing the body doesn't.
+      footer={b.total > 0 ? sampleLine(view, t) : undefined}
     >
       {played.length === 0 ? (
         <Unavailable>

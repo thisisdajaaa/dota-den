@@ -266,9 +266,12 @@ export const matches = {
     fewGames: "Only {games} match, too few to judge a win rate.",
     totalsNote:
       "These totals include every match that fits your filters, not just this page. The line marks 50%.",
+    emptyTitle: "No matches yet",
+    emptyBody:
+      "Your games show up here once they're imported from OpenDota. Your overview shows how the sync is going.",
+    goToOverview: "Go to overview",
     noMatches: "No matches found",
     noneFiltered: "Nothing matches these filters.",
-    noneImported: "No matches imported yet. Visit your overview to sync.",
     backToNewest: "Back to newest",
     newestFirst: "Newest first",
     older: "Older matches",

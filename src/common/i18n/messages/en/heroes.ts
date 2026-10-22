@@ -38,9 +38,9 @@ export const heroes = {
       "{heroes} across your {games}. Open a hero for your record, trend, matchups and items on it.",
     descriptionEmpty: "Heroes you play show up here once your matches are imported.",
     emptyTitle: "No heroes yet",
-    emptyBefore: "We haven't imported any of your matches yet. Your",
-    emptyLink: "overview",
-    emptyAfter: "starts the import.",
+    emptyBody:
+      "Heroes you play show up here once your matches are imported. Your overview starts the import and shows how it's going.",
+    emptyLink: "Go to overview",
     loading: "Loading heroes",
     loadingSuggestions: "Loading hero suggestions",
     loadingLanes: "Loading where you play",

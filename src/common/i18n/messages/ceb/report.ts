@@ -20,6 +20,12 @@ export const report: MessageTree<typeof en> = {
   imported:
     "Wala motubag ang OpenDota, mao nga kini nga report gikan sa mga duwa nga na-import na namo para nimo. Ang GPM, damage, last hits, roles ug replay stats gikan ra sa OpenDota ug wala sa una hangtod mobalik kini.",
   noGames: "Walay public nga duwa gikan {from} hangtod {to}.",
+  empty: {
+    title: "Walay duwa niini nga range",
+    hint: "Gibasa sa report ang imong public nga match history gikan sa OpenDota. Kung naay kulang nga duwa, tan-awa kung naka-on ang “Expose Public Match Data” sa Dota 2.",
+    longer: "Ipakita ang miaging {n} ka adlaw",
+    overview: "Tan-awa ang sync sa overview",
+  },
   tiles: {
     games: "Mga duwa nga gidula",
     heroes: "Mga hero nga gidula",

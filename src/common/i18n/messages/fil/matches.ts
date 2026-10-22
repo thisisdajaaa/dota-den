@@ -271,9 +271,12 @@ export const matches: MessageTree<typeof en> = {
     fewGames: "{games} lang ang tugma, kulang pa para husgahan ang win rate.",
     totalsNote:
       "Kasama sa kabuuang ito ang lahat ng larong tugma sa mga filter mo, hindi lang sa page na ito. Ang linya ay 50%.",
+    emptyTitle: "Wala pang laro",
+    emptyBody:
+      "Lalabas dito ang mga laro mo kapag na-import na mula sa OpenDota. Makikita sa overview mo kung kumusta na ang sync.",
+    goToOverview: "Pumunta sa overview",
     noMatches: "Walang nakitang laro",
     noneFiltered: "Walang tugma sa mga filter na ito.",
-    noneImported: "Wala pang na-import na laro. Pumunta sa buod mo para mag-sync.",
     backToNewest: "Bumalik sa pinakabago",
     newestFirst: "Pinakabago muna",
     older: "Mas lumang laro",
