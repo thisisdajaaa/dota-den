@@ -33,6 +33,30 @@ const EXTRAS_MAX_MS = 8_000;
 const EXTRAS_MIN_MS = 2_000;
 /** The owner-alert checks after a run get at most this long (the function stops at 60s). */
 const MONITOR_MAX_MS = 8_000;
+/** A medal lookup (one OpenDota profile call, retries included) only starts with this much left. */
+const MEDAL_MIN_MS = 3_000;
+/** Total time for one patch refresh run, leaving the owner-alert checks MONITOR_MAX_MS. */
+const PATCH_RUN_BUDGET_MS = 46_000;
+/** The Meta page's tournament queries (lane duos take ~13s) only start with this much left. */
+const META_MIN_MS = 15_000;
+
+const TIMED_OUT = Symbol("timed_out");
+
+/**
+ * Waits for `task` at most `ms`. The task isn't cancelled (it may still finish, e.g. fill a
+ * cache, while the function lives), but the run moves on and is recorded before Vercel stops it.
+ */
+async function within<T>(task: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<typeof TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMED_OUT), Math.max(0, ms));
+  });
+  try {
+    return await Promise.race([task, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 type Trigger = "cron" | "admin";
 
@@ -104,13 +128,13 @@ export class CronService {
       });
       let medals = 0;
       for (const { accountId32, outcome } of results) {
-        if (Date.now() - started > RUN_BUDGET_MS) break;
+        // A lookup started near the end could overrun, so each one is also capped at what's left.
+        const left = RUN_BUDGET_MS - (Date.now() - started);
+        if (left < MEDAL_MIN_MS) break;
         if (outcome === "skipped_time") continue;
-        const profile = await this.deps.medals.currentRankTier(accountId32);
-        if (profile) {
-          await this.deps.medals.record(accountId32, profile.rankTier);
-          medals++;
-        }
+        const recorded = await within(this.recordMedal(accountId32), left);
+        if (recorded === TIMED_OUT) break;
+        if (recorded) medals++;
       }
       // A few match details per player (capped per day), leaving the posts and notifications
       // their minimum.
@@ -190,32 +214,69 @@ export class CronService {
     }
   }
 
-  /** The latest patches, plus the slow tournament data the draft AI and Meta page cache. */
+  private async recordMedal(accountId32: number): Promise<boolean> {
+    const profile = await this.deps.medals.currentRankTier(accountId32);
+    if (!profile) return false;
+    await this.deps.medals.record(accountId32, profile.rankTier);
+    return true;
+  }
+
+  /**
+   * The latest patches, plus the slow tournament data the draft AI and Meta page cache. With
+   * QStash both caches are refreshed by retried background jobs; otherwise they run here with
+   * whatever time the run has left.
+   */
   async runPatchRefresh(trigger: Trigger, requestId: string): Promise<PatchRefreshDto> {
     const done = await this.track("patches", trigger);
     const started = Date.now();
-    // The draft AI's tournament data: a retried background job with QStash, else right here.
+    const left = () => PATCH_RUN_BUDGET_MS - (Date.now() - started);
     const queue = this.deps.queue();
-    const [result, tournaments] = await Promise.all([
-      this.deps.patches.importLatest(),
-      queue.durable
-        ? queue
-            .enqueue(
-              "draft-meta-warm",
-              {},
-              { dedupKey: bucketedKey("draft-meta-warm", DAY_MS, Date.now()) },
-            )
-            .catch(() => "enqueue_failed")
-        : this.deps.caches.warmDraftData().catch(() => [{ key: "tournaments", ok: false }]),
-    ]);
-    // The Meta page's slow tournament queries (lane duos take ~13s): cache them for every server.
-    const meta = await this.deps.caches.warmMeta();
+    const enqueue = (name: "draft-meta-warm" | "meta-warm") =>
+      queue
+        .enqueue(name, {}, { dedupKey: bucketedKey(name, DAY_MS, Date.now()) })
+        .catch(() => "enqueue_failed" as const);
+    const warm = async (
+      key: string,
+      task: () => Promise<Array<{ key: string; ok: boolean }>>,
+      ms: number,
+    ) => {
+      const res = await within(
+        task().catch(() => [{ key, ok: false }]),
+        ms,
+      );
+      return res === TIMED_OUT ? ("timed_out" as const) : res;
+    };
+
+    let result: Awaited<ReturnType<PatchImportPort["importLatest"]>> | typeof TIMED_OUT;
+    let tournaments: unknown;
+    let meta: unknown;
+    try {
+      [result, tournaments] = await Promise.all([
+        within(this.deps.patches.importLatest(), left()),
+        // Inline, the draft AI's queries stop being waited for in time for the Meta queries.
+        queue.durable
+          ? enqueue("draft-meta-warm")
+          : warm("tournaments", this.deps.caches.warmDraftData, left() - META_MIN_MS),
+      ]);
+      // The Meta page's slow tournament queries: cache them for every server.
+      meta = queue.durable
+        ? await enqueue("meta-warm")
+        : left() >= META_MIN_MS
+          ? await warm("meta", this.deps.caches.warmMeta, left())
+          : "skipped_time";
+    } catch (error) {
+      await done({
+        ok: false,
+        summary: { error: error instanceof Error ? error.message : "unknown" },
+      });
+      throw error;
+    }
     this.deps.logger.info("draft_meta_refresh", { requestId, tournaments, meta });
     const log = { requestId, trigger, durationMs: Date.now() - started };
 
-    if (!result.ok) {
-      const reason = result.error.error.type;
-      await done({ ok: false, summary: { error: reason, meta } });
+    if (result === TIMED_OUT || !result.ok) {
+      const reason = result === TIMED_OUT ? "timed_out" : result.error.error.type;
+      await done({ ok: false, summary: { error: reason, tournaments, meta } });
       this.deps.logger.warn("patch_refresh_failed", { ...log, reason });
       throw new UpstreamUnavailableError("The official patch feed is unavailable right now.");
     }
@@ -224,7 +285,7 @@ export class CronService {
     if (failed.length > 0) this.deps.logger.warn("patch_import_degraded", { ...log, failed });
     await done({
       ok: failed.length === 0,
-      summary: { imported: result.value.length, failed: failed.length, meta },
+      summary: { imported: result.value.length, failed: failed.length, tournaments, meta },
     });
     this.deps.logger.info("patch_refresh_completed", { ...log, outcomes: result.value });
     return { outcomes: result.value };

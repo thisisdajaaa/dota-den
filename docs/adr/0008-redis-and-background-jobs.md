@@ -35,12 +35,14 @@ durable background work, without running a server of our own.
     browser open. Capped at 300 chunks.
   - `draft-meta-warm`: the daily cron queues the draft AI's tournament-data refresh instead
     of running it inline, so failures are retried.
+  - `meta-warm`: likewise for the Meta page's slow tournament queries. Without QStash both
+    run inside the cron request, each capped at the time the run has left.
 - **Idempotency**: every job run is recorded in MongoDB (`job_runs`, kept 14 days). A dedup
   key that already succeeded is skipped. Dedup keys include a time bucket (e.g. a minute or a
   day) so the same logical job can run again later; QStash's own deduplication is a second
   guard.
 - **Everything is optional and fails open.** Without the Upstash variables the app behaves as
-  before: per-instance limits and caches, the tournament refresh runs inside the cron request,
+  before: per-instance limits and caches, the tournament refreshes run inside the cron request,
   and a backfill continues on the player's next sync (a delayed job can't wait in-process, so
   it's skipped). If Redis errors or times out, rate limits fall back to the instance's
   window, and the gateway carries on without the shared cache and budget. Tests and local

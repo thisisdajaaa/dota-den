@@ -52,12 +52,14 @@ function jobQueue(): JobQueue {
 }
 
 const warmDraftData = () => draftInsights().warm();
+const warmMeta = () => metaService.warmCaches();
 
 export const jobsService = new JobsService({
   queue: jobQueue,
   matches,
   backfillCooldownMs: BACKFILL_COOLDOWN_MS,
   warmDraftData,
+  warmMeta,
   logger,
 });
 
@@ -81,7 +83,7 @@ export const cronService = new CronService({
   notifications: { runDaily: (opts) => notificationTriggers.runDaily(opts) },
   weeklyEmail: { runDaily: (opts) => emailDigest.runDaily(opts) },
   patches: { importLatest: () => patchImportService.importLatest() },
-  caches: { warmDraftData, warmMeta: () => metaService.warmCaches() },
+  caches: { warmDraftData, warmMeta },
   monitor: {
     cronFinished: async (name, result) => {
       await opsMonitor.cronFinished(name, result);
