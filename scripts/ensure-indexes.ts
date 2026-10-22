@@ -25,6 +25,7 @@ import { NoncesRepository } from "@/modules/identity/repositories/nonces.reposit
 import { AuthSessionsRepository } from "@/modules/identity/repositories/auth-sessions.repository";
 import { UsersRepository } from "@/modules/identity/repositories/users.repository";
 import { VisitDaysRepository } from "@/modules/identity/repositories/visit-days.repository";
+import { StreamerFollowsRepository } from "@/modules/live/repositories/streamer-follows.repository";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
 import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-meta-cache.repository";
@@ -83,6 +84,7 @@ async function main(): Promise<void> {
   await new PatchesRepository(async () => db).ensureIndexes();
   await new FollowsRepository(async () => db).ensureIndexes();
   await new PlayerProfilesRepository(async () => db).ensureIndexes();
+  await new StreamerFollowsRepository(async () => db).ensureIndexes();
   await Promise.all([
     new SessionNotesRepository(async () => db).ensureIndexes(),
     new SessionSettingsRepository(async () => db).ensureIndexes(),
