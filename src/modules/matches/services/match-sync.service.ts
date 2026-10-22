@@ -7,6 +7,7 @@ import type {
   MatchProvider,
   PatchTimelineSource,
   MatchFactsPort,
+  ProviderCallOptions,
   ProviderError,
   SyncState,
   SyncStatesPort,
@@ -29,6 +30,8 @@ export const HISTORY_PAGE_SIZE = 500;
  * history from tripping the circuit breaker for every other OpenDota feature.
  */
 export const HISTORY_PAGE_CALL = { timeoutMs: 20_000, maxRetries: 1, isolated: true } as const;
+/** Least time a page call gets, even right at a sync's deadline. */
+export const MIN_PAGE_TIMEOUT_MS = 5_000;
 /** While nothing is imported: how often we may ask the upstream to refetch the history. */
 export const HISTORY_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 /**
@@ -158,7 +161,14 @@ export class MatchSyncService {
           this.now().getTime() >= opts.deadline
         )
           break;
-        const page = await this.fetchPage(accountId32, offset, pageSize, entries, summary);
+        const page = await this.fetchPage(
+          accountId32,
+          offset,
+          pageSize,
+          entries,
+          summary,
+          opts.deadline,
+        );
         budget--;
         if (!page.ok) {
           // A first import keeps the pages it already has and carries on next time. A known
@@ -197,6 +207,7 @@ export class MatchSyncService {
           historyPageSize,
           entries,
           summary,
+          opts.deadline,
         );
         budget--;
         // Older history can wait: keep what this sync already imported and try again later.
@@ -229,6 +240,7 @@ export class MatchSyncService {
           historyPageSize,
           entries,
           summary,
+          opts.deadline,
         );
         budget--;
         // Lineups can wait too: carry on next time.
@@ -318,11 +330,12 @@ export class MatchSyncService {
     limit: number,
     timeline: readonly PatchTimelineEntry[],
     summary: SyncSummary,
+    deadline?: number,
   ): Promise<Result<{ facts: PlayerMatchFact[]; rawCount: number }, ProviderError>> {
     const page = await this.deps.provider.fetchPlayerMatches(
       accountId32,
       { offset, limit },
-      HISTORY_PAGE_CALL,
+      this.pageCall(deadline),
     );
     if (!page.ok) return page;
     const facts = page.value.matches.map((m) => toFact(m, timeline));
@@ -333,6 +346,21 @@ export class MatchSyncService {
     summary.updated += written.updated;
     // Rejected rows still occupy upstream offsets, so pagination uses the raw count.
     return ok({ facts, rawCount: facts.length + page.value.rejectedCount });
+  }
+
+  /**
+   * A page call that fits in the time left before the deadline (retry included), so a slow
+   * page can't carry a sync past its caller's limit (e.g. the cron's function time).
+   */
+  private pageCall(deadline?: number): ProviderCallOptions {
+    if (deadline === undefined) return HISTORY_PAGE_CALL;
+    const left = deadline - this.now().getTime();
+    const timeoutMs = Math.max(MIN_PAGE_TIMEOUT_MS, Math.min(HISTORY_PAGE_CALL.timeoutMs, left));
+    return {
+      ...HISTORY_PAGE_CALL,
+      timeoutMs,
+      maxRetries: left >= 2 * timeoutMs ? HISTORY_PAGE_CALL.maxRetries : 0,
+    };
   }
 
   private async fail(accountId32: number, error: ProviderError): Promise<Result<never, SyncError>> {
