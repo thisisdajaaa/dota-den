@@ -84,6 +84,8 @@ const EnvSchema = z
     MONGODB_URI: z.string().min(1),
     MONGODB_DB_NAME: z.string().min(1).default("dota_den_dev"),
     MONGODB_MAX_POOL_SIZE: z.coerce.number().int().min(1).max(100).default(10),
+    /** Time limit for each database operation (driver CSOT `timeoutMS`); 0 means none. */
+    MONGODB_TIMEOUT_MS: z.coerce.number().int().min(0).max(600_000).default(10_000),
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     OPENDOTA_API_KEY: z.string().min(1).optional(),
     /** Override for tests (fixture server). Defaults to the public API. */
