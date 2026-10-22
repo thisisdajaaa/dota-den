@@ -1,6 +1,10 @@
 import { getT } from "@/common/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Only for the list: in a route group so it doesn't wrap /groups/[id], whose "not found"
+ * (for people outside the group) must still answer 404 rather than stream a 200.
+ */
 export default async function GroupsLoading() {
   const t = await getT();
   return (
