@@ -56,9 +56,10 @@ test("guests browse live streams, filter by language and watch one in the page",
   await streams.getByRole("button", { name: "Show 6 more" }).click();
   await expect(streams).toContainText("Showing 30 of 30 streams");
   await expect(streams.getByRole("button", { name: /^Show \d+ more$/ })).toHaveCount(0);
-  await streams.getByLabel("Language").selectOption("tl");
-  await expect(streams).toContainText("Showing 1 of 1 streams");
-  await expect(cards).toHaveCount(1);
+  // Twitch says "tl" and Kick "fil": one Filipino option holds both.
+  await streams.getByLabel("Language").selectOption("fil");
+  await expect(streams).toContainText("Showing 2 of 2 streams");
+  await expect(cards).toHaveCount(2);
   await expect(cards.first()).toHaveAccessibleName("Watch PinoyDota");
   await streams.getByLabel("Language").selectOption("");
 
