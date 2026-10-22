@@ -22,7 +22,8 @@ durable background work, without running a server of our own.
     frequent room poll limit stays per instance to protect the command quota.
   - OpenDota and Valve responses: a second cache layer behind each instance's in-memory cache.
     Keys are a SHA-256 of the URL, so API keys in query strings never reach Redis; responses
-    over 512 KB aren't shared.
+    over 512 KB aren't shared. Entries over 16 KB are stored gzipped (base64), so the limit
+    applies after compression (OpenDota's 1.3 MB ability constants fit at about 350 KB).
   - A global OpenDota call budget per minute and per UTC day (plain counters with expiry),
     checked before every upstream call including retries. When it's spent, the gateway
     answers "rate limited" without calling OpenDota and pages take their degraded path.

@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
+import { after } from "next/server";
 import { LogOut } from "lucide-react";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { InstallButton } from "@/components/pwa";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/modules/identity";
-import { matchesService } from "@/modules/matches";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
+import { playersService } from "@/modules/players";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { getT } from "@/common/i18n/server";
 import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
@@ -111,10 +112,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const [profile, tz] = await Promise.all([
-    matchesService.playerProfile(user.accountId32),
+  // The saved copy when there is one, so no page waits on OpenDota for the sidebar; it's
+  // refreshed once the page is sent.
+  const [{ profile, saved }, tz] = await Promise.all([
+    playersService.quickProfile(user.accountId32),
     getViewerTimeZone(),
   ]);
+  if (saved) after(() => playersService.refreshProfile(user.accountId32));
   const rank = parseRankTier(profile?.rankTier, profile?.leaderboardRank);
   const name = profile?.personaName ?? t("system.shell.player", { id: user.accountId32 });
   const avatar = (

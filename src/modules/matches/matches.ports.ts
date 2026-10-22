@@ -7,6 +7,7 @@ import type {
   DashboardFilter,
   DashboardFact,
   DashboardFacts,
+  DashboardView,
   ItemInfo,
   LineupCoverage,
   LineupFacts,
@@ -23,6 +24,8 @@ export type {
   DashboardFilter,
   DashboardFact,
   DashboardFacts,
+  DashboardSummaryFact,
+  DashboardView,
   ItemInfo,
   LineupCoverage,
   LineupFact,
@@ -153,6 +156,16 @@ export interface MatchQueries {
   /** Heroes this account has imported matches on, most played first. */
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
+  /**
+   * The dashboard's games: the same rows as dashboardFacts, but only the summary's fields,
+   * plus the newest `recent` games in full.
+   */
+  dashboardView(
+    accountId32: number,
+    filter: DashboardFilter,
+    now: Date,
+    recent: number,
+  ): Promise<DashboardView>;
   /** Your games with both lineups, for matchups from your own games. */
   lineupFacts(accountId32: number, filter: LineupFilter, now: Date): Promise<LineupFacts>;
   /** How far the lineup backfill has got. */

@@ -78,6 +78,28 @@ export interface DashboardFacts {
   latestPatch: string | null;
 }
 
+/** Just what the dashboard's summary (win rates, averages, form, hero pool) reads. */
+export type DashboardSummaryFact = Pick<
+  DashboardFact,
+  | "matchId"
+  | "startedAt"
+  | "heroId"
+  | "result"
+  | "kills"
+  | "deaths"
+  | "assists"
+  | "queueClass"
+  | "partySize"
+>;
+
+/** The dashboard: lean rows for the summary, full rows for the few most recent games. */
+export interface DashboardView {
+  facts: DashboardSummaryFact[];
+  /** Newest first. */
+  recent: DashboardFact[];
+  latestPatch: string | null;
+}
+
 /** Filters for matchups from your own games. */
 export interface LineupFilter {
   range: "all" | "patch" | "90d" | "30d";
