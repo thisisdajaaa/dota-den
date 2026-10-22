@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("live games list league and top public games, with a live read of the draft", async ({
+test("live games list the games someone streams, with a live read of the draft", async ({
   page,
 }) => {
   await page.goto("/live");
@@ -10,9 +10,8 @@ test("live games list league and top public games, with a live read of the draft
   await expect(league).toContainText("Fixture Falcons vs Fixture Titans");
   await expect(league).toContainText("Radiant leads by 8.4k gold");
   await expect(league).toContainText("feed 15 min behind");
-  await expect(page.getByRole("region", { name: "Highest-MMR public games" })).toContainText(
-    "Average MMR 8,150",
-  );
+  // No stream mentions the public game, so it isn't listed (its page still works by link).
+  await expect(page.getByRole("region", { name: "Highest-MMR public games" })).toHaveCount(0);
 
   await league.getByRole("link", { name: /Fixture Falcons vs Fixture Titans/ }).click();
   await expect(page).toHaveURL(/\/live\/8000000001$/);

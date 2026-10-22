@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Radio, TvMinimal } from "lucide-react";
 import { useLocale, useT } from "@/common/i18n/client";
-import { channelKey } from "../domain/platform";
-import { inLanguage, languageCode, languageOptions } from "../domain/streams";
+import { channelKey, PLATFORM_NAMES, PLATFORMS, type Platform } from "../domain/platform";
+import { inLanguage, languageCode, languageOptions, onPlatform } from "../domain/streams";
 import type { LiveStream, StreamGameHint } from "../domain/watch";
+import { PlatformBadge } from "./platform-badge";
 import { StreamCard } from "./stream-card";
 
-/** Four rows of three on desktop; a phone shows one column, so keep it short. */
-const PAGE = 12;
+/** Two rows on a wide screen per site; a phone shows one column, so keep it short. */
+const PAGE = 8;
 
 /** A language code's name in the viewer's language ("en" → "English"). */
 export function useLanguageName(): (code: string) => string {
@@ -53,16 +54,13 @@ export function StreamsGrid({
   const t = useT();
   const languageName = useLanguageName();
   const [language, setLanguage] = useState<string | null>(null);
-  const [shown, setShown] = useState(PAGE);
   const options = useMemo(() => languageOptions(streams), [streams]);
   // A language that left the list (its last stream ended) falls back to all.
   const active = language && options.some((o) => o.code === language) ? language : null;
   const visible = useMemo(() => inLanguage(streams, active), [streams, active]);
-  const page = visible.slice(0, shown);
-  const remaining = visible.length - page.length;
 
   return (
-    <section aria-labelledby="streams-title" className="space-y-4">
+    <section aria-labelledby="streams-title" className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="streams-title" className="flex items-center gap-2 text-lg font-semibold">
@@ -76,10 +74,7 @@ export function StreamsGrid({
             <span className="relative">
               <select
                 value={active ?? ""}
-                onChange={(e) => {
-                  setLanguage(e.target.value || null);
-                  setShown(PAGE);
-                }}
+                onChange={(e) => setLanguage(e.target.value || null)}
                 className="h-9 max-w-[14rem] appearance-none rounded-lg border border-white/[0.08] bg-background/60 pr-8 pl-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
               >
                 <option value="">
@@ -103,13 +98,69 @@ export function StreamsGrid({
         )}
       </div>
 
-      {visible.length === 0 ? (
+      {streams.length === 0 ? (
         <div className="panel grid place-items-center gap-2 px-6 py-12 text-center">
           <TvMinimal aria-hidden className="size-8 text-gold/70" />
-          <p className="text-sm text-muted-foreground">
-            {streams.length === 0 ? t("live.hub.streams.none") : t("live.hub.streams.empty")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("live.hub.streams.none")}</p>
         </div>
+      ) : (
+        // One section per site: Twitch's biggest streams would otherwise bury Kick's.
+        PLATFORMS.filter((p) => streams.some((s) => s.platform === p)).map((p) => (
+          <SiteStreams
+            // A new language starts each site's list over.
+            key={`${p}:${active ?? ""}`}
+            platform={p}
+            streams={onPlatform(visible, p)}
+            hints={hints}
+            watching={watching}
+            onWatch={onWatch}
+            followControl={followControl}
+            languageName={languageName}
+          />
+        ))
+      )}
+    </section>
+  );
+}
+
+/** One site's live streams, most watched first, a page at a time. */
+function SiteStreams({
+  platform,
+  streams,
+  hints,
+  watching,
+  onWatch,
+  followControl,
+  languageName,
+}: {
+  platform: Platform;
+  streams: LiveStream[];
+  hints: Record<string, StreamGameHint>;
+  watching: string | null;
+  onWatch: (stream: LiveStream) => void;
+  followControl?: (stream: LiveStream) => React.ReactNode;
+  languageName: (code: string) => string;
+}) {
+  const t = useT();
+  const [shown, setShown] = useState(PAGE);
+  const page = streams.slice(0, shown);
+  const remaining = streams.length - page.length;
+  const name = PLATFORM_NAMES[platform];
+  const titleId = `streams-${platform}`;
+
+  return (
+    <section aria-labelledby={titleId} className="space-y-3">
+      <h3 id={titleId} className="flex items-center gap-2 text-base font-semibold">
+        <PlatformBadge platform={platform} className="text-[0.7rem]" />
+        {t("live.hub.streams.siteTitle", { platform: name })}
+        <span className="text-sm font-normal text-muted-foreground tabular-nums">
+          {streams.length.toLocaleString("en-US")}
+        </span>
+      </h3>
+      {streams.length === 0 ? (
+        <p className="panel px-5 py-6 text-sm text-muted-foreground">
+          {t("live.hub.streams.siteEmpty", { platform: name })}
+        </p>
       ) : (
         <>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -127,7 +178,7 @@ export function StreamsGrid({
           </ul>
           <div className="flex flex-col items-center gap-2">
             <p className="text-xs text-muted-foreground" aria-live="polite">
-              {t("live.hub.streams.showing", { shown: page.length, total: visible.length })}
+              {t("live.hub.streams.showing", { shown: page.length, total: streams.length })}
             </p>
             {remaining > 0 && (
               <button

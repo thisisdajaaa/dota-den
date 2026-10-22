@@ -59,6 +59,14 @@ export interface LanguageOption {
   streams: number;
 }
 
+/** Streams on one site; every stream when `platform` is null. */
+export function onPlatform<T extends Pick<LiveStream, "platform">>(
+  streams: readonly T[],
+  platform: Platform | null,
+): T[] {
+  return platform ? streams.filter((s) => s.platform === platform) : [...streams];
+}
+
 /** Codes the sites spell differently for one language: Twitch says "tl", Kick "fil". */
 const SAME_LANGUAGE: Record<string, string> = { tl: "fil" };
 
