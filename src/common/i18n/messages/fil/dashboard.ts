@@ -31,6 +31,42 @@ export const dashboard: MessageTree<typeof en> = {
       body: "Wala pa ring laro ang OpenDota para sa account na ito. Sa Dota 2, pumunta sa Settings → Options → Social at i-on ang “Expose Public Match Data”. Hinihiling namin sa OpenDota na kunin ulit ang kasaysayan mo kada ilang oras, at makukuha rin nito ang mga larong lalaruin mo mula ngayon.",
     },
   },
+  firstRun: {
+    status: {
+      kicker: "Kinukuha ang mga laro mo",
+      stepsLabel: "Takbo ng import",
+      done: "Tapos na:",
+      current: "Ginagawa pa:",
+      todo: "Susunod:",
+      signedIn: "Naka-sign in gamit ang Steam",
+      requested: "Hiniling sa OpenDota ang match history mo",
+      requestedAgo: "Hiniling {ago}",
+      requestPending: "Mangyayari sa unang sync",
+      arrive: "Dito lalabas ang mga laro mo",
+      arriveWaiting: "Hinihintay pang matapos ang OpenDota",
+      arriveNone: "Wala pang nakita. Public ba ang match history mo?",
+      lastChecked: "Huling tiningnan {ago}",
+    },
+    wait: {
+      kicker: "Habang naghihintay",
+      title: "Mga puwedeng subukan ngayon",
+      draft: {
+        title: "Sumubok ng draft",
+        body: "Mag-draft laban sa AI na captain gamit ang totoong rules ng Captain's Mode.",
+      },
+      meta: {
+        title: "Tingnan ang meta",
+        body: "Ang mga hero na pinakamahusay sa bawat role sa mga bagong high-rank na laro.",
+      },
+      mmr: {
+        title: "I-log ang MMR mo",
+        body: "Itala ang MMR na nakikita mo ngayon sa client, para may simula ang pag-akyat mo.",
+      },
+    },
+  },
+  plan: {
+    title: "Mga goal at practice",
+  },
   lanes: {
     loading: "Nilo-load kung saan ka naglalaro",
     kicker: "Lanes at roles",
