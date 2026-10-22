@@ -24,7 +24,11 @@ test("set up the Discord feed, test it, turn it off, and see when Discord delete
   const save = card.getByRole("button", { name: "Save webhook" });
 
   // Only Discord's own webhook URLs.
-  await input.fill(`https://example.com/api/webhooks/${UI_HOOK}/${TOKEN}`);
+  // Typing before hydration doesn't reach React (Save stays disabled): retry until it does.
+  await expect(async () => {
+    await input.fill(`https://example.com/api/webhooks/${UI_HOOK}/${TOKEN}`);
+    await expect(save).toBeEnabled({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await save.click();
   await expect(card.getByRole("alert")).toContainText("isn't a Discord webhook URL");
 
