@@ -1,6 +1,6 @@
 /**
  * Streaming sites (pure): which ones there are, how their channel names look, and where their
- * players, chats and channels live. Twitch is wired up; Kick is modelled so it can slot in.
+ * players, chats and channels live. Twitch and Kick are both wired up (each when configured).
  */
 
 export const PLATFORMS = ["twitch", "kick"] as const;

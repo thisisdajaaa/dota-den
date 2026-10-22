@@ -64,4 +64,36 @@ describe("SyncControl", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Synced 2m ago"));
     expect(screen.getByRole("status")).not.toHaveTextContent("Sync paused");
   });
+
+  it("refreshes once another tab's sync is done, after being told one is running", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      refresh.mockClear();
+      const replies = [
+        envelope(409, {
+          success: false,
+          message: "A sync is already running for this account.",
+          data: null,
+          code: "conflict",
+        }),
+        envelope(429, {
+          success: false,
+          message: "Matches were synced recently.",
+          data: null,
+          code: "rate_limited",
+          details: { retryAt: new Date(Date.now() + 240_000).toISOString() },
+        }),
+      ];
+      const fetch = vi.fn(async () => replies.shift()!);
+      vi.stubGlobal("fetch", fetch);
+      renderControl();
+      await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+      expect(refresh).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(5_000);
+      await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

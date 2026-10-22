@@ -110,8 +110,8 @@ tournament data, draft live against a friend, or solve short drafting puzzles, a
 - **Patch notes in-app**, from Valve's own feed, plus what the latest patch changed for _your_ heroes.
 - **Live games.** League games (most watched first) and the highest-MMR public games from the spectator feed, with
   score, clock, gold lead and lineups. Once both drafts are complete, the same outlook and report card as the draft
-  tool grade the live draft. A Watch section finds Twitch streams whose titles mention the game and plays them in
-  the page (with a Twitch app configured), plus Twitch and YouTube searches.
+  tool grade the live draft. A Watch section finds Twitch and Kick streams whose titles mention the game and plays
+  them in the page (with a Twitch or Kick app configured), plus Twitch and YouTube searches.
 - **Install as an app.** A web app manifest, icons and an offline page: install it on a phone's home screen or as a
   desktop app.
 - **Hero guides.** For every hero: the items pros buy in each phase, what typical, top 10% and top 1% games reach

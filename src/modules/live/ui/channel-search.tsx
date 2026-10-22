@@ -7,7 +7,7 @@ import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
 import { SearchInput } from "@/components/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { channelKey, channelUrl, PLATFORM_NAMES } from "../domain/platform";
+import { channelKey, channelUrl, PLATFORM_NAMES, type Platform } from "../domain/platform";
 import type { ChannelHit } from "../domain/streams";
 import type { ChannelSearchDto } from "../dtos/responses/streamers.dto";
 import { ChannelAvatar } from "./channel-avatar";
@@ -25,10 +25,13 @@ type SearchState =
  * link out.
  */
 export function ChannelSearch({
+  platforms,
   watching,
   onWatch,
   followControl,
 }: {
+  /** The sites searched (Kick's search works differently, and the copy says so). */
+  platforms: readonly Platform[];
   /** `channelKey` of the channel playing, if any. */
   watching: string | null;
   onWatch: (hit: ChannelHit) => void;
@@ -85,6 +88,9 @@ export function ChannelSearch({
           <UserSearch aria-hidden className="size-5 text-gold" /> {t("live.hub.search.title")}
         </h2>
         <p className="text-sm text-muted-foreground">{t("live.hub.search.subtitle")}</p>
+        {platforms.includes("kick") && (
+          <p className="mt-1 text-xs text-muted-foreground">{t("live.hub.search.kickNote")}</p>
+        )}
       </div>
       <form
         role="search"

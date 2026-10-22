@@ -117,6 +117,8 @@ export const live = {
       subtitle: "Search streamers by channel name, live or not.",
       label: "Search channels",
       placeholder: "Channel name…",
+      kickNote:
+        "On Kick, type the exact channel name. Channels live in Dota 2 also match part of a name or title.",
       liveOnly: "Live only",
       hint: "Type at least 2 characters.",
       searching: "Searching…",

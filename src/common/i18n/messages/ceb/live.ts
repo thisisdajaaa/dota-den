@@ -123,6 +123,8 @@ export const live: MessageTree<typeof en> = {
       subtitle: "Pangita og streamer pinaagi sa ngalan sa channel, live man o dili.",
       label: "Pangita og mga channel",
       placeholder: "Ngalan sa channel…",
+      kickNote:
+        "Sa Kick, i-type ang eksaktong ngalan sa channel. Ang mga channel nga live sa Dota 2 motakdo usab sa bahin sa ngalan o title.",
       liveOnly: "Live ra",
       hint: "Pag-type og labing menos 2 ka character.",
       searching: "Nangita…",
