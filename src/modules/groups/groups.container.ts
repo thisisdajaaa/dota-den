@@ -1,7 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
 import { getDb } from "@/common/db/mongo";
-import { mapLimit } from "@/common/utils/map-limit";
 import { usersService } from "@/modules/identity";
 import { matchQueries } from "@/modules/matches";
 import { playersService } from "@/modules/players";
@@ -24,14 +23,18 @@ const profiles: MemberProfiles = {
   profiles: async (members) => {
     const users = await usersService.findByIds(members.map((m) => m.userId));
     const byUser = new Map(users.map((u) => [u.id, u]));
-    const rows = await mapLimit(members, 4, async (m) => {
-      const persona = byUser.get(m.userId)?.persona ?? null;
+    const personaOf = (m: (typeof members)[number]) => byUser.get(m.userId)?.persona ?? null;
+    const unnamed = members.filter((m) => !personaOf(m)?.name).map((m) => m.accountId32);
+    // One lookup for everyone without a saved Steam name.
+    const found = await playersService.publicProfiles(unnamed).catch(() => new Map<number, null>());
+    const rows = members.map((m) => {
+      const persona = personaOf(m);
       if (persona?.name)
         return [
           m.accountId32,
           { personaName: persona.name, avatarUrl: persona.avatarUrl },
         ] as const;
-      const p = await playersService.publicProfile(m.accountId32).catch(() => null);
+      const p = found.get(m.accountId32) ?? null;
       return [
         m.accountId32,
         {

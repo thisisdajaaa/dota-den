@@ -30,6 +30,7 @@ import type {
   FriendFinder,
   PlayerAccount,
   ProfileLookup,
+  PublicProfile,
   RoomActivitySource,
   TotalsQuery,
 } from "../leaderboards.ports";
@@ -42,20 +43,6 @@ interface Members {
   userIds: Set<string> | null;
   friendsWithAccounts: number | null;
   friendsIncomplete: boolean;
-}
-
-/** Run `fn` over `items` with at most `limit` in flight (be gentle with the upstream). */
-async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => Promise<R>) {
-  const out: R[] = new Array(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      out[i] = await fn(items[i]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return out;
 }
 
 /** Leaderboards for draft practice, draft challenges and friend rooms. */
@@ -178,8 +165,11 @@ export class LeaderboardService {
   private async players(userIds: string[], viewerId: string): Promise<Map<string, PlayerView>> {
     if (userIds.length === 0) return new Map();
     const accounts = await this.deps.accounts.byUserIds(userIds);
-    const entries = await mapLimit(accounts, 4, async (a: PlayerAccount) => {
-      const profile = await this.deps.profiles.profile(a.accountId32).catch(() => null);
+    const profiles = await this.deps.profiles
+      .profiles(accounts.map((a) => a.accountId32))
+      .catch(() => new Map<number, PublicProfile | null>());
+    const entries = accounts.map((a: PlayerAccount) => {
+      const profile = profiles.get(a.accountId32) ?? null;
       const view: PlayerView = {
         accountId32: a.accountId32,
         name: profile?.personaName ?? a.name ?? `Player ${a.accountId32}`,

@@ -19,7 +19,8 @@ export interface TrackedPlayerView {
   avatarUrl: string | null;
   rankTier: number | null;
   leaderboardRank: number | null;
-  lastMatchAt: Date | null;
+  /** null: no public match listed; undefined: not looked up yet. */
+  lastMatchAt: Date | null | undefined;
 }
 
 export interface TrackedPlayersPage {
