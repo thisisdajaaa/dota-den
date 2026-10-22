@@ -93,8 +93,8 @@ export const pairKey = ([a, b]: readonly [number, number]): string =>
 export const PAIR_REFRESH_MS = 6 * 60 * 60 * 1000;
 /** Pairs checked against OpenDota per group page visit (one list call each, plus details). */
 export const MAX_PAIRS_PER_VISIT = 2;
-/** Match details fetched per pair on a visit: two pairs share the Together page's budget of 30. */
-export const DETAILS_PER_PAIR = 15;
+/** Match details fetched per pair on a visit: two pairs share one Together page visit's 12. */
+export const DETAILS_PER_PAIR = 6;
 
 /**
  * The pairs to check on this visit: never checked first, then the stalest, skipping any

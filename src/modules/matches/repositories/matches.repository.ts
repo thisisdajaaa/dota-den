@@ -419,6 +419,21 @@ export class MatchReadRepository implements MatchQueries {
     }));
   }
 
+  async factsBetween(
+    accountId32: number,
+    range: { from: Date; to: Date },
+  ): Promise<DashboardFact[]> {
+    const docs = await (
+      await this.facts()
+    )
+      .find(
+        { accountId32, startedAt: { $gte: range.from, $lte: range.to } },
+        { sort: { startedAt: 1 }, limit: 20_000, projection: FACT_PROJECTION },
+      )
+      .toArray();
+    return docs.map(toDashboardFact);
+  }
+
   async playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>> {
     const rows = await (
       await this.facts()

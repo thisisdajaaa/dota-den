@@ -5,7 +5,6 @@ export const report: MessageTree<typeof en> = {
   title: "Battle report",
   heading: "Ang battle report mo",
   description: "{from} hanggang {to}: lahat ng public na laro mo, mula sa OpenDota.",
-  descriptionFallback: "Ang mga laro mo sa isang panahon, mula sa OpenDota.",
   period: "Panahon",
   lastDays: "Huling {n} araw",
   custom: "Custom",
@@ -18,6 +17,8 @@ export const report: MessageTree<typeof en> = {
   tabs: { overview: "Buod", heroes: "Mga hero" },
   unavailable:
     "Hindi available ang report ngayon (hindi sumagot ang OpenDota). Subukan ulit pagkalipas ng isang minuto.",
+  imported:
+    "Hindi sumagot ang OpenDota, kaya ang report na ito ay mula sa mga larong na-import na namin para sa iyo. Ang GPM, damage, last hits, roles at replay stats ay galing lang sa OpenDota at wala muna hanggang bumalik ito.",
   noGames: "Walang public na laro mula {from} hanggang {to}.",
   tiles: {
     games: "Mga nilarong laro",
@@ -100,6 +101,8 @@ export const report: MessageTree<typeof en> = {
         "Mula sa {n} na-parse na replay ({parsed} sa mga laro ngayong panahon ang na-parse{more}).",
     },
     more: "; may nababasa pang iba sa bawat bisita",
+    unavailable:
+      "Hindi available ang replay stats ngayon (hindi sumagot ang OpenDota). Subukan ulit pagkalipas ng isang minuto.",
   },
   lanes: {
     title: "Resulta ng lane",
