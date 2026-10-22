@@ -7,6 +7,7 @@ export const system: MessageTree<typeof en> = {
     body: "Sa amin ang problema, hindi sa iyo, at naabisuhan na kami. Subukan ulit maya-maya.",
     globalBody: "Sa amin ang problema, at naabisuhan na kami.",
     retry: "Subukan ulit",
+    home: "Bumalik sa home",
     pageTitle: "May nangyaring mali · Dota Den",
   },
   notFound: {
