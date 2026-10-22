@@ -115,7 +115,7 @@ export function MmrLogPrompt({
         type="button"
         onClick={dismiss}
         aria-label={t("mmr.prompt.notNow")}
-        className="grid size-9 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+        className="relative grid size-9 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.04] hover:text-foreground touch:tap-area"
       >
         <X aria-hidden className="size-4" />
       </button>

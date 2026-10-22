@@ -43,6 +43,12 @@ export const common = {
     selected: "selected",
   },
   language: { label: "Language", saved: "Language changed" },
+  filters: {
+    button: "Filters",
+    title: "Filters",
+    activeCount: "{count} active",
+    done: "Done",
+  },
   actions: {
     save: "Save",
     saving: "Saving…",

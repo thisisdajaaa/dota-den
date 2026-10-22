@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import type { Side } from "../domain/draft-state";
 import { listRulesets } from "../domain/rulesets";
 import { rulesetName, sideName } from "./i18n";
@@ -87,13 +88,8 @@ export function NewRoomForm() {
           </Select>
         </label>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={timerEnabled}
-          onChange={(e) => setTimerEnabled(e.target.checked)}
-          className="accent-[var(--gold)]"
-        />
+      <label className="flex items-center gap-2.5 text-sm touch:min-h-11">
+        <Switch checked={timerEnabled} onCheckedChange={setTimerEnabled} />
         {t("drafts.newRoom.timer")}
       </label>
       <Button type="submit" disabled={busy} className="gap-2 justify-self-start">

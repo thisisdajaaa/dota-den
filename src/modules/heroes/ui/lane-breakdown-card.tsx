@@ -99,7 +99,7 @@ export async function LaneBreakdownCard({
                         <li key={h.heroId}>
                           <Link
                             href={`/heroes/${h.heroId}`}
-                            className="flex items-center gap-2 rounded-md border border-white/[0.06] py-1 pr-2 pl-1 text-xs hover:border-gold/30"
+                            className="flex items-center gap-2 rounded-md border border-white/[0.06] py-1 pr-2 pl-1 text-xs hover:border-gold/30 touch:min-h-11"
                           >
                             <HeroPortrait hero={hero} heroId={h.heroId} size="xs" />
                             {heroName(hero, h.heroId)}

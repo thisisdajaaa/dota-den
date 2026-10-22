@@ -7,6 +7,13 @@ import { toast } from "sonner";
 import { apiRequest } from "@/common/http/api-client";
 import { useLocale, useT } from "@/common/i18n/client";
 import { LOCALE_NAMES, LOCALES, type Locale } from "@/common/i18n/locales";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /** Pick the UI language; saved on this device and, signed in, on your account. */
 export function LanguageSwitcher() {
@@ -26,21 +33,24 @@ export function LanguageSwitcher() {
   }
 
   return (
-    <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+    <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <Languages aria-hidden className="size-3.5" />
-      <span className="sr-only">{t("common.language.label")}</span>
-      <select
-        value={locale}
-        disabled={pending}
-        onChange={(e) => void choose(e.target.value as Locale)}
-        className="rounded-md border border-white/10 bg-background px-1.5 py-1 text-xs text-foreground"
-      >
-        {LOCALES.map((l) => (
-          <option key={l} value={l}>
-            {LOCALE_NAMES[l]}
-          </option>
-        ))}
-      </select>
-    </label>
+      <Select value={locale} disabled={pending} onValueChange={(v) => void choose(v as Locale)}>
+        <SelectTrigger
+          size="sm"
+          aria-label={t("common.language.label")}
+          className="min-w-28 border-white/10 bg-background text-xs text-foreground"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {LOCALES.map((l) => (
+            <SelectItem key={l} value={l} lang={l}>
+              {LOCALE_NAMES[l]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

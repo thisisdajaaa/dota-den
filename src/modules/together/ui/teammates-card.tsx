@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "cn";
+import { segmentTouchTarget } from "@/components/segmented-links";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { useT } from "@/common/i18n/client";
 import { plural } from "@/common/i18n/translate";
@@ -69,6 +70,7 @@ export function TeammatesCard({ rows, now }: { rows: TeammateRow[]; now: string 
             aria-checked={sort === o.value}
             onClick={() => setSort(o.value)}
             className={cn(
+              segmentTouchTarget,
               "rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
               sort === o.value
                 ? "bg-gold/15 text-gold"

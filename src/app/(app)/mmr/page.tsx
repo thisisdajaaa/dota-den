@@ -194,7 +194,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
                 href={href({ date: period.prev, day: null })}
                 scroll={false}
                 aria-label={t("mmr.page.prevPeriod")}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+                className="inline-grid place-items-center rounded-md p-1.5 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground touch:size-11"
               >
                 <ChevronLeft className="size-4" />
               </Link>
@@ -207,7 +207,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
                 href={href({ date: period.next, day: null })}
                 scroll={false}
                 aria-label={t("mmr.page.nextPeriod")}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+                className="inline-grid place-items-center rounded-md p-1.5 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground touch:size-11"
               >
                 <ChevronRight className="size-4" />
               </Link>
@@ -216,7 +216,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
               <Link
                 href={href({ date: today, day: null })}
                 scroll={false}
-                className="ml-1 text-xs text-gold hover:underline"
+                className="relative ml-1 text-xs text-gold hover:underline touch:tap-area"
               >
                 {t("mmr.page.today")}
               </Link>

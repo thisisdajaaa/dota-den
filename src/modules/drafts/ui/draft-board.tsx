@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -466,13 +467,16 @@ export function DraftBoard({
             <SelectItem value="dire">{t("drafts.board.direFirst")}</SelectItem>
           </SelectContent>
         </Select>
-        <label className={cn("flex items-center gap-2 px-2 text-xs", started && "opacity-50")}>
-          <input
-            type="checkbox"
+        <label
+          className={cn(
+            "flex items-center gap-2 px-2 text-xs touch:min-h-11",
+            started && "opacity-50",
+          )}
+        >
+          <Switch
             checked={timerOn}
             disabled={started}
-            onChange={(e) => reconfigure({ timer: e.target.checked })}
-            className="accent-[var(--gold)]"
+            onCheckedChange={(on) => reconfigure({ timer: on })}
           />
           {t("drafts.board.timer")}
         </label>
