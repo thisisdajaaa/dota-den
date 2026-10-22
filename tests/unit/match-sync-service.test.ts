@@ -447,6 +447,22 @@ describe("MatchSyncService", () => {
     expect(ctx.upstream.callOptions.every((o) => o === HISTORY_PAGE_CALL)).toBe(true);
   });
 
+  it("fits each page call in the time left before the deadline", async () => {
+    const ctx = setup(25, { maxPages: 3 });
+    const now = new Date("2026-09-29T12:00:00Z").getTime();
+    await ctx.service.sync(ACCOUNT, { deadline: now + 60_000 });
+    expect(ctx.upstream.callOptions[0]).toMatchObject({ timeoutMs: 20_000, maxRetries: 1 });
+
+    const short = setup(25, { maxPages: 3 });
+    await short.service.sync(ACCOUNT, { deadline: now + 12_000 });
+    // 12s left: one 12s attempt, no retry.
+    expect(short.upstream.callOptions[0]).toMatchObject({ timeoutMs: 12_000, maxRetries: 0 });
+
+    const past = setup(25, { maxPages: 3 });
+    await past.service.sync(ACCOUNT, { deadline: now - 1 });
+    expect(past.upstream.callOptions[0]).toMatchObject({ timeoutMs: 5_000, maxRetries: 0 });
+  });
+
   it("imports with unknown patch labels when the patch timeline is unavailable", async () => {
     const ctx = setup(2);
     const service = new MatchSyncService({
