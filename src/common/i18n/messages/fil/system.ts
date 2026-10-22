@@ -9,9 +9,15 @@ export const system: MessageTree<typeof en> = {
     retry: "Subukan ulit",
     pageTitle: "May nangyaring mali · Dota Den",
   },
+  notFound: {
+    title: "Hindi nahanap ang page",
+    body: "Sira ang link o nalipat na ang page. Subukan ang isa sa mga ito.",
+    home: "Bumalik sa home",
+    meta: "Ano ang malakas ngayon",
+    pageTitle: "Hindi nahanap ang page",
+  },
   shell: {
     skip: "Lumaktaw sa nilalaman",
-    menu: "Menu",
     account: "Account {id}",
     player: "Player {id}",
   },

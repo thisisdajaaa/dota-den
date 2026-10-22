@@ -54,7 +54,7 @@ export const mmr: MessageTree<typeof en> = {
     rankedGames: { one: "1 ranked game", other: "{n} ranked game" },
     wl: "{wins}W {losses}L",
     loggedDot: "May na-log na MMR sa araw na ito",
-    record: "{wins} panalo · {losses} talo",
+    record: "{wins} · {losses}",
     noRankedGames: "Walang ranked game",
   },
   day: {
@@ -82,7 +82,7 @@ export const mmr: MessageTree<typeof en> = {
     logNote:
       "I-log ang MMR mo bago at pagkatapos ng sunod-sunod na laro sa iisang hero para makita ang eksaktong pagbabago nito.",
     empty: "Walang ranked game sa yugtong ito.",
-    aria: "{name}: {wins} panalo, {losses} talo, mga {mmr} MMR (tantya)",
+    aria: "{name}: {wins}, {losses}, mga {mmr} MMR (tantya)",
     games: { one: "1 laro", other: "{n} laro" },
     sparkline: "Tantyang akyat ni {name}, bawat laro",
     exact: { one: "Eksakto {delta} / 1 laro", other: "Eksakto {delta} / {n} laro" },
@@ -238,7 +238,7 @@ export const mmr: MessageTree<typeof en> = {
     record: "{wins}P {losses}T",
     noGames: "Walang na-import na ranked game sa panahong ito.",
     mostPlayed: "Pinakamadalas laruin",
-    heroRecord: "{name}: {wins} panalo, {losses} talo",
+    heroRecord: "{name}: {wins}, {losses}",
     rangeRecord: "Ranked sa saklaw na ito: {games}, {record}.",
     empty:
       "Wala pa rito. Tinitingnan namin ang medal mo kapag binuksan mo ang overview at araw-araw, at lalabas ang na-log na MMR kapag nagdagdag ka ng entry sa MMR journal.",

@@ -27,7 +27,7 @@ export async function RolePicker() {
   return (
     <nav
       aria-label={t("meta.roles.chooseRole")}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
     >
       {POSITIONS.map((p) => {
         const info = POSITION_INFO[p];

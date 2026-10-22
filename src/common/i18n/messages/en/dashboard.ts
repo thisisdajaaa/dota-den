@@ -2,7 +2,10 @@
 export const dashboard = {
   title: "Dashboard",
   loading: "Loading dashboard",
-  showing: "Showing {shown} of your {total} matches",
+  showing: {
+    one: "Showing {shown} of your 1 match",
+    other: "Showing {shown} of your {n} matches",
+  },
   noneInView: "No matches in this view. Try a wider time range.",
   keyStats: "Key stats",
   winRate: "Win rate",
@@ -28,6 +31,42 @@ export const dashboard = {
       title: "No public matches found yet",
       body: "OpenDota still has no games for this account. In Dota 2, go to Settings → Options → Social and turn on “Expose Public Match Data”. We ask OpenDota to re-fetch your history every few hours, and it also picks up games you play from now on.",
     },
+  },
+  firstRun: {
+    status: {
+      kicker: "Getting your games",
+      stepsLabel: "Import progress",
+      done: "Done:",
+      current: "In progress:",
+      todo: "Next:",
+      signedIn: "Signed in with Steam",
+      requested: "Asked OpenDota for your match history",
+      requestedAgo: "Asked {ago}",
+      requestPending: "Happens on the first sync",
+      arrive: "Your games arrive here",
+      arriveWaiting: "Waiting for OpenDota to finish",
+      arriveNone: "None found yet. Is your match history public?",
+      lastChecked: "Last checked {ago}",
+    },
+    wait: {
+      kicker: "While you wait",
+      title: "Things to try now",
+      draft: {
+        title: "Try a draft",
+        body: "Draft against an AI captain with the real Captain's Mode rules.",
+      },
+      meta: {
+        title: "Look at the meta",
+        body: "The heroes doing best for each role in recent high-rank games.",
+      },
+      mmr: {
+        title: "Log your MMR",
+        body: "Note the MMR your client shows now, so your climb has a starting point.",
+      },
+    },
+  },
+  plan: {
+    title: "Goals and practice",
   },
   lanes: {
     loading: "Loading where you play",

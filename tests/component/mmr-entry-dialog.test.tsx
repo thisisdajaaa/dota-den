@@ -15,7 +15,10 @@ describe("MmrEntryDialog", () => {
     // Three hours of games later, in the same tab.
     vi.setSystemTime(new Date(2026, 9, 1, 21, 5));
     fireEvent.click(screen.getByRole("button", { name: "Log MMR" }));
-    expect(screen.getByLabelText(/When you saw it/)).toHaveValue("2026-10-01T21:05");
+    expect(screen.getByRole("button", { name: /When you saw it/ })).toHaveTextContent(
+      "Oct 1, 2026",
+    );
+    expect(screen.getByLabelText("Time")).toHaveValue("21:05");
   });
 
   it("reads the MMR from a screenshot into the box, for you to check before saving", async () => {

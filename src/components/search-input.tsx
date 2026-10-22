@@ -75,7 +75,7 @@ export function SearchInput({
           onKeyDown?.(e);
         }}
         className={cn(
-          "h-9 w-full rounded-lg border border-white/[0.08] bg-background/60 pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40",
+          "h-9 w-full rounded-lg border border-white/[0.08] bg-background/60 pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 touch:min-h-11",
           // One clear button: hide the browser's own.
           "[&::-webkit-search-cancel-button]:appearance-none",
           inputClassName,
@@ -86,7 +86,7 @@ export function SearchInput({
           type="button"
           onClick={clear}
           aria-label={clearLabel ?? t("system.search.clear")}
-          className="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-white/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none touch:tap-area touch:size-9"
         >
           <X aria-hidden className="size-3.5" />
         </button>

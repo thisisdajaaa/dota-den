@@ -313,4 +313,51 @@ describe("MetaService", () => {
     expect((await service.laneDuos(2)).ok).toBe(true);
     expect((await service.laneDuos(1)).ok).toBe(false);
   });
+
+  it("builds the overview from the hero stats alone, with no per-hero lane calls", async () => {
+    const fetchedAt = new Date();
+    const laneRoles = vi.fn();
+    const service = new MetaService({
+      heroes: async () => [
+        { id: 1, roles: ["Carry"] },
+        { id: 2, roles: ["Support"] },
+      ],
+      lanes: { recentLanes: async () => ({ ok: false, error: { type: "not_found" } }) },
+      stats: {
+        heroStats: async () => ({
+          ok: true,
+          value: {
+            fetchedAt,
+            value: [
+              { heroId: 1, games: 1000, wins: 550, pickTrend: [] },
+              { heroId: 2, games: 1000, wins: 520, pickTrend: [] },
+            ],
+          },
+        }),
+        laneRoles,
+        proDrafts: async () => ({
+          ok: true,
+          value: {
+            fetchedAt,
+            value: {
+              drafts: 5,
+              windowDays: 21,
+              heroes: [{ heroId: 1, picks: 3, bans: 1, leagues: 1 }],
+            },
+          },
+        }),
+        proLaneDuos: async () => ({ ok: false, error: { type: "unavailable", cause: "down" } }),
+      },
+    });
+    const res = await service.overview();
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.pools.map((p) => p.heroes.map((h) => h.heroId))).toEqual([[1], [], [2]]);
+    expect(res.value.fetchedAt).toBe(fetchedAt);
+    expect(laneRoles).not.toHaveBeenCalled();
+
+    // Too few pro drafts to call anything contested.
+    const contested = await service.contested();
+    expect(contested).toMatchObject({ ok: true, value: { status: "too_few", heroes: [] } });
+  });
 });

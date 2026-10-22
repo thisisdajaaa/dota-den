@@ -24,7 +24,16 @@ import {
 import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import { RolePicker, RoleTabs } from "@/modules/meta/ui/role-picker";
 import type { Result } from "@/common/result";
-import { LaneDuosSection, PatchLine, PatchTipsSection, settle, TopHeroesSection } from "./sections";
+import {
+  ContestedSection,
+  LaneDuosSection,
+  OverviewFootnote,
+  OverviewSection,
+  PatchLine,
+  PatchTipsSection,
+  settle,
+  TopHeroesSection,
+} from "./sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -87,7 +96,7 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
           <YourRoleSections role={role} service={service} patch={patch} catalog={catalog} t={t} />
         </Suspense>
       ) : (
-        <PickRole t={t} />
+        <PickRole t={t} service={service} catalog={catalog} />
       )}
     </div>
   );
@@ -95,14 +104,26 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
 
 type RoleResult = Result<RoleView, SourceError | { type: "error" }>;
 
-function PickRole({ t }: { t: Translator<Messages> }) {
+/** No position yet: the role picker, with the best heroes per role group below it. */
+function PickRole({
+  t,
+  service,
+  catalog,
+}: {
+  t: Translator<Messages>;
+  service: typeof metaService;
+  catalog: Promise<Map<number, HeroInfo>>;
+}) {
   return (
-    <section aria-labelledby="pick-role" className="space-y-3">
-      <h2 id="pick-role" className="text-lg font-semibold">
-        {t("meta.page.pickRole")}
-      </h2>
-      <RolePicker />
-    </section>
+    <>
+      <section aria-labelledby="pick-role" className="space-y-3">
+        <h2 id="pick-role" className="text-lg font-semibold">
+          {t("meta.page.pickRole")}
+        </h2>
+        <RolePicker />
+      </section>
+      <Overview service={service} catalog={catalog} t={t} />
+    </>
   );
 }
 
@@ -128,7 +149,7 @@ async function YourRoleSections({
 }) {
   const res = await role;
   const yours = res.ok ? res.value.derivation.position : null;
-  if (yours === null) return <PickRole t={rest.t} />;
+  if (yours === null) return <PickRole t={rest.t} service={rest.service} catalog={rest.catalog} />;
   return <RoleSections key={yours} position={yours} role={role} {...rest} />;
 }
 
@@ -184,6 +205,64 @@ function RoleSections({
       </div>
     </>
   );
+}
+
+/** Real content before a role is picked: the best heroes per role group, from cached stats. */
+function Overview({
+  service,
+  catalog,
+  t,
+}: {
+  service: typeof metaService;
+  catalog: Promise<Map<number, HeroInfo>>;
+  t: Translator<Messages>;
+}) {
+  const overview = settle(service.overview(), "overview");
+  const contested = settle(service.contested(), "contested");
+  return (
+    <section aria-labelledby="meta-overview" className="space-y-4">
+      <div className="space-y-1">
+        <p className="kicker">{t("meta.overview.kicker")}</p>
+        <h2 id="meta-overview" className="text-lg font-semibold">
+          {t("meta.overview.title")}
+        </h2>
+        <p className="max-w-3xl text-sm text-muted-foreground">{t("meta.overview.description")}</p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Suspense fallback={<OverviewSkeleton label={t("meta.overview.loading")} count={3} />}>
+          <OverviewSection overview={overview} catalog={catalog} />
+        </Suspense>
+        <Suspense fallback={<OverviewSkeleton label={t("meta.overview.loading")} count={1} />}>
+          <ContestedSection contested={contested} catalog={catalog} />
+        </Suspense>
+      </div>
+      <Suspense fallback={<Skeleton className="h-4 w-full max-w-2xl" />}>
+        <OverviewFootnote overview={overview} />
+      </Suspense>
+    </section>
+  );
+}
+
+function OverviewSkeleton({ label, count }: { label: string; count: number }) {
+  return Array.from({ length: count }, (_, i) => (
+    <div key={i} className="panel space-y-4 p-5" aria-busy aria-label={label}>
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-5 w-28" />
+      </div>
+      {Array.from({ length: 3 }, (_, j) => (
+        <div key={j} className="flex items-center gap-3">
+          <Skeleton className="h-8 w-[3.56rem] rounded-md" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3 w-28 max-w-full" />
+            <Skeleton className="h-2.5 w-20" />
+          </div>
+        </div>
+      ))}
+      <Skeleton className="h-3 w-40" />
+    </div>
+  ));
 }
 
 async function YourRole({

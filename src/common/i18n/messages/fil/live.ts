@@ -2,10 +2,10 @@ import type { MessageTree } from "../../translate";
 import type { live as en } from "../en/live";
 
 export const live: MessageTree<typeof en> = {
-  title: "Mga live na laro",
+  title: "Manood nang live",
   kicker: "Live",
   description:
-    "Mga league at pro na laro na nangyayari ngayon, mula sa spectator feed ng laro (mga 15 minutong huli ang league games), at ang mga public na laro na may pinakamataas na MMR. Buksan ang isang laro para sa live na pagsusuri ng draft nito. Nagre-refresh kada minuto.",
+    "Mga live na Dota 2 stream na puwede mong panoorin dito mismo, ang mga streamer na fina-follow mo, at ang mga league at top public na laro na nangyayari ngayon. Nagre-refresh kada minuto.",
   unavailable: "Hindi available ang live feed ngayon. Subukan ulit pagkalipas ng isang minuto.",
   league: "Mga league na laro",
   noLeague: "Walang live na league game ngayon.",
@@ -44,15 +44,110 @@ export const live: MessageTree<typeof en> = {
     draftPending:
       "Lalabas ang pagsusuri ng draft kapag naka-pick na ng limang hero ang dalawang team.",
   },
+  games: {
+    title: "Mga live na laro",
+    subtitle:
+      "Mula sa spectator feed ng laro: mga 15 minutong huli ang league games. Buksan ang isang laro para sa live na pagsusuri ng draft nito.",
+  },
+  hub: {
+    loading: "Nilo-load ang mga live stream…",
+    streams: {
+      title: "Live ngayon",
+      subtitle:
+        "Mga Dota 2 stream, pinakamaraming nanonood muna. Pumili ng isa para panoorin dito.",
+      language: "Wika",
+      allLanguages: "Lahat ng wika ({n})",
+      languageOption: "{name} ({n})",
+      otherLanguage: "Iba pa",
+      showMore: "Ipakita ang {n} pa",
+      showing: "Ipinapakita ang {shown} sa {total} stream",
+      none: "Walang nagi-stream ng Dota 2 ngayon.",
+      empty: "Walang Dota 2 stream sa wikang ito ngayon. Subukan ang ibang wika.",
+      unavailable:
+        "Hindi sumasagot ang mga streaming site ngayon, kaya hindi mailista ang mga stream. Babalik sila sa susunod na refresh.",
+      notConfigured: "Hindi pa naka-set up ang listahan ng mga stream sa server na ito.",
+    },
+    card: {
+      watch: "Panoorin si {name}",
+      live: "Live",
+      playing: "Pinapanood",
+      viewers: "{n} nanonood",
+    },
+    hint: {
+      label: "Hula mula sa title",
+      liveGame: "Live na laro",
+      open: "{match}: buksan ang live na laro (hula mula sa title ng stream)",
+      why: "Binabanggit ng title ng stream ang {names}",
+    },
+    player: {
+      region: "Pinapanood ngayon",
+      chatTitle: "Chat ni {name} sa {platform}",
+      openChat: "Buksan ang chat sa {platform}",
+      showChat: "Ipakita ang chat",
+      hideChat: "Itago ang chat",
+      open: "Buksan sa {platform}",
+      close: "Isara ang player",
+      loading: "Nilo-load ang player…",
+    },
+    follow: {
+      follow: "I-follow",
+      following: "Fina-follow",
+      labelFollow: "I-follow si {name}",
+      labelUnfollow: "I-unfollow si {name}",
+      followed: "Fina-follow mo na si {name}",
+      unfollowed: "Hindi mo na fina-follow si {name}",
+      errorMax:
+        "Naabot mo na ang pinakamaraming channel na puwedeng i-follow. Mag-unfollow muna ng isa.",
+      errorRate:
+        "Masyadong maraming pagbabago nang sabay. Subukan ulit pagkalipas ng isang minuto.",
+      errorSession: "Natapos na ang session mo. Mag-sign in ulit.",
+      errorMissing: "Wala na ang channel na iyan.",
+      errorGeneric: "Hindi ma-update ang mga fina-follow mo. Subukan ulit.",
+    },
+    following: {
+      title: "Fina-follow",
+      liveCount: "{n} live ngayon",
+      empty:
+        "Wala ka pang fina-follow na streamer. Mag-follow ng mga channel mula sa mga stream sa ibaba o hanapin sila ayon sa pangalan.",
+      offline: "Offline",
+      unknown: "Hindi alam ang status",
+      watch: "Panoorin si {name} (live)",
+      openOffline: "Offline si {name}: buksan ang channel sa {platform}",
+      unavailable:
+        "Hindi ma-load ang mga channel na fina-follow mo. Subukan ulit pagkalipas ng isang minuto.",
+      signInTitle: "I-follow ang mga paborito mong streamer",
+      signInBody:
+        "Mag-sign in para mag-follow ng mga channel at makita kung sino ang live sa itaas ng page na ito.",
+      signIn: "Mag-sign in gamit ang Steam",
+    },
+    search: {
+      title: "Maghanap ng streamer",
+      subtitle: "Maghanap ng streamer ayon sa pangalan ng channel, live man o hindi.",
+      label: "Maghanap ng mga channel",
+      placeholder: "Pangalan ng channel…",
+      liveOnly: "Live lang",
+      hint: "Mag-type ng kahit 2 character.",
+      searching: "Hinahanap…",
+      results: "Mga channel na tugma sa “{q}”",
+      empty: "Walang nahanap na channel para sa “{q}”.",
+      error: "Hindi available ang search ngayon. Subukan ulit mamaya.",
+      rateLimited: "Sobrang daming search. Maghintay sandali at subukan ulit.",
+      live: "Live",
+      offline: "Offline",
+      watch: "Panoorin dito",
+      watchLabel: "Panoorin si {name} dito",
+      open: "Buksan sa {platform}",
+      openLabel: "Buksan si {name} sa {platform}",
+    },
+  },
   watch: {
     title: "Panoorin",
     streams:
-      "Mga live na Twitch stream na binabanggit sa title ang mga team na ito, ang league na ito o ang mga pro nito. Title lang ang tinitingnan namin, kaya baka ibang laro ang ipinapakita ng isang stream.",
-    noStreams:
-      "Walang live na Twitch stream na bumabanggit sa larong ito ngayon. Mag-search ka na lang.",
+      "Mga live na stream na binabanggit sa title ang mga team na ito, ang league na ito o ang mga pro nito. Title lang ang tinitingnan namin, kaya baka ibang laro ang ipinapakita ng isang stream.",
+    noStreams: "Walang live na stream na bumabanggit sa larong ito ngayon. Mag-search ka na lang.",
     searchOnly: "Maghanap ng broadcast sa Twitch o YouTube.",
-    playerTitle: "{name} sa Twitch",
-    open: "Buksan ang {name} sa Twitch",
+    playerTitle: "{name} sa {platform}",
+    open: "Buksan ang {name} sa {platform}",
     close: "Isara ang player",
     viewers: "· {n} nanonood · {lang}",
     watchHere: "Panoorin ang {name} dito",

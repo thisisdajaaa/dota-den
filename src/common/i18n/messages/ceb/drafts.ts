@@ -215,7 +215,7 @@ export const drafts: MessageTree<typeof en> = {
     best: "Labing maayong matchup",
     worst: "Labing grabe nga matchup",
     pos: "Pos {n}",
-    games: "{n} ka duwa",
+    games: { one: "1 ka duwa", other: "{n} ka duwa" },
     drafts: "{pct}% sa drafts",
     pickedBanned: "{picks} na-pick · {bans} na-ban",
     won: " · midaog {pct}",
@@ -581,7 +581,7 @@ export const drafts: MessageTree<typeof en> = {
     intro:
       "Ang imong katapusang {total} ka ranked nga duwa, gi-grade sa samang draft outlook sa draft trainer{graded}.",
     graded: " ({graded} pa lang ang na-grade; madugangan matag bisita)",
-    won: "{pct} daog · {games} ka duwa",
+    won: "{pct} daog · {games}",
     noGames: "Walay duwa",
     favouredWon:
       "Midaog ang gipaboran nga side sa {pct} niining mga duwa ({games} nga adunay paborito). ",

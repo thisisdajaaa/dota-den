@@ -36,7 +36,7 @@ export const sessions = {
   },
   item: {
     games: { one: "1 game", other: "{n} games" },
-    aria: "Session on {date}, {time}: {wins} wins, {losses} losses",
+    aria: "Session on {date}, {time}: {wins}, {losses}",
     goalMet: "Goal met",
     goalPartly: "Goal partly met",
     goalMissed: "Goal missed",
@@ -106,8 +106,8 @@ export const sessions = {
     overall: "Overall",
     after2: "After 2 losses in a row",
     after3: "After 3 in a row",
-    games: "{n} games",
-    tooFew: "{n} games, too few to say",
+    games: { one: "1 game", other: "{n} games" },
+    tooFew: { one: "1 game, too few to say", other: "{n} games, too few to say" },
   },
   detail: {
     title: "Session recap",

@@ -111,6 +111,34 @@ export const meta: MessageTree<typeof en> = {
       "Gi-agawan sa tournaments: na-pick o na-ban sa {pct} sa {drafts} ka pro draft sa milabay nga {days} ka adlaw",
     lane: "Modaog sa {pct} sa {games} ka public nga duwa sa {lane}",
   },
+  overview: {
+    kicker: "Dali nga tan-aw",
+    title: "Pinakakusgan nga mga hero karon",
+    description:
+      "Pinakataas nga win rate sa Ancient hangtod Immortal para sa matag klase sa role, ug ang gagmay nga sample gibira paingon sa 50%. Pili og role sa ibabaw para sa tibuok ranking nga adunay lane data ug tournament.",
+    loading: "Nag-load sa overview sa meta",
+    pools: {
+      carry: "Mga carry",
+      core: "Mid ug offlane",
+      support: "Mga support",
+    },
+    poolsAria: "Mga top hero: {name}",
+    winRate: "{rate} win rate",
+    fullRanking: "Tibuok ranking:",
+    source:
+      "Gikan sa mga public nga duwa sa OpenDota, na-update {ago}. Kung walay lane data, dili mailhan kung mid o offlane, o soft o hard support, mao nga gihiusa sila; kausa ra makita ang matag hero.",
+    empty: "Kulang pa ang data para niini nga grupo karon.",
+    contested: {
+      kicker: "Mga tournament",
+      title: "Pinakagi-agawan",
+      pickBan: "{picks} · {bans}",
+      contest: "{pct} sa mga draft",
+      source: "Gi-pick o gi-ban sa {drafts} sulod sa miaging {days} ka adlaw, na-update {ago}.",
+      tooFew:
+        "{drafts} ra sulod sa miaging {days} ka adlaw, kulang aron masulti kung unsa ang gi-agawan.",
+      unavailable: "Dili available ang tournament data karon.",
+    },
+  },
   duos: {
     kicker: "Lane partners",
     title: "Pinakakusog nga lane duos",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "../matches.ports";
 import type { MatchSummary } from "../domain/match-summary";
 import { heroName } from "./hero-portrait";
@@ -20,7 +21,7 @@ export async function FormStrip({
         <div>
           <p className="kicker">{t("matches.form.kicker")}</p>
           <h2 id="form" className="text-lg font-semibold">
-            {t("matches.form.title", { n: form.length })}
+            {plural(t, "matches.form.title", form.length)}
           </h2>
         </div>
         <span className="text-sm tabular-nums">
@@ -31,8 +32,9 @@ export async function FormStrip({
           </span>
         </span>
       </div>
-      {/* Reads like a timeline: oldest top-left, newest bottom-right. */}
-      <ol className="grid grid-cols-10 gap-1.5">
+      {/* Reads like a timeline: oldest top-left, newest bottom-right. Six or twelve to a row,
+          so the dashboard's 12 games always fill whole rows. */}
+      <ol className="grid grid-cols-6 gap-1.5 md:grid-cols-12 lg:grid-cols-6">
         {[...form].reverse().map((f) => {
           const hero = heroes.get(f.heroId);
           const win = f.result === "win";

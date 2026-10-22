@@ -80,7 +80,7 @@ export const guides = {
     strong: "{hero} is strong against",
     weak: "{hero} struggles against",
     none: "No clear matchups yet.",
-    games: "{n} games",
+    games: { one: "1 game", other: "{n} games" },
   },
   notFound: {
     title: "Hero not found",

@@ -1,5 +1,5 @@
 import type { Messages } from "@/common/i18n/messages";
-import type { Translator } from "@/common/i18n/translate";
+import { plural, type Translator } from "@/common/i18n/translate";
 import type { Goal, GoalStatus } from "../domain/goals";
 
 /** A goal in words, e.g. "Win at least 52% of ranked games". Custom goals are the player's text. */
@@ -12,11 +12,11 @@ export function goalLabel(
     case "winRate":
       return t("goals.describe.winRate", { target: goal.target });
     case "maxPerSession":
-      return t("goals.describe.maxPerSession", { target: goal.target });
+      return plural(t, "goals.describe.maxPerSession", goal.target);
     case "logAfterSessions":
       return t("goals.describe.logAfterSessions");
     case "heroGames":
-      return t("goals.describe.heroGames", { hero: heroName(goal.heroId), target: goal.target });
+      return plural(t, "goals.describe.heroGames", goal.target, { hero: heroName(goal.heroId) });
     case "custom":
       return goal.text;
   }
@@ -34,7 +34,9 @@ export function goalStatusText(t: Translator<Messages>, status: GoalStatus): str
         losses: status.losses,
       });
     case "longestSession":
-      return t("goals.progress.longestSession", { games: status.games });
+      return t("goals.progress.longestSession", {
+        games: plural(t, "common.count.games", status.games),
+      });
     case "noSessions":
       return t("goals.progress.noSessions");
     case "sessionsLogged":

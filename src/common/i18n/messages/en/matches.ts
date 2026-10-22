@@ -2,7 +2,13 @@
 export const matches = {
   sides: { radiant: "Radiant", dire: "Dire" },
   result: { win: "Win", loss: "Loss" },
-  queue: { solo: "Solo", party: "Party", unknown: "Unknown" },
+  queue: {
+    solo: "Solo",
+    party: "Party",
+    unknown: "Unknown",
+    partyOf: "Party ({n})",
+    partyOfTitle: "Queued as a party of {n} players",
+  },
   rows: {
     hero: "Hero",
     result: "Result",
@@ -21,7 +27,7 @@ export const matches = {
   },
   form: {
     kicker: "Recent form",
-    title: "Last {n} games",
+    title: { one: "Last game", other: "Last {n} games" },
     winsShort: "{n}W",
     lossesShort: "{n}L",
     winLetter: "W",
@@ -34,11 +40,11 @@ export const matches = {
   queueSplit: {
     kicker: "Solo vs party",
     title: "Win rate by queue",
-    known: "Queue known for {known} of {total} games",
+    known: "Queue known for {known} of {total}",
     soloHint: "You queued alone",
     partyHint: "You queued with friends",
     unknownHint: "Dota didn't record it",
-    record: "{wins} wins · {losses} losses",
+    record: "{wins} · {losses}",
     fewGames: "few games",
     games: { one: "1 game", other: "{n} games" },
     tooFew: ", too few to judge",
@@ -47,13 +53,13 @@ export const matches = {
   heroPool: {
     kicker: "Hero pool",
     title: "Your heroes",
-    played: "{n} heroes played",
+    played: { one: "1 hero played", other: "{n} heroes played" },
     sortLabel: "Sort heroes by",
     sorts: { games: "Most played", winrate: "Win rate", kda: "KDA", recent: "Recent" },
     hiddenNote:
       "Showing heroes with {min}+ games; {hidden} with fewer are left out so a lucky game or two doesn't top the list.",
     empty: "No hero has {min}+ games in this view yet.",
-    games: "{n} games",
+    games: { one: "1 game", other: "{n} games" },
     kda: "KDA {value}",
     showFewer: "Show fewer",
     showAll: "Show all {n} heroes",
@@ -87,7 +93,7 @@ export const matches = {
     fallbackName: "Player {id}",
     account: "Account {id}",
     signatureHero: "Signature hero",
-    signatureStats: "{games} games · {rate} win rate",
+    signatureStats: "{games} · {rate} win rate",
   },
   sync: {
     importingHistory: "Importing match history…",
@@ -266,9 +272,12 @@ export const matches = {
     fewGames: "Only {games} match, too few to judge a win rate.",
     totalsNote:
       "These totals include every match that fits your filters, not just this page. The line marks 50%.",
+    emptyTitle: "No matches yet",
+    emptyBody:
+      "Your games show up here once they're imported from OpenDota. Your overview shows how the sync is going.",
+    goToOverview: "Go to overview",
     noMatches: "No matches found",
     noneFiltered: "Nothing matches these filters.",
-    noneImported: "No matches imported yet. Visit your overview to sync.",
     backToNewest: "Back to newest",
     newestFirst: "Newest first",
     older: "Older matches",

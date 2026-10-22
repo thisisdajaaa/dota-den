@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { CalendarSearch } from "lucide-react";
 import { Suspense } from "react";
 import { getT } from "@/common/i18n/server";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { StatTile } from "@/components/stat-tile";
@@ -30,7 +32,10 @@ import {
   RolesCard,
   SidesCard,
 } from "@/modules/report/ui/report-sections";
-import { addDays } from "@/common/time/day-key";
+import { ReportRangeFields } from "@/modules/report/ui/report-range-fields";
+
+/** The widest preset period: the empty state offers it first. */
+const LONGEST_PRESET = Math.max(...REPORT_PERIODS);
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -84,6 +89,14 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
     return search ? `/report?${search}` : "/report";
   };
   const tabQuery: Record<string, string> = tab === "overview" ? {} : { tab };
+  // Next step when the range has no games: a wider window, or (already the widest) the sync.
+  const emptyAction =
+    range.preset !== LONGEST_PRESET
+      ? {
+          href: href({ days: String(LONGEST_PRESET), ...tabQuery }),
+          label: t("report.empty.longer", { n: LONGEST_PRESET }),
+        }
+      : { href: "/dashboard", label: t("report.empty.overview") };
 
   return (
     <div className="space-y-6">
@@ -112,30 +125,17 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
           aria-label={t("report.customRange")}
         >
           {tab !== "overview" && <input type="hidden" name="tab" value={tab} />}
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            {t("report.from")}
-            <input
-              type="date"
-              name="from"
-              required
-              defaultValue={range.from}
-              min={addDays(today, -MAX_LOOKBACK_DAYS)}
-              max={today}
-              className="h-8 rounded-md border border-white/10 bg-background px-2 text-sm text-foreground"
-            />
-          </label>
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            {t("report.to")}
-            <input
-              type="date"
-              name="to"
-              required
-              defaultValue={range.to}
-              max={today}
-              className="h-8 rounded-md border border-white/10 bg-background px-2 text-sm text-foreground"
-            />
-          </label>
-          <Button type="submit" variant="outline" size="sm">
+          <ReportRangeFields
+            // A new range from the URL (e.g. a preset link) resets the pickers.
+            key={`${range.from}:${range.to}`}
+            from={range.from}
+            to={range.to}
+            today={today}
+            maxRangeDays={MAX_RANGE_DAYS}
+            maxLookbackDays={MAX_LOOKBACK_DAYS}
+            labels={{ from: t("report.from"), to: t("report.to") }}
+          />
+          <Button type="submit" variant="outline" className="h-10 sm:h-8">
             {t("report.showRange")}
           </Button>
         </form>
@@ -152,7 +152,14 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
 
       {/* Keyed so a new range or tab shows the skeleton instead of the previous report. */}
       <Suspense key={`${range.from}:${range.to}:${tab}`} fallback={<ReportSkeleton />}>
-        <ReportBody user={user} range={range} timeZone={timeZone} tab={tab} heroes={heroes} />
+        <ReportBody
+          user={user}
+          range={range}
+          timeZone={timeZone}
+          tab={tab}
+          heroes={heroes}
+          emptyAction={emptyAction}
+        />
       </Suspense>
     </div>
   );
@@ -179,12 +186,14 @@ async function ReportBody({
   timeZone,
   tab,
   heroes,
+  emptyAction,
 }: {
   user: User;
   range: ReportRange;
   timeZone: string;
   tab: Tab;
   heroes: Awaited<ReturnType<typeof matchesService.heroMap>>;
+  emptyAction: { href: string; label: string };
 }) {
   const owner = { userId: user.id, accountId32: user.accountId32 };
   const [view, t] = await Promise.all([
@@ -211,9 +220,12 @@ async function ReportBody({
   ) : view.report.games === 0 ? (
     <>
       {importedNotice}
-      <p className="panel p-5 text-sm text-muted-foreground">
-        {t("report.noGames", { from: fmt(view.from), to: fmt(view.to) })}
-      </p>
+      <EmptyState
+        icon={CalendarSearch}
+        title={t("report.empty.title")}
+        description={`${t("report.noGames", { from: fmt(view.from), to: fmt(view.to) })} ${t("report.empty.hint")}`}
+        action={emptyAction}
+      />
     </>
   ) : tab === "heroes" ? (
     <>

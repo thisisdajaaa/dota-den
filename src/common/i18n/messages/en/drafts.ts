@@ -209,7 +209,7 @@ export const drafts = {
     best: "Best matchup",
     worst: "Worst matchup",
     pos: "Pos {n}",
-    games: "{n} games",
+    games: { one: "1 game", other: "{n} games" },
     drafts: "{pct}% of drafts",
     pickedBanned: "{picks} picked · {bans} banned",
     won: " · won {pct}",
@@ -570,7 +570,7 @@ export const drafts = {
     intro:
       "Your last {total} ranked games, graded by the same draft outlook as the draft trainer{graded}.",
     graded: " ({graded} graded so far; more each visit)",
-    won: "{pct} won · {games} games",
+    won: "{pct} won · {games}",
     noGames: "No games",
     favouredWon: "The favoured side won {pct} of these games ({games} with a favourite). ",
     footnote:

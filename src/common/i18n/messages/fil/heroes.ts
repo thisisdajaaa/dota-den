@@ -41,9 +41,9 @@ export const heroes: MessageTree<typeof en> = {
     descriptionEmpty:
       "Lalabas dito ang mga hero na nilalaro mo kapag na-import na ang mga match mo.",
     emptyTitle: "Wala pang hero",
-    emptyBefore: "Wala pa kaming na-import na match mo. Sinisimulan ng iyong",
-    emptyLink: "overview",
-    emptyAfter: "ang import.",
+    emptyBody:
+      "Lalabas dito ang mga hero na nilalaro mo kapag na-import na ang mga laro mo. Sinisimulan ng overview mo ang import at doon mo makikita kung kumusta na ito.",
+    emptyLink: "Pumunta sa overview",
     loading: "Nilo-load ang mga hero",
     loadingSuggestions: "Nilo-load ang mga mungkahing hero",
     loadingLanes: "Nilo-load kung saan ka naglalaro",
@@ -134,7 +134,7 @@ export const heroes: MessageTree<typeof en> = {
       "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
     emptyWorstAllies: "Walang kakamping hero na may {min}+ laro kung saan mas madalas kang talo.",
     record: "{wins}–{losses}",
-    rowLabel: "{name}: {wins} panalo, {losses} talo ({rate}) sa {games}",
+    rowLabel: "{name}: {wins}, {losses} ({rate}) sa {games}",
     playedInto: "Nilaro mo",
     playedIntoItem: "{name} {wins}–{losses}",
     footer:

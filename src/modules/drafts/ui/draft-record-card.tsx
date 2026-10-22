@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { DraftRecordView } from "../dtos/responses/draft-record.dto";
 
 function pct(r: { games: number; wins: number }): string {
@@ -55,7 +56,10 @@ export async function DraftRecordCard({ view }: { view: DraftRecordView }) {
             </p>
             <p className="text-xs text-muted-foreground tabular-nums">
               {x.r.games
-                ? t("drafts.record.won", { pct: pct(x.r), games: x.r.games })
+                ? t("drafts.record.won", {
+                    pct: pct(x.r),
+                    games: plural(t, "common.count.games", x.r.games),
+                  })
                 : t("drafts.record.noGames")}
             </p>
           </li>

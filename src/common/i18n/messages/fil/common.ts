@@ -23,6 +23,18 @@ export const common: MessageTree<typeof en> = {
     account: "Account",
     admin: "Admin",
     more: "Iba pa",
+    sections: { you: "Ikaw", community: "Komunidad", tools: "Mga tool", settings: "Settings" },
+  },
+  count: {
+    wins: { one: "1 panalo", other: "{n} panalo" },
+    losses: { one: "1 talo", other: "{n} talo" },
+    games: { one: "1 laro", other: "{n} laro" },
+    heroes: { one: "1 hero", other: "{n} hero" },
+    items: { one: "1 item", other: "{n} item" },
+    matches: { one: "1 laro", other: "{n} laro" },
+    sessions: { one: "1 session", other: "{n} session" },
+    devices: { one: "1 device", other: "{n} device" },
+    accounts: { one: "1 account", other: "{n} account" },
   },
   auth: {
     signIn: "Mag-sign in",
@@ -33,7 +45,24 @@ export const common: MessageTree<typeof en> = {
     disclaimer:
       "Ang Dota Den ay hindi opisyal na proyekto ng mga fan. Hindi ito kaugnay o inendorso ng Valve Corporation. Ang Dota 2 ay rehistradong trademark ng Valve Corporation. Ang data ng mga laro ay galing sa OpenDota kung mayroon; ang patch notes ay naka-link sa opisyal na pinagmulan nito.",
   },
+  datePicker: {
+    pick: "Pumili ng petsa",
+    time: "Oras",
+    previousMonth: "Nakaraang buwan",
+    nextMonth: "Susunod na buwan",
+    month: "Buwan",
+    year: "Taon",
+    navigation: "Palitan ang buwan",
+    today: "Ngayon",
+    selected: "napili",
+  },
   language: { label: "Wika", saved: "Napalitan ang wika" },
+  filters: {
+    button: "Mga filter",
+    title: "Mga filter",
+    activeCount: "{count} naka-on",
+    done: "Tapos na",
+  },
   actions: {
     save: "I-save",
     saving: "Sine-save…",

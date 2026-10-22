@@ -409,7 +409,7 @@ function ResultPanel({
           <ol className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {result.best.map((b, i) => (
               <li key={b.heroId} className="flex gap-3 rounded-lg bg-white/[0.03] p-3">
-                <span className="font-display text-lg text-gold">{i + 1}</span>
+                <span className="text-lg font-bold text-gold tabular-nums">{i + 1}</span>
                 <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-2">
                     <Portrait hero={heroes.get(b.heroId)} id={b.heroId} size="sm" />

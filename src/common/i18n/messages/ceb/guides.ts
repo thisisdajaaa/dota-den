@@ -86,7 +86,7 @@ export const guides: MessageTree<typeof en> = {
     strong: "Kusgan si {hero} batok sa",
     weak: "Naglisod si {hero} batok sa",
     none: "Wala pay klarong matchup.",
-    games: "{n} ka dula",
+    games: { one: "1 ka duwa", other: "{n} ka duwa" },
   },
   notFound: {
     title: "Wala makit-i ang hero",

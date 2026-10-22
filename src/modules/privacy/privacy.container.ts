@@ -9,6 +9,7 @@ import { goalsService } from "@/modules/goals";
 import { groupsService } from "@/modules/groups";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
+import { streamerFollowService } from "@/modules/live";
 import { matchExtrasService, matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
@@ -29,6 +30,7 @@ export const privacyService = lazy(
         mmrJournalService,
         sessionService,
         followService,
+        streamerFollowService,
         patchWatchlistService,
         activityService,
         draftsPrivacy,

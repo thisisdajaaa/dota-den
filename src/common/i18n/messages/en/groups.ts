@@ -11,6 +11,7 @@ export const groups = {
     kicker: "Your stack",
     description:
       "A page for the friends you queue with: your record as a party, your best lineups, who plays what and a weekly board.",
+    emptyTitle: "Start a group for your stack",
     empty: "You're not in a group yet. Create one and send the invite link to your stack.",
     owner: "Owner",
     open: "Open {name}",
@@ -111,7 +112,7 @@ export const groups = {
     title: "Heroes in the last 30 days",
     description: "Each member's most played heroes, from their imported matches.",
     none: "No imported games in the last 30 days.",
-    games: "{n} games",
+    games: { one: "1 game", other: "{n} games" },
   },
   board: {
     kicker: "This week",

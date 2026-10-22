@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChevronRight, ExternalLink } from "lucide-react";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
@@ -74,15 +75,19 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
               <p className="kicker">{t("patches.latest.kicker")}</p>
               <h2
                 id="latest-patch"
-                className="font-display text-5xl font-bold tracking-wide sm:text-6xl"
+                className="text-5xl font-bold tracking-tight tabular-nums sm:text-6xl"
               >
                 {latest.version}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {t("patches.latest.released", {
                   date: formatDate(latest.publishedAt),
-                  heroes: latest.summary.heroesChanged,
-                  items: latest.summary.itemsChanged + latest.summary.neutralItemsChanged,
+                  heroes: plural(t, "common.count.heroes", latest.summary.heroesChanged),
+                  items: plural(
+                    t,
+                    "common.count.items",
+                    latest.summary.itemsChanged + latest.summary.neutralItemsChanged,
+                  ),
                 })}
               </p>
             </div>
@@ -156,7 +161,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                   className="panel group flex h-full flex-col gap-3 p-5 transition-[transform,border-color] hover:-translate-y-0.5 hover:border-gold/30"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="font-display text-3xl font-bold tracking-wide">
+                    <span className="text-3xl font-bold tracking-tight tabular-nums">
                       {p.version}
                     </span>
                     {p.parseStatus !== "parsed" && (
@@ -173,13 +178,21 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
                       <span className="font-semibold text-foreground">
                         {p.summary.heroesChanged}
                       </span>{" "}
-                      {t("patches.list.heroes")}
+                      {t(
+                        p.summary.heroesChanged === 1
+                          ? "patches.list.heroes.one"
+                          : "patches.list.heroes.other",
+                      )}
                     </span>
                     <span>
                       <span className="font-semibold text-foreground">
                         {p.summary.itemsChanged + p.summary.neutralItemsChanged}
                       </span>{" "}
-                      {t("patches.list.items")}
+                      {t(
+                        p.summary.itemsChanged + p.summary.neutralItemsChanged === 1
+                          ? "patches.list.items.one"
+                          : "patches.list.items.other",
+                      )}
                     </span>
                     {p.summary.generalNotes > 0 && (
                       <span>

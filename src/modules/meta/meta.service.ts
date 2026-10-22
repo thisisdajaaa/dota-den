@@ -5,6 +5,8 @@ import { err, ok, type Result } from "@/common/result";
 import { duosForPosition } from "./domain/lane-duos";
 import {
   laneCandidates,
+  mostContested,
+  overviewPools,
   rankHeroes,
   totalPickTrend,
   MIN_PRO_DRAFTS,
@@ -14,12 +16,20 @@ import {
 import { deriveRole, type Position } from "./domain/position";
 import type { MetaHero, MetaStatsSource, PlayerLaneHistory, SourceError } from "./meta.ports";
 import type { LatestPatchResult, LatestPatchSource } from "./meta.ports";
-import type { DuosView, RoleView, TopHeroesView } from "./dtos/responses/meta.dto";
+import type {
+  ContestedView,
+  DuosView,
+  OverviewView,
+  RoleView,
+  TopHeroesView,
+} from "./dtos/responses/meta.dto";
 
 /** How many heroes to fetch lane data for per position (upstream calls are bounded). */
 export const LANE_CANDIDATES = 28;
 export const LANE_CONCURRENCY = 4;
 export const TOP_HEROES = 10;
+/** Heroes per pool in the overview (shown before a role is picked, and on the home page). */
+export const OVERVIEW_HEROES = 3;
 /** Tournament data is a bonus: don't hold the hero list back for it longer than this. */
 export const PRO_DEADLINE_MS = 8_000;
 export const LANE_DEADLINE_MS = 12_000;
@@ -138,6 +148,37 @@ export class MetaService {
           : null,
         pro: proSource,
       },
+    });
+  }
+
+  /**
+   * Best heroes per pool from the cached public hero stats only: one upstream call for every
+   * pool, no per-hero lane fan-out. Picking a role gives the lane-checked ranking.
+   */
+  async overview(limit = OVERVIEW_HEROES): Promise<Result<OverviewView, SourceError>> {
+    const heroes = await this.deps.heroes();
+    if (heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
+    const pub = await this.deps.stats.heroStats();
+    if (!pub.ok) return pub;
+    if (pub.value.value.length === 0)
+      return err({ type: "invalid_payload", cause: "no hero stats" });
+    return ok({
+      pools: overviewPools(heroes, pub.value.value, limit),
+      fetchedAt: pub.value.fetchedAt,
+    });
+  }
+
+  /** The heroes most picked or banned in recent tournaments (one cached explorer query). */
+  async contested(limit = OVERVIEW_HEROES): Promise<Result<ContestedView, SourceError>> {
+    const res = await this.deps.stats.proDrafts();
+    if (!res.ok) return res;
+    const p = res.value.value;
+    return ok({
+      status: p.drafts >= MIN_PRO_DRAFTS ? "ok" : "too_few",
+      heroes: p.drafts >= MIN_PRO_DRAFTS ? mostContested(p, limit) : [],
+      drafts: p.drafts,
+      windowDays: p.windowDays,
+      fetchedAt: res.value.fetchedAt,
     });
   }
 

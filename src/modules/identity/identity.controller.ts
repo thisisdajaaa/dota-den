@@ -13,12 +13,15 @@ import {
   sessionCookieOptions,
   STATE_COOKIE,
 } from "./identity.guards";
+import { safeReturnPath } from "./domain/return-path";
 import { LanguageSchema } from "./schemas/language.schema";
 import { VisibilitySchema } from "./schemas/visibility.schema";
 import type { AuthService } from "./services/auth.service";
 import type { UsersService } from "./services/users.service";
 
 const STATE_COOKIE_PATH = "/api/v1/auth/steam";
+/** Where to go after sign-in (a validated relative path), kept beside the state cookie. */
+const NEXT_COOKIE = "dd_oid_next";
 
 export class IdentityController {
   constructor(
@@ -33,19 +36,27 @@ export class IdentityController {
     },
   ) {}
 
-  /** GET /api/v1/auth/steam/login: off to Steam, with a state cookie. */
+  /**
+   * GET /api/v1/auth/steam/login: off to Steam, with a state cookie. `?next=/some/path` (a
+   * same-origin relative path, validated here and again on the way back) is where the
+   * callback lands; it travels in its own short-lived cookie, so `return_to` stays exact.
+   */
   login = handler({}, async ({ req }) => {
     const as = req.nextUrl.searchParams.get("as");
     const auth = this.deps.authAs(as && /^\d{17}$/.test(as) ? as : undefined);
     const { redirectUrl, state } = auth.beginSignIn();
     const res = NextResponse.redirect(redirectUrl, 302);
-    res.cookies.set(STATE_COOKIE, state, {
+    const cookie = {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
       secure: this.deps.secureCookies(),
       path: STATE_COOKIE_PATH,
       maxAge: 10 * 60,
-    });
+    };
+    res.cookies.set(STATE_COOKIE, state, cookie);
+    const next = safeReturnPath(req.nextUrl.searchParams.get("next"));
+    if (next) res.cookies.set(NEXT_COOKIE, next, cookie);
+    else res.cookies.delete({ name: NEXT_COOKIE, path: STATE_COOKIE_PATH });
     return res;
   });
 
@@ -63,14 +74,17 @@ export class IdentityController {
       });
       const res = NextResponse.redirect(new URL(`/?auth_error=${result.error.type}`, appUrl), 303);
       res.cookies.delete({ name: STATE_COOKIE, path: STATE_COOKIE_PATH });
+      res.cookies.delete({ name: NEXT_COOKIE, path: STATE_COOKIE_PATH });
       return res;
     }
     this.deps.logger.info("steam_sign_in_succeeded", {
       requestId: requestId(req),
       userId: result.value.user.id,
     });
-    const res = NextResponse.redirect(new URL("/dashboard", appUrl), 303);
+    const next = safeReturnPath(req.cookies.get(NEXT_COOKIE)?.value);
+    const res = NextResponse.redirect(new URL(next ?? "/dashboard", appUrl), 303);
     res.cookies.delete({ name: STATE_COOKIE, path: STATE_COOKIE_PATH });
+    res.cookies.delete({ name: NEXT_COOKIE, path: STATE_COOKIE_PATH });
     res.cookies.set(
       SESSION_COOKIE,
       result.value.session.token,

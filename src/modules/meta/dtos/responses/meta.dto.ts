@@ -1,5 +1,5 @@
 import { type DuoResult } from "../../domain/lane-duos";
-import { type RankedHero } from "../../domain/meta-stats";
+import { type OverviewPool, type ProDraftHero, type RankedHero } from "../../domain/meta-stats";
 import { type Position, type RoleDerivation } from "../../domain/position";
 
 export interface TopHeroesView {
@@ -28,6 +28,21 @@ export interface DuosView {
 
 export interface RoleView {
   derivation: RoleDerivation;
+  windowDays: number;
+  fetchedAt: Date;
+}
+
+export interface OverviewView {
+  pools: OverviewPool[];
+  /** When the public hero stats were fetched. */
+  fetchedAt: Date;
+}
+
+export interface ContestedView {
+  /** "too_few" when there are too few pro drafts in the window to say anything. */
+  status: "ok" | "too_few";
+  heroes: Array<ProDraftHero & { contestRate: number }>;
+  drafts: number;
   windowDays: number;
   fetchedAt: Date;
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import { getCurrentUser } from "@/modules/identity";
 import { matchQueries, matchesService } from "@/modules/matches";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
@@ -120,8 +121,12 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
               date: new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(
                 patch.publishedAt,
               ),
-              heroes: summary.heroesChanged,
-              items: summary.itemsChanged + summary.neutralItemsChanged,
+              heroes: plural(t, "common.count.heroes", summary.heroesChanged),
+              items: plural(
+                t,
+                "common.count.items",
+                summary.itemsChanged + summary.neutralItemsChanged,
+              ),
             })}
           </p>
           <a

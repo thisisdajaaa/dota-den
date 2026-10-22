@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { pickDate } from "./support/date-picker";
 
 test("log, validate, edit and delete MMR entries", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
@@ -22,7 +23,15 @@ test("log, validate, edit and delete MMR entries", async ({ page }) => {
   await page.getByRole("button", { name: "Log MMR" }).click();
   await page.getByRole("dialog").getByLabel("MMR").fill("5200");
   // Earlier than the next entry, so "current MMR" is unambiguous.
-  await page.getByRole("dialog").getByLabel("When you saw it").fill("2026-09-01T10:00");
+  await pickDate(
+    page,
+    page.getByRole("dialog").getByRole("button", { name: /^When you saw it/ }),
+    "2026-09-01",
+  );
+  await page.getByRole("dialog").getByLabel("Time").fill("10:00");
+  await expect(
+    page.getByRole("dialog").getByRole("button", { name: /^When you saw it/ }),
+  ).toHaveText("Sep 1, 2026");
   await page.getByRole("dialog").getByRole("button", { name: "Log MMR" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 

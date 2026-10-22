@@ -1,13 +1,24 @@
 import type { LiveGame } from "./live-game";
+import { channelKey, type Platform } from "./platform";
 
 /** A live Dota 2 stream as a streaming site reports it. */
 export interface LiveStream {
-  /** Channel login, used for the embed. */
+  platform: Platform;
+  /** Channel login (Twitch) or slug (Kick), used for the embed. */
   channel: string;
   displayName: string;
   title: string;
   viewers: number;
   language: string;
+  /** The site's user id (stable when a channel renames). */
+  userId?: string;
+  /** Preview image, possibly a template with `{width}` and `{height}` placeholders. */
+  thumbnailUrl?: string | null;
+  avatarUrl?: string | null;
+  /** ISO time the stream went live. */
+  startedAt?: string | null;
+  /** What the channel is playing (search and follow lookups cover every category). */
+  gameName?: string | null;
 }
 
 export interface StreamMatch extends LiveStream {
@@ -37,9 +48,31 @@ function escape(s: string): string {
 }
 
 /** Whole-word, case-insensitive: "OG" matches "OG vs Spirit" but not "blog". */
-function mentions(title: string, term: string): boolean {
-  return new RegExp(`(^|[^\\p{L}\\p{N}])${escape(term)}($|[^\\p{L}\\p{N}])`, "iu").test(title);
+function wordPattern(term: string): RegExp {
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${escape(term)}($|[^\\p{L}\\p{N}])`, "iu");
 }
+
+/** One name a title can mention, compiled once per game. */
+interface Term {
+  name: string;
+  patterns: RegExp[];
+}
+
+/** The names a stream title may use for this game: teams, the league, and its pros. */
+function gameTerms(game: LiveGame): Term[] {
+  const strong = [
+    ...(game.teams.radiant ? [game.teams.radiant] : []),
+    ...(game.teams.dire ? [game.teams.dire] : []),
+    ...(game.leagueName ? [game.leagueName] : []),
+  ];
+  const pros = game.players.filter((p) => p.isPro && p.name).map((p) => p.name!.trim());
+  return [...strong, ...pros]
+    .filter((t) => t.length >= 2)
+    .map((name) => ({ name, patterns: variants(name).map(wordPattern) }));
+}
+
+const mentionsOf = (title: string, terms: readonly Term[]) =>
+  terms.filter((t) => t.patterns.some((p) => p.test(title))).map((t) => t.name);
 
 /**
  * Streams whose titles mention this game. There's no feed linking a match to a channel, so
@@ -48,22 +81,63 @@ function mentions(title: string, term: string): boolean {
  * more mentions, then more viewers.
  */
 export function matchStreams(game: LiveGame, streams: readonly LiveStream[]): StreamMatch[] {
-  const strong = [
-    ...(game.teams.radiant ? [game.teams.radiant] : []),
-    ...(game.teams.dire ? [game.teams.dire] : []),
-    ...(game.leagueName ? [game.leagueName] : []),
-  ];
-  const pros = game.players.filter((p) => p.isPro && p.name).map((p) => p.name!.trim());
-  const terms = [...strong, ...pros].filter((t) => t.length >= 2);
-
+  const terms = gameTerms(game);
+  if (terms.length === 0) return [];
   const matched: StreamMatch[] = [];
   for (const s of streams) {
-    const found = terms.filter((t) => variants(t).some((v) => mentions(s.title, v)));
+    const found = mentionsOf(s.title, terms);
     if (found.length > 0) matched.push({ ...s, mentions: found });
   }
   return matched
     .sort((a, b) => b.mentions.length - a.mentions.length || b.viewers - a.viewers)
     .slice(0, MAX_MATCHES);
+}
+
+/** The live game a stream's title points to, as a guess (see `matchStreams`). */
+export interface StreamGameHint {
+  matchId: string;
+  radiant: string | null;
+  dire: string | null;
+  leagueName: string | null;
+  /** The names the title mentions. */
+  mentions: string[];
+}
+
+/**
+ * The reverse of `matchStreams`: for each stream, the live game its title mentions most
+ * (ties go to the game more people are spectating), keyed by `channelKey(platform, channel)`.
+ * Streams that mention no game are left out.
+ */
+export function guessStreamGames(
+  streams: readonly LiveStream[],
+  games: readonly LiveGame[],
+): Map<string, StreamGameHint> {
+  const compiled = games
+    .map((game) => ({ game, terms: gameTerms(game) }))
+    .filter((g) => g.terms.length > 0);
+  const hints = new Map<string, StreamGameHint>();
+  for (const s of streams) {
+    let best: { game: LiveGame; mentions: string[] } | null = null;
+    for (const { game, terms } of compiled) {
+      const mentions = mentionsOf(s.title, terms);
+      if (mentions.length === 0) continue;
+      if (
+        !best ||
+        mentions.length > best.mentions.length ||
+        (mentions.length === best.mentions.length && game.spectators > best.game.spectators)
+      )
+        best = { game, mentions };
+    }
+    if (best)
+      hints.set(channelKey(s.platform, s.channel), {
+        matchId: best.game.matchId,
+        radiant: best.game.teams.radiant,
+        dire: best.game.teams.dire,
+        leagueName: best.game.leagueName,
+        mentions: best.mentions,
+      });
+  }
+  return hints;
 }
 
 /** Searches that work without any keys: the teams (or pros) and the league. */

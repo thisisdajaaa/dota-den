@@ -865,28 +865,9 @@ const routes = [
   [/^\/api\/matches\/(\d+)$/, (m) => matchDetail(m[1])],
   // Twitch (Helix) for live game streams.
   [/^\/twitch\/oauth2\/token$/, () => ({ access_token: "fixture-token", expires_in: 3600 })],
-  [
-    /^\/twitch\/helix\/streams$/,
-    () => ({
-      data: [
-        {
-          user_login: "fixturecasts",
-          user_name: "FixtureCasts",
-          title: "LIVE: Fixture Falcons vs Fixture Titans | Fixture Invitational",
-          viewer_count: 12000,
-          language: "en",
-        },
-        {
-          user_login: "rankedgrinder",
-          user_name: "RankedGrinder",
-          title: "ranked grind to immortal",
-          viewer_count: 30000,
-          language: "en",
-        },
-      ],
-      pagination: {},
-    }),
-  ],
+  [/^\/twitch\/helix\/streams$/, (_m, url) => twitchStreams(url)],
+  [/^\/twitch\/helix\/users$/, (_m, url) => twitchUsers(url)],
+  [/^\/twitch\/helix\/search\/channels$/, (_m, url) => twitchSearch(url)],
   [/^\/api\/constants\/patch$/, () => [{ name: "7.41", date: "2026-03-24T00:00:00Z", id: 60 }]],
   [/^\/api\/constants\/heroes$/, () => HEROES],
   [/^\/api\/constants\/item_ids$/, () => Object.fromEntries(ITEMS.map((i) => [i.id, i.key]))],
@@ -901,6 +882,96 @@ const routes = [
       ),
   ],
 ];
+
+// Twitch (Helix): channels, and which are live (Dota 2 or another category).
+const TWITCH_CDN = "https://static-cdn.jtvnw.net";
+const twitchChannel = (id, login, name, live) => ({ id: String(id), login, name, live });
+const TWITCH_CHANNELS = [
+  twitchChannel(9001, "fixturecasts", "FixtureCasts", {
+    title: "LIVE: Fixture Falcons vs Fixture Titans | Fixture Invitational",
+    viewers: 12000,
+    language: "en",
+  }),
+  twitchChannel(9002, "rankedgrinder", "RankedGrinder", {
+    title: "ranked grind to immortal",
+    viewers: 30000,
+    language: "en",
+  }),
+  twitchChannel(9003, "pinoydota", "PinoyDota", {
+    title: "Pub games with viewers",
+    viewers: 900,
+    language: "tl",
+  }),
+  // Live, but not playing Dota 2: found by search and in Following, not in the Dota list.
+  twitchChannel(9004, "chattyfixture", "ChattyFixture", {
+    title: "Just chatting about the patch",
+    viewers: 450,
+    language: "en",
+    game: "Just Chatting",
+  }),
+  twitchChannel(9100, "fixturelegend", "FixtureLegend", null),
+  // Enough small Spanish streams to need "Show more".
+  ...Array.from({ length: 25 }, (_, i) =>
+    twitchChannel(9200 + i, `fixturefiller${i}`, `FixtureFiller${i}`, {
+      title: `Partidas tranquilas ${i}`,
+      viewers: 100 - i,
+      language: "es",
+    }),
+  ),
+];
+const twitchStream = (c) => ({
+  user_id: c.id,
+  user_login: c.login,
+  user_name: c.name,
+  title: c.live.title,
+  viewer_count: c.live.viewers,
+  language: c.live.language,
+  game_name: c.live.game ?? "Dota 2",
+  started_at: "2026-10-01T10:00:00Z",
+  thumbnail_url: `${TWITCH_CDN}/previews-ttv/live_user_${c.login}-{width}x{height}.jpg`,
+});
+function twitchStreams(url) {
+  const logins = url.searchParams.getAll("user_login").map((l) => l.toLowerCase());
+  const live = TWITCH_CHANNELS.filter((c) => c.live);
+  const data = logins.length
+    ? live.filter((c) => logins.includes(c.login))
+    : live.filter((c) => !c.live.game);
+  return {
+    data: data.sort((a, b) => b.live.viewers - a.live.viewers).map(twitchStream),
+    pagination: {},
+  };
+}
+function twitchUsers(url) {
+  const ids = url.searchParams.getAll("id");
+  return {
+    data: TWITCH_CHANNELS.filter((c) => ids.includes(c.id)).map((c) => ({
+      id: c.id,
+      login: c.login,
+      display_name: c.name,
+      profile_image_url: `${TWITCH_CDN}/jtv_user_pictures/${c.login}-profile_image-300x300.png`,
+    })),
+  };
+}
+function twitchSearch(url) {
+  const q = (url.searchParams.get("query") ?? "").toLowerCase();
+  const liveOnly = url.searchParams.get("live_only") === "true";
+  return {
+    data: TWITCH_CHANNELS.filter(
+      (c) => c.login.includes(q.replace(/\s+/g, "")) && (!liveOnly || c.live),
+    )
+      .slice(0, Number(url.searchParams.get("first") ?? 20))
+      .map((c) => ({
+        id: c.id,
+        broadcaster_login: c.login,
+        display_name: c.name,
+        is_live: !!c.live,
+        title: c.live?.title ?? "",
+        game_name: c.live ? (c.live.game ?? "Dota 2") : "",
+        broadcaster_language: c.live?.language ?? "en",
+        thumbnail_url: `${TWITCH_CDN}/jtv_user_pictures/${c.login}-profile_image-300x300.png`,
+      })),
+  };
+}
 
 // Games "played" during a test (POST /e2e/play?account=…), newest first, per account.
 const PLAYED = new Map();
