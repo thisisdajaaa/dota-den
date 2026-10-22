@@ -8,6 +8,7 @@ import {
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser } from "@/modules/identity";
+import { MAX_SCREENSHOT_BYTES } from "./domain/screenshot-read";
 import { toMmrEntryDto } from "./dtos/responses/mmr-entry.dto";
 import { MmrEntryInputSchema } from "./schemas/mmr-entry.schema";
 import type { MmrJournalService } from "./services/mmr-journal.service";
@@ -17,6 +18,8 @@ const EntryParams = z.object({ id: z.string().max(64) });
 const INVALID = "Check the highlighted fields";
 /** Saving, editing and deleting entries: plenty for a person, not for a script. */
 const WRITE_LIMIT = { name: "mmr-write", limit: 30, windowMs: 60_000 };
+/** A screenshot plus the multipart envelope; anything larger is refused before it's read. */
+const MAX_UPLOAD_BYTES = MAX_SCREENSHOT_BYTES + 64 * 1024;
 
 export class MmrController {
   constructor(
@@ -83,6 +86,9 @@ export class MmrController {
     async ({ req }) => {
       if (!this.deps.screenshots.available)
         throw new UpstreamUnavailableError("Reading screenshots isn't set up.");
+      // Refused before the body is read: formData() would buffer all of it in memory.
+      if (Number(req.headers.get("content-length") ?? 0) > MAX_UPLOAD_BYTES)
+        throw new ValidationError("That screenshot is too large (max 4 MB).");
       const form = await req.formData().catch(() => null);
       const file = form?.get("image");
       if (!(file instanceof File)) throw new ValidationError("Attach a screenshot.");
