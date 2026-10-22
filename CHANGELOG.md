@@ -6,6 +6,12 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-22
 
+- Players, leaderboards, friends and groups read saved profiles: no more waiting on OpenDota per row
+- Player, meta and battle report pages show at once and stream each section in
+- Battle report falls back to your imported games when OpenDota is down
+- Together and group pages check fewer games per visit, in parallel
+- Daily jobs stay within their time limit; a patch that keeps failing no longer forces constant re-imports
+- Dashboard reads about half as much data per visit
 - The sync status no longer shows "Sync paused" after every successful sync
 - Match history imports about 5x faster, and a failed page no longer starts the import over
 - When OpenDota is down or busy, pages show the last good data instead of going empty
