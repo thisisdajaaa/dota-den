@@ -35,7 +35,7 @@ export const home: MessageTree<typeof en> = {
   patch: {
     aria: "Pinakabagong patch {version}: basahin ang notes",
     kicker: "Pinakabagong patch",
-    changed: "{heroes} hero at {items} item ang binago",
+    changed: "{heroes} at {items} ang binago",
     heroesAria: "Ilan sa mga hero na binago",
     read: "Basahin ang patch notes",
   },

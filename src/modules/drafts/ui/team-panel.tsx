@@ -112,7 +112,7 @@ export function TeamPanel({
             aria-hidden
             className={cn("h-5 w-1 rounded-full", radiant ? "bg-win" : "bg-loss")}
           />
-          <h2 className="font-display text-lg font-bold tracking-wider">{sideName(t, side)}</h2>
+          <h2 className="text-lg font-semibold">{sideName(t, side)}</h2>
           {controller && (
             <span
               className={cn(

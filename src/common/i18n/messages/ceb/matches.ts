@@ -4,7 +4,13 @@ import type { matches as en } from "../en/matches";
 export const matches: MessageTree<typeof en> = {
   sides: { radiant: "Radiant", dire: "Dire" },
   result: { win: "Daog", loss: "Pildi" },
-  queue: { solo: "Solo", party: "Party", unknown: "Wala mahibal-i" },
+  queue: {
+    solo: "Solo",
+    party: "Party",
+    unknown: "Wala mahibal-i",
+    partyOf: "Party ({n})",
+    partyOfTitle: "Nag-queue isip party nga {n} ka player",
+  },
   rows: {
     hero: "Hero",
     result: "Resulta",
@@ -23,7 +29,7 @@ export const matches: MessageTree<typeof en> = {
   },
   form: {
     kicker: "Bag-ong porma",
-    title: "Katapusang {n} ka duwa",
+    title: { one: "Katapusang duwa", other: "Katapusang {n} ka duwa" },
     winsShort: "{n}W",
     lossesShort: "{n}L",
     winLetter: "W",
@@ -36,11 +42,11 @@ export const matches: MessageTree<typeof en> = {
   queueSplit: {
     kicker: "Solo vs party",
     title: "Win rate matag queue",
-    known: "Nahibal-an ang queue sa {known} sa {total} ka duwa",
+    known: "Nahibal-an ang queue sa {known} sa {total}",
     soloHint: "Nag-inusara ka sa queue",
     partyHint: "Nag-queue ka uban sa mga higala",
     unknownHint: "Wala kini gi-record sa Dota",
-    record: "{wins} daog · {losses} pildi",
+    record: "{wins} · {losses}",
     fewGames: "gamay pa nga duwa",
     games: { one: "1 ka duwa", other: "{n} ka duwa" },
     tooFew: ", kulang pa aron mahukman",
@@ -49,13 +55,13 @@ export const matches: MessageTree<typeof en> = {
   heroPool: {
     kicker: "Hero pool",
     title: "Imong mga hero",
-    played: "{n} ka hero ang gidula",
+    played: { one: "1 ka hero ang gidula", other: "{n} ka hero ang gidula" },
     sortLabel: "Han-aya ang mga hero sumala sa",
     sorts: { games: "Kanunay gidula", winrate: "Win rate", kda: "KDA", recent: "Bag-o" },
     hiddenNote:
       "Gipakita ang mga hero nga adunay {min}+ ka duwa; {hidden} nga mas gamay ang wala giapil aron dili manguna ang usa o duha ka swerte nga duwa.",
     empty: "Wala pay hero nga adunay {min}+ ka duwa niini nga view.",
-    games: "{n} ka duwa",
+    games: { one: "1 ka duwa", other: "{n} ka duwa" },
     kda: "KDA {value}",
     showFewer: "Ipakita ang mas gamay",
     showAll: "Ipakita tanang {n} ka hero",
@@ -89,7 +95,7 @@ export const matches: MessageTree<typeof en> = {
     fallbackName: "Player {id}",
     account: "Account {id}",
     signatureHero: "Signature hero",
-    signatureStats: "{games} ka duwa · {rate} win rate",
+    signatureStats: "{games} · {rate} win rate",
   },
   sync: {
     importingHistory: "Gi-import ang kasaysayan sa duwa…",

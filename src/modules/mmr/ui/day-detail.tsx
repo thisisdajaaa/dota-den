@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ChevronRight, X } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo, RankedResultRow } from "@/modules/matches/domain/read-models";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
-import { queueLabel } from "@/modules/matches/ui/format";
 import { ESTIMATE_PER_GAME, type CalendarDay } from "../domain/calendar";
 import { basisOf, deltaLabel } from "./day-tone";
 
@@ -82,7 +82,10 @@ export async function DayDetail({
           <div className="text-2xl font-semibold">{day?.games ?? 0}</div>
           <div className="text-xs text-muted-foreground">
             {day?.games
-              ? t("mmr.calendar.record", { wins: day.wins, losses: day.losses })
+              ? t("mmr.calendar.record", {
+                  wins: plural(t, "common.count.wins", day.wins),
+                  losses: plural(t, "common.count.losses", day.losses),
+                })
               : t("mmr.day.nothing")}
           </div>
         </div>
@@ -121,7 +124,7 @@ export async function DayDetail({
                     {heroName(hero, m.heroId)}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {queueLabel(m.queueClass, null)}
+                    {t(`matches.queue.${m.queueClass}`)}
                   </span>
                   <span className="w-14 text-xs text-muted-foreground tabular-nums">
                     {time.format(m.startedAt)}

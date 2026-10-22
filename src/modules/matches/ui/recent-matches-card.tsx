@@ -5,20 +5,21 @@ import { getT } from "@/common/i18n/server";
 import type { Messages } from "@/common/i18n/messages";
 import type { Translator } from "@/common/i18n/translate";
 import type { DashboardFact, HeroInfo } from "../matches.ports";
-import { formatAgo, formatDuration, partyName } from "./format";
+import { formatAgo, formatDuration } from "./format";
 import { HeroPortrait, heroName } from "./hero-portrait";
 
 const COLS =
   "grid grid-cols-[1fr_auto] items-center gap-x-4 @3xl/rows:grid-cols-[minmax(0,1.6fr)_4.5rem_6.5rem_5.5rem_4rem_4.5rem_1rem]";
 
-/** Queue name for a row (same rules as `queueLabel`, in the viewer's language). */
+/** Queue name for a row, in the viewer's language. Parties show their size: "Party (2)". */
 function queueText(
   t: Translator<Messages>,
   queueClass: "solo" | "party" | "unknown",
   partySize: number | null,
 ): string {
   if (queueClass === "solo") return t("matches.queue.solo");
-  if (queueClass === "party") return partySize ? partyName(partySize) : t("matches.queue.party");
+  if (queueClass === "party")
+    return partySize ? t("matches.queue.partyOf", { n: partySize }) : t("matches.queue.party");
   return t("matches.queue.unknown");
 }
 
@@ -158,6 +159,11 @@ export async function MatchRows({
                     "hidden text-xs @3xl/rows:block",
                     m.queueClass === "unknown" && "text-muted-foreground italic",
                   )}
+                  title={
+                    m.queueClass === "party" && m.partySize
+                      ? t("matches.queue.partyOfTitle", { n: m.partySize })
+                      : undefined
+                  }
                 >
                   {queue}
                 </span>

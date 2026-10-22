@@ -4,7 +4,10 @@ import type { dashboard as en } from "../en/dashboard";
 export const dashboard: MessageTree<typeof en> = {
   title: "Dashboard",
   loading: "Gi-load ang dashboard",
-  showing: "Gipakita ang {shown} sa imong {total} ka duwa",
+  showing: {
+    one: "Gipakita ang {shown} sa imong 1 ka duwa",
+    other: "Gipakita ang {shown} sa imong {n} ka duwa",
+  },
   noneInView: "Walay duwa niini nga view. Sulayi ang mas lapad nga panahon.",
   keyStats: "Importanteng stats",
   winRate: "Win rate",

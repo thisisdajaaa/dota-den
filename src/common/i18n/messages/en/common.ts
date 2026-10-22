@@ -21,6 +21,19 @@ export const common = {
     account: "Account",
     admin: "Admin",
     more: "More",
+    sections: { you: "You", community: "Community", tools: "Tools", settings: "Settings" },
+  },
+  /** Count phrases for `plural(t, "common.count.<noun>", n)`. */
+  count: {
+    wins: { one: "1 win", other: "{n} wins" },
+    losses: { one: "1 loss", other: "{n} losses" },
+    games: { one: "1 game", other: "{n} games" },
+    heroes: { one: "1 hero", other: "{n} heroes" },
+    items: { one: "1 item", other: "{n} items" },
+    matches: { one: "1 match", other: "{n} matches" },
+    sessions: { one: "1 session", other: "{n} sessions" },
+    devices: { one: "1 device", other: "{n} devices" },
+    accounts: { one: "1 account", other: "{n} accounts" },
   },
   auth: {
     signIn: "Sign in",

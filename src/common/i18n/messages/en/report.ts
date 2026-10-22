@@ -30,7 +30,7 @@ export const report = {
   },
   sides: {
     title: "Radiant vs Dire",
-    record: "{wins} wins · {losses} losses",
+    record: "{wins} · {losses}",
     higher: "{points} points higher as {side}.",
   },
   records: {
@@ -66,7 +66,7 @@ export const report = {
   },
   roles: {
     title: "Roles",
-    help: "From the {withData} of your {games} games with a parsed replay (lane data comes only from parsed replays).",
+    help: "From the {withData} of your {games} with a parsed replay (lane data comes only from parsed replays).",
     share: "{share}% of games · {rate} wins",
     names: { safeLane: "Safe lane", mid: "Mid", offLane: "Off lane", jungle: "Jungle" },
   },
@@ -74,7 +74,7 @@ export const report = {
     title: "Calendar",
     played: "Played on {played} of {days} days · darker = more games",
     aria: "Games per day from {from} to {to}",
-    day: "{date}: {games} games, {wins}–{losses}",
+    day: "{date}: {games}, {wins}–{losses}",
     moreWins: "more wins than losses",
     moreLosses: "more losses",
   },

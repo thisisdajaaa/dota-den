@@ -134,7 +134,7 @@ export const heroes: MessageTree<typeof en> = {
       "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
     emptyWorstAllies: "Walang kakamping hero na may {min}+ laro kung saan mas madalas kang talo.",
     record: "{wins}–{losses}",
-    rowLabel: "{name}: {wins} panalo, {losses} talo ({rate}) sa {games}",
+    rowLabel: "{name}: {wins}, {losses} ({rate}) sa {games}",
     playedInto: "Nilaro mo",
     playedIntoItem: "{name} {wins}–{losses}",
     footer:

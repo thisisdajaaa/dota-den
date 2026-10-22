@@ -205,15 +205,13 @@ export class EmailDigestService {
     if (note.kind === "achievement")
       return t("email.digest.achievement", {
         title: t(`achievements.items.${note.id}.title`),
-        description: t(`achievements.items.${note.id}.description`, {
-          n: note.n.toLocaleString("en-US"),
-        }),
+        description: plural(t, `achievements.items.${note.id}.description`, note.n),
       });
     return t("email.digest.tilt", {
       streak: note.streak,
       k: note.streak >= 3 ? 3 : 2,
       rate: percent(note.after.rate),
-      games: note.after.games,
+      games: plural(t, "common.count.games", note.after.games),
       baseline: percent(note.baseline.rate),
     });
   }

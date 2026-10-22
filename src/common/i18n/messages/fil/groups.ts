@@ -113,7 +113,7 @@ export const groups: MessageTree<typeof en> = {
     title: "Mga hero sa huling 30 araw",
     description: "Ang pinakamadalas na hero ng bawat miyembro, mula sa mga na-import nilang laro.",
     none: "Walang na-import na laro sa huling 30 araw.",
-    games: "{n} laro",
+    games: { one: "1 laro", other: "{n} laro" },
   },
   board: {
     kicker: "Ngayong linggo",

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "cn";
 import type { Messages } from "@/common/i18n/messages";
 import { getT } from "@/common/i18n/server";
-import type { Translator } from "@/common/i18n/translate";
+import { plural, type Translator } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
@@ -45,7 +45,10 @@ export async function SidesCard({ sides }: { sides: BattleReport["sides"] }) {
               </p>
               <p className="text-2xl font-semibold tabular-nums">{formatPercent(rate(s))}</p>
               <p className="text-xs text-muted-foreground tabular-nums">
-                {t("report.sides.record", { wins: s.wins, losses: s.games - s.wins })}
+                {t("report.sides.record", {
+                  wins: plural(t, "common.count.wins", s.wins),
+                  losses: plural(t, "common.count.losses", s.games - s.wins),
+                })}
               </p>
             </div>
           );
@@ -192,7 +195,10 @@ export async function RolesCard({ roles, games }: { roles: BattleReport["roles"]
           {t("report.roles.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          {t("report.roles.help", { withData: roles.withData, games })}
+          {t("report.roles.help", {
+            withData: roles.withData,
+            games: plural(t, "common.count.games", games),
+          })}
         </p>
       </div>
       <ul className="space-y-2">
@@ -276,7 +282,7 @@ export async function CalendarCard({
                   d
                     ? t("report.calendar.day", {
                         date: label.format(new Date(`${k}T12:00:00Z`)),
-                        games: d.games,
+                        games: plural(t, "common.count.games", d.games),
                         wins: d.wins,
                         losses: d.games - d.wins,
                       })

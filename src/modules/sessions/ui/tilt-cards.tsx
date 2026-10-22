@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Coffee, TrendingDown } from "lucide-react";
 import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { MIN_TILT_GAMES, type TiltStats, type TiltWarning } from "../domain/tilt";
 
@@ -50,8 +51,8 @@ export function AfterLossesPanel({ stats }: { stats: TiltStats }) {
       </p>
       <p className="text-xs text-muted-foreground">
         {r.games >= MIN_TILT_GAMES
-          ? t("sessions.tilt.games", { n: r.games.toLocaleString("en-US") })
-          : t("sessions.tilt.tooFew", { n: r.games })}
+          ? plural(t, "sessions.tilt.games", r.games)
+          : plural(t, "sessions.tilt.tooFew", r.games)}
       </p>
     </div>
   );

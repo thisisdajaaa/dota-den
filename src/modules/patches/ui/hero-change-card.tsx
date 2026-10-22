@@ -1,7 +1,7 @@
 import { SafeImage } from "@/components/safe-image";
 import type { Messages } from "@/common/i18n/messages";
 import { getT } from "@/common/i18n/server";
-import type { Translator } from "@/common/i18n/translate";
+import { plural, type Translator } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
@@ -27,7 +27,7 @@ function Cohort({ cohort, t }: { cohort: HeroCohort; t: Translator<Messages> }) 
           </div>
           <div className="text-muted-foreground">
             {t("patches.hero.games", {
-              games: cohort.before.games,
+              games: plural(t, "common.count.games", cohort.before.games),
               kda: kdaOf(cohort.before)?.toFixed(2) ?? "—",
             })}
           </div>
@@ -39,7 +39,7 @@ function Cohort({ cohort, t }: { cohort: HeroCohort; t: Translator<Messages> }) 
           </div>
           <div className="text-muted-foreground">
             {t("patches.hero.games", {
-              games: cohort.after.games,
+              games: plural(t, "common.count.games", cohort.after.games),
               kda: kdaOf(cohort.after)?.toFixed(2) ?? "—",
             })}
           </div>

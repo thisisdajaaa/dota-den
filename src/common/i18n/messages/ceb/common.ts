@@ -23,6 +23,18 @@ export const common: MessageTree<typeof en> = {
     account: "Account",
     admin: "Admin",
     more: "Uban pa",
+    sections: { you: "Ikaw", community: "Komunidad", tools: "Mga tool", settings: "Settings" },
+  },
+  count: {
+    wins: { one: "1 ka daog", other: "{n} ka daog" },
+    losses: { one: "1 ka pildi", other: "{n} ka pildi" },
+    games: { one: "1 ka duwa", other: "{n} ka duwa" },
+    heroes: { one: "1 ka hero", other: "{n} ka hero" },
+    items: { one: "1 ka item", other: "{n} ka item" },
+    matches: { one: "1 ka duwa", other: "{n} ka duwa" },
+    sessions: { one: "1 ka session", other: "{n} ka session" },
+    devices: { one: "1 ka device", other: "{n} ka device" },
+    accounts: { one: "1 ka account", other: "{n} ka account" },
   },
   auth: {
     signIn: "Mo-sign in",

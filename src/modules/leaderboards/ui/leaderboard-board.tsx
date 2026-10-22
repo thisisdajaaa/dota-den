@@ -228,9 +228,7 @@ export async function LeaderboardBoard({ view }: { view: BoardView }) {
       className="panel overflow-hidden"
     >
       <div className="space-y-1 p-5 pb-3">
-        <h2 className="font-display text-xl font-semibold tracking-wide">
-          {t(`leaderboards.boards.${kind}`)}
-        </h2>
+        <h2 className="text-lg font-semibold">{t(`leaderboards.boards.${kind}`)}</h2>
         <p className="text-xs text-muted-foreground">
           {t(`leaderboards.rules.${kind}`)}
           {week && ` ${t("leaderboards.weekStarts")}`}

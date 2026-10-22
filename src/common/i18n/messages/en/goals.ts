@@ -2,7 +2,7 @@
 export const goals = {
   title: "Weekly goals",
   lastDay: "Last day of the week",
-  daysLeft: "{n} days left this week",
+  daysLeft: { one: "1 day left this week", other: "{n} days left this week" },
   edit: "Edit",
   setGoals: "Set goals",
   addGoal: "Add a goal",
@@ -38,14 +38,17 @@ export const goals = {
   },
   describe: {
     winRate: "Win at least {target}% of ranked games",
-    maxPerSession: "Play at most {target} ranked games per session",
+    maxPerSession: {
+      one: "Play at most 1 ranked game per session",
+      other: "Play at most {n} ranked games per session",
+    },
     logAfterSessions: "Log your MMR after every session",
-    heroGames: "Play {hero} {target} times",
+    heroGames: { one: "Play {hero} once", other: "Play {hero} {n} times" },
   },
   progress: {
     needGames: "{games} / {min} games to count",
     winRate: "{rate}% ({wins}–{losses})",
-    longestSession: "Longest session: {games} games",
+    longestSession: "Longest session: {games}",
     noSessions: "No sessions yet",
     sessionsLogged: "{logged} / {total} sessions logged",
     heroGames: "{played} / {target} games",

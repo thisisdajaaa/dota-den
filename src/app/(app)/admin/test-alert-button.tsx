@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 import { sendTestAlert } from "./actions";
 
 /** Sends a test owner alert (admin only) and says where it went. */
@@ -27,7 +28,7 @@ export function TestAlertButton() {
             const webhook = t(`admin.alerts.webhook.${res.webhook}`);
             setResult(
               res.devices > 0
-                ? t("admin.alerts.testSent", { devices: res.devices, webhook })
+                ? plural(t, "admin.alerts.testSent", res.devices, { webhook })
                 : t("admin.alerts.testNoDevices", { webhook }),
             );
           })

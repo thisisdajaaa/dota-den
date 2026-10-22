@@ -2,7 +2,10 @@
 export const dashboard = {
   title: "Dashboard",
   loading: "Loading dashboard",
-  showing: "Showing {shown} of your {total} matches",
+  showing: {
+    one: "Showing {shown} of your 1 match",
+    other: "Showing {shown} of your {n} matches",
+  },
   noneInView: "No matches in this view. Try a wider time range.",
   keyStats: "Key stats",
   winRate: "Win rate",

@@ -54,7 +54,7 @@ export const mmr: MessageTree<typeof en> = {
     rankedGames: { one: "1 ka ranked game", other: "{n} ka ranked game" },
     wl: "{wins}W {losses}L",
     loggedDot: "Adunay na-log nga MMR niini nga adlaw",
-    record: "{wins} daog · {losses} pildi",
+    record: "{wins} · {losses}",
     noRankedGames: "Walay ranked game",
   },
   day: {
@@ -82,7 +82,7 @@ export const mmr: MessageTree<typeof en> = {
     logNote:
       "I-log ang imong MMR sa wala pa ug human sa sunod-sunod nga duwa sa usa ka hero aron makita ang eksaktong kausaban niini.",
     empty: "Walay ranked game niini nga yugto.",
-    aria: "{name}: {wins} daog, {losses} pildi, mga {mmr} MMR (banabana)",
+    aria: "{name}: {wins}, {losses}, mga {mmr} MMR (banabana)",
     games: { one: "1 ka duwa", other: "{n} ka duwa" },
     sparkline: "Banabanang saka ni {name}, matag duwa",
     exact: { one: "Eksakto {delta} / 1 ka duwa", other: "Eksakto {delta} / {n} ka duwa" },
@@ -238,7 +238,7 @@ export const mmr: MessageTree<typeof en> = {
     record: "{wins}D {losses}P",
     noGames: "Walay na-import nga ranked game niini nga panahon.",
     mostPlayed: "Kanunay gidula",
-    heroRecord: "{name}: {wins} ka daog, {losses} ka pildi",
+    heroRecord: "{name}: {wins}, {losses}",
     rangeRecord: "Ranked niini nga sakop: {games}, {record}.",
     empty:
       "Wala pay sulod. Gitan-aw namo ang imong medal kung ablihan nimo ang overview ug kada adlaw, ug mogawas ang gi-log nga MMR kung modugang ka og entry sa MMR journal.",

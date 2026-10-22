@@ -135,7 +135,7 @@ export const heroes: MessageTree<typeof en> = {
     emptyWorstAllies:
       "Walay kauban nga hero nga adunay {min}+ ka duwa diin mas kanunay kang mapildi.",
     record: "{wins}–{losses}",
-    rowLabel: "{name}: {wins} ka daog, {losses} ka pildi ({rate}) sa {games}",
+    rowLabel: "{name}: {wins}, {losses} ({rate}) sa {games}",
     playedInto: "Imong gidula",
     playedIntoItem: "{name} {wins}–{losses}",
     footer:

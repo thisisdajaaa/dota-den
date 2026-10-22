@@ -113,7 +113,7 @@ export const groups: MessageTree<typeof en> = {
     title: "Mga hero sa miaging 30 ka adlaw",
     description: "Ang kanunay nga hero sa matag miyembro, gikan sa ilang na-import nga mga duwa.",
     none: "Walay na-import nga duwa sa miaging 30 ka adlaw.",
-    games: "{n} ka duwa",
+    games: { one: "1 ka duwa", other: "{n} ka duwa" },
   },
   board: {
     kicker: "Karong semanaha",

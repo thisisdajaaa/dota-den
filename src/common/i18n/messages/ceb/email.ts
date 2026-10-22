@@ -81,7 +81,7 @@ export const email: MessageTree<typeof en> = {
     heroFallback: "Hero #{id}",
     rankedGames: { one: "1 ka ranked game", other: "{n} ka ranked game" },
     achievement: "Bag-ong achievement sa miaging semana: {title} ({description}).",
-    tilt: "Sa miaging semana, napildi ka og {streak} ka sunod-sunod nga ranked game sa usa ka session. Sa imong mga duwa, human sa {k} ka sunod-sunod nga pildi, midaog ka sa {rate} sa {games} ka duwa, kumpara sa {baseline} sa kinatibuk-an.",
+    tilt: "Sa miaging semana, napildi ka og {streak} ka sunod-sunod nga ranked game sa usa ka session. Sa imong mga duwa, human sa {k} ka sunod-sunod nga pildi, midaog ka sa {rate} sa {games}, kumpara sa {baseline} sa kinatibuk-an.",
     action: "Ablihi ang imong dashboard",
     why: "Nakadawat ka niini kay gi-on nimo ang sinemanang email sa Dota Den.",
     unsubscribe: "Mag-unsubscribe",

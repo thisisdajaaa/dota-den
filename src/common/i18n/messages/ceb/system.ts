@@ -18,7 +18,6 @@ export const system: MessageTree<typeof en> = {
   },
   shell: {
     skip: "Laktaw sa sulod",
-    menu: "Menu",
     account: "Account {id}",
     player: "Player {id}",
   },

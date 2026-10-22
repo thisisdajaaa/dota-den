@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { cn } from "cn";
 import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "../matches.ports";
 import {
   HERO_SORT_MIN_GAMES,
@@ -58,7 +59,7 @@ export function HeroPoolCard({
           </h2>
         </div>
         <span className="text-xs text-muted-foreground">
-          {t("matches.heroPool.played", { n: rows.length })}
+          {plural(t, "matches.heroPool.played", rows.length)}
         </span>
       </div>
 
@@ -114,7 +115,7 @@ export function HeroPoolCard({
                       <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                         {sort === "recent"
                           ? formatAgo(h.lastPlayed, nowDate)
-                          : t("matches.heroPool.games", { n: h.games })}
+                          : plural(t, "matches.heroPool.games", h.games)}
                       </span>
                     </div>
                     <WinRateBar rate={h.winRate} muted={h.lowSample} className="h-1.5" />

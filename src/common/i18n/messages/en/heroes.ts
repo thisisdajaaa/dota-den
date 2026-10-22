@@ -125,7 +125,7 @@ export const heroes = {
     emptyBestAllies: "No allied hero with {min}+ games where you win half or more.",
     emptyWorstAllies: "No allied hero with {min}+ games where you lose more than you win.",
     record: "{wins}–{losses}",
-    rowLabel: "{name}: {wins} wins, {losses} losses ({rate}) in {games}",
+    rowLabel: "{name}: {wins}, {losses} ({rate}) in {games}",
     playedInto: "You played",
     playedIntoItem: "{name} {wins}–{losses}",
     footer:

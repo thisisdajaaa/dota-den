@@ -48,32 +48,31 @@ export type NavKey =
   | "account"
   | "admin";
 
-const ITEMS: Array<{ key: NavKey; href: string; label: string; icon: LucideIcon; auth: boolean }> =
-  [
-    { key: "overview", href: "/dashboard", label: "Overview", icon: LayoutDashboard, auth: true },
-    { key: "matches", href: "/matches", label: "Matches", icon: ScrollText, auth: true },
-    { key: "heroes", href: "/heroes", label: "Heroes", icon: Shield, auth: true },
-    { key: "mmr", href: "/mmr", label: "MMR journal", icon: CalendarRange, auth: true },
-    { key: "sessions", href: "/sessions", label: "Sessions", icon: History, auth: true },
-    { key: "report", href: "/report", label: "Battle report", icon: FileChartColumn, auth: true },
-    { key: "together", href: "/together", label: "Together", icon: UsersRound, auth: true },
-    { key: "groups", href: "/groups", label: "Groups", icon: Handshake, auth: true },
-    { key: "meta", href: "/meta", label: "Meta", icon: TrendingUp, auth: false },
-    { key: "guides", href: "/guides", label: "Guides", icon: GraduationCap, auth: false },
-    { key: "players", href: "/players", label: "Players", icon: Users, auth: false },
-    { key: "patches", href: "/patches", label: "Patches", icon: BookOpenText, auth: false },
-    { key: "draft", href: "/draft", label: "Draft", icon: Swords, auth: false },
-    { key: "live", href: "/live", label: "Live", icon: Radio, auth: false },
-    { key: "account", href: "/account", label: "Account", icon: UserCog, auth: true },
-    { key: "admin", href: "/admin", label: "Admin", icon: ShieldCheck, auth: true },
-    {
-      key: "leaderboards",
-      href: "/leaderboards",
-      label: "Leaderboards",
-      icon: Trophy,
-      auth: true,
-    },
-  ];
+/** Sidebar sections, in order; Settings (account, admin) always comes last. */
+type NavGroup = "you" | "community" | "tools" | "settings";
+const GROUPS: readonly NavGroup[] = ["you", "community", "tools", "settings"];
+
+type NavItem = { key: NavKey; href: string; icon: LucideIcon; auth: boolean; group: NavGroup };
+
+const ITEMS: NavItem[] = [
+  { key: "overview", href: "/dashboard", icon: LayoutDashboard, auth: true, group: "you" },
+  { key: "matches", href: "/matches", icon: ScrollText, auth: true, group: "you" },
+  { key: "heroes", href: "/heroes", icon: Shield, auth: true, group: "you" },
+  { key: "mmr", href: "/mmr", icon: CalendarRange, auth: true, group: "you" },
+  { key: "sessions", href: "/sessions", icon: History, auth: true, group: "you" },
+  { key: "report", href: "/report", icon: FileChartColumn, auth: true, group: "you" },
+  { key: "together", href: "/together", icon: UsersRound, auth: true, group: "community" },
+  { key: "groups", href: "/groups", icon: Handshake, auth: true, group: "community" },
+  { key: "meta", href: "/meta", icon: TrendingUp, auth: false, group: "tools" },
+  { key: "guides", href: "/guides", icon: GraduationCap, auth: false, group: "tools" },
+  { key: "players", href: "/players", icon: Users, auth: false, group: "community" },
+  { key: "patches", href: "/patches", icon: BookOpenText, auth: false, group: "tools" },
+  { key: "draft", href: "/draft", icon: Swords, auth: false, group: "tools" },
+  { key: "live", href: "/live", icon: Radio, auth: false, group: "tools" },
+  { key: "leaderboards", href: "/leaderboards", icon: Trophy, auth: true, group: "community" },
+  { key: "account", href: "/account", icon: UserCog, auth: true, group: "settings" },
+  { key: "admin", href: "/admin", icon: ShieldCheck, auth: true, group: "settings" },
+];
 
 function useActive(): (href: string) => boolean {
   const pathname = usePathname();
@@ -87,41 +86,68 @@ function visible(enabled: readonly NavKey[], signedIn: boolean, t: Translator<Me
   }));
 }
 
-/** Vertical nav for the desktop sidebar. */
+/**
+ * Vertical nav for the desktop sidebar, in labelled sections (You, Community, Tools, then
+ * Settings). Compact rows so every item fits a 900px-tall window; the sidebar scrolls below that.
+ */
 export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
   const t = useT();
   const isActive = useActive();
+  const items = visible(enabled, true, t);
   return (
-    <nav aria-label={t("common.nav.main")} className="flex flex-col gap-1">
-      {visible(enabled, true, t).map(({ href, label, icon: Icon }) => {
-        const active = isActive(href);
+    <nav aria-label={t("common.nav.main")} className="flex flex-col gap-3">
+      {GROUPS.map((group) => {
+        const groupItems = items.filter((i) => i.group === group);
+        if (groupItems.length === 0) return null;
+        const labelId = `nav-group-${group}`;
         return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
+          <div
+            key={group}
+            role="group"
+            aria-labelledby={labelId}
             className={cn(
-              "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-gradient-to-r from-gold/15 to-transparent text-foreground"
-                : "text-muted-foreground hover:bg-white/[0.03] hover:text-foreground",
+              "flex flex-col gap-0.5",
+              group === "settings" && "border-t border-white/[0.06] pt-3",
             )}
           >
-            {active && (
-              <span
-                aria-hidden
-                className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gold"
-              />
-            )}
-            <Icon
-              aria-hidden
-              className={cn(
-                "size-4",
-                active ? "text-gold" : "text-muted-foreground group-hover:text-foreground",
-              )}
-            />
-            {label}
-          </Link>
+            <p
+              id={labelId}
+              className="px-3 pb-1 text-[0.65rem] font-semibold tracking-[0.18em] text-muted-foreground/70 uppercase"
+            >
+              {t(`common.nav.sections.${group}`)}
+            </p>
+            {groupItems.map(({ href, label, icon: Icon }) => {
+              const active = isActive(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-gradient-to-r from-gold/15 to-transparent text-foreground"
+                      : "text-muted-foreground hover:bg-white/[0.03] hover:text-foreground",
+                  )}
+                >
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gold"
+                    />
+                  )}
+                  <Icon
+                    aria-hidden
+                    className={cn(
+                      "size-4",
+                      active ? "text-gold" : "text-muted-foreground group-hover:text-foreground",
+                    )}
+                  />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
         );
       })}
     </nav>

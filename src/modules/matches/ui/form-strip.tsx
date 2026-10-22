@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "../matches.ports";
 import type { MatchSummary } from "../domain/match-summary";
 import { heroName } from "./hero-portrait";
@@ -20,7 +21,7 @@ export async function FormStrip({
         <div>
           <p className="kicker">{t("matches.form.kicker")}</p>
           <h2 id="form" className="text-lg font-semibold">
-            {t("matches.form.title", { n: form.length })}
+            {plural(t, "matches.form.title", form.length)}
           </h2>
         </div>
         <span className="text-sm tabular-nums">

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { HeroInfo, PlayerProfileSnapshot } from "../matches.ports";
 import { parseRankTier } from "../domain/rank-tier";
 import { formatPercent } from "./format";
@@ -108,7 +109,7 @@ export async function PlayerBanner({
                   {t("matches.banner.signatureHero")}{" "}
                   <span className="font-semibold text-foreground">{signature.hero.name}</span> ·{" "}
                   {t("matches.banner.signatureStats", {
-                    games: signature.games,
+                    games: plural(t, "common.count.games", signature.games),
                     rate: formatPercent(signature.winRate),
                   })}
                 </span>

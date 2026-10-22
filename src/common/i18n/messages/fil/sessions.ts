@@ -38,7 +38,7 @@ export const sessions: MessageTree<typeof en> = {
   },
   item: {
     games: { one: "1 laro", other: "{n} laro" },
-    aria: "Session noong {date}, {time}: {wins} panalo, {losses} talo",
+    aria: "Session noong {date}, {time}: {wins}, {losses}",
     goalMet: "Naabot ang goal",
     goalPartly: "Bahagyang naabot ang goal",
     goalMissed: "Hindi naabot ang goal",
@@ -109,8 +109,8 @@ export const sessions: MessageTree<typeof en> = {
     overall: "Kabuuan",
     after2: "Pagkatapos ng 2 sunod na talo",
     after3: "Pagkatapos ng 3 sunod",
-    games: "{n} laro",
-    tooFew: "{n} laro, kulang pa para masabi",
+    games: { one: "1 laro", other: "{n} laro" },
+    tooFew: { one: "1 laro, kulang pa para masabi", other: "{n} laro, kulang pa para masabi" },
   },
   detail: {
     title: "Recap ng session",

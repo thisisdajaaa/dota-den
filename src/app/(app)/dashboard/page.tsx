@@ -162,9 +162,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           <div className="flex flex-wrap items-center justify-between gap-3">
             <DashboardFilters filter={filter} latestPatch={latestPatch} />
             <p className="text-xs text-muted-foreground tabular-nums">
-              {t("dashboard.showing", {
-                shown: overall.games.toLocaleString(),
-                total: status.totals.all.toLocaleString(),
+              {plural(t, "dashboard.showing", status.totals.all, {
+                shown: overall.games.toLocaleString("en-US"),
               })}
             </p>
           </div>
