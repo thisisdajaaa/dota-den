@@ -51,6 +51,18 @@ All routes live under `src/app/api`. Responses are JSON.
 | `DELETE /api/v1/mmr-entries/{id}`        | signed in, same-origin                  | Delete your entry                                                                                          |
 | `PUT /api/v1/sessions/{sessionId}/notes` | signed in, same-origin, 30/min per user | `{note?, goal?, goalMet?: "yes" \| "no" \| "partly"}`; 404 for another account's session                   |
 
+## Plus
+
+Dota Den Plus (ADR 0013). Until a payment provider is configured, checkout, portal and webhook answer 404 and
+every plan is free.
+
+| Method & path                | Auth                               | Body → response                                                                                                           |
+| ---------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me/plus`        | signed in                          | Your plan: `{plus, reason, until, status, plan, renewsAt, endsAt, canManage, stillBills}`                                 |
+| `GET /api/v1/plus/checkout`  | signed in, 20/min per user         | `?plan=monthly\|yearly` → 303 to the provider's checkout with your user id as custom data; 409 when you already have Plus |
+| `GET /api/v1/me/plus/portal` | signed in, 20/min per user         | 303 to the provider's billing portal (manage, update card, cancel); 404 without a subscription                            |
+| `POST /api/v1/plus/webhook`  | provider signature (`X-Signature`) | Lemon Squeezy events; 401 on a bad signature, `{outcome}` (`applied`, `duplicate`, `stale`, `unlinked`, `ignored`, …)     |
+
 ## Groups
 
 Every route needs you signed in; writes need the same origin and are rate limited. A group you
@@ -76,6 +88,7 @@ aren't in is 404, and owner-only actions answer 403 to other members.
 | `POST /api/v1/admin/patches/refresh` | admin, same-origin                   | `{version?}` or `{count?}`: import from Valve's feed                     |
 | `GET /api/cron/patches`              | `Authorization: Bearer $CRON_SECRET` | Daily: import new patches and warm the draft AI's tournament data        |
 | `GET /api/cron/matches`              | `Authorization: Bearer $CRON_SECRET` | Daily: sync every player's matches, finishing unfinished histories first |
+| `GET /api/cron/streamer-alerts`      | `Authorization: Bearer $CRON_SECRET` | One Plus go-live alert run (for schedulers other than QStash)            |
 
 ## Drafts
 

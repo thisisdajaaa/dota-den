@@ -13,6 +13,7 @@ import { streamerFollowService } from "@/modules/live";
 import { matchExtrasService, matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
+import { plusService } from "@/modules/plus";
 import { sharesService } from "@/modules/shares";
 import { patchWatchlistService } from "@/modules/patches";
 import { practiceService } from "@/modules/practice";
@@ -46,6 +47,8 @@ export const privacyService = lazy(
         sharesService,
         discordWebhookService,
         emailService,
+        // The local subscription record; billing records stay with the provider (ADR 0013).
+        plusService,
       ],
       identity: usersService,
       logger,
