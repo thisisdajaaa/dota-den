@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ScanSearch } from "lucide-react";
 import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 
 /** Matches the 90s cache on unparsed matches: checking more often only re-reads the cache. */
 const POLL_MS = 60_000;
@@ -34,17 +35,15 @@ export function ParseRequest({ matchId }: { matchId: string }) {
     setState("sending");
     setMessage(null);
     try {
-      const res = await fetch(`/api/v1/matches/${matchId}/parse`, { method: "POST" });
-      if (res.ok) {
-        started.current = Date.now();
-        setState("waiting");
-        return;
-      }
-      const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-      setMessage(body?.error?.message ?? t("matches.parse.requestFailed"));
-      setState("error");
-    } catch {
-      setMessage(t("matches.parse.offline"));
+      await apiRequest(`/api/v1/matches/${matchId}/parse`, { method: "POST" });
+      started.current = Date.now();
+      setState("waiting");
+    } catch (e) {
+      setMessage(
+        e instanceof ApiClientError
+          ? e.message || t("matches.parse.requestFailed")
+          : t("matches.parse.offline"),
+      );
       setState("error");
     }
   }
