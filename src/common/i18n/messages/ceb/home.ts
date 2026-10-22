@@ -31,6 +31,9 @@ export const home: MessageTree<typeof en> = {
     body: "Tan-awa kung giunsa nimo pagdula gyud nga solo kontra sa imong stack, unsa ang giusab sa matag patch sa imong mga hero, ug pag-practice og draft una sa duwa nga importante.",
     signIn: "Mo-sign in pinaagi sa Steam",
     privacy: "Dili namo makita ang imong password. Private ang imong data isip default.",
+    lookupLabel: "O pangitaa ang bisan kinsa nga player, bisan wala naka-sign in",
+    example: "Tan-awa ang pananglitan nga profile",
+    exampleWho: "Yatoro, usa ka pro carry",
   },
   patch: {
     aria: "Pinakabag-ong patch {version}: basaha ang notes",
@@ -38,40 +41,45 @@ export const home: MessageTree<typeof en> = {
     changed: "{heroes} ka hero ug {items} ka item ang giusab",
     heroesAria: "Pipila sa mga hero nga giusab",
     read: "Basaha ang patch notes",
+    topChanges: "Mga hero nga pinakadaghang giusab",
+    noHeroChanges: "Walay kausaban sa mga hero niini nga patch.",
+    more: { one: "+1 pa ka linya", other: "+{n} pa ka linya" },
+    metaCta: "Tan-awa kung unsa ang kusgan karon",
   },
-  loop: {
-    kicker: "Ang loop",
-    title: "Gikan sa patch day hangtod sa imong sunod nga session",
-    patch: {
-      title: "Basaha ang patch",
-      body: "Tan-awa kung unsang mga kausaban ang makaapekto sa imong hero pool.",
-    },
-    draft: {
-      title: "Draft uban sa mga higala",
-      body: "Pag-practice og pick ug ban sama sa Captain's Mode.",
-    },
-    review: {
-      title: "Review nga magkauban",
-      body: "Resulta sa solo ug party, uban ang sample size.",
-    },
-    experiment: {
-      title: "Ibutang ang sunod nga eksperimento",
-      body: "Pili og usa ka butang nga sulayan sa sunod nga session.",
-    },
+  preview: {
+    label: "Preview sa Meta page gamit ang data karong adlawa",
+    address: "dota-den.com/meta",
+    kicker: "Meta",
+    title: "Unsa ang kusgan karon",
+    live: "Tinuod nga data",
+    source: "High-rank nga duwa sa OpenDota · na-update {ago}",
+    open: "Ablihi ang Meta",
+    unavailable:
+      "Dili available ang hero stats karon. Makita kini sa Meta page kung motubag na ang OpenDota.",
+    loading: "Nag-load sa meta karong adlawa",
   },
   features: {
-    title: "Mga feature",
+    kicker: "Unsa ang imong makuha",
+    title: "Usa ka lugar para sa imong Dota tali sa mga duwa",
     party: {
       title: "Solo vs party, tinuod gyud",
-      body: "Ang matag match adunay label nga solo, party o unknown, uban ang gigikanan. Ang kulang nga data dili gyud iihap nga solo.",
-    },
-    patches: {
-      title: "Patch hub",
-      body: "Opisyal nga patch notes nga naka-link sa gigikanan, gi-filter sa mga hero nga imong gidula gyud.",
+      body: "Gibahin ang imong mga match sa solo, party ug unknown, uban kung asa gikan ang matag label. Ang kulang nga data dili gyud iihap nga solo.",
+      cta: "Mo-sign in aron makita ang imo",
     },
     draft: {
       title: "Draft practice",
-      body: "Pick/ban drills nga ikaw ra o uban sa mga higala, adunay klarong rason imbes nga peke nga win odds.",
+      body: "Pick ug ban drills ug challenges sama sa Captain's Mode, ikaw ra o sa usa ka room uban sa mga higala. Adunay rason, walay peke nga win odds.",
+      cta: "Sugdi og draft",
+    },
+    guides: {
+      title: "Mga hero guide",
+      body: "Unsa ang gipalit sa mga pro sa matag hero ug unsa ang hitsura sa maayong duwa, gikan sa tinuod nga pro matches.",
+      cta: "Tan-awa ang mga guide",
+    },
+    live: {
+      title: "Tan-aw og live nga duwa",
+      body: "Mga league game ug ang pinakataas nga MMR nga public game nga nahitabo karon, adunay live nga basa sa matag draft.",
+      cta: "Tan-awa ang live",
     },
   },
 };

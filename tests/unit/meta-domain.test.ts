@@ -3,6 +3,8 @@ import { duosForPosition, type DuoRow } from "@/modules/meta/domain/lane-duos";
 import {
   eligibleByRole,
   laneCandidates,
+  mostContested,
+  overviewPools,
   pickTrend,
   rankHeroes,
   shrunkRate,
@@ -418,5 +420,55 @@ describe("patch tips", () => {
     );
     expect(tips.map((t) => t.kind)).toEqual(["falling", "contested", "lane"]);
     expect(tips[0].text).toContain("picked 25% less often");
+  });
+});
+
+describe("meta overview", () => {
+  const catalog = [
+    { id: 1, roles: CARRY },
+    { id: 2, roles: CARRY },
+    { id: 3, roles: INITIATOR },
+    { id: 4, roles: INITIATOR },
+    { id: 5, roles: SUPPORT },
+    { id: 6, roles: SUPPORT },
+    { id: 7, roles: SUPPORT },
+  ];
+  const all = [
+    stats(1, 50_000, 0.55),
+    stats(2, 50_000, 0.52),
+    stats(3, 50_000, 0.54),
+    stats(4, 50_000, 0.5),
+    stats(5, 50_000, 0.53),
+    stats(6, 50_000, 0.51),
+    // No stats for hero 7: left out, never guessed.
+  ];
+
+  it("ranks each pool by high-rank win rate, using catalog roles only", () => {
+    const pools = overviewPools(catalog, all, 2);
+    expect(pools.map((p) => p.key)).toEqual(["carry", "core", "support"]);
+    expect(pools.map((p) => p.positions)).toEqual([[1], [2, 3], [4, 5]]);
+    expect(pools[0].heroes.map((h) => h.heroId)).toEqual([1, 2]);
+    // Carries can play mid too, but each hero is listed once.
+    expect(pools[1].heroes.map((h) => h.heroId)).toEqual([3, 4]);
+    expect(pools[2].heroes.map((h) => h.heroId)).toEqual([5, 6]);
+    expect(pools.flatMap((p) => p.heroes).every((h) => h.lane === null && h.pro === null)).toBe(
+      true,
+    );
+  });
+
+  it("lists the most picked or banned tournament heroes first", () => {
+    const pro: ProDrafts = {
+      drafts: 100,
+      windowDays: 21,
+      heroes: [
+        { heroId: 1, picks: 10, bans: 5, leagues: 2 },
+        { heroId: 2, picks: 30, bans: 50, leagues: 4 },
+        { heroId: 3, picks: 15, bans: 0, leagues: 3 },
+      ],
+    };
+    const top = mostContested(pro, 2);
+    expect(top.map((h) => h.heroId)).toEqual([2, 1]);
+    expect(top[0].contestRate).toBeCloseTo(0.8);
+    expect(mostContested({ ...pro, drafts: 0 }, 2)).toEqual([]);
   });
 });

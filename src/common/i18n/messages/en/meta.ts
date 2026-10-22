@@ -102,6 +102,33 @@ export const meta = {
       "Contested in tournaments: picked or banned in {pct} of {drafts} pro drafts over the last {days} days",
     lane: "Wins {pct} of {games} public games played in the {lane}",
   },
+  overview: {
+    kicker: "At a glance",
+    title: "Strongest heroes right now",
+    description:
+      "Best win rates at Ancient to Immortal for each kind of role, with small samples pulled toward 50%. Pick a role above for the full ranking with lane data and tournaments.",
+    loading: "Loading the meta overview",
+    pools: {
+      carry: "Carries",
+      core: "Mid and offlane",
+      support: "Supports",
+    },
+    poolsAria: "Top heroes: {name}",
+    winRate: "{rate} win rate",
+    fullRanking: "Full ranking:",
+    source:
+      "Source: OpenDota public games, updated {ago}. Without lane data mid can't be told from offlane, or soft from hard support, so they're grouped; each hero is listed once.",
+    empty: "Not enough data for this group right now.",
+    contested: {
+      kicker: "Tournaments",
+      title: "Most contested",
+      pickBan: "{picks} · {bans}",
+      contest: "{pct} of drafts",
+      source: "Picked or banned in {drafts} over the last {days} days, updated {ago}.",
+      tooFew: "Only {drafts} in the last {days} days, too few to say what's contested.",
+      unavailable: "Tournament data is unavailable right now.",
+    },
+  },
   duos: {
     kicker: "Lane partners",
     title: "Strongest lane duos",

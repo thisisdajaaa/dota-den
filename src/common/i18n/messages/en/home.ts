@@ -27,6 +27,9 @@ export const home = {
     body: "See how you really play solo versus with your stack, what each patch changed for your heroes, and practice drafts before the game that counts.",
     signIn: "Sign in through Steam",
     privacy: "We never see your password. Your data stays private by default.",
+    lookupLabel: "Or look up any player, no sign-in needed",
+    example: "See an example profile",
+    exampleWho: "Yatoro, a pro carry",
   },
   patch: {
     aria: "Latest patch {version}: read the notes",
@@ -34,31 +37,45 @@ export const home = {
     changed: "{heroes} heroes and {items} items changed",
     heroesAria: "Some of the heroes changed",
     read: "Read the patch notes",
+    topChanges: "Most-changed heroes",
+    noHeroChanges: "No hero changes in this patch.",
+    more: { one: "+1 more line", other: "+{n} more lines" },
+    metaCta: "See what's strong now",
   },
-  loop: {
-    kicker: "The loop",
-    title: "From patch day to your next session",
-    patch: { title: "Read the patch", body: "See which changes touch your hero pool." },
-    draft: { title: "Draft with friends", body: "Practice Captain's Mode-style picks and bans." },
-    review: { title: "Review together", body: "Solo and party results, with sample sizes." },
-    experiment: {
-      title: "Set the next experiment",
-      body: "Pick one thing to test next session.",
-    },
+  preview: {
+    label: "Preview of the Meta page with today's data",
+    address: "dota-den.com/meta",
+    kicker: "Meta",
+    title: "What's strong right now",
+    live: "Real data",
+    source: "OpenDota high-rank games · updated {ago}",
+    open: "Open the Meta",
+    unavailable:
+      "Hero stats are unavailable right now. The Meta page shows them once OpenDota answers.",
+    loading: "Loading today's meta",
   },
   features: {
-    title: "Features",
+    kicker: "What you get",
+    title: "One place for your Dota between games",
     party: {
       title: "Solo vs party, honestly",
-      body: "Every match is labelled solo, party or unknown, with its source. Missing data is never counted as solo.",
-    },
-    patches: {
-      title: "Patch hub",
-      body: "Official patch notes linked to their source, filtered to the heroes you actually play.",
+      body: "Your matches split into solo, party and unknown, with the source of each label. Missing data is never counted as solo.",
+      cta: "Sign in to see yours",
     },
     draft: {
       title: "Draft practice",
-      body: "Pick/ban drills locally or with friends, with transparent reasons instead of fake win odds.",
+      body: "Captain's Mode-style pick and ban drills and challenges, alone or in a room with friends. Reasons, not fake win odds.",
+      cta: "Start a draft",
+    },
+    guides: {
+      title: "Hero guides",
+      body: "What pros buy on every hero and what strong games look like, from real pro matches.",
+      cta: "Browse guides",
+    },
+    live: {
+      title: "Watch live games",
+      body: "League games and the highest-MMR public games happening now, with a live read of each draft.",
+      cta: "See what's live",
     },
   },
 } as const;

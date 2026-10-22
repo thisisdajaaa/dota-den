@@ -8,6 +8,19 @@ test("guests pick a role and see ranked heroes, lane duos and patch info", async
   // Guests have no derived role.
   await expect(page.getByRole("region", { name: "Your role" })).toHaveCount(0);
 
+  // Real content before a role is picked: the best heroes per role group, from hero stats.
+  const carries = page.getByRole("region", { name: "Top heroes: Carries" });
+  await expect(carries.getByRole("listitem")).toHaveCount(3);
+  await expect(carries.getByRole("listitem").first()).toContainText(/\d+\.\d% win rate/);
+  await expect(carries.getByRole("link", { name: "Pos 1 · Safe lane carry" })).toHaveAttribute(
+    "href",
+    "/meta?pos=1",
+  );
+  await expect(page.getByRole("region", { name: "Top heroes: Mid and offlane" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Most contested" })).toContainText(
+    "Picked or banned in 120 pro drafts over the last 21 days",
+  );
+
   await page
     .getByRole("navigation", { name: "Choose your role" })
     .getByRole("link", { name: /Safe lane carry/ })

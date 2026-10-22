@@ -110,6 +110,34 @@ export const meta: MessageTree<typeof en> = {
       "Pinag-aagawan sa tournaments: na-pick o na-ban sa {pct} ng {drafts} pro draft sa nakaraang {days} araw",
     lane: "Panalo sa {pct} ng {games} public na laro sa {lane}",
   },
+  overview: {
+    kicker: "Mabilisang tingin",
+    title: "Pinakamalakas na hero ngayon",
+    description:
+      "Pinakamataas na win rate sa Ancient hanggang Immortal para sa bawat uri ng role, at hinihila papunta sa 50% ang maliliit na sample. Pumili ng role sa itaas para sa buong ranking na may lane data at tournament.",
+    loading: "Nilo-load ang overview ng meta",
+    pools: {
+      carry: "Mga carry",
+      core: "Mid at offlane",
+      support: "Mga support",
+    },
+    poolsAria: "Mga top hero: {name}",
+    winRate: "{rate} win rate",
+    fullRanking: "Buong ranking:",
+    source:
+      "Galing sa mga public na laro sa OpenDota, na-update {ago}. Kung walang lane data, hindi matukoy kung mid o offlane, o soft o hard support, kaya pinagsama sila; isang beses lang lumalabas ang bawat hero.",
+    empty: "Kulang pa ang data para sa grupong ito ngayon.",
+    contested: {
+      kicker: "Mga tournament",
+      title: "Pinakapinag-aagawan",
+      pickBan: "{picks} · {bans}",
+      contest: "{pct} ng mga draft",
+      source: "Na-pick o na-ban sa {drafts} sa nakaraang {days} araw, na-update {ago}.",
+      tooFew:
+        "{drafts} lang sa nakaraang {days} araw, kulang para masabi kung alin ang pinag-aagawan.",
+      unavailable: "Hindi available ang tournament data ngayon.",
+    },
+  },
   duos: {
     kicker: "Lane partners",
     title: "Pinakamalakas na lane duos",
