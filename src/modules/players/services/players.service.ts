@@ -39,6 +39,9 @@ export interface PublicPlayerView {
   matches: Result<DashboardFact[], MatchProviderError>;
 }
 
+/** The same sections, each still loading. */
+export type PublicPlayerSections = { [K in keyof PublicPlayerView]: Promise<PublicPlayerView[K]> };
+
 /** Public player lookups (OpenDota data only) and your tracked players. */
 export class PlayersService {
   constructor(
@@ -69,37 +72,61 @@ export class PlayersService {
     return this.warnOnError("player_search_failed", {}, await this.deps.directory.search(q));
   }
 
+  /** A section's result, logged when it failed; a thrown error becomes "unavailable". */
+  private settle<T, E extends { type: string }>(
+    event: string,
+    ctx: Record<string, unknown>,
+    p: Promise<Result<T, E>>,
+  ): Promise<Result<T, E | { type: "unavailable"; cause: string }>> {
+    return p.then(
+      (res) => this.warnOnError(event, ctx, res),
+      (e: unknown) => {
+        this.deps.logger.warn(event, { ...ctx, reason: "error", error: e });
+        return { ok: false, error: { type: "unavailable", cause: "error" } };
+      },
+    );
+  }
+
   /**
-   * Everything on a public profile, fetched in parallel. Each section fails on its own so a
-   * slow or broken endpoint only blanks its own card. Public OpenDota data only: nothing from
-   * our database about other users is ever read here.
+   * Everything on a public profile, all started at once, each section on its own promise so
+   * a page can show what's ready and stream in the rest: a slow or broken endpoint only holds
+   * back (or blanks) its own card. The promises never reject. Public OpenDota data only:
+   * nothing from our database about other users is ever read here.
    */
-  async publicPlayer(accountId32: number): Promise<PublicPlayerView> {
+  publicPlayerSections(accountId32: number): PublicPlayerSections {
     const { directory, profiles } = this.deps;
     const ctx = { accountId32 };
-    const [profile, record, heroes, peers, matches] = await Promise.all([
-      profiles.fetchPlayerProfile(accountId32),
-      directory.winLoss(accountId32),
-      directory.heroes(accountId32),
-      directory.peers(accountId32),
-      profiles.recentMatches(accountId32, 20),
-    ]);
     return {
-      profile: this.warnOnError(
+      profile: this.settle(
         "player_profile_failed",
         ctx,
-        profile.ok
-          ? {
-              ...profile,
-              value: { ...profile.value, avatarUrl: this.deps.safeAvatar(profile.value.avatarUrl) },
-            }
-          : profile,
+        profiles.fetchPlayerProfile(accountId32).then((res) =>
+          res.ok
+            ? {
+                ...res,
+                value: { ...res.value, avatarUrl: this.deps.safeAvatar(res.value.avatarUrl) },
+              }
+            : res,
+        ),
       ),
-      record: this.warnOnError("player_wl_failed", ctx, record),
-      heroes: this.warnOnError("player_heroes_failed", ctx, heroes),
-      peers: this.warnOnError("player_peers_failed", ctx, peers),
-      matches: this.warnOnError("player_matches_failed", ctx, matches),
+      record: this.settle("player_wl_failed", ctx, directory.winLoss(accountId32)),
+      heroes: this.settle("player_heroes_failed", ctx, directory.heroes(accountId32)),
+      peers: this.settle("player_peers_failed", ctx, directory.peers(accountId32)),
+      matches: this.settle("player_matches_failed", ctx, profiles.recentMatches(accountId32, 20)),
     };
+  }
+
+  /** Everything on a public profile, once every section has answered (see above). */
+  async publicPlayer(accountId32: number): Promise<PublicPlayerView> {
+    const s = this.publicPlayerSections(accountId32);
+    const [profile, record, heroes, peers, matches] = await Promise.all([
+      s.profile,
+      s.record,
+      s.heroes,
+      s.peers,
+      s.matches,
+    ]);
+    return { profile, record, heroes, peers, matches };
   }
 
   /** Any player's public name, avatar and rank (cached upstream); null when unavailable. */

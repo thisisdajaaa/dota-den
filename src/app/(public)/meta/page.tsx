@@ -38,9 +38,9 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
 
   const service = metaService;
   const user = await getCurrentUser({ tolerateErrors: true });
-  const role = user ? await settle(service.userRole(user.accountId32), "role") : null;
-  const yours = role?.ok ? role.value.derivation.position : null;
-  const position = picked ?? yours;
+  // Your role needs your recent matches from OpenDota, which can be slow: start it now and
+  // wait for it only inside the boundaries that show it.
+  const role = user ? settle(service.userRole(user.accountId32), "role") : null;
 
   const patch = metaService.latestPatch();
   const catalog = matchesService.heroMap().catch((e: unknown): Map<number, HeroInfo> => {
@@ -66,40 +66,94 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
         <PatchLine patch={patch} />
       </Suspense>
 
-      {user && <YourRole role={role} t={t} />}
+      {role && (
+        <Suspense fallback={<Skeleton className="h-24 rounded-2xl" />}>
+          <YourRole role={role} t={t} />
+        </Suspense>
+      )}
 
-      {position === null ? (
-        <section aria-labelledby="pick-role" className="space-y-3">
-          <h2 id="pick-role" className="text-lg font-semibold">
-            {t("meta.page.pickRole")}
-          </h2>
-          <RolePicker />
-        </section>
-      ) : (
+      {picked !== null ? (
         <RoleSections
-          key={position}
-          position={position}
-          yours={yours}
+          key={picked}
+          position={picked}
+          role={role}
           service={service}
           patch={patch}
           catalog={catalog}
           t={t}
         />
+      ) : role ? (
+        <Suspense fallback={<RoleSectionsSkeleton t={t} />}>
+          <YourRoleSections role={role} service={service} patch={patch} catalog={catalog} t={t} />
+        </Suspense>
+      ) : (
+        <PickRole t={t} />
       )}
     </div>
   );
 }
 
+type RoleResult = Result<RoleView, SourceError | { type: "error" }>;
+
+function PickRole({ t }: { t: Translator<Messages> }) {
+  return (
+    <section aria-labelledby="pick-role" className="space-y-3">
+      <h2 id="pick-role" className="text-lg font-semibold">
+        {t("meta.page.pickRole")}
+      </h2>
+      <RolePicker />
+    </section>
+  );
+}
+
+function RoleSectionsSkeleton({ t }: { t: Translator<Messages> }) {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+      <div className="lg:col-span-3">
+        <SectionSkeleton label={t("meta.page.loadingTopHeroes")} rows={6} />
+      </div>
+      <div className="lg:col-span-2">
+        <SectionSkeleton label={t("meta.page.loadingDuos")} rows={4} />
+      </div>
+    </div>
+  );
+}
+
+/** No position picked: show the user's own once it's known, else the role picker. */
+async function YourRoleSections({
+  role,
+  ...rest
+}: Omit<React.ComponentProps<typeof RoleSections>, "position" | "role"> & {
+  role: Promise<RoleResult>;
+}) {
+  const res = await role;
+  const yours = res.ok ? res.value.derivation.position : null;
+  if (yours === null) return <PickRole t={rest.t} />;
+  return <RoleSections key={yours} position={yours} role={role} {...rest} />;
+}
+
+/** The position tabs, with the user's own position marked once it's known. */
+async function PositionTabs({
+  active,
+  role,
+}: {
+  active: Position;
+  role: Promise<RoleResult> | null;
+}) {
+  const res = await role;
+  return <RoleTabs active={active} yours={res?.ok ? res.value.derivation.position : null} />;
+}
+
 function RoleSections({
   position,
-  yours,
+  role,
   service,
   patch,
   catalog,
   t,
 }: {
   position: Position;
-  yours: Position | null;
+  role: Promise<RoleResult> | null;
   service: typeof metaService;
   patch: ReturnType<typeof metaService.latestPatch>;
   catalog: Promise<Map<number, HeroInfo>>;
@@ -110,7 +164,9 @@ function RoleSections({
   const duos = settle(service.laneDuos(position), "lane_duos");
   return (
     <>
-      <RoleTabs active={position} yours={yours} />
+      <Suspense fallback={<RoleTabs active={position} yours={null} />}>
+        <PositionTabs active={position} role={role} />
+      </Suspense>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <Suspense fallback={<SectionSkeleton label={t("meta.page.loadingTopHeroes")} rows={6} />}>
@@ -130,14 +186,14 @@ function RoleSections({
   );
 }
 
-function YourRole({
-  role,
+async function YourRole({
+  role: pending,
   t,
 }: {
-  role: Result<RoleView, SourceError | { type: "error" }> | null;
+  role: Promise<RoleResult>;
   t: Translator<Messages>;
 }) {
-  if (!role) return null;
+  const role = await pending;
   const games = (n: number) => plural(t, "meta.counts.games", n);
   let body: React.ReactNode;
   if (!role.ok) {
