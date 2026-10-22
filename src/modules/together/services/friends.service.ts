@@ -1,6 +1,5 @@
 import type { Logger } from "@/common/logging/logger";
 import { ok, type Result } from "@/common/result";
-import { mapLimit } from "@/common/utils/map-limit";
 import { sortCandidates } from "../domain/candidates";
 import {
   bestTeammate,
@@ -29,8 +28,8 @@ export class FriendsService {
 
   /**
    * Candidate friends: OpenDota teammates (top by games on the same team) plus tracked
-   * players. One cached upstream call for teammates, plus one cached profile per tracked
-   * player not already listed (capped).
+   * players. One cached upstream call for teammates, plus one profile lookup for the tracked
+   * players not already listed (capped).
    */
   async candidates(user: { id: string; accountId32: number }): Promise<TogetherCandidates> {
     const me = user.accountId32;
@@ -59,20 +58,19 @@ export class FriendsService {
     const extra = follows
       .filter((f) => !listed.has(f.accountId32) && f.accountId32 !== me)
       .slice(0, MAX_TRACKED_CANDIDATES);
-    const fromTracked = await Promise.all(
-      extra.map(async (f): Promise<FriendCandidate> => {
-        const profile = await this.deps.profiles.publicProfile(f.accountId32);
-        return {
-          accountId32: f.accountId32,
-          personaName: profile?.personaName ?? null,
-          avatarUrl: profile?.avatarUrl ?? null,
-          sameTeamGames: null,
-          partyGames: overview.partyGames.get(f.accountId32) ?? 0,
-          lastPlayedAt: null,
-          source: "tracked",
-        };
-      }),
-    );
+    const profiles = await this.deps.profiles.publicProfiles(extra.map((f) => f.accountId32));
+    const fromTracked = extra.map((f): FriendCandidate => {
+      const profile = profiles.get(f.accountId32) ?? null;
+      return {
+        accountId32: f.accountId32,
+        personaName: profile?.personaName ?? null,
+        avatarUrl: profile?.avatarUrl ?? null,
+        sameTeamGames: null,
+        partyGames: overview.partyGames.get(f.accountId32) ?? 0,
+        lastPlayedAt: null,
+        source: "tracked",
+      };
+    });
 
     return {
       friends: sortCandidates([...fromPeers, ...fromTracked]),
@@ -83,7 +81,7 @@ export class FriendsService {
 
   /**
    * The overview's Teammates section. Upstream: peers and win/loss (one cached call each) plus
-   * one cached profile per listed teammate or rival (for the rank), capped. Our database: your
+   * one profile lookup for the listed teammates and rivals (for the rank), capped. Our database: your
    * imported games (queue split) and confirmed parties analysed on /together.
    */
   async teammatesOverview(user: {
@@ -124,14 +122,7 @@ export class FriendsService {
       ...stats,
       ...rivalStats.filter((r) => !stats.some((s) => s.accountId32 === r.accountId32)),
     ];
-    const profiles = new Map(
-      await mapLimit(
-        listed,
-        4,
-        async (t) =>
-          [t.accountId32, await this.deps.profiles.publicProfile(t.accountId32)] as const,
-      ),
-    );
+    const profiles = await this.deps.profiles.publicProfiles(listed.map((t) => t.accountId32));
     const view = (t: TeammateStat): TeammateView => {
       const profile = profiles.get(t.accountId32) ?? null;
       const peer = byId.get(t.accountId32);

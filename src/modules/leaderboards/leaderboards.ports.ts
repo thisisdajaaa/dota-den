@@ -53,7 +53,8 @@ export interface PublicProfile {
 }
 
 export interface ProfileLookup {
-  profile(accountId32: number): Promise<PublicProfile | null>;
+  /** Many players at once (one lookup); null for players with no public profile available. */
+  profiles(accountIds: readonly number[]): Promise<Map<number, PublicProfile | null>>;
 }
 
 /**

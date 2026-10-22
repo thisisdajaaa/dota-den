@@ -9,14 +9,21 @@ import type {
 import type { HeroUsage, Peer, PlayerSearchHit, WinLoss } from "../domain/public-player";
 import type { TrackedPlayersPage } from "../dtos/responses/follows.dto";
 import type { FollowOwner } from "../dtos/responses/players.dto";
-import type { PlayerDirectory, ProfileSnapshotStore, ProviderError } from "../players.ports";
+import type {
+  PlayerDirectory,
+  ProfileSnapshotStore,
+  ProviderError,
+  SavedProfile,
+} from "../players.ports";
 import type { FollowService } from "./follow.service";
 
-/** Tracked players rendered per page: each costs up to two (cached) upstream calls. */
+/** Tracked players rendered per page: one database read, upstream calls only to fill gaps. */
 export const TRACKED_PAGE_SIZE = 20;
 
 /** Other players' names, avatars and ranks in lists are refreshed this often. */
 export const PROFILE_SNAPSHOT_MAX_AGE_MS = 6 * 3_600_000;
+/** Tracked players' last-match times are looked up again after this long. */
+export const LAST_MATCH_MAX_AGE_MS = 3_600_000;
 /** New profile fetches at a time when filling a list. */
 const PROFILE_CONCURRENCY = 4;
 
@@ -53,6 +60,12 @@ export class PlayersService {
       safeAvatar: (url: string | null | undefined) => string | null;
       /** Optional: without it every lookup goes to OpenDota (through the gateway's cache). */
       snapshots?: ProfileSnapshotStore;
+      /**
+       * Runs a task after the response is sent (`after` from next/server). With it, old saved
+       * copies are shown at once and refreshed for the next visit; without it, they're
+       * refreshed before returning.
+       */
+      defer?: (task: () => Promise<void>) => void;
       logger: Pick<Logger, "warn">;
       now?: () => Date;
     },
@@ -129,7 +142,6 @@ export class PlayersService {
     return { profile, record, heroes, peers, matches };
   }
 
-  /** Any player's public name, avatar and rank (cached upstream); null when unavailable. */
   /**
    * A player's public profile for showing them in a list or header: a saved copy up to
    * PROFILE_SNAPSHOT_MAX_AGE_MS old, else fetched (and saved). When OpenDota fails, an older
@@ -139,36 +151,55 @@ export class PlayersService {
     return (await this.publicProfiles([accountId32])).get(accountId32) ?? null;
   }
 
-  /** Many profiles at once: one database read, then OpenDota only for missing or old ones. */
+  /**
+   * Many profiles at once: one database read, then OpenDota only for missing ones (and old
+   * ones, after the response when it can be deferred).
+   */
   async publicProfiles(
     accountIds: readonly number[],
   ): Promise<Map<number, PlayerProfileSnapshot | null>> {
     const ids = [...new Set(accountIds)];
     const now = this.deps.now?.() ?? new Date();
-    const saved: Map<number, PlayerProfileSnapshot & { fetchedAt: Date }> = this.deps.snapshots
-      ? await this.deps.snapshots.getMany(ids).catch(() => new Map())
-      : new Map();
-    const isFresh = (id: number) => {
+    return this.resolveProfiles(ids, await this.saved(ids), now);
+  }
+
+  private async saved(ids: readonly number[]): Promise<Map<number, SavedProfile>> {
+    if (!this.deps.snapshots || ids.length === 0) return new Map();
+    return this.deps.snapshots.getMany(ids).catch(() => new Map<number, SavedProfile>());
+  }
+
+  /** Runs `task` after the response; failures are logged, never thrown. */
+  private later(event: string, task: () => Promise<unknown>): void {
+    this.deps.defer?.(() =>
+      task().then(
+        () => {},
+        (e: unknown) => this.deps.logger.warn(event, { error: e }),
+      ),
+    );
+  }
+
+  private async resolveProfiles(
+    ids: readonly number[],
+    saved: Map<number, SavedProfile>,
+    now: Date,
+  ): Promise<Map<number, PlayerProfileSnapshot | null>> {
+    const profiles = new Map<number, PlayerProfileSnapshot>(
+      [...saved].map(([id, { fetchedAt: _at, lastMatch: _last, ...p }]) => [id, p]),
+    );
+    const missing = ids.filter((id) => !saved.has(id));
+    const old = ids.filter((id) => {
       const s = saved.get(id);
-      return s !== undefined && now.getTime() - s.fetchedAt.getTime() < PROFILE_SNAPSHOT_MAX_AGE_MS;
-    };
-    // Missing or old: fetch. A failed fetch keeps the old copy, if there is one.
-    const profiles = new Map<number, PlayerProfileSnapshot | null>(
-      [...saved].map(([id, { fetchedAt: _at, ...p }]) => [id, p]),
-    );
-    await mapLimit(
-      ids.filter((id) => !isFresh(id)),
-      PROFILE_CONCURRENCY,
-      async (id) => {
-        const res = await this.deps.profiles.fetchPlayerProfile(id);
-        if (!res.ok) {
-          this.warnOnError("player_profile_failed", { accountId32: id }, res);
-          return;
-        }
-        profiles.set(id, res.value);
-        await this.deps.snapshots?.save(res.value, now).catch(() => {});
-      },
-    );
+      return (
+        s !== undefined && now.getTime() - s.fetchedAt.getTime() >= PROFILE_SNAPSHOT_MAX_AGE_MS
+      );
+    });
+    // Missing: wait (there's nothing to show). Old: show the saved copy now and refresh it
+    // after the response when possible. A failed fetch keeps the old copy.
+    const deferOld = this.deps.defer !== undefined;
+    if (deferOld && old.length > 0)
+      this.later("player_profile_refresh_failed", () => this.fetchProfiles(old, now));
+    const fetched = await this.fetchProfiles(deferOld ? missing : [...missing, ...old], now);
+    for (const [id, p] of fetched) profiles.set(id, p);
     return new Map(
       ids.map((id) => {
         const p = profiles.get(id);
@@ -177,26 +208,80 @@ export class PlayersService {
     );
   }
 
-  /** The owner's tracked players, newest first, with live public details for one page. */
+  /** Fetches and saves profiles; the ones OpenDota returned. */
+  private async fetchProfiles(
+    ids: readonly number[],
+    now: Date,
+  ): Promise<Map<number, PlayerProfileSnapshot>> {
+    const out = new Map<number, PlayerProfileSnapshot>();
+    await mapLimit(ids, PROFILE_CONCURRENCY, async (id) => {
+      const res = await this.deps.profiles.fetchPlayerProfile(id);
+      if (!res.ok) {
+        this.warnOnError("player_profile_failed", { accountId32: id }, res);
+        return;
+      }
+      out.set(id, res.value);
+      await this.deps.snapshots?.save(res.value, now).catch(() => {});
+    });
+    return out;
+  }
+
+  /** Looks up and saves last-match times; the ones OpenDota returned. */
+  private async fetchLastMatches(
+    ids: readonly number[],
+    now: Date,
+  ): Promise<Map<number, Date | null>> {
+    const out = new Map<number, Date | null>();
+    await mapLimit(ids, PROFILE_CONCURRENCY, async (id) => {
+      const res = await this.deps.directory.lastMatchAt(id);
+      if (!res.ok) {
+        this.warnOnError("player_last_match_failed", { accountId32: id }, res);
+        return;
+      }
+      out.set(id, res.value);
+      await this.deps.snapshots?.saveLastMatch(id, res.value, now).catch(() => {});
+    });
+    return out;
+  }
+
+  /**
+   * The owner's tracked players, newest first, for one page: saved profiles and last-match
+   * times (one database read). Only players never saved wait on OpenDota; old details are
+   * refreshed after the response.
+   */
   async trackedPlayers(owner: FollowOwner, page = 1): Promise<TrackedPlayersPage> {
     const follows = await this.deps.follows.list(owner);
     const pageCount = Math.max(1, Math.ceil(follows.length / TRACKED_PAGE_SIZE));
     const current = Math.min(Math.max(1, page), pageCount);
     const slice = follows.slice((current - 1) * TRACKED_PAGE_SIZE, current * TRACKED_PAGE_SIZE);
-    const items = await mapLimit(slice, 4, async (f) => {
-      const [profile, last] = await Promise.all([
-        this.deps.profiles.fetchPlayerProfile(f.accountId32),
-        this.deps.directory.lastMatchAt(f.accountId32),
-      ]);
-      const p = profile.ok ? profile.value : null;
+    const now = this.deps.now?.() ?? new Date();
+    const ids = slice.map((f) => f.accountId32);
+    const saved = await this.saved(ids);
+    const profiles = await this.resolveProfiles(ids, saved, now);
+
+    // undefined: never looked up (shown as nothing rather than "no recent matches").
+    const lastMatches = new Map<number, Date | null | undefined>(
+      ids.map((id) => [id, saved.get(id)?.lastMatch?.at]),
+    );
+    const old = ids.filter((id) => {
+      const at = saved.get(id)?.lastMatch?.fetchedAt;
+      return !at || now.getTime() - at.getTime() >= LAST_MATCH_MAX_AGE_MS;
+    });
+    if (!this.deps.defer)
+      for (const [id, at] of await this.fetchLastMatches(old, now)) lastMatches.set(id, at);
+    else if (old.length > 0)
+      this.later("player_last_match_refresh_failed", () => this.fetchLastMatches(old, now));
+
+    const items = slice.map((f) => {
+      const p = profiles.get(f.accountId32) ?? null;
       return {
         accountId32: f.accountId32,
         trackedAt: f.createdAt,
         personaName: p?.personaName ?? null,
-        avatarUrl: this.deps.safeAvatar(p?.avatarUrl),
+        avatarUrl: p?.avatarUrl ?? null,
         rankTier: p?.rankTier ?? null,
         leaderboardRank: p?.leaderboardRank ?? null,
-        lastMatchAt: last.ok ? last.value : null,
+        lastMatchAt: lastMatches.get(f.accountId32),
       };
     });
     return { items, total: follows.length, page: current, pageCount };

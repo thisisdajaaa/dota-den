@@ -31,10 +31,17 @@ export interface FollowsPort {
   find(userId: string, accountId32: number): Promise<PlayerFollow | null>;
 }
 
+/** A saved public profile, with its latest public match time once that has been looked up. */
+export interface SavedProfile extends PlayerProfileSnapshot {
+  fetchedAt: Date;
+  /** `at` is null when OpenDota listed no public match. */
+  lastMatch?: { at: Date | null; fetchedAt: Date };
+}
+
 /** Saved public profiles (names, avatars, ranks), so lists don't call OpenDota per row. */
 export interface ProfileSnapshotStore {
-  getMany(
-    accountIds: readonly number[],
-  ): Promise<Map<number, PlayerProfileSnapshot & { fetchedAt: Date }>>;
+  getMany(accountIds: readonly number[]): Promise<Map<number, SavedProfile>>;
   save(profile: PlayerProfileSnapshot, fetchedAt: Date): Promise<void>;
+  /** Only for players already saved (a no-op otherwise). */
+  saveLastMatch(accountId32: number, at: Date | null, fetchedAt: Date): Promise<void>;
 }

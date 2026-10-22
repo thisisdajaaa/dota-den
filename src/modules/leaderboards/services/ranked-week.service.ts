@@ -18,11 +18,17 @@ export class RankedWeekService {
         bestHero(accountId32: number): Promise<RankedWeekInput["bestHero"]>;
       };
       profiles: {
-        publicProfile(accountId32: number): Promise<{
-          personaName: string | null;
-          avatarUrl: string | null;
-          matchHistory?: string | null;
-        } | null>;
+        /** One lookup for many players; null for players with no public profile available. */
+        publicProfiles(accountIds: readonly number[]): Promise<
+          Map<
+            number,
+            {
+              personaName: string | null;
+              avatarUrl: string | null;
+              matchHistory?: string | null;
+            } | null
+          >
+        >;
       };
     },
   ) {}
@@ -39,27 +45,31 @@ export class RankedWeekService {
     const inputs = await mapLimit(ids, CONCURRENCY, (id) => week.recordFor(id).catch(() => null));
     const known = inputs.filter((i): i is NonNullable<typeof i> => i !== null);
     const { rows, idle } = rankWeek(known);
+    // Profiles (names, and whether idle players' history is public) and the top rows' best
+    // heroes don't depend on each other: look them up together.
+    const [named, best] = await Promise.all([
+      profiles
+        .publicProfiles([...rows.map((r) => r.accountId32), ...idle])
+        .catch(() => new Map<number, null>()),
+      // Best heroes for the top of the board only: each is one more OpenDota call.
+      mapLimit(rows.slice(0, BEST_HERO_ROWS), CONCURRENCY, (r) =>
+        week.bestHero(r.accountId32).catch(() => null),
+      ),
+    ]);
+    best.forEach((b, i) => (rows[i].bestHero = b));
     // OpenDota reports 0–0 for private match data too: only call it "didn't play" when the
     // profile says the history is fully public.
-    const idleProfiles = await mapLimit(idle, CONCURRENCY, (id) =>
-      profiles.publicProfile(id).catch(() => null),
-    );
-    const reallyIdle = idleProfiles.filter((p) => p?.matchHistory === "full").length;
-    // Best heroes for the top of the board only: each is one more OpenDota call.
-    const best = await mapLimit(rows.slice(0, BEST_HERO_ROWS), CONCURRENCY, (r) =>
-      week.bestHero(r.accountId32).catch(() => null),
-    );
-    best.forEach((b, i) => (rows[i].bestHero = b));
-    const named = await mapLimit(rows, CONCURRENCY, (r) =>
-      profiles.publicProfile(r.accountId32).catch(() => null),
-    );
+    const reallyIdle = idle.filter((id) => named.get(id)?.matchHistory === "full").length;
     return {
-      rows: rows.map((r, i) => ({
-        ...r,
-        name: named[i]?.personaName ?? null,
-        avatarUrl: named[i]?.avatarUrl ?? null,
-        you: r.accountId32 === viewer.accountId32,
-      })),
+      rows: rows.map((r) => {
+        const p = named.get(r.accountId32);
+        return {
+          ...r,
+          name: p?.personaName ?? null,
+          avatarUrl: p?.avatarUrl ?? null,
+          you: r.accountId32 === viewer.accountId32,
+        };
+      }),
       idle: reallyIdle,
       unknown: ids.length - known.length + (idle.length - reallyIdle),
       friendsIncomplete: found.incomplete,

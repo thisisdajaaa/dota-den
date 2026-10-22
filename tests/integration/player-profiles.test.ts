@@ -31,4 +31,29 @@ describe("PlayerProfilesRepository", () => {
     const ttl = (await db.collection("player_profiles").indexes()).find((i) => i.name === "ttl");
     expect(ttl?.expireAfterSeconds).toBe(30 * 24 * 3600);
   });
+
+  it("saves last-match times only for players already saved", async () => {
+    const repo = new PlayerProfilesRepository(async () => db);
+    const at = new Date("2026-10-15T00:00:00Z");
+    await repo.save(
+      {
+        accountId32: 22203,
+        personaName: "C",
+        avatarUrl: null,
+        matchHistory: "full",
+        rankTier: null,
+        leaderboardRank: null,
+      },
+      at,
+    );
+    expect((await repo.getMany([22203])).get(22203)?.lastMatch).toBeUndefined();
+    await repo.saveLastMatch(22203, new Date("2026-10-14T20:00:00Z"), at);
+    await repo.saveLastMatch(22204, null, at);
+    const got = await repo.getMany([22203, 22204]);
+    expect(got.get(22203)?.lastMatch).toEqual({
+      at: new Date("2026-10-14T20:00:00Z"),
+      fetchedAt: at,
+    });
+    expect(got.has(22204)).toBe(false);
+  });
 });
