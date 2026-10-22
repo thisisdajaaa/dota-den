@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+import { gzipSync } from "node:zlib";
 import { describe, expect, it, vi } from "vitest";
 import type { JobRunRepository } from "@/modules/jobs/jobs.ports";
 import { JobRunner } from "@/modules/jobs/services/job-runner.service";
@@ -6,6 +8,7 @@ import { InlineJobQueue } from "@/modules/jobs/infrastructure/inline-job-queue";
 import { QStashJobQueue } from "@/modules/jobs/infrastructure/qstash-job-queue";
 import { ProviderGateway, type GatewayResponse } from "@/common/providers/provider-gateway";
 import {
+  COMPRESS_OVER_BYTES,
   MAX_SHARED_BODY_BYTES,
   RedisResponseCache,
   RedisUpstreamBudget,
@@ -48,12 +51,61 @@ describe("RedisResponseCache", () => {
     expect(redis.set).toHaveBeenCalledWith(key, expect.any(String), { px: 60_000 });
   });
 
-  it("doesn't share very large responses", async () => {
+  it("doesn't share responses still too large after compression", async () => {
     const redis = fakeRedis();
     const cache = new RedisResponseCache(redis, { prefix: "p" });
-    const big = "x".repeat(MAX_SHARED_BODY_BYTES);
+    // Random data barely compresses.
+    const big = randomBytes(MAX_SHARED_BODY_BYTES).toString("base64");
     await cache.set("https://x/big", { ok: true, status: 200, body: big }, 1_000);
     expect(redis.data.size).toBe(0);
+  });
+
+  it("gzips large responses, so ones over the limit as JSON are still shared", async () => {
+    const redis = fakeRedis();
+    const cache = new RedisResponseCache(redis, { prefix: "p", now: () => 1_000 });
+    // Shaped like OpenDota's ability constants: well over the limit as plain JSON.
+    const body = Object.fromEntries(
+      Array.from({ length: 8_000 }, (_, i) => [
+        `ability_${i}`,
+        { dname: `Ability ${i}`, desc: "Deals damage to enemies in an area.", cd: [12, 10, 8] },
+      ]),
+    );
+    const value = { ok: true as const, status: 200, body };
+    expect(JSON.stringify({ value, expiresAt: 0 }).length).toBeGreaterThan(MAX_SHARED_BODY_BYTES);
+    await cache.set("https://x/abilities", value, 60_000);
+    const [stored] = [...redis.data.values()];
+    expect(stored.startsWith("gz:")).toBe(true);
+    expect(stored.length).toBeLessThanOrEqual(MAX_SHARED_BODY_BYTES);
+    expect(await cache.get("https://x/abilities")).toEqual({ value, expiresAt: 61_000 });
+  });
+
+  it("keeps small responses as plain JSON and still reads entries written before compression", async () => {
+    const redis = fakeRedis();
+    const cache = new RedisResponseCache(redis, { prefix: "p", now: () => 1_000 });
+    const small = { ok: true as const, status: 200, body: { a: 1 } };
+    await cache.set("https://x/small", small, 60_000);
+    const [key] = [...redis.data.keys()];
+    expect(redis.data.get(key)).toBe(JSON.stringify({ value: small, expiresAt: 61_000 }));
+
+    const big = { ok: true as const, status: 200, body: "y".repeat(COMPRESS_OVER_BYTES * 2) };
+    redis.data.set(key, JSON.stringify({ value: big, expiresAt: 5_000 }));
+    expect(await cache.get("https://x/small")).toEqual({ value: big, expiresAt: 5_000 });
+  });
+
+  it("fails on a corrupt compressed entry (the gateway treats that as a miss)", async () => {
+    const redis = fakeRedis();
+    const cache = new RedisResponseCache(redis, { prefix: "p" });
+    await cache.set(
+      "https://x/a",
+      { ok: true, status: 200, body: "z".repeat(COMPRESS_OVER_BYTES * 2) },
+      1_000,
+    );
+    const [key] = [...redis.data.keys()];
+    redis.data.set(key, "gz:not-gzip");
+    await expect(cache.get("https://x/a")).rejects.toThrow();
+    // A real gzip of something that isn't an entry is also refused rather than trusted.
+    redis.data.set(key, `gz:${gzipSync("null").toString("base64")}`);
+    expect(await cache.get("https://x/a")).toBeNull();
   });
 });
 
