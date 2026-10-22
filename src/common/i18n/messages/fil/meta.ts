@@ -114,7 +114,7 @@ export const meta: MessageTree<typeof en> = {
     kicker: "Mabilisang tingin",
     title: "Pinakamalakas na hero ngayon",
     description:
-      "Pinakamataas na win rate sa Ancient hanggang Immortal para sa bawat uri ng role, at hinihila papunta sa 50% ang maliliit na sample. Pumili ng role sa itaas para sa buong ranking na may lane data at tournament.",
+      "Ang pinakamahuhusay na hero sa Ancient hanggang Immortal para sa bawat uri ng role, ayon sa kung saan talaga sila nilalaro. Pumili ng role sa itaas para sa buong ranking na may tournament.",
     loading: "Nilo-load ang overview ng meta",
     pools: {
       carry: "Mga carry",
@@ -125,7 +125,7 @@ export const meta: MessageTree<typeof en> = {
     winRate: "{rate} win rate",
     fullRanking: "Buong ranking:",
     source:
-      "Galing sa mga public na laro sa OpenDota, na-update {ago}. Kung walang lane data, hindi matukoy kung mid o offlane, o soft o hard support, kaya pinagsama sila; isang beses lang lumalabas ang bawat hero.",
+      "Galing sa mga high-rank na laro at lane data ng OpenDota, na-update {ago}. Isang beses lang lumalabas ang bawat hero, sa role kung saan siya pinakamadalas laruin.",
     empty: "Kulang pa ang data para sa grupong ito ngayon.",
     contested: {
       kicker: "Mga tournament",

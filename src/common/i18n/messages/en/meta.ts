@@ -106,7 +106,7 @@ export const meta = {
     kicker: "At a glance",
     title: "Strongest heroes right now",
     description:
-      "Best win rates at Ancient to Immortal for each kind of role, with small samples pulled toward 50%. Pick a role above for the full ranking with lane data and tournaments.",
+      "The best heroes at Ancient to Immortal for each kind of role, placed by where they're actually played. Pick a role above for the full ranking with tournaments.",
     loading: "Loading the meta overview",
     pools: {
       carry: "Carries",
@@ -117,7 +117,7 @@ export const meta = {
     winRate: "{rate} win rate",
     fullRanking: "Full ranking:",
     source:
-      "Source: OpenDota public games, updated {ago}. Without lane data mid can't be told from offlane, or soft from hard support, so they're grouped; each hero is listed once.",
+      "Source: OpenDota high-rank games and lane data, updated {ago}. Each hero is listed once, in the role it's played most.",
     empty: "Not enough data for this group right now.",
     contested: {
       kicker: "Tournaments",
