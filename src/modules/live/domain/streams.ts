@@ -59,13 +59,22 @@ export interface LanguageOption {
   streams: number;
 }
 
+/** Codes the sites spell differently for one language: Twitch says "tl", Kick "fil". */
+const SAME_LANGUAGE: Record<string, string> = { tl: "fil" };
+
+/** One code per language across sites ("other" when the site didn't say). */
+export function languageCode(language: string): string {
+  const code = language.toLowerCase() || "other";
+  return SAME_LANGUAGE[code] ?? code;
+}
+
 /** The languages streams are in, most streams first (then by code). */
 export function languageOptions(
   streams: readonly Pick<LiveStream, "language">[],
 ): LanguageOption[] {
   const counts = new Map<string, number>();
   for (const s of streams) {
-    const code = s.language.toLowerCase() || "other";
+    const code = languageCode(s.language);
     counts.set(code, (counts.get(code) ?? 0) + 1);
   }
   return [...counts]
@@ -79,7 +88,7 @@ export function inLanguage<T extends Pick<LiveStream, "language">>(
   language: string | null,
 ): T[] {
   if (!language) return [...streams];
-  return streams.filter((s) => (s.language.toLowerCase() || "other") === language);
+  return streams.filter((s) => languageCode(s.language) === language);
 }
 
 /** A channel the signed-in user follows. Unique per user by (platform, channelId). */

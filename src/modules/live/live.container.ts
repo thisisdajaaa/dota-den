@@ -5,7 +5,9 @@ import { getDb } from "@/common/db/mongo";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
 import { OpenDotaLiveSource } from "./infrastructure/opendota-live-source";
-import { TwitchDirectory, type SharedCache } from "./infrastructure/twitch-directory";
+import type { SharedCache } from "./infrastructure/directory-cache";
+import { KickDirectory } from "./infrastructure/kick-directory";
+import { TwitchDirectory } from "./infrastructure/twitch-directory";
 import { LiveController } from "./live.controller";
 import type { StreamDirectory } from "./live.ports";
 import { LiveService } from "./live.service";
@@ -38,12 +40,27 @@ function twitchDirectory(): TwitchDirectory | null {
     : null;
 }
 
+/** Kick is optional too: without keys the hub lists Twitch only. */
+function kickDirectory(): KickDirectory | null {
+  const { KICK_CLIENT_ID, KICK_CLIENT_SECRET, KICK_API_BASE_URL, KICK_AUTH_URL } = env();
+  return KICK_CLIENT_ID && KICK_CLIENT_SECRET
+    ? new KickDirectory({
+        clientId: KICK_CLIENT_ID,
+        clientSecret: KICK_CLIENT_SECRET,
+        apiBaseUrl: KICK_API_BASE_URL ?? "https://api.kick.com/public/v1",
+        authUrl: KICK_AUTH_URL ?? "https://id.kick.com/oauth/token",
+        shared: sharedCache(),
+      })
+    : null;
+}
+
 /**
- * Every streaming site with keys set. Each is a StreamDirectory; the services merge them, so
- * another site (Kick) only needs an adapter here.
+ * Every streaming site with keys set, in display order. Each is a StreamDirectory; the
+ * services merge them, and one site being down still shows the others.
  */
 function directories(): StreamDirectory[] {
-  return [twitchDirectory()].filter((d): d is TwitchDirectory => d !== null);
+  const configured: (StreamDirectory | null)[] = [twitchDirectory(), kickDirectory()];
+  return configured.filter((d): d is StreamDirectory => d !== null);
 }
 
 // One per server instance, so app tokens and caches are shared.

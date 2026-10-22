@@ -4,6 +4,7 @@ import type { ChannelLookup, StreamDirectory } from "../live.ports";
 import { platformImage } from "../domain/platform";
 import { batches, type ChannelHit } from "../domain/streams";
 import type { LiveStream } from "../domain/watch";
+import { sharedGet, sharedSet, TtlCache, type SharedCache } from "./directory-cache";
 
 /** Twitch's category id for Dota 2. */
 const DOTA_2_GAME_ID = "29595";
@@ -61,12 +62,6 @@ const SearchSchema = z.object({
 
 export type LiveStreamList = LiveStream[];
 
-/** A string store every server can read (Redis), with expiry. */
-export interface SharedCache {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, ttlSeconds: number): Promise<void>;
-}
-
 export interface TwitchOptions {
   clientId: string;
   clientSecret: string;
@@ -74,34 +69,6 @@ export interface TwitchOptions {
   authUrl: string;
   /** Shares the stream list and search results between servers. Optional. */
   shared?: SharedCache;
-}
-
-/** A small per-instance cache with expiry; drops the oldest entry when full. */
-class TtlCache<V> {
-  private readonly entries = new Map<string, { at: number; value: V }>();
-  constructor(
-    private readonly ttlMs: number,
-    private readonly max: number,
-  ) {}
-
-  get(key: string): V | undefined {
-    const e = this.entries.get(key);
-    if (!e) return undefined;
-    if (Date.now() - e.at >= this.ttlMs) {
-      this.entries.delete(key);
-      return undefined;
-    }
-    return e.value;
-  }
-
-  set(key: string, value: V): void {
-    this.entries.delete(key);
-    if (this.entries.size >= this.max) {
-      const oldest = this.entries.keys().next().value;
-      if (oldest !== undefined) this.entries.delete(oldest);
-    }
-    this.entries.set(key, { at: Date.now(), value });
-  }
 }
 
 const toStream = (s: z.infer<typeof StreamSchema>): LiveStream => ({
@@ -279,18 +246,12 @@ export class TwitchDirectory implements StreamDirectory {
     return new URL(`${this.opts.apiBaseUrl}${path}`);
   }
 
-  private async sharedGet<T>(key: string): Promise<T | null> {
-    const raw = await this.opts.shared?.get(key).catch(() => null);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return null;
-    }
+  private sharedGet<T>(key: string): Promise<T | null> {
+    return sharedGet<T>(this.opts.shared, key);
   }
 
-  private async sharedSet(key: string, value: unknown, ttlSeconds: number): Promise<void> {
-    await this.opts.shared?.set(key, JSON.stringify(value), ttlSeconds).catch(() => {});
+  private sharedSet(key: string, value: unknown, ttlSeconds: number): Promise<void> {
+    return sharedSet(this.opts.shared, key, value, ttlSeconds);
   }
 
   private warn(event: string, err: unknown): void {

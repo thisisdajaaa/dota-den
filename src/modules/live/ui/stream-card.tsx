@@ -10,6 +10,7 @@ import { ChannelAvatar } from "./channel-avatar";
 import { GameHint } from "./game-hint";
 import { PlatformBadge } from "./platform-badge";
 import { useImageFailed } from "./use-image-failed";
+import { languageCode } from "../domain/streams";
 
 /**
  * One live stream in the grid (from any site, badged): a preview that plays it in the page,
@@ -55,7 +56,7 @@ export function StreamCard({
         >
           <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-white/[0.06] to-black/40">
             {preview && !imageFailed ? (
-              // eslint-disable-next-line @next/next/no-img-element -- Twitch CDN preview, already sized
+              // eslint-disable-next-line @next/next/no-img-element -- Twitch or Kick CDN preview, already sized
               <img
                 src={preview}
                 alt=""
@@ -78,7 +79,7 @@ export function StreamCard({
             </span>
             <span className="absolute top-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[0.65rem] font-semibold text-white/90 uppercase">
               <span className="sr-only">{languageName}</span>
-              <span aria-hidden>{stream.language || "—"}</span>
+              <span aria-hidden>{stream.language ? languageCode(stream.language) : "—"}</span>
             </span>
             <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-black/70 px-1.5 py-0.5 text-xs font-medium text-white tabular-nums">
               <Eye aria-hidden className="size-3.5" />

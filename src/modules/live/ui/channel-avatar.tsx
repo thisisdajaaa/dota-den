@@ -31,7 +31,7 @@ export function ChannelAvatar({
       )}
     >
       {url && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Twitch CDN image, already sized
+        // eslint-disable-next-line @next/next/no-img-element -- Twitch or Kick CDN image, already sized
         <img
           src={url}
           alt=""

@@ -107,6 +107,12 @@ const EnvSchema = z
     /** Overrides for tests (fixture server). Default to Twitch's. */
     TWITCH_API_BASE_URL: z.url().optional(),
     TWITCH_AUTH_URL: z.url().optional(),
+    /** Kick app credentials (kick.com/settings/developer): Kick streams on /live. Unset: Twitch only. */
+    KICK_CLIENT_ID: z.string().min(1).optional(),
+    KICK_CLIENT_SECRET: z.string().min(1).optional(),
+    /** Overrides for tests (fixture server). Default to Kick's. */
+    KICK_API_BASE_URL: z.url().optional(),
+    KICK_AUTH_URL: z.url().optional(),
     ADMIN_STEAM_IDS: z
       .string()
       .optional()

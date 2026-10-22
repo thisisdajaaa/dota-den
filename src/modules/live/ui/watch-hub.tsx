@@ -300,6 +300,7 @@ export function WatchHub({
 
       {platforms.length > 0 && (
         <ChannelSearch
+          platforms={platforms}
           watching={watching}
           onWatch={(h) => {
             const stream = byKey.get(channelKey(h.platform, h.login));

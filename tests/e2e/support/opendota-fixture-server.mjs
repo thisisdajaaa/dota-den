@@ -868,6 +868,10 @@ const routes = [
   [/^\/twitch\/helix\/streams$/, (_m, url) => twitchStreams(url)],
   [/^\/twitch\/helix\/users$/, (_m, url) => twitchUsers(url)],
   [/^\/twitch\/helix\/search\/channels$/, (_m, url) => twitchSearch(url)],
+  // Kick's public API for live streams and channels.
+  [/^\/kick\/oauth\/token$/, () => ({ access_token: "fixture-kick", expires_in: 5184000 })],
+  [/^\/kick\/public\/v1\/livestreams$/, (_m, url) => kickLivestreams(url)],
+  [/^\/kick\/public\/v1\/channels$/, (_m, url) => kickChannels(url)],
   [/^\/api\/constants\/patch$/, () => [{ name: "7.41", date: "2026-03-24T00:00:00Z", id: 60 }]],
   [/^\/api\/constants\/heroes$/, () => HEROES],
   [/^\/api\/constants\/item_ids$/, () => Object.fromEntries(ITEMS.map((i) => [i.id, i.key]))],
@@ -970,6 +974,74 @@ function twitchSearch(url) {
         broadcaster_language: c.live?.language ?? "en",
         thumbnail_url: `${TWITCH_CDN}/jtv_user_pictures/${c.login}-profile_image-300x300.png`,
       })),
+  };
+}
+
+// Kick: channels (by user id and slug), and which are live in Dota 2. No display names or
+// name search on Kick's public API; profile pictures only on live streams.
+const KICK_IMAGES = "https://images.kick.com";
+const KICK_FILES = "https://files.kick.com";
+const kickChannel = (id, slug, live) => ({ id, slug, live });
+const KICK_CHANNELS = [
+  kickChannel(7001, "kickcaster", {
+    title: "Kick ranked grind, road to immortal",
+    viewers: 5000,
+    language: "en",
+  }),
+  kickChannel(7002, "kick_pinoy", { title: "Laro tayo, ranked", viewers: 300, language: "fil" }),
+  // Mature streams stay out of the grid.
+  kickChannel(7003, "mature_kick", {
+    title: "Late night Dota",
+    viewers: 8000,
+    language: "en",
+    mature: true,
+  }),
+  kickChannel(7100, "kickoffline", null),
+];
+const kickLivestream = (c) => ({
+  broadcaster_user_id: c.id,
+  channel_id: c.id + 100000,
+  slug: c.slug,
+  stream_title: c.live.title,
+  language: c.live.language,
+  has_mature_content: !!c.live.mature,
+  viewer_count: c.live.viewers,
+  thumbnail: `${KICK_IMAGES}/video_thumbnails/${c.slug}/480.webp`,
+  started_at: "2026-10-01T10:00:00Z",
+  category: { id: 14, name: "Dota 2", thumbnail: `${KICK_FILES}/images/subcategories/14.jpg` },
+  profile_picture: `${KICK_FILES}/images/user/${c.id}/profile_image/${c.slug}.webp`,
+});
+function kickLivestreams(url) {
+  const ids = url.searchParams.getAll("broadcaster_user_id").map(Number);
+  const live = KICK_CHANNELS.filter((c) => c.live && (!ids.length || ids.includes(c.id)));
+  return {
+    data: live.sort((a, b) => b.live.viewers - a.live.viewers).map(kickLivestream),
+    message: "OK",
+  };
+}
+function kickChannels(url) {
+  const ids = url.searchParams.getAll("broadcaster_user_id").map(Number);
+  const slugs = url.searchParams.getAll("slug").map((s) => s.toLowerCase());
+  return {
+    data: KICK_CHANNELS.filter((c) => ids.includes(c.id) || slugs.includes(c.slug)).map((c) => ({
+      broadcaster_user_id: c.id,
+      slug: c.slug,
+      channel_description: "",
+      banner_picture: "",
+      stream: {
+        url: "",
+        key: "",
+        is_live: !!c.live,
+        is_mature: !!c.live?.mature,
+        language: c.live?.language ?? "en",
+        start_time: c.live ? "2026-10-01T10:00:00Z" : "0001-01-01T00:00:00Z",
+        viewer_count: c.live?.viewers ?? 0,
+        thumbnail: c.live ? `${KICK_IMAGES}/video_thumbnails/${c.slug}/480.webp` : "",
+      },
+      stream_title: c.live?.title ?? "",
+      category: { id: 14, name: "Dota 2", thumbnail: "" },
+    })),
+    message: "OK",
   };
 }
 
