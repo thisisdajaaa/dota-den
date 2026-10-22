@@ -19,9 +19,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { DateTimePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useT } from "@/common/i18n/client";
+import { EARLIEST_OBSERVATION } from "../domain/mmr-entry";
 import type { MmrEntryDto } from "../dtos/responses/mmr-entry.dto";
 import { MmrEntryInputSchema } from "../schemas/mmr-entry.schema";
 
@@ -50,6 +52,8 @@ export function MmrEntryDialog({
   const fileInput = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState(false);
   const [readNote, setReadNote] = useState<{ ok: boolean; text: string } | null>(null);
+  // The latest pickable moment: refreshed each time the dialog opens.
+  const [now, setNow] = useState(() => new Date());
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(MmrEntryInputSchema),
@@ -63,6 +67,7 @@ export function MmrEntryDialog({
   // "Defaults to now" means when you open the dialog, not when the page loaded: a tab left
   // open through a session would otherwise log the new MMR at the old time.
   function onOpenChange(next: boolean) {
+    if (next) setNow(new Date());
     if (next && !editing && !form.getFieldState("observedAt").isDirty) {
       form.setValue("observedAt", toLocalInput(new Date()));
     }
@@ -230,15 +235,26 @@ export function MmrEntryDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="observedAt">{t("mmr.entry.when")}</FieldLabel>
-                  <Input
-                    {...field}
-                    value={String(field.value ?? "")}
+                  <FieldLabel id="observedAt-label" htmlFor="observedAt">
+                    {t("mmr.entry.when")}
+                  </FieldLabel>
+                  <DateTimePicker
                     id="observedAt"
-                    type="datetime-local"
+                    aria-labelledby="observedAt-label"
+                    aria-describedby="observedAt-hint"
+                    value={String(field.value ?? "")}
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      field.onBlur();
+                    }}
+                    min={EARLIEST_OBSERVATION}
+                    max={now}
+                    required
                     aria-invalid={fieldState.invalid}
                   />
-                  <FieldDescription>{t("mmr.entry.whenHint")}</FieldDescription>
+                  <FieldDescription id="observedAt-hint">
+                    {t("mmr.entry.whenHint")}
+                  </FieldDescription>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}

@@ -31,6 +31,17 @@ export const common = {
     disclaimer:
       "Dota Den is an unofficial fan project. It is not affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation. Match data is provided by OpenDota where available; patch notes link to their official source.",
   },
+  datePicker: {
+    pick: "Pick a date",
+    time: "Time",
+    previousMonth: "Previous month",
+    nextMonth: "Next month",
+    month: "Month",
+    year: "Year",
+    navigation: "Change month",
+    today: "Today",
+    selected: "selected",
+  },
   language: { label: "Language", saved: "Language changed" },
   actions: {
     save: "Save",
