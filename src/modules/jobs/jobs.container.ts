@@ -10,6 +10,7 @@ import { draftInsights } from "@/modules/drafts";
 import { emailDigest } from "@/modules/email";
 import { matchExtrasService, matchesService, matchSyncService } from "@/modules/matches";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/domain/sync-policy";
+import { streamerAlerts as goLiveAlerts } from "@/modules/live";
 import { metaService } from "@/modules/meta";
 import { medalService } from "@/modules/mmr";
 import { notificationTriggers } from "@/modules/notifications";
@@ -60,6 +61,10 @@ export const jobsService = new JobsService({
   backfillCooldownMs: BACKFILL_COOLDOWN_MS,
   warmDraftData,
   warmMeta,
+  streamerAlerts: async () => {
+    const run = await goLiveAlerts.run();
+    return { ...run };
+  },
   logger,
 });
 
@@ -105,6 +110,7 @@ function qstashReceiver(): Receiver | null {
 
 export const jobsController = new JobsController({
   runner: () => jobRunner,
+  streamerAlerts: () => jobsService.runStreamerAlerts(),
   cron: cronService,
   verifier: qstashReceiver,
   appUrl: () => env().APP_URL,

@@ -1,6 +1,6 @@
 import type { DataOwner } from "@/common/privacy/user-data";
 import {
-  DEFAULT_PREFS,
+  withDefaults,
   type NotificationKind,
   type NotificationMessage,
   type NotificationPrefs,
@@ -43,7 +43,7 @@ export class NotificationService {
     return {
       enabled: this.enabled,
       endpoints: devices.map((d) => d.endpoint),
-      prefs: prefs ?? DEFAULT_PREFS,
+      prefs: withDefaults(prefs),
     };
   }
 
@@ -59,13 +59,15 @@ export class NotificationService {
     return this.deps.subscriptions.remove(userId, endpoint);
   }
 
-  async setPrefs(userId: string, prefs: NotificationPrefs): Promise<NotificationPrefs> {
-    await this.deps.settings.savePrefs(userId, prefs, this.now());
-    return prefs;
+  /** Saves the kinds sent; kinds left out keep their current setting. */
+  async setPrefs(userId: string, prefs: Partial<NotificationPrefs>): Promise<NotificationPrefs> {
+    const next = { ...(await this.prefs(userId)), ...prefs };
+    await this.deps.settings.savePrefs(userId, next, this.now());
+    return next;
   }
 
   async prefs(userId: string): Promise<NotificationPrefs> {
-    return (await this.deps.settings.prefs(userId)) ?? DEFAULT_PREFS;
+    return withDefaults(await this.deps.settings.prefs(userId));
   }
 
   subscribedUserIds(): Promise<string[]> {

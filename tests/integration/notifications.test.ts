@@ -78,7 +78,12 @@ describe("NotificationLogRepository", () => {
 describe("NotificationSettingsRepository", () => {
   it("saves a player's choices and deletes them with the account", async () => {
     expect(await settings.prefs("u1")).toBeNull();
-    const prefs = { session_recap: true, weekly_recap: false, patch_heroes: true };
+    const prefs = {
+      session_recap: true,
+      weekly_recap: false,
+      patch_heroes: true,
+      streamer_live: false,
+    };
     await settings.savePrefs("u1", prefs, now);
     expect(await settings.prefs("u1")).toEqual(prefs);
     expect(await settings.deleteForOwner(owner)).toBe(1);

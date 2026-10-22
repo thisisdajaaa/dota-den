@@ -4,6 +4,7 @@ import { getDb } from "@/common/db/mongo";
 import { usersService } from "@/modules/identity";
 import { matchQueries } from "@/modules/matches";
 import { playersService } from "@/modules/players";
+import { plusService } from "@/modules/plus";
 import { togetherService } from "@/modules/together";
 import { INVITE_TOKEN_LENGTH } from "./domain/group";
 import { GroupsController } from "./groups.controller";
@@ -79,6 +80,7 @@ export const groupsService = new GroupsService({
   repository: groupsRepository,
   profiles,
   newToken,
+  groupLimit: (userId, base) => plusService.limit(userId, base),
 });
 
 export const groupPageService = new GroupPageService({

@@ -6,7 +6,7 @@
 
 /** Members per group, owner included (two full stacks). */
 export const MAX_GROUP_MEMBERS = 10;
-/** Groups a player can be in at once, owned or joined. */
+/** Groups a player can be in at once, owned or joined (Plus doubles it, ADR 0013). */
 export const MAX_GROUPS_PER_USER = 5;
 export const MIN_GROUP_NAME = 2;
 export const MAX_GROUP_NAME = 40;
@@ -52,10 +52,11 @@ export function joinRefusal(
   group: Pick<Group, "members">,
   userId: string,
   groupsJoined: number,
+  maxGroups: number = MAX_GROUPS_PER_USER,
 ): JoinRefusal | null {
   if (isMember(group, userId)) return "already_member";
   if (group.members.length >= MAX_GROUP_MEMBERS) return "group_full";
-  if (groupsJoined >= MAX_GROUPS_PER_USER) return "too_many_groups";
+  if (groupsJoined >= maxGroups) return "too_many_groups";
   return null;
 }
 

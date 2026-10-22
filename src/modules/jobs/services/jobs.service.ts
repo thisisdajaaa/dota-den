@@ -18,6 +18,8 @@ export class JobsService {
       warmDraftData: () => Promise<Array<{ key: string; ok: boolean }>>;
       /** The Meta page's slow tournament queries. */
       warmMeta: () => Promise<Array<{ key: string; ok: boolean }>>;
+      /** Plus go-live alerts (one run). Optional: without it the job does nothing. */
+      streamerAlerts?: () => Promise<Record<string, unknown>>;
       logger: Pick<Logger, "info">;
       now?: () => number;
     },
@@ -29,6 +31,9 @@ export class JobsService {
       "match-backfill": (payload) => this.backfillChunk(payload),
       "draft-meta-warm": () => this.warmDraftData(),
       "meta-warm": () => this.warmMeta(),
+      "streamer-alerts": async () => {
+        await this.runStreamerAlerts();
+      },
     };
   }
 
@@ -90,6 +95,15 @@ export class JobsService {
     const failed = results.filter((r) => !r.ok).map((r) => r.key);
     this.deps.logger.info("meta_caches_refreshed", { results });
     if (failed.length) throw new Error(`meta cache refresh failed: ${failed.join(", ")}`);
+  }
+
+  /** One go-live alert run; throws (so the queue retries) only when the run itself fails. */
+  async runStreamerAlerts(): Promise<Record<string, unknown> | null> {
+    if (!this.deps.streamerAlerts) return null;
+    const run = await this.deps.streamerAlerts();
+    // Quiet when there was nothing to do (most runs), so logs stay small.
+    if (!run.skipped) this.deps.logger.info("streamer_alerts_run", run);
+    return run;
   }
 
   private now() {

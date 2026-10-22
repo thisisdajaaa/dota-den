@@ -45,6 +45,10 @@ export const notifications = {
       label: "Patch changes your heroes",
       help: "When a new patch changes heroes you play.",
     },
+    streamer_live: {
+      label: "Streamer goes live (Plus)",
+      help: "Within a few minutes of a channel you follow on /live starting a stream. Once per stream.",
+    },
   },
   push: {
     session: {
@@ -64,6 +68,11 @@ export const notifications = {
     list: "{items} and {last}",
     listMore: "{items} and {more} more",
     heroFallback: "Hero #{id}",
+    live: {
+      title: "{name} is live",
+      body: "{title}",
+      bodyNoTitle: "Streaming now on {site}.",
+    },
     test: {
       title: "Notifications are working",
       body: "You'll hear from Dota Den here. Tap to open your notification settings.",

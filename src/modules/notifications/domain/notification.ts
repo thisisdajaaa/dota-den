@@ -1,7 +1,15 @@
 import { addDays, weekday, type DayKey } from "@/common/time/day-key";
 
-/** What a player can be notified about. Each can be turned off separately. */
-export const NOTIFICATION_KINDS = ["session_recap", "weekly_recap", "patch_heroes"] as const;
+/**
+ * What a player can be notified about. Each can be turned off separately. `streamer_live`
+ * (a followed channel went live) is a Plus feature (ADR 0013): only sent to Plus players.
+ */
+export const NOTIFICATION_KINDS = [
+  "session_recap",
+  "weekly_recap",
+  "patch_heroes",
+  "streamer_live",
+] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export type NotificationPrefs = Record<NotificationKind, boolean>;
@@ -11,7 +19,16 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   session_recap: true,
   weekly_recap: true,
   patch_heroes: true,
+  streamer_live: true,
 };
+
+/** Kinds only Plus players get (the settings hide them for everyone else). */
+export const PLUS_NOTIFICATION_KINDS: readonly NotificationKind[] = ["streamer_live"];
+
+/** Saved settings from before a kind existed get that kind's default. */
+export function withDefaults(prefs: Partial<NotificationPrefs> | null): NotificationPrefs {
+  return { ...DEFAULT_PREFS, ...(prefs ?? {}) };
+}
 
 /** What the service worker shows. `tag` replaces an older notification with the same tag. */
 export interface NotificationMessage {

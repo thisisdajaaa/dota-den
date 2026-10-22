@@ -25,6 +25,8 @@ export class JobsController {
   constructor(
     private readonly deps: {
       runner: () => JobRunner;
+      /** Plus go-live alerts, for schedulers other than QStash (CRON_SECRET bearer). */
+      streamerAlerts?: () => Promise<Record<string, unknown> | null>;
       cron: CronService;
       /** Null when QStash isn't configured: job delivery then doesn't exist (404). */
       verifier: () => JobSignatureVerifier | null;
@@ -76,6 +78,19 @@ export class JobsController {
     ServiceResponse.success(
       await asBackgroundWork(() => this.deps.cron.runMatchSync("cron")),
       "Match sync finished",
+    ),
+  );
+
+  /**
+   * GET /api/cron/streamer-alerts: one go-live alert run (ADR 0013). The QStash schedule is the
+   * normal trigger; this is the fallback for any other scheduler (CRON_SECRET bearer).
+   */
+  cronStreamerAlerts = handler({ guard: requireCron }, async () =>
+    ServiceResponse.success(
+      (await asBackgroundWork(() => this.deps.streamerAlerts?.() ?? Promise.resolve(null))) ?? {
+        skipped: "not_configured",
+      },
+      "Streamer alerts finished",
     ),
   );
 

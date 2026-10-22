@@ -11,12 +11,11 @@ import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
 import type { FollowOwner, TrackedPlayersPage } from "@/modules/players";
 import type { PlayerProviderError as ProviderError } from "@/modules/players";
-import { MAX_FOLLOWS_PER_USER } from "@/modules/players/domain/follow";
 import { parsePlayerQuery, type LookupError } from "@/modules/players/domain/player-lookup";
 import { PlayerSearchForm } from "@/modules/players/ui/player-search-form";
 import { SearchResults } from "@/modules/players/ui/search-results";
 import { TrackedPlayers } from "@/modules/players/ui/tracked-players";
-import { ownerOf, playersService } from "@/modules/players";
+import { followService, ownerOf, playersService } from "@/modules/players";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -144,12 +143,13 @@ async function TrackedSection({
   now: Date;
   pageHref: (page: number) => string;
 }) {
-  const tracked = await playersService
-    .trackedPlayers(owner, page)
-    .catch((e: unknown): TrackedPlayersPage | "error" => {
+  const [tracked, limit] = await Promise.all([
+    playersService.trackedPlayers(owner, page).catch((e: unknown): TrackedPlayersPage | "error" => {
       logger.error("tracked_players_failed", { error: e });
       return "error";
-    });
+    }),
+    followService.limit(owner),
+  ]);
   if (tracked === "error") {
     const t = await getT();
     return (
@@ -158,9 +158,7 @@ async function TrackedSection({
       </Notice>
     );
   }
-  return (
-    <TrackedPlayers data={tracked} limit={MAX_FOLLOWS_PER_USER} now={now} pageHref={pageHref} />
-  );
+  return <TrackedPlayers data={tracked} limit={limit} now={now} pageHref={pageHref} />;
 }
 
 function TrackedSkeleton({ t }: { t: Translator<Messages> }) {

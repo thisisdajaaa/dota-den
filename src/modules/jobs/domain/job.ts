@@ -4,7 +4,13 @@
  * duplicated delivery does nothing (ADR 0008).
  */
 
-export const JOB_NAMES = ["match-backfill", "draft-meta-warm", "meta-warm"] as const;
+export const JOB_NAMES = [
+  "match-backfill",
+  "draft-meta-warm",
+  "meta-warm",
+  // Plus go-live alerts (ADR 0013): a QStash schedule delivers it every few minutes.
+  "streamer-alerts",
+] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
 export const isJobName = (v: unknown): v is JobName =>

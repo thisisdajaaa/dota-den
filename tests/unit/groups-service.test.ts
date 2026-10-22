@@ -94,7 +94,7 @@ const alice = { id: "alice", accountId32: 1 };
 const bob = { id: "bob", accountId32: 2 };
 const carol = { id: "carol", accountId32: 3 };
 
-function setup() {
+function setup(groupLimit?: (userId: string, base: number) => Promise<number>) {
   const repo = new MemoryGroups();
   let tokens = 0;
   let clock = Date.UTC(2026, 9, 1);
@@ -110,6 +110,7 @@ function setup() {
         ),
     },
     newToken: () => `token${++tokens}`.padEnd(24, "x"),
+    groupLimit,
     now: () => new Date((clock += 60_000)),
   });
   return { repo, service };
@@ -139,6 +140,19 @@ describe("GroupsService", () => {
       ["P2", false, true],
     ]);
     expect(view.invitePath).toBe(`/groups/join/${group.inviteToken}`);
+  });
+
+  it("lets a Plus player be in twice as many groups (ADR 0013)", async () => {
+    const { service, repo } = setup(async (userId, base) => (userId === "alice" ? base * 2 : base));
+    expect(await service.groupLimit("alice")).toBe(MAX_GROUPS_PER_USER * 2);
+    for (let i = 0; i < MAX_GROUPS_PER_USER * 2; i++) await service.create(alice, `G${i}`);
+    await expect(service.create(alice, "one more")).rejects.toMatchObject({
+      details: { reason: "too_many_groups", max: MAX_GROUPS_PER_USER * 2 },
+    });
+    // Bob is on the free cap: joining a sixth group is refused.
+    for (let i = 0; i < MAX_GROUPS_PER_USER; i++) await service.create(bob, `B${i}`);
+    const token = [...repo.groups.values()][0].inviteToken;
+    expect((await service.invitePreview(bob, token))?.refusal).toBe("too_many_groups");
   });
 
   it("caps groups per player and members per group", async () => {

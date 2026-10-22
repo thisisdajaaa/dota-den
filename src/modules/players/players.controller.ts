@@ -4,7 +4,6 @@ import { ConflictError, ValidationError } from "@/common/errors/app-error";
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser } from "@/modules/identity";
-import { MAX_FOLLOWS_PER_USER } from "./domain/follow";
 import { parseAccountId } from "./domain/player-lookup";
 import { toFollowDto } from "./dtos/responses/follows.dto";
 import { FollowInputSchema } from "./schemas/follows.schema";
@@ -18,10 +17,14 @@ export class PlayersController {
 
   /** GET /api/v1/me/follows: your tracked players, most recently added first. */
   listFollows = handler({ guard: requireUser }, async ({ user }) => {
-    const follows = await this.deps.follows.list(ownerOf(user));
+    const owner = ownerOf(user);
+    const [follows, limit] = await Promise.all([
+      this.deps.follows.list(owner),
+      this.deps.follows.limit(owner),
+    ]);
     return ServiceResponse.success({
       follows: follows.map(toFollowDto),
-      limit: MAX_FOLLOWS_PER_USER,
+      limit,
     }).withHeaders({ "cache-control": "private, no-store" });
   });
 

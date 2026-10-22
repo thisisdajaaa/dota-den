@@ -82,6 +82,21 @@ describe("streamer follows (Mongo)", () => {
     expect(await repo.find("bob", "twitch", "10")).not.toBeNull();
   });
 
+  it("lists every follow of several users at once (go-live alerts)", async () => {
+    const repo = new StreamerFollowsRepository(async () => db);
+    await repo.add(follow({ userId: "many-a", channelId: "1" }));
+    await repo.add(follow({ userId: "many-a", channelId: "2" }));
+    await repo.add(follow({ userId: "many-b", channelId: "1" }));
+    await repo.add(follow({ userId: "many-c", channelId: "1" }));
+    const found = await repo.forUsers(["many-a", "many-b", "many-a"]);
+    expect(found.map((f) => `${f.userId}:${f.channelId}`).sort()).toEqual([
+      "many-a:1",
+      "many-a:2",
+      "many-b:1",
+    ]);
+    expect(await repo.forUsers([])).toEqual([]);
+  });
+
   it("exports and deletes one owner's follows only", async () => {
     const repo = new StreamerFollowsRepository(async () => db);
     await repo.add(follow({ userId: "gdpr", channelId: "1" }));

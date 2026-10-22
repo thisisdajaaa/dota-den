@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_PREFS,
+  withDefaults,
   isGoneStatus,
   isPushServiceEndpoint,
   isRecentPatch,
@@ -334,8 +335,23 @@ describe("NotificationTriggersService", () => {
   });
 });
 
+it("gives settings saved before a kind existed that kind's default (go-live alerts on)", () => {
+  expect(withDefaults({ session_recap: false, weekly_recap: true, patch_heroes: true })).toEqual({
+    session_recap: false,
+    weekly_recap: true,
+    patch_heroes: true,
+    streamer_live: true,
+  });
+  expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
+});
+
 // Keep the kinds list and the per-kind settings in step.
 it("has a default for every kind", () => {
-  const kinds: NotificationKind[] = ["session_recap", "weekly_recap", "patch_heroes"];
+  const kinds: NotificationKind[] = [
+    "session_recap",
+    "weekly_recap",
+    "patch_heroes",
+    "streamer_live",
+  ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });

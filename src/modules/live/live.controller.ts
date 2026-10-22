@@ -2,7 +2,6 @@ import "server-only";
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser } from "@/modules/identity";
-import { MAX_STREAMER_FOLLOWS } from "./domain/streams";
 import { toStreamerFollowDto } from "./dtos/responses/streamers.dto";
 import type { LiveService } from "./live.service";
 import {
@@ -33,8 +32,12 @@ export class LiveController {
 
   /** GET /api/v1/me/streamers: your followed channels, live first. */
   listFollows = handler({ guard: requireUser }, async ({ user }) => {
-    const channels = await this.deps.follows.following(streamerOwnerOf(user));
-    return ServiceResponse.success({ channels, limit: MAX_STREAMER_FOLLOWS }).withHeaders({
+    const owner = streamerOwnerOf(user);
+    const [channels, limit] = await Promise.all([
+      this.deps.follows.following(owner),
+      this.deps.follows.limit(owner),
+    ]);
+    return ServiceResponse.success({ channels, limit }).withHeaders({
       "cache-control": "private, no-store",
     });
   });

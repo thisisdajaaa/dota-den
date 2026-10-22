@@ -326,6 +326,7 @@ describe("jobs", () => {
           throw new Error("boom");
         },
         "meta-warm": handler,
+        "streamer-alerts": handler,
       },
       runs: repo,
     });
