@@ -229,8 +229,12 @@ test("parsed matches show laning and item timings; others can request a parse", 
   await page.goto("/matches/7000000011");
   await expect(page.getByRole("region", { name: /Wards and deaths/ })).toHaveCount(0);
   const unparsed = page.getByRole("region", { name: "Laning & items" });
-  await unparsed.getByRole("button", { name: "Get detailed stats" }).click();
-  await expect(unparsed.getByRole("status")).toContainText("Requested");
+  // Right after navigation the button may not be hydrated yet: retry until it answers.
+  const request = unparsed.getByRole("button", { name: "Get detailed stats" });
+  await expect(async () => {
+    if ((await request.count()) > 0) await request.click({ timeout: 2_000 });
+    await expect(unparsed.getByRole("status")).toContainText("Requested", { timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
 });
 
 test("the overview shows achievements from your own games", async ({ page }) => {
