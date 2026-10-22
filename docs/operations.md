@@ -5,7 +5,7 @@
 | Branch    | Environment                             | URL                                 | Database   |
 | --------- | --------------------------------------- | ----------------------------------- | ---------- |
 | `develop` | Staging (Vercel preview, branch-scoped) | https://dota-den-develop.vercel.app | `dota_den` |
-| `main`    | Production                              | https://dota-den.vercel.app         | `dota_den` |
+| `main`    | Production                              | https://www.dota-den.com            | `dota_den` |
 
 Staging and production currently share configuration ("for now, the same") and the Atlas database `dota_den`.
 Vercel's Git auto-deploys are off (`vercel.json`); all deploys go through GitHub Actions.
@@ -94,7 +94,7 @@ to the app like the backup.
 | `MONGODB_URI`       | secret   | backup                | Already set                                                        |
 | `BACKUP_PASSPHRASE` | secret   | backup, restore drill | Already set                                                        |
 | `CRON_SECRET`       | secret   | backup, restore drill | **Add it**: the same value as `CRON_SECRET` in Vercel (production) |
-| `APP_URL`           | variable | backup, restore drill | Optional; defaults to `https://dota-den.vercel.app`                |
+| `APP_URL`           | variable | backup, restore drill | Optional; defaults to `https://www.dota-den.com`                   |
 
 Without `CRON_SECRET` the workflows still run but skip the report (with a warning). The drill downloads artifacts
 with the workflow's own token (`actions: read`); no extra token is needed. Scheduled workflows run from the default
