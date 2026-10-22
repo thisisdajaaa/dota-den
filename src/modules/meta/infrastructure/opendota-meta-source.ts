@@ -151,8 +151,9 @@ interface MemoEntry {
 
 /**
  * OpenDota meta data: public hero stats, lane-role scenarios, pro explorer queries and a
- * player's recent lanes. Results are kept in memory with their fetch time; when a refresh
- * fails, the last good value is served for up to 48h (and its age is shown).
+ * player's recent lanes. Results are kept in memory with their fetch time, and every call
+ * also goes through the gateway's cache (shared across servers when Redis is set up); when a
+ * refresh fails, the last good value is served for up to 48h (and its age is shown).
  */
 export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   private readonly memo = new Map<string, MemoEntry>();
@@ -235,8 +236,13 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   }
 
   heroStats(): SourceResult<HeroPublicStats[]> {
-    return this.cached("heroStats", TTL.heroStats, async () => {
-      const res = await this.getJson(this.gateways.api, this.url("/heroStats"));
+    return this.cached("heroStats", TTL.heroStats, async (stamp) => {
+      const res = await this.getJson(this.gateways.api, this.url("/heroStats"), {
+        // Shared across servers (Redis) too: it changes slowly and every role needs it.
+        ttlMs: TTL.heroStats,
+        cacheIf: (body) => HeroStatsSchema.safeParse(body).success,
+        stamp,
+      });
       if (!res.ok) return res;
       const parsed = HeroStatsSchema.safeParse(res.value);
       if (!parsed.success) return err({ type: "invalid_payload", cause: "heroStats" });
@@ -253,10 +259,13 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   }
 
   laneRoles(heroId: number): SourceResult<LaneStats> {
-    return this.cached(`laneRoles:${heroId}`, TTL.laneRoles, async () => {
+    return this.cached(`laneRoles:${heroId}`, TTL.laneRoles, async (stamp) => {
       const res = await this.getJson(
         this.gateways.api,
         this.url("/scenarios/laneRoles", { hero_id: heroId }),
+        // Up to 28 calls per role: share them across servers (Redis) so a cold instance
+        // doesn't spend the upstream budget again.
+        { ttlMs: TTL.laneRoles, cacheIf: (body) => LaneRolesSchema.safeParse(body).success, stamp },
       );
       if (!res.ok) return res;
       const parsed = LaneRolesSchema.safeParse(res.value);
@@ -323,7 +332,7 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
   }
 
   recentLanes(accountId32: number): SourceResult<{ windowDays: number; games: LaneGame[] }> {
-    return this.cached(`playerLanes:${accountId32}`, TTL.playerLanes, async () => {
+    return this.cached(`playerLanes:${accountId32}`, TTL.playerLanes, async (stamp) => {
       const res = await this.getJson(
         this.gateways.api,
         this.url(`/players/${accountId32}/matches`, {
@@ -331,6 +340,7 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
           limit: 100,
           project: ["hero_id", "lane_role", "is_roaming"],
         }),
+        { ttlMs: TTL.playerLanes, cacheIf: Array.isArray, stamp },
       );
       if (!res.ok) return res;
       if (!Array.isArray(res.value))

@@ -8,7 +8,11 @@ import {
   ProDraftRowSchema,
   PRO_DRAFTS_SQL,
 } from "@/modules/meta/infrastructure/opendota-meta-source";
-import { ProviderGateway } from "@/common/providers/provider-gateway";
+import {
+  ProviderGateway,
+  type GatewayResponse,
+  type SharedResponseCache,
+} from "@/common/providers/provider-gateway";
 
 describe("explorer parsing", () => {
   it("accepts rows with numeric or string counts", () => {
@@ -57,7 +61,10 @@ describe("explorer parsing", () => {
   });
 });
 
-function sourceWith(handler: (url: URL) => { status?: number; body: unknown }) {
+function sourceWith(
+  handler: (url: URL) => { status?: number; body: unknown },
+  sharedCache?: SharedResponseCache,
+) {
   let now = new Date("2026-09-30T12:00:00Z");
   const fetch = vi.fn(async (url: string) => {
     const r = handler(new URL(url));
@@ -71,6 +78,7 @@ function sourceWith(handler: (url: URL) => { status?: number; body: unknown }) {
       sleep: async () => {},
       maxRetries: 0,
       now: () => now.getTime(),
+      sharedCache,
     });
   const source = new OpenDotaMetaSource(
     { api: gw(), explorer: gw() },
@@ -179,6 +187,47 @@ describe("OpenDotaMetaSource", () => {
     expect((await source.proLaneDuos()).ok).toBe(false);
     fail = false;
     expect((await source.proLaneDuos()).ok).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("shares hero stats, lane roles and player lanes across servers", async () => {
+    const store = new Map<string, { value: GatewayResponse; expiresAt: number }>();
+    const shared: SharedResponseCache = {
+      get: async (key) => store.get(key) ?? null,
+      // Never expires here: the test only checks that the second server reads it.
+      set: async (key, value) => {
+        store.set(key, { value, expiresAt: Number.MAX_SAFE_INTEGER });
+      },
+    };
+    const handler = (url: URL) => ({
+      body: url.pathname.endsWith("/heroStats")
+        ? [{ id: 1, "8_pick": 10, "8_win": 6 }]
+        : url.pathname.endsWith("/laneRoles")
+          ? [{ hero_id: 1, lane_role: 1, games: 10, wins: 6 }]
+          : [{ hero_id: 1, lane_role: 1 }],
+    });
+    const first = sourceWith(handler, shared);
+    await first.source.heroStats();
+    await first.source.laneRoles(1);
+    await first.source.recentLanes(22202);
+    expect(first.fetch).toHaveBeenCalledTimes(3);
+
+    // Another server instance: nothing in its memory, everything from the shared cache.
+    const second = sourceWith(handler, shared);
+    expect((await second.source.heroStats()).ok).toBe(true);
+    expect((await second.source.laneRoles(1)).ok).toBe(true);
+    expect((await second.source.recentLanes(22202)).ok).toBe(true);
+    expect(second.fetch).not.toHaveBeenCalled();
+  });
+
+  it("doesn't cache malformed hero stats", async () => {
+    let bad = true;
+    const { source, fetch } = sourceWith(() => ({
+      body: bad ? { error: "nope" } : [{ id: 1, "8_pick": 10, "8_win": 6 }],
+    }));
+    expect((await source.heroStats()).ok).toBe(false);
+    bad = false;
+    expect((await source.heroStats()).ok).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
