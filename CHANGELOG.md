@@ -6,6 +6,11 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-23
 
+- Security: security headers, a daily cap on AI draft calls, sessions verified before using the member OpenDota budget, rate limits on writes
+- Reliability: a friendly error page, background tasks always logged, faster database timeouts
+- SEO: sitemap, canonical URLs and link previews
+- Loading screens for guides, compare, MMR, account and groups
+- Stream languages line up across Twitch and Kick
 - Watch live: Twitch and Kick streams in their own sections, so Kick is easy to find
 - Live games only lists games someone is streaming on Twitch or Kick
 - Meta overview: heroes are placed by where they're actually played (no more mid heroes listed as carries)
