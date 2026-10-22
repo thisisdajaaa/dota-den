@@ -81,12 +81,18 @@ export interface FriendsSources {
     list(owner: { userId: string; accountId32: number }): Promise<Array<{ accountId32: number }>>;
   };
   profiles: {
-    publicProfile(accountId32: number): Promise<{
-      personaName: string | null;
-      avatarUrl: string | null;
-      rankTier: number | null;
-      leaderboardRank: number | null;
-    } | null>;
+    /** One lookup for many players; null for players with no public profile available. */
+    publicProfiles(accountIds: readonly number[]): Promise<
+      Map<
+        number,
+        {
+          personaName: string | null;
+          avatarUrl: string | null;
+          rankTier: number | null;
+          leaderboardRank: number | null;
+        } | null
+      >
+    >;
   };
   /** Your imported games (all types), newest first. */
   ownFacts(accountId32: number): Promise<{ facts: DashboardFact[] }>;

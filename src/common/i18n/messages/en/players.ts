@@ -59,6 +59,7 @@ export const players = {
     newer: "Newer",
     older: "Older",
     pageOf: "Page {page} of {count}",
+    loading: "Loading tracked players",
   },
   page: {
     title: "Players",

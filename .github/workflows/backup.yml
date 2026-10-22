@@ -64,7 +64,7 @@ jobs:
       - name: Report the outcome to the app
         if: always()
         env:
-          APP_URL: ${{ vars.APP_URL || 'https://dota-den.vercel.app' }}
+          APP_URL: ${{ vars.APP_URL || 'https://www.dota-den.com' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           STATUS: ${{ job.status }}
           DUMP: ${{ steps.dump.outcome }}

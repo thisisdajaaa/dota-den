@@ -40,19 +40,6 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
   const scope: Scope = isScope(params.scope) ? params.scope : "friends";
   const period: Period = isPeriod(params.period) ? params.period : "week";
 
-  let view: BoardView | null = null;
-  try {
-    view = await leaderboardService.board({
-      viewer: { userId: user.id, accountId32: user.accountId32 },
-      kind: board,
-      scope,
-      period,
-      now: new Date(),
-    });
-  } catch (error) {
-    logger.error("leaderboard_failed", { board, scope, period, error });
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -103,21 +90,49 @@ export default async function LeaderboardsPage({ searchParams }: PageProps<"/lea
         </div>
       )}
 
-      {view ? (
-        <LeaderboardBoard view={view} />
-      ) : (
-        <section
-          role="alert"
-          className="panel grid place-items-center gap-3 px-6 py-16 text-center"
-        >
-          <AlertTriangle aria-hidden className="size-8 text-gold" />
-          <h2 className="text-lg font-semibold">{t("leaderboards.page.unavailableTitle")}</h2>
-          <p className="max-w-md text-sm text-muted-foreground">
-            {t("leaderboards.page.unavailableBody")}
-          </p>
-        </section>
-      )}
+      {/* Names and ranks for up to 51 rows: show the tabs while they load. */}
+      <Suspense
+        key={`${board}:${scope}:${period}`}
+        fallback={<SectionSkeleton label={t("leaderboards.page.loading")} rows={6} />}
+      >
+        <BoardSection
+          viewer={{ userId: user.id, accountId32: user.accountId32 }}
+          kind={board}
+          scope={scope}
+          period={period}
+        />
+      </Suspense>
     </div>
+  );
+}
+
+async function BoardSection({
+  viewer,
+  kind,
+  scope,
+  period,
+}: {
+  viewer: { userId: string; accountId32: number };
+  kind: BoardKind;
+  scope: Scope;
+  period: Period;
+}) {
+  let view: BoardView | null = null;
+  try {
+    view = await leaderboardService.board({ viewer, kind, scope, period, now: new Date() });
+  } catch (error) {
+    logger.error("leaderboard_failed", { board: kind, scope, period, error });
+  }
+  if (view) return <LeaderboardBoard view={view} />;
+  const t = await getT();
+  return (
+    <section role="alert" className="panel grid place-items-center gap-3 px-6 py-16 text-center">
+      <AlertTriangle aria-hidden className="size-8 text-gold" />
+      <h2 className="text-lg font-semibold">{t("leaderboards.page.unavailableTitle")}</h2>
+      <p className="max-w-md text-sm text-muted-foreground">
+        {t("leaderboards.page.unavailableBody")}
+      </p>
+    </section>
   );
 }
 

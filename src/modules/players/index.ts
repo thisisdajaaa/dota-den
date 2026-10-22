@@ -6,7 +6,11 @@ export {
   playersController,
   playersService,
 } from "./players.container";
-export { TRACKED_PAGE_SIZE, type PublicPlayerView } from "./services/players.service";
+export {
+  TRACKED_PAGE_SIZE,
+  type PublicPlayerSections,
+  type PublicPlayerView,
+} from "./services/players.service";
 export { ownerOf } from "./services/follow.service";
 export type {
   TrackedPlayersPage,

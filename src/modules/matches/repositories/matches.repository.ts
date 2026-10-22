@@ -10,6 +10,8 @@ import {
 } from "../schemas/match-list-filter.schema";
 import type {
   DashboardFact,
+  DashboardSummaryFact,
+  DashboardView,
   MatchListPage,
   RankedResultRow,
   DashboardFacts,
@@ -276,9 +278,48 @@ const FACT_PROJECTION = {
   deaths: 1,
   assists: 1,
   ranked: 1,
-  queue: 1,
-  patch: 1,
+  // Not the whole subdocuments: the classification's confidence and reason aren't read.
+  "queue.queueClass": 1,
+  "queue.partySize": 1,
+  "patch.patch": 1,
+  "patch.certainty": 1,
 } as const;
+
+/** Only what the dashboard summary reads: about half the bytes of a full row. */
+export const SUMMARY_FACT_PROJECTION = {
+  _id: 0,
+  matchId: 1,
+  startedAt: 1,
+  heroId: 1,
+  result: 1,
+  kills: 1,
+  deaths: 1,
+  assists: 1,
+  "queue.queueClass": 1,
+  "queue.partySize": 1,
+} as const;
+
+/** The dashboard's (and its friends') cap: the newest games only. */
+const DASHBOARD_FACT_LIMIT = 5_000;
+
+type SummaryFactDoc = Pick<
+  PlayerMatchFactDoc,
+  "matchId" | "startedAt" | "heroId" | "result" | "kills" | "deaths" | "assists"
+> & { queue: Pick<PlayerMatchFactDoc["queue"], "queueClass" | "partySize"> };
+
+function toSummaryFact(d: SummaryFactDoc): DashboardSummaryFact {
+  return {
+    matchId: d.matchId,
+    startedAt: d.startedAt,
+    heroId: d.heroId,
+    result: d.result,
+    kills: d.kills,
+    deaths: d.deaths,
+    assists: d.assists,
+    queueClass: d.queue.queueClass,
+    partySize: d.queue.partySize,
+  };
+}
 
 function toDashboardFact(d: PlayerMatchFactDoc): DashboardFact {
   return {
@@ -419,6 +460,21 @@ export class MatchReadRepository implements MatchQueries {
     }));
   }
 
+  async factsBetween(
+    accountId32: number,
+    range: { from: Date; to: Date },
+  ): Promise<DashboardFact[]> {
+    const docs = await (
+      await this.facts()
+    )
+      .find(
+        { accountId32, startedAt: { $gte: range.from, $lte: range.to } },
+        { sort: { startedAt: 1 }, limit: 20_000, projection: FACT_PROJECTION },
+      )
+      .toArray();
+    return docs.map(toDashboardFact);
+  }
+
   async playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>> {
     const rows = await (
       await this.facts()
@@ -450,24 +506,77 @@ export class MatchReadRepository implements MatchQueries {
     return { sync, totals };
   }
 
+  /**
+   * The dashboard filter as a query, plus the latest patch. Only the "current patch" range
+   * needs the patch before it can query; otherwise the caller reads both at once.
+   */
+  private async dashboardQuery(
+    accountId32: number,
+    filter: DashboardFilter,
+    now: Date,
+  ): Promise<{ query: Record<string, unknown>; latestPatch: Promise<string | null> }> {
+    const latestPatch = this.latestPatch(accountId32);
+    const query: Record<string, unknown> = { accountId32 };
+    if (filter.mode === "ranked") query.ranked = true;
+    if (filter.range === "30d")
+      query.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
+    if (filter.range === "patch") query["patch.patch"] = await latestPatch;
+    return { query, latestPatch };
+  }
+
   async dashboardFacts(
     accountId32: number,
     filter: DashboardFilter,
     now: Date,
   ): Promise<DashboardFacts> {
-    const latestPatch = await this.latestPatch(accountId32);
-    const query: Record<string, unknown> = { accountId32 };
-    if (filter.mode === "ranked") query.ranked = true;
-    if (filter.range === "30d")
-      query.startedAt = { $gte: new Date(now.getTime() - 30 * 86_400_000) };
-    if (filter.range === "patch") query["patch.patch"] = latestPatch;
+    const facts = await this.facts();
+    // No await between starting the patch read and Promise.all, so its failure is never unhandled.
+    const { query, latestPatch } = await this.dashboardQuery(accountId32, filter, now);
+    const [docs, patch] = await Promise.all([
+      facts
+        .find(query, {
+          sort: { startedAt: -1 },
+          limit: DASHBOARD_FACT_LIMIT,
+          projection: FACT_PROJECTION,
+        })
+        .toArray(),
+      latestPatch,
+    ]);
+    return { facts: docs.map(toDashboardFact), latestPatch: patch };
+  }
 
-    const docs = await (
-      await this.facts()
-    )
-      .find(query, { sort: { startedAt: -1 }, limit: 5_000, projection: FACT_PROJECTION })
-      .toArray();
-    return { facts: docs.map(toDashboardFact), latestPatch };
+  async dashboardView(
+    accountId32: number,
+    filter: DashboardFilter,
+    now: Date,
+    recent: number,
+  ): Promise<DashboardView> {
+    const facts = await this.facts();
+    // No await between starting the patch read and Promise.all, so its failure is never unhandled.
+    const { query, latestPatch } = await this.dashboardQuery(accountId32, filter, now);
+    // The same rows as dashboardFacts: lean ones for the summary, full ones for the newest few.
+    const [lean, full, patch] = await Promise.all([
+      facts
+        .find(query, {
+          sort: { startedAt: -1 },
+          limit: DASHBOARD_FACT_LIMIT,
+          projection: SUMMARY_FACT_PROJECTION,
+        })
+        .toArray(),
+      facts
+        .find(query, {
+          sort: { startedAt: -1 },
+          limit: Math.min(recent, DASHBOARD_FACT_LIMIT),
+          projection: FACT_PROJECTION,
+        })
+        .toArray(),
+      latestPatch,
+    ]);
+    return {
+      facts: lean.map(toSummaryFact),
+      recent: full.map(toDashboardFact),
+      latestPatch: patch,
+    };
   }
 
   async lineupFacts(accountId32: number, filter: LineupFilter, now: Date): Promise<LineupFacts> {

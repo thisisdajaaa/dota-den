@@ -64,6 +64,7 @@ export const players: MessageTree<typeof en> = {
     newer: "Mas bago",
     older: "Mas luma",
     pageOf: "Page {page} sa {count}",
+    loading: "Nilo-load ang mga tina-track na player",
   },
   page: {
     title: "Mga player",

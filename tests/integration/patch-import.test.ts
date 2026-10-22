@@ -153,6 +153,14 @@ describe("patch import against MongoDB", () => {
     expect(await repo.get()).toEqual({
       lastAttemptAt: new Date(now.getTime() + 60_000),
       lastSuccessAt: now,
+      lastDegradedAt: null,
+      failedVersions: [],
+    });
+    await repo.recordDegraded(new Date(now.getTime() + 120_000), ["7.41f"]);
+    expect(await repo.get()).toMatchObject({
+      lastSuccessAt: now,
+      lastDegradedAt: new Date(now.getTime() + 120_000),
+      failedVersions: ["7.41f"],
     });
   });
 });

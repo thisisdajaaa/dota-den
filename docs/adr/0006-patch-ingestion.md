@@ -57,6 +57,15 @@ keep the official link, not invent a summary. Hobby cron runs at most once a day
     stored or the last clean run is more than 24h old. It's throttled to one
     attempt per 10 minutes across instances through `patch_refresh_state`, and
     it never throws.
+  - A degraded run (some versions imported, others failed, e.g. a version
+    without a publish date) is recorded with its failed versions
+    (`lastDegradedAt`, `failedVersions`) and counts as fresh for 6h, so one
+    permanently bad version is retried every 6h instead of re-importing on
+    every page load. A run where every version fails records nothing and is
+    retried at the 10-minute throttle.
+  - The daily cron has a 46s budget inside the route's 60s `maxDuration`. An
+    import that runs out of time is recorded in `cron_runs` as failed
+    (`timed_out`) before the function is stopped.
   - Every run logs its per-version outcomes, and failures log at `warn`
     (`patch_import_degraded`) so they can raise an alert (§10).
 - **Watchlist** (`patch_watchlists`, unique `userId`) is its own aggregate. It

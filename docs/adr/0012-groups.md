@@ -29,9 +29,9 @@ A new `groups` feature (ADR 0009 layout), collection `groups`, members embedded.
   was in whose party. The group page reuses the Together feature's cache of classified shared
   matches (`together_matches`) and its party rule (same party id, party size ≥ 2 for both).
   Each visit checks at most 2 member pairs, the never-checked and then the stalest (older than
-  6 hours), with 15 match details each: the same 30-detail budget as one Together page visit. A
-  pair is marked fresh once all its shared matches are classified, so big histories fill in
-  over a few visits; the page says how many pairs are still unchecked. Members linked by
+  6 hours), side by side, with 6 match details each: the same 12-detail budget as one Together
+  page visit. A pair is marked fresh once all its shared matches are classified, so big
+  histories fill in over a few visits; the page says how many pairs are still unchecked. Members linked by
   confirmed party pairs in one match form one party (they share a party id); separate parties
   in a match stay separate. A match where members shared a team without party data is counted
   as unknown and shown apart, never as together and never as solo.

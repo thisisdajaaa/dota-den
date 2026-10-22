@@ -9,7 +9,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-driver-47a248?logo=mongodb&logoColor=white)
 
-[Production](https://dota-den.vercel.app) · [Staging](https://dota-den-develop.vercel.app) · [Docs](docs/README.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Decisions (ADRs)](docs/adr)
+[Production](https://www.dota-den.com) · [Staging](https://dota-den-develop.vercel.app) · [Docs](docs/README.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Decisions (ADRs)](docs/adr)
 
 </div>
 
@@ -249,7 +249,7 @@ AI review). See [docs/data-sources.md](docs/data-sources.md) for how to get them
 | Branch    | Environment | URL                                 |
 | --------- | ----------- | ----------------------------------- |
 | `develop` | Staging     | https://dota-den-develop.vercel.app |
-| `main`    | Production  | https://dota-den.vercel.app         |
+| `main`    | Production  | https://www.dota-den.com            |
 
 Feature branches merge into `develop`; releases merge `develop` into `main`. GitHub Actions
 (`.github/workflows/ci-cd.yml`) runs lint, typecheck, tests and build, then the E2E suite, then deploys a prebuilt

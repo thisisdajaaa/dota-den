@@ -1,6 +1,6 @@
 name: CI/CD
 
-# main    -> production (https://dota-den.vercel.app)
+# main    -> production (https://www.dota-den.com)
 # develop -> staging    (https://dota-den-develop.vercel.app)
 # PRs     -> checks only
 on:
@@ -90,7 +90,7 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       IS_PROD: ${{ github.ref_name == 'main' }}
-      PUBLIC_URL: ${{ github.ref_name == 'main' && 'https://dota-den.vercel.app' || 'https://dota-den-develop.vercel.app' }}
+      PUBLIC_URL: ${{ github.ref_name == 'main' && 'https://www.dota-den.com' || 'https://dota-den-develop.vercel.app' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
