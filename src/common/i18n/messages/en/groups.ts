@@ -112,7 +112,7 @@ export const groups = {
     title: "Heroes in the last 30 days",
     description: "Each member's most played heroes, from their imported matches.",
     none: "No imported games in the last 30 days.",
-    games: "{n} games",
+    games: { one: "1 game", other: "{n} games" },
   },
   board: {
     kicker: "This week",

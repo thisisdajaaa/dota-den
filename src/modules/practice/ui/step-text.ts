@@ -1,5 +1,5 @@
 import type { Messages } from "@/common/i18n/messages";
-import type { Translator } from "@/common/i18n/translate";
+import { plural, type Translator } from "@/common/i18n/translate";
 import type { PlanGap, PlanStep, StepStatus } from "../domain/practice-plan";
 
 type T = Translator<Messages>;
@@ -14,7 +14,7 @@ export function stepLabel(
 ): string {
   switch (step.kind) {
     case "practiceHero":
-      return t("practice.step.practiceHero", { hero: heroName(step.heroId), target: step.target });
+      return plural(t, "practice.step.practiceHero", step.target, { hero: heroName(step.heroId) });
     case "stopAfterLosses":
       return t("practice.step.stopAfterLosses", { streak: step.streak });
     case "reviewLoss":
@@ -38,7 +38,7 @@ export function stepWhy(t: T, step: PlanStep, heroName: (id: number) => string):
         ? t("practice.why.highRank", {
             rate: pct(r.highRank.rate),
             position: r.position,
-            games: r.highRank.games.toLocaleString("en-US"),
+            games: plural(t, "common.count.games", r.highRank.games),
           })
         : r.contestRate !== null
           ? t("practice.why.contest", { rate: pct(r.contestRate) })
@@ -47,7 +47,7 @@ export function stepWhy(t: T, step: PlanStep, heroName: (id: number) => string):
         ? `${base} ${t("practice.why.counter", {
             nemesis: heroName(r.counter.nemesisId),
             loss: pct(r.counter.yourLossRate),
-            games: r.counter.yourGames,
+            games: plural(t, "common.count.games", r.counter.yourGames),
           })}`
         : base;
     }
@@ -62,7 +62,9 @@ export function stepWhy(t: T, step: PlanStep, heroName: (id: number) => string):
     case "reviewLoss":
       return t("practice.why.reviewLoss", step.reason);
     case "logMmr":
-      return step.reason ? t("practice.why.logMmr", step.reason) : t("practice.why.logMmrBasic");
+      return step.reason
+        ? plural(t, "practice.why.logMmr", step.reason.sessions, { logged: step.reason.logged })
+        : t("practice.why.logMmrBasic");
   }
 }
 
@@ -73,7 +75,7 @@ export function stepStatusText(t: T, status: StepStatus, step: PlanStep): string
       return t("practice.progress.heroGames", { played: status.played, target: status.target });
     case "streakRule":
       return status.broken === 0
-        ? t("practice.progress.kept", { sessions: status.sessions })
+        ? plural(t, "practice.progress.kept", status.sessions)
         : t("practice.progress.broken", {
             streak: step.kind === "stopAfterLosses" ? step.streak : 2,
             broken: status.broken,

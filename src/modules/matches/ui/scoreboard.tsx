@@ -55,7 +55,7 @@ export async function Scoreboard({
             aria-hidden
             className={cn("h-6 w-1 rounded-full", radiant ? "bg-win" : "bg-loss")}
           />
-          <h2 id={`team-${side}`} className="font-display text-lg font-bold tracking-wider">
+          <h2 id={`team-${side}`} className="text-lg font-semibold">
             {radiant ? t("matches.scoreboard.radiantTitle") : t("matches.scoreboard.direTitle")}
           </h2>
           {won && (

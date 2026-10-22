@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { plural } from "@/common/i18n/translate";
 import type { Calendar } from "../domain/calendar";
 import { daysBetween, type DayKey } from "@/common/time/day-key";
 import { basisOf, dayStyle, deltaLabel, periodScale } from "./day-tone";
@@ -58,7 +59,10 @@ export async function WeekView({
                 <span className="block text-lg font-semibold tabular-nums">{label ?? "—"}</span>
                 <span className="block text-xs text-muted-foreground">
                   {day?.games
-                    ? t("mmr.calendar.record", { wins: day.wins, losses: day.losses })
+                    ? t("mmr.calendar.record", {
+                        wins: plural(t, "common.count.wins", day.wins),
+                        losses: plural(t, "common.count.losses", day.losses),
+                      })
                     : t("mmr.calendar.noRankedGames")}
                 </span>
               </span>

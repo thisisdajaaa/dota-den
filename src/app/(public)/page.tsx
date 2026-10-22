@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { metaService } from "@/modules/meta";
 import { heroPatchChanges } from "@/modules/meta/domain/patch-tips";
 import { MetaOverviewCompact } from "@/modules/meta/ui/meta-overview";
+import { signInHref } from "@/modules/identity/domain/return-path";
 import { patchesService } from "@/modules/patches";
 import { PlayerSearchForm } from "@/modules/players/ui/player-search-form";
 import { getT } from "@/common/i18n/server";
@@ -85,8 +86,12 @@ async function LatestPatchCard() {
             )}{" "}
             ·{" "}
             {t("home.patch.changed", {
-              heroes: latest.summary.heroesChanged,
-              items: latest.summary.itemsChanged + latest.summary.neutralItemsChanged,
+              heroes: plural(t, "common.count.heroes", latest.summary.heroesChanged),
+              items: plural(
+                t,
+                "common.count.items",
+                latest.summary.itemsChanged + latest.summary.neutralItemsChanged,
+              ),
             })}
           </p>
         </div>
@@ -259,10 +264,12 @@ async function MetaPreview() {
 
 export default async function LandingPage({ searchParams }: PageProps<"/">) {
   if (await getCurrentUser({ tolerateErrors: true })) redirect("/dashboard");
-  const { auth_error, bye, deleted } = await searchParams;
+  const { auth_error, bye, deleted, next } = await searchParams;
   const signedOut = bye === "1";
   const authError = typeof auth_error === "string" ? auth_error : null;
   const signInRequired = authError === "signed_out";
+  // Back to the page they asked for after Steam (validated again on the server).
+  const signInUrl = signInHref(next);
   const t = await getT();
   const authErrorText = (AUTH_ERRORS as readonly string[]).includes(authError ?? "")
     ? t(`home.authErrors.${authError as (typeof AUTH_ERRORS)[number]}`)
@@ -298,9 +305,17 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
         </Alert>
       )}
       {signInRequired && (
-        <Alert>
-          <AlertTitle>{t("home.alerts.signInRequiredTitle")}</AlertTitle>
-          <AlertDescription>{t("home.alerts.signInRequiredBody")}</AlertDescription>
+        <Alert className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <AlertTitle>{t("home.alerts.signInRequiredTitle")}</AlertTitle>
+            <AlertDescription>{t("home.alerts.signInRequiredBody")}</AlertDescription>
+          </div>
+          <Button asChild size="sm" className="shrink-0 gap-2 self-start sm:self-auto">
+            <a href={signInUrl}>
+              <SteamIcon className="size-4" />
+              {t("common.auth.signInSteam")}
+            </a>
+          </Button>
         </Alert>
       )}
       {authError && !signInRequired && (
@@ -331,7 +346,7 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
               size="lg"
               className="gap-2 shadow-[0_0_30px_-6px_oklch(0.8_0.13_80/0.6)]"
             >
-              <a href={SIGN_IN_HREF}>
+              <a href={signInUrl}>
                 <SteamIcon className="size-4" />
                 {t("home.hero.signIn")}
               </a>

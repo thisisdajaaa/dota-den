@@ -82,8 +82,8 @@ function MatchupRows({
                 key={r.heroId}
                 aria-label={t("heroes.own.rowLabel", {
                   name,
-                  wins: r.wins,
-                  losses: r.losses,
+                  wins: plural(t, "common.count.wins", r.wins),
+                  losses: plural(t, "common.count.losses", r.losses),
                   rate: formatPercent(r.winRate),
                   games: games(r.games),
                 })}

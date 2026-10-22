@@ -87,7 +87,11 @@ export async function JourneyStretchCard({
                   <li
                     key={h.heroId}
                     className="flex items-center gap-2 text-sm"
-                    aria-label={t("mmr.journey.heroRecord", { name, wins: h.wins, losses })}
+                    aria-label={t("mmr.journey.heroRecord", {
+                      name,
+                      wins: plural(t, "common.count.wins", h.wins),
+                      losses: plural(t, "common.count.losses", losses),
+                    })}
                   >
                     <HeroPortrait hero={heroes.get(h.heroId)} heroId={h.heroId} size="sm" />
                     <span className="min-w-0 flex-1 truncate">{name}</span>

@@ -44,7 +44,7 @@ export default async function DraftChallengesPage() {
             <li key={type} className="panel flex flex-col gap-3 p-5">
               <div className="flex items-center gap-2">
                 <Icon aria-hidden className="size-5 text-gold" />
-                <h2 className="font-display text-xl font-semibold tracking-wide">{title}</h2>
+                <h2 className="text-lg font-semibold">{title}</h2>
               </div>
               <p className="flex-1 text-sm text-muted-foreground">
                 {t(`drafts.challenge.types.${type}.summary`)}

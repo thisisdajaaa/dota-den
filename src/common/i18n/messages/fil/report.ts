@@ -39,7 +39,7 @@ export const report: MessageTree<typeof en> = {
   },
   sides: {
     title: "Radiant vs Dire",
-    record: "{wins} panalo · {losses} talo",
+    record: "{wins} · {losses}",
     higher: "{points} puntos na mas mataas bilang {side}.",
   },
   records: {
@@ -75,7 +75,7 @@ export const report: MessageTree<typeof en> = {
   },
   roles: {
     title: "Mga role",
-    help: "Mula sa {withData} sa {games} laro mo na may na-parse na replay (sa mga na-parse na replay lang galing ang lane data).",
+    help: "Mula sa {withData} sa {games} mo na may na-parse na replay (sa mga na-parse na replay lang galing ang lane data).",
     share: "{share}% ng laro · {rate} panalo",
     names: { safeLane: "Safe lane", mid: "Mid", offLane: "Off lane", jungle: "Jungle" },
   },
@@ -83,7 +83,7 @@ export const report: MessageTree<typeof en> = {
     title: "Kalendaryo",
     played: "Naglaro sa {played} sa {days} araw · mas madilim = mas maraming laro",
     aria: "Mga laro kada araw mula {from} hanggang {to}",
-    day: "{date}: {games} laro, {wins}–{losses}",
+    day: "{date}: {games}, {wins}–{losses}",
     moreWins: "mas maraming panalo kaysa talo",
     moreLosses: "mas maraming talo",
   },

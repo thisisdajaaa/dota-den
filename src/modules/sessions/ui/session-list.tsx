@@ -87,8 +87,8 @@ export async function SessionList({
               aria-label={t("sessions.item.aria", {
                 date: labels.date,
                 time: labels.timeRange,
-                wins: s.wins,
-                losses: s.losses,
+                wins: plural(t, "common.count.wins", s.wins),
+                losses: plural(t, "common.count.losses", s.losses),
               })}
               className="group relative grid grid-cols-1 gap-3 px-5 py-4 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] sm:items-center"
             >

@@ -34,7 +34,7 @@ export const home = {
   patch: {
     aria: "Latest patch {version}: read the notes",
     kicker: "Latest patch",
-    changed: "{heroes} heroes and {items} items changed",
+    changed: "{heroes} and {items} changed",
     heroesAria: "Some of the heroes changed",
     read: "Read the patch notes",
     topChanges: "Most-changed heroes",

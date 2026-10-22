@@ -18,7 +18,6 @@ export const system: MessageTree<typeof en> = {
   },
   shell: {
     skip: "Lumaktaw sa nilalaman",
-    menu: "Menu",
     account: "Account {id}",
     player: "Player {id}",
   },

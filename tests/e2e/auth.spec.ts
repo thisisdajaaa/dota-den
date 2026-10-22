@@ -13,6 +13,22 @@ test("guest is redirected away from the dashboard", async ({ page }) => {
   await expect(page.getByRole("main").getByRole("alert")).toContainText("Sign in required");
 });
 
+test("signing in from the redirect banner returns to the page you asked for", async ({ page }) => {
+  await page.goto("/matches?queue=party");
+  await expect(page).toHaveURL(/\/\?auth_error=signed_out&next=%2Fmatches%3Fqueue%3Dparty$/);
+  const banner = page.getByRole("main").getByRole("alert");
+  await expect(banner).toContainText("Sign in required");
+  await banner.getByRole("link", { name: "Sign in through Steam" }).click();
+
+  await expect(page).toHaveURL(/\/matches\?queue=party$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
+test("sign-in ignores a next path that leaves the site", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login?next=%2F%2Fevil.example%2Fdashboard");
+  await expect(page).toHaveURL(/^http:\/\/[^/]+\/dashboard$/);
+});
+
 test("sign in with the test identity provider, survive reload, then sign out", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("banner").getByRole("link", { name: "Sign in through Steam" }).click();

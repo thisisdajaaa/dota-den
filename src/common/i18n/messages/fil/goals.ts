@@ -4,7 +4,7 @@ import type { goals as en } from "../en/goals";
 export const goals: MessageTree<typeof en> = {
   title: "Mga goal ngayong linggo",
   lastDay: "Huling araw ng linggo",
-  daysLeft: "{n} araw na lang ngayong linggo",
+  daysLeft: { one: "1 araw na lang ngayong linggo", other: "{n} araw na lang ngayong linggo" },
   edit: "I-edit",
   setGoals: "Magtakda ng goal",
   addGoal: "Magdagdag ng goal",
@@ -40,14 +40,20 @@ export const goals: MessageTree<typeof en> = {
   },
   describe: {
     winRate: "Manalo sa hindi bababa sa {target}% ng mga ranked game",
-    maxPerSession: "Maglaro ng hindi hihigit sa {target} ranked game bawat session",
+    maxPerSession: {
+      one: "Maglaro ng hindi hihigit sa 1 ranked game bawat session",
+      other: "Maglaro ng hindi hihigit sa {n} ranked game bawat session",
+    },
     logAfterSessions: "I-log ang MMR mo pagkatapos ng bawat session",
-    heroGames: "Laruin si {hero} nang {target} beses",
+    heroGames: {
+      one: "Laruin si {hero} nang isang beses",
+      other: "Laruin si {hero} nang {n} beses",
+    },
   },
   progress: {
     needGames: "{games} / {min} laro bago mabilang",
     winRate: "{rate}% ({wins}–{losses})",
-    longestSession: "Pinakamahabang session: {games} laro",
+    longestSession: "Pinakamahabang session: {games}",
     noSessions: "Wala pang session",
     sessionsLogged: "{logged} / {total} session ang na-log",
     heroGames: "{played} / {target} laro",

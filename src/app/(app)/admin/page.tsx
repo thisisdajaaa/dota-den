@@ -296,7 +296,7 @@ export default async function AdminPage() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {t("admin.alerts.delivered", {
-                        devices: a.devices,
+                        devices: plural(t, "common.count.devices", a.devices),
                         webhook: t(`admin.alerts.webhook.${a.webhook}`),
                       })}
                     </p>

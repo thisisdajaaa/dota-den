@@ -81,7 +81,10 @@ export const admin: MessageTree<typeof en> = {
     body: "Mga problema nga nagkinahanglan nimo: daily job nga napakyas o mihunong, OpenDota nga down og dugay, backup o restore drill nga napakyas. Moadto kini sa mga device sa admin nga naka-on ang notification (ug sa Discord channel sa ADMIN_ALERT_WEBHOOK_URL), kausa ra matag 6 ka oras kada problema.",
     test: "Pagpadala og test nga alerto",
     sending: "Gipadala…",
-    testSent: "Napadala sa {devices} ka device sa admin · Discord: {webhook}.",
+    testSent: {
+      one: "Napadala sa 1 ka device sa admin · Discord: {webhook}.",
+      other: "Napadala sa {n} ka device sa admin · Discord: {webhook}.",
+    },
     testNoDevices:
       "Napadala, pero walay device sa admin nga naka-on ang notification (Account → Notifications) · Discord: {webhook}.",
     testFailed: "Dili mapadala ang test nga alerto.",
@@ -90,7 +93,7 @@ export const admin: MessageTree<typeof en> = {
     recent: "Bag-ong mga alerto",
     none: "Walay alerto sulod sa miaging 30 ka adlaw.",
     unavailable: "Dili available karon.",
-    delivered: "{devices} ka device · Discord: {webhook}",
+    delivered: "{devices} · Discord: {webhook}",
     reports: "Mga backup ug restore drill",
     reportsNone:
       "Wala pay report. Mo-report diri ang backup ug restore-drill workflow human sa matag run.",

@@ -1,13 +1,3 @@
-/** Dota players' own names for party sizes. */
-export function partyName(size: number): string {
-  return size === 2 ? "Duo" : size === 3 ? "Trio" : `${size}-stack`;
-}
-
-export function plural(n: number, word: string): string {
-  const many = word.endsWith("s") ? `${word}es` : `${word}s`;
-  return `${n.toLocaleString("en-US")} ${n === 1 ? word : many}`;
-}
-
 export function formatPercent(rate: number | null): string {
   return rate === null ? "—" : `${(rate * 100).toFixed(1)}%`;
 }
@@ -28,15 +18,6 @@ export function formatAgo(date: Date, now: Date): string {
   if (days < 30) return `${days}d ago`;
   const months = Math.round(days / 30);
   return months < 12 ? `${months}mo ago` : `${Math.round(months / 12)}y ago`;
-}
-
-export function queueLabel(
-  queueClass: "solo" | "party" | "unknown",
-  partySize: number | null,
-): string {
-  if (queueClass === "solo") return "Solo";
-  if (queueClass === "party") return partySize ? partyName(partySize) : "Party";
-  return "Unknown";
 }
 
 const GAME_MODES: Record<number, string> = {

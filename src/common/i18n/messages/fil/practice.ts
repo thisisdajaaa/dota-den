@@ -12,28 +12,37 @@ export const practice: MessageTree<typeof en> = {
   openMatch: "Buksan ang laro",
   status: { done: "Tapos na", broken: "Nasira ngayong linggo", open: "Ginagawa pa" },
   step: {
-    practiceHero: "Laruin si {hero} sa {target} ranked game",
+    practiceHero: {
+      one: "Laruin si {hero} sa 1 ranked game",
+      other: "Laruin si {hero} sa {n} ranked game",
+    },
     stopAfterLosses: "Tapusin ang session pagkatapos ng {streak} sunod-sunod na talo",
     reviewLoss: "Balikan ang talo mo bilang {hero} noong {date}",
     logMmr: "I-log ang MMR mo pagkatapos ng bawat session",
   },
   why: {
-    highRank: "{rate}% win rate sa matataas na rank bilang Pos {position} ({games} laro).",
+    highRank: "{rate}% win rate sa matataas na rank bilang Pos {position} ({games}).",
     contest: "Pinili o na-ban sa {rate}% ng mga bagong pro draft.",
     metaList: "Malapit sa itaas ng listahan ng hero para sa Pos {position}.",
     counter:
-      "Malakas ito laban kay {nemesis}, na tumatalo sa iyo sa mga {loss}% ng mga laro mo laban sa kanya ({games} laro).",
+      "Malakas ito laban kay {nemesis}, na tumatalo sa iyo sa mga {loss}% ng mga laro mo laban sa kanya ({games}).",
     stopAfterLosses:
       "Pagkatapos ng {streak} sunod-sunod na talo, nanalo ka sa {after}% ng {afterGames} ranked game na itinuloy mo, kumpara sa {baseline}% sa kabuuan ({baselineGames} laro).",
     reviewLoss:
       "Ang pinakahuli mong ranked na talo ({kills}/{deaths}/{assists}). Magdagdag ng note o ng tag na “reviewed” sa pahina ng laro para matsekan ito.",
-    logMmr: "Nag-log ka ng MMR pagkatapos ng {logged} sa huling {sessions} ranked session mo.",
+    logMmr: {
+      one: "Nag-log ka ng MMR pagkatapos ng {logged} sa huling 1 ranked session mo.",
+      other: "Nag-log ka ng MMR pagkatapos ng {logged} sa huling {n} ranked session mo.",
+    },
     logMmrBasic:
       "Kapag nag-log ka pagkatapos ng bawat session, makikita sa mga session mo ang totoong pagbabago ng MMR mo.",
   },
   progress: {
     heroGames: "{played} / {target} laro",
-    kept: "Nasunod sa lahat ng {sessions} session sa ngayon",
+    kept: {
+      one: "Nasunod sa nag-iisang session sa ngayon",
+      other: "Nasunod sa lahat ng {n} session sa ngayon",
+    },
     broken: "Itinuloy pagkatapos ng {streak} talo sa {broken} sa {sessions} session",
     noSessions: "Wala pang ranked session ngayong linggo",
     reviewed: "Nabalikan na",

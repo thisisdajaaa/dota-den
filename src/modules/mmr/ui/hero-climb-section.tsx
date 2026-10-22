@@ -82,8 +82,8 @@ export async function HeroClimbSection({
                   href={`/heroes/${c.heroId}`}
                   aria-label={t("mmr.climb.aria", {
                     name,
-                    wins: c.wins,
-                    losses: c.losses,
+                    wins: plural(t, "common.count.wins", c.wins),
+                    losses: plural(t, "common.count.losses", c.losses),
                     mmr: signed(c.estimatedNet),
                   })}
                   className="group flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/[0.03] sm:gap-3 sm:px-5"

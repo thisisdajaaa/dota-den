@@ -16,7 +16,6 @@ export const system = {
   },
   shell: {
     skip: "Skip to content",
-    menu: "Menu",
     account: "Account {id}",
     player: "Player {id}",
   },

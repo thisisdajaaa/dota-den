@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "cn";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
+import { plural } from "@/common/i18n/translate";
 import { Button } from "@/components/ui/button";
 import { MAX_CUSTOM_LENGTH, MAX_GOALS, type Goal } from "../domain/goals";
 
@@ -211,7 +212,7 @@ export function GoalsCard({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="kicker">
-            {daysLeft === 0 ? t("goals.lastDay") : t("goals.daysLeft", { n: daysLeft })}
+            {daysLeft === 0 ? t("goals.lastDay") : plural(t, "goals.daysLeft", daysLeft)}
           </p>
           <h2 id="goals-title" className="text-lg font-semibold">
             {t("goals.title")}
