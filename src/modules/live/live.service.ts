@@ -1,10 +1,51 @@
-import { splitLive, type LiveGame } from "./domain/live-game";
-import { matchStreams, searchLinks } from "./domain/watch";
-import type { LiveSource, StreamSource } from "./live.ports";
+import { UpstreamUnavailableError } from "@/common/errors/app-error";
+import { isLeague, splitLive, type LiveGame } from "./domain/live-game";
+import type { Platform } from "./domain/platform";
+import { mergeStreams, type ChannelHit } from "./domain/streams";
+import {
+  guessStreamGames,
+  matchStreams,
+  searchLinks,
+  type LiveStream,
+  type StreamGameHint,
+} from "./domain/watch";
+import type { LiveSource, StreamDirectory } from "./live.ports";
 import type { LiveOverview, WatchOptions } from "./dtos/responses/live.dto";
+import type { WatchHubData } from "./dtos/responses/streamers.dto";
+
+/** Stream ↔ game guesses are recomputed at most this often (both inputs are cached a minute). */
+const HINTS_TTL_MS = 60_000;
 
 export class LiveService {
-  constructor(private readonly deps: { source: LiveSource; streams?: StreamSource | null }) {}
+  private hintsCache: { at: number; hints: Record<string, StreamGameHint> } | null = null;
+
+  constructor(
+    private readonly deps: {
+      source: LiveSource;
+      /** Every configured streaming site (none when no keys are set). */
+      directories?: readonly StreamDirectory[];
+      now?: () => number;
+    },
+  ) {}
+
+  private get directories(): readonly StreamDirectory[] {
+    return this.deps.directories ?? [];
+  }
+
+  /**
+   * Live Dota 2 streams from every site, merged and most watched first; null only when no site
+   * answered (or none is set up). One site being down still shows the others.
+   */
+  private async allStreams(): Promise<LiveStream[] | null> {
+    const lists = await Promise.all(
+      this.directories.map((d) => d.liveDotaStreams().catch(() => null)),
+    );
+    return lists.some((l) => l !== null) ? mergeStreams(lists) : null;
+  }
+
+  private now(): number {
+    return this.deps.now?.() ?? Date.now();
+  }
 
   /** League games (with league names) and the highest-MMR public games; null if unavailable. */
   async overview(): Promise<LiveOverview | null> {
@@ -40,8 +81,51 @@ export class LiveService {
 
   /** Where to watch a game: matching streams to embed (when configured) and search links. */
   async watch(game: LiveGame): Promise<WatchOptions> {
-    const all = this.deps.streams ? await this.deps.streams.dotaStreams().catch(() => null) : null;
+    const all = await this.allStreams();
     return { streams: all ? matchStreams(game, all) : null, links: searchLinks(game) };
+  }
+
+  /** The streaming sites that are set up (keys present), in display order. */
+  get platforms(): Platform[] {
+    return this.directories.map((d) => d.platform);
+  }
+
+  /**
+   * The watch hub: live Dota 2 streams (most watched first) and, for streams whose titles
+   * mention a live game, which game that probably is.
+   */
+  async hub(): Promise<WatchHubData> {
+    const streams = await this.allStreams();
+    if (!streams) return { streams: null, hints: {} };
+    return { streams, hints: await this.hints(streams).catch(() => ({})) };
+  }
+
+  /**
+   * Channels by name on every site. Throws only when no site is set up or none answers; one
+   * site being down still returns the others' results.
+   */
+  async searchChannels(query: string, liveOnly: boolean): Promise<ChannelHit[]> {
+    const lists = await Promise.all(
+      this.directories.map((d) => d.searchChannels(query, liveOnly).catch(() => null)),
+    );
+    if (!lists.some((l) => l !== null))
+      throw new UpstreamUnavailableError("Channel search is unavailable right now");
+    const hits = lists.flatMap((l) => l ?? []);
+    // Live channels first, keeping each site's relevance order within each group.
+    return [...hits.filter((h) => h.live), ...hits.filter((h) => !h.live)];
+  }
+
+  private async hints(streams: readonly LiveStream[]) {
+    const now = this.now();
+    if (this.hintsCache && now - this.hintsCache.at < HINTS_TTL_MS) return this.hintsCache.hints;
+    const games = await this.deps.source.games();
+    if (!games) return {};
+    // Only league games and games with named pros can match a title.
+    const candidates = games.filter((g) => isLeague(g) || g.players.some((p) => p.isPro && p.name));
+    const named = await this.withLeagueNames(candidates);
+    const hints = Object.fromEntries(guessStreamGames(streams, named));
+    this.hintsCache = { at: now, hints };
+    return hints;
   }
 
   private async withLeagueNames(games: LiveGame[]): Promise<LiveGame[]> {

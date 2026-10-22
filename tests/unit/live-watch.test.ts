@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { LiveGame } from "@/modules/live/domain/live-game";
-import { matchStreams, searchLinks, type LiveStream } from "@/modules/live/domain/watch";
+import {
+  guessStreamGames,
+  matchStreams,
+  searchLinks,
+  type LiveStream,
+} from "@/modules/live/domain/watch";
 
 const game = (over: Partial<LiveGame> = {}): LiveGame => ({
   matchId: "1",
@@ -18,6 +23,7 @@ const game = (over: Partial<LiveGame> = {}): LiveGame => ({
   ...over,
 });
 const stream = (channel: string, title: string, viewers = 100): LiveStream => ({
+  platform: "twitch",
   channel,
   displayName: channel,
   title,
@@ -55,5 +61,55 @@ describe("searchLinks", () => {
     expect(links.map((l) => l.site)).toEqual(["Twitch", "YouTube", "Twitch"]);
     expect(links[0].href).toBe("https://www.twitch.tv/search?term=Team%20Spirit%20vs%20OG");
     expect(links[1].href).toContain("sp=EgJAAQ%253D%253D");
+  });
+});
+
+describe("guessStreamGames", () => {
+  const other = game({
+    matchId: "2",
+    leagueName: "Other Cup",
+    teams: { radiant: "Tundra", dire: "Liquid" },
+    players: [],
+    spectators: 10,
+  });
+
+  it("links each stream to the live game its title mentions most", () => {
+    const hints = guessStreamGames(
+      [
+        stream("blast", "LIVE: Spirit vs OG | BLAST Slam VIII"),
+        stream("tundra", "Tundra vs Liquid, Other Cup day 2"),
+        stream("random", "ranked grind to immortal"),
+        stream("fan", "watching Yatoro"),
+      ],
+      [game({ spectators: 500 }), other],
+    );
+    expect(hints.get("twitch:blast")).toEqual({
+      matchId: "1",
+      radiant: "Team Spirit",
+      dire: "OG",
+      leagueName: "BLAST Slam VIII",
+      mentions: ["Team Spirit", "OG", "BLAST Slam VIII"],
+    });
+    expect(hints.get("twitch:tundra")?.matchId).toBe("2");
+    expect(hints.get("twitch:fan")?.mentions).toEqual(["Yatoro"]);
+    expect(hints.has("twitch:random")).toBe(false);
+  });
+
+  it("breaks ties by spectators", () => {
+    const a = game({ matchId: "a", leagueName: "Shared League", spectators: 5 });
+    const b = game({
+      matchId: "b",
+      leagueName: "Shared League",
+      teams: { radiant: null, dire: null },
+      players: [],
+      spectators: 50,
+    });
+    const hints = guessStreamGames([stream("s", "Shared League finals")], [a, b]);
+    expect(hints.get("twitch:s")?.matchId).toBe("b");
+  });
+
+  it("ignores games with nothing to match", () => {
+    const pub = game({ leagueName: null, teams: { radiant: null, dire: null }, players: [] });
+    expect(guessStreamGames([stream("a", "anything")], [pub]).size).toBe(0);
   });
 });
