@@ -180,7 +180,9 @@ export function MobileTabBar({
   const primary = signedIn ? items.filter((i) => MOBILE_PRIMARY.includes(i.key)) : items;
   const more = signedIn ? items.filter((i) => !MOBILE_PRIMARY.includes(i.key)) : [];
   const moreActive = more.some((i) => isActive(i.href));
-  const tab = "flex flex-col items-center gap-0.5 px-2 py-2 text-[0.65rem] font-medium";
+  // Each tab takes an equal share of the bar, so the whole width is tappable.
+  const tab =
+    "flex w-full min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-center text-[0.65rem] font-medium";
 
   return (
     <nav
@@ -217,24 +219,25 @@ export function MobileTabBar({
           })}
         </ul>
       )}
-      <ul className="mx-auto flex max-w-md justify-around">
+      <ul className="mx-auto flex max-w-md">
         {primary.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           return (
-            <li key={href}>
+            <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(tab, active ? "text-gold" : "text-muted-foreground")}
               >
                 <Icon aria-hidden className="size-5" />
-                {label.split(" ")[0]}
+                {/* The whole name: a first word alone is just "Mga" in Filipino. */}
+                <span className="max-w-full truncate">{label}</span>
               </Link>
             </li>
           );
         })}
         {more.length > 0 && (
-          <li>
+          <li className="min-w-0 flex-1">
             <button
               type="button"
               aria-expanded={moreOpen}
@@ -243,7 +246,7 @@ export function MobileTabBar({
               className={cn(tab, moreActive || moreOpen ? "text-gold" : "text-muted-foreground")}
             >
               <Ellipsis aria-hidden className="size-5" />
-              {t("common.nav.more")}
+              <span className="max-w-full truncate">{t("common.nav.more")}</span>
             </button>
           </li>
         )}
@@ -257,7 +260,7 @@ export function PublicNav({ enabled }: { enabled: readonly NavKey[] }) {
   const t = useT();
   const isActive = useActive();
   return (
-    <nav aria-label={t("common.nav.main")} className="hidden items-center gap-6 sm:flex">
+    <nav aria-label={t("common.nav.main")} className="hidden items-center gap-4 sm:flex lg:gap-6">
       {visible(enabled, false, t).map(({ href, label }) => {
         const active = isActive(href);
         return (
@@ -266,7 +269,7 @@ export function PublicNav({ enabled }: { enabled: readonly NavKey[] }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "text-sm transition-colors",
+              "text-sm whitespace-nowrap transition-colors",
               active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >

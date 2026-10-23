@@ -251,7 +251,8 @@ function PlanOption({
         asChild
         size="lg"
         variant={featured ? "default" : "outline"}
-        className="mt-auto gap-2"
+        // Long translations wrap inside the button rather than run off the card.
+        className="mt-auto h-auto min-h-9 gap-2 py-2 text-center whitespace-normal"
       >
         {signedIn ? (
           // Full navigation: the route redirects to the provider's hosted checkout.

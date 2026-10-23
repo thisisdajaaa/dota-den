@@ -11,13 +11,20 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div className="space-y-1.5">
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="min-w-0 space-y-1.5">
         <p className="kicker">{kicker}</p>
-        <h1 className="font-display text-3xl font-bold tracking-wide sm:text-4xl">{title}</h1>
+        <h1 className="font-display text-3xl font-bold tracking-wide break-words sm:text-4xl">
+          {title}
+        </h1>
         {description && <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+      {/* Under the title up to tablets; beside it on wide screens, wrapping instead of pushing past the edge. */}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2 lg:max-w-[55%] lg:shrink-0 lg:justify-end">
+          {actions}
+        </div>
+      )}
     </header>
   );
 }

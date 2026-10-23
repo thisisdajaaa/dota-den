@@ -69,6 +69,21 @@ test("public pages fit a phone screen, and guests get navigation", async ({ page
   ).toBeVisible();
 });
 
+test("pages still fit a phone screen in Filipino, whose words run longer", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/");
+  await page.context().addCookies([{ name: "dd_lang", value: "fil", url: page.url() }]);
+  for (const path of ["/plus", "/draft", "/guides/1"]) await expectFits(page, path);
+  // Each bottom tab shows its whole name, not just a first word ("Mga").
+  const nav = page.getByRole("navigation", { name: "Pangunahin" });
+  await expect(nav.getByRole("link", { name: "Mga gabay" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Mga player" })).toBeVisible();
+
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page).toHaveURL(/\/dashboard/);
+  for (const path of ["/dashboard", "/report", "/mmr"]) await expectFits(page, path);
+});
+
 test("signed-in pages fit a phone screen, and the footer isn't hidden by the tab bar", async ({
   page,
 }) => {

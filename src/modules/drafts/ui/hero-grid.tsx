@@ -61,7 +61,8 @@ export function HeroGrid({
             }
           }}
           placeholder={t("drafts.heroGrid.placeholder")}
-          className="flex-1"
+          // Never squeezed by the hint beside it: the hint wraps under it instead.
+          className="min-w-52 flex-1"
         />
         <span className="text-xs text-muted-foreground">
           {disabled
