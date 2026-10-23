@@ -68,7 +68,7 @@ export const plus: MessageTree<typeof en> = {
     manage: "I-manage ang imong plan",
     notes: {
       currency:
-        "Naa sa US dollar ang mga presyo. Pwede kining ipakita sa checkout sa imong lokal nga kwarta, uban ang sales tax o VAT kung naa.",
+        "Naa sa Philippine peso ang mga presyo. Pwede kining ipakita sa checkout sa imong lokal nga kwarta, uban ang sales tax o VAT kung naa.",
       provider:
         "Ang Lemon Squeezy, among merchant of record, ang modumala sa bayad. Sila ang modawat sa bayad, maningil og tax ug mopadala sa resibo. Dili makita sa Dota Den ang imong card.",
       cancel:

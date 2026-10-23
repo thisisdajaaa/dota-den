@@ -70,7 +70,7 @@ export const plus = {
     manage: "Manage your plan",
     notes: {
       currency:
-        "Prices are in US dollars. The checkout may show them in your local currency, with sales tax or VAT added where it applies.",
+        "Prices are in Philippine pesos. The checkout may show them in your local currency, with sales tax or VAT added where it applies.",
       provider:
         "Payments are handled by Lemon Squeezy, our merchant of record. They take the payment, charge any tax and send your receipt. Dota Den never sees your card.",
       cancel:

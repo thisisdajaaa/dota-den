@@ -10,12 +10,13 @@ export const isPlan = (v: unknown): v is Plan =>
   typeof v === "string" && (PLANS as readonly string[]).includes(v);
 
 /**
- * Display prices in US dollars. The payment provider charges and may show them in the buyer's
- * local currency (with tax), so these are the reference prices only.
+ * Display prices in Philippine pesos, the store's currency (keep in step with the Lemon
+ * Squeezy variants). The checkout may show them in the buyer's local currency (with tax), so
+ * these are the reference prices only.
  */
-export const PLAN_PRICES: Record<Plan, { amount: string; currency: "USD" }> = {
-  monthly: { amount: "$3.99", currency: "USD" },
-  yearly: { amount: "$29.99", currency: "USD" },
+export const PLAN_PRICES: Record<Plan, { amount: string; currency: "PHP" }> = {
+  monthly: { amount: "₱299", currency: "PHP" },
+  yearly: { amount: "₱2,990", currency: "PHP" },
 };
 
 /** Where a cap already exists for free players, Plus multiplies it by this. */
