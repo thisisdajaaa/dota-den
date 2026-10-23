@@ -277,7 +277,7 @@ export async function HistoryList({
         {page.page < page.pageCount ? (
           <Link
             href={historyHref({ friend, page: page.page + 1 })}
-            className="inline-flex items-center gap-1 font-medium text-gold hover:underline"
+            className="relative inline-flex items-center gap-1 font-medium text-gold hover:underline touch:tap-area"
           >
             {t("drafts.history.older")} <ChevronRight aria-hidden className="size-4" />
           </Link>

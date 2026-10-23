@@ -15,14 +15,23 @@ export function SiteFooter({ showPlus = false }: { showPlus?: boolean }) {
           <p className="leading-relaxed">{t("common.footer.disclaimer")}</p>
           <nav aria-label={t("common.footer.legal")} className="flex flex-wrap gap-x-4 gap-y-1">
             {showPlus && (
-              <Link href="/plus" className="hover:text-foreground hover:underline">
+              <Link
+                href="/plus"
+                className="relative hover:text-foreground hover:underline touch:tap-area"
+              >
                 {t("common.nav.plus")}
               </Link>
             )}
-            <Link href="/terms" className="hover:text-foreground hover:underline">
+            <Link
+              href="/terms"
+              className="relative hover:text-foreground hover:underline touch:tap-area"
+            >
               {t("common.footer.terms")}
             </Link>
-            <Link href="/refunds" className="hover:text-foreground hover:underline">
+            <Link
+              href="/refunds"
+              className="relative hover:text-foreground hover:underline touch:tap-area"
+            >
               {t("common.footer.refunds")}
             </Link>
           </nav>

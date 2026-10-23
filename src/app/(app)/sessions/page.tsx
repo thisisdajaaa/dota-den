@@ -108,7 +108,7 @@ export default async function SessionsPage({ searchParams }: PageProps<"/session
             {page.page < page.pageCount && (
               <Link
                 href={pageHref(page.page + 1)}
-                className="inline-flex items-center gap-1 font-medium text-gold hover:underline"
+                className="relative inline-flex items-center gap-1 font-medium text-gold hover:underline touch:tap-area"
               >
                 {t("sessions.page.older")} <ChevronRight aria-hidden className="size-4" />
               </Link>

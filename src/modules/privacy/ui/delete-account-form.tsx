@@ -45,7 +45,7 @@ export function DeleteAccountForm() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           autoComplete="off"
-          className="h-9 w-40 rounded-lg border border-white/10 bg-background px-3 text-sm"
+          className="h-9 w-40 rounded-lg border border-white/10 bg-background px-3 text-sm touch:h-10"
         />
         <Button type="submit" variant="destructive" disabled={!ready || busy} className="gap-2">
           <Trash2 aria-hidden className="size-4" />

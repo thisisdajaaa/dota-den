@@ -260,7 +260,7 @@ export default async function MatchesPage({ searchParams }: PageProps<"/matches"
             {page.nextCursor && (
               <Link
                 href={matchListHref({ ...filter, cursor: page.nextCursor })}
-                className="inline-flex items-center gap-1 font-medium text-gold hover:underline"
+                className="relative inline-flex items-center gap-1 font-medium text-gold hover:underline touch:tap-area"
               >
                 {t("matches.list.older")} <ChevronRight aria-hidden className="size-4" />
               </Link>

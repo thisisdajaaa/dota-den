@@ -28,7 +28,7 @@ export function GameHint({ hint, className }: { hint: StreamGameHint; className?
         href={`/live/${hint.matchId}`}
         aria-label={t("live.hub.hint.open", { match })}
         title={t("live.hub.hint.why", { names: hint.mentions.join(", ") })}
-        className="mt-0.5 inline-flex max-w-full items-center gap-1.5 rounded-md bg-gold/10 px-2 py-1 text-xs font-medium text-gold ring-1 ring-gold/20 transition-colors outline-none hover:bg-gold/15 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="relative mt-0.5 inline-flex max-w-full items-center gap-1.5 rounded-md bg-gold/10 px-2 py-1 text-xs font-medium text-gold ring-1 ring-gold/20 transition-colors outline-none hover:bg-gold/15 focus-visible:ring-3 focus-visible:ring-ring/50 touch:tap-area"
       >
         <Swords aria-hidden className="size-3.5 shrink-0" />
         <span className="truncate">{match}</span>

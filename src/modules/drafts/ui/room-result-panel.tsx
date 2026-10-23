@@ -93,7 +93,7 @@ export function RoomResultPanel({ room }: { room: RoomView }) {
         {friend && (
           <Link
             href={`/draft/rooms/history?friend=${friend.accountId32}`}
-            className="inline-flex items-center gap-1.5 text-sm text-gold hover:underline"
+            className="relative inline-flex items-center gap-1.5 text-sm text-gold hover:underline touch:tap-area"
           >
             <History aria-hidden className="size-3.5" />{" "}
             {t("drafts.result.withFriend", { name: friend.name })}

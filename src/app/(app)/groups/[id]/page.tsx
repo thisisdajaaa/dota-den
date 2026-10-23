@@ -45,7 +45,7 @@ export default async function GroupPage({ params }: PageProps<"/groups/[id]">) {
     <div className="space-y-6">
       <Link
         href="/groups"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("groups.group.back")}

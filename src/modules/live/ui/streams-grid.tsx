@@ -75,7 +75,7 @@ export function StreamsGrid({
               <select
                 value={active ?? ""}
                 onChange={(e) => setLanguage(e.target.value || null)}
-                className="h-9 max-w-[14rem] appearance-none rounded-lg border border-white/[0.08] bg-background/60 pr-8 pl-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="h-9 max-w-[14rem] appearance-none rounded-lg border border-white/[0.08] bg-background/60 pr-8 pl-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 touch:h-10"
               >
                 <option value="">
                   {t("live.hub.streams.allLanguages", { n: streams.length })}
