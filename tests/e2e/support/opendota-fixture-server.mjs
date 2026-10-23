@@ -673,6 +673,75 @@ function laneRoles(heroId) {
 }
 
 /**
+ * STRATZ per-position public stats (GraphQL `heroStats.winDay` per position, aliased pos1..pos5).
+ * Positions follow the fixture role sets, except Fixture Hero 123: a "Nuker, Pusher" by its
+ * catalog roles (a core) that STRATZ says is played at Pos 4 (like Bounty Hunter), with the
+ * best Pos 4 win rate so it tops the supports. Days end 3 days ago, like STRATZ's lagging
+ * daily totals.
+ */
+const POSITION_SPLITS = [
+  { 1: 0.8, 2: 0.2 },
+  { 5: 0.6, 4: 0.4 },
+  { 3: 0.8, 4: 0.2 },
+  { 2: 0.8, 3: 0.2 },
+  { 1: 0.6, 3: 0.4 },
+  { 4: 0.6, 5: 0.4 },
+];
+const STRATZ_POS4_HERO = 123;
+function positionSplit(id) {
+  if (id === 1) return { 1: 1 };
+  if (id === 14) return { 3: 0.3, 4: 0.5, 5: 0.2 };
+  if (id === STRATZ_POS4_HERO) return { 4: 0.8, 5: 0.15, 2: 0.05 };
+  return POSITION_SPLITS[id % POSITION_SPLITS.length];
+}
+function stratzPositionStats(days) {
+  const lastDay = Math.floor(NOW / DAY) * DAY - 3 * DAY;
+  const heroStats = {};
+  for (const pos of [1, 2, 3, 4, 5]) {
+    heroStats[`pos${pos}`] = HERO_IDS.flatMap((id) => {
+      const share = positionSplit(id)[pos] ?? 0;
+      const rate =
+        id < 100
+          ? 0.48
+          : id === STRATZ_POS4_HERO && pos === 4
+            ? 0.6
+            : 0.46 + ((id * 5 + pos * 3) % 10) / 100;
+      return Array.from({ length: days }, (_, d) => {
+        const matchCount = Math.round(2_000 * share);
+        return {
+          heroId: id,
+          day: lastDay - d * DAY,
+          matchCount,
+          winCount: Math.round(matchCount * rate),
+        };
+      });
+    });
+  }
+  return { data: { heroStats } };
+}
+function stratz(req, res, raw) {
+  const send = (status, body) => {
+    res.writeHead(status, { "content-type": "application/graphql-response+json; charset=utf-8" });
+    res.end(JSON.stringify(body));
+  };
+  if (
+    !/^Bearer .+/.test(req.headers.authorization ?? "") ||
+    req.headers["user-agent"] !== "STRATZ_API"
+  )
+    return send(403, { errors: [{ message: "Forbidden" }] });
+  let body;
+  try {
+    body = JSON.parse(raw || "{}");
+  } catch {
+    return send(400, { errors: [{ message: "Bad JSON" }] });
+  }
+  if (!String(body.query ?? "").includes("winDay"))
+    return send(200, { errors: [{ message: "Unsupported fixture query" }] });
+  const days = Math.min(30, Math.max(1, Number(body.variables?.days ?? 7)));
+  return send(200, stratzPositionStats(days));
+}
+
+/**
  * Explorer (SQL over the pro match database). Only the two queries the Meta page sends are
  * recognised, by the tables they read; anything else answers like a failed query.
  */
@@ -1403,6 +1472,12 @@ createServer((req, res) => {
     return res.end(JSON.stringify(steam.body));
   }
   if (url.pathname.startsWith("/resend/") && resend(req, res, url) !== false) return;
+  if (url.pathname === "/stratz/graphql" && req.method === "POST") {
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => stratz(req, res, raw));
+    return;
+  }
   if (url.pathname === "/groq/calls") {
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ calls: groqCalls, lastLanguage: groqLastLanguage }));

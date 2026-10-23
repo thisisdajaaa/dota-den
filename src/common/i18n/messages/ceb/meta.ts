@@ -23,6 +23,10 @@ export const meta: MessageTree<typeof en> = {
       down: "Dili available ang pro lane data karon. Sulayi pag-usab unya.",
     },
   },
+  attribution: {
+    label: "Data:",
+    stratz: "STRATZ",
+  },
   page: {
     kicker: "Meta",
     title: "Unsa ang kusog karon",
@@ -67,6 +71,16 @@ export const meta: MessageTree<typeof en> = {
     titleShort: "Mga top hero",
     description:
       "Gihan-ay sumala sa win rate gikan Ancient hangtod Immortal ug niining lane, nga ang gagmay nga sample gibira paingon sa 50%, ug gamay nga dugang para sa mga hero nga gi-agawan sa tournaments.",
+    descriptionPositions:
+      "Gihan-ay sumala sa win rate niini nga posisyon sa mga duwa gikan Ancient hangtod Immortal, nga ang gagmay nga sample gibira paingon sa 50%, ug gamay nga dugang para sa mga hero nga gi-agawan sa tournaments. Malista ang hero kung labing menos {share} sa iyang mga duwa, ug {games} o labaw pa, anaa niini nga posisyon.",
+    positionsSource:
+      "Position stats: public nga duwa sa STRATZ, Ancient–Immortal, {range} ({days} ka adlaw), na-update {ago}.",
+    trendSource: "Pick trends: public nga duwa sa OpenDota, na-update {ago}.",
+    trendUnavailable: "Dili available ang pick trends (OpenDota) karon.",
+    positionsFallback:
+      "Dili available ang position stats sa STRATZ karon, mao nga gibutang niining lista ang mga hero sumala sa lane data sa OpenDota ug sa role sa hero.",
+    positionRate: "win rate sa {pos} · {games} ({share} sa iyang mga duwa)",
+    positionScope: "{pos}, Ancient–Immortal, {range}",
     publicSource: "High-rank ug lane stats: public nga duwa sa OpenDota, na-update {ago}.",
     proOk: "Tournaments: {drafts} sa milabay nga {days} ka adlaw, na-update {ago}.",
     proTooFew: "Tournaments: {drafts} ra sa milabay nga {days} ka adlaw, kulang aron gamiton.",
@@ -110,6 +124,7 @@ export const meta: MessageTree<typeof en> = {
     contested:
       "Gi-agawan sa tournaments: na-pick o na-ban sa {pct} sa {drafts} ka pro draft sa milabay nga {days} ka adlaw",
     lane: "Modaog sa {pct} sa {games} ka public nga duwa sa {lane}",
+    position: "Modaog sa {pct} sa {games} ka duwa nga Ancient–Immortal sa {pos}",
   },
   overview: {
     kicker: "Dali nga tan-aw",
@@ -124,6 +139,10 @@ export const meta: MessageTree<typeof en> = {
     },
     poolsAria: "Mga top hero: {name}",
     winRate: "{rate} win rate",
+    winRateAt: "{rate} win rate sa {pos}",
+    positionGames: "{games} · {share} sa iyang mga duwa",
+    sourcePositions:
+      "Source: public nga duwa sa STRATZ, Ancient–Immortal, {range}, na-update {ago}. Kausa ra ilista ang matag hero, sa grupo sa posisyon diin kini kanunay gidula. Gamay nga giusab sa tournament picks ug pick trends (OpenDota) ang han-ay.",
     fullRanking: "Tibuok ranking:",
     source:
       "Gikan sa mga high-rank nga duwa ug lane data sa OpenDota, na-update {ago}. Kausa ra makita ang matag hero, sa role diin siya kanunay gidula.",

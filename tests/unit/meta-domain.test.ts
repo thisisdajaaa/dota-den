@@ -359,6 +359,7 @@ describe("patch tips", () => {
     score: 0.02,
     highRank: { games: 50_000, wins: 26_000, rate: 0.52, adjusted: 0.52 },
     lane: { games: 900, wins: 495, rate: 0.55, adjusted: 0.54, share: 0.6 },
+    atPosition: null,
     laneKnown: true,
     pro: {
       heroId: 14,
@@ -429,6 +430,7 @@ describe("meta overview", () => {
     score,
     highRank: null,
     lane: share === null ? null : { games: 500, wins: 270, rate: 0.54, adjusted: 0.53, share },
+    atPosition: null,
     laneKnown: share !== null,
     pro: null,
     trend: null,

@@ -16,6 +16,7 @@ const ICONS: Record<TipKind, typeof Swords> = {
   falling: TrendingDown,
   contested: Trophy,
   lane: Swords,
+  position: Swords,
 };
 
 export const TIP_HEROES = 5;
@@ -56,6 +57,14 @@ function tipText(
             pct: pct(hero.lane.rate),
             games: num(hero.lane.games),
             lane: POSITION_INFO[position].laneName,
+          })
+        : tip.text;
+    case "position":
+      return hero.atPosition
+        ? t("meta.tips.position", {
+            pct: pct(hero.atPosition.rate),
+            games: num(hero.atPosition.games),
+            pos: POSITION_INFO[hero.atPosition.position].short,
           })
         : tip.text;
   }

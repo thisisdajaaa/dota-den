@@ -64,30 +64,42 @@ export async function lane(): Promise<"guest" | "member"> {
 }
 
 /**
- * Shared cache (and, for OpenDota, the global call budget) for a gateway when Upstash Redis
- * is configured (ADR 0008). Without Redis this returns nothing and gateways stay per-instance.
+ * Global STRATZ calls across every instance (needs Redis). Far under the token's limits
+ * (8/s, 150/min, 1,500/h, 15,000/day): the Meta page needs about one call per 6 hours.
+ */
+export const STRATZ_BUDGET = { perMinute: 20, perDay: 500 } as const;
+
+function budgetFor(
+  upstream: "opendota" | "valve" | "stratz",
+  store: ConstructorParameters<typeof RedisUpstreamBudget>[0],
+): GatewayOptions["budget"] {
+  if (upstream === "valve") return undefined;
+  const { perMinute, perDay } = upstream === "opendota" ? openDotaBudget(env()) : STRATZ_BUDGET;
+  return new RedisUpstreamBudget(store, {
+    prefix: `dd:budget:${upstream}`,
+    perMinute,
+    perDay,
+    onExhausted: (window) => logger.warn(`${upstream}_budget_exhausted`, { window }),
+    onMilestone: (usage) => logger.info(`${upstream}_budget_usage`, usage),
+    lane,
+  });
+}
+
+/**
+ * Shared cache (and, for OpenDota and STRATZ, a global call budget) for a gateway when Upstash
+ * Redis is configured (ADR 0008). Without Redis this returns nothing and gateways stay
+ * per-instance.
  */
 export function sharedGatewayOptions(
-  upstream: "opendota" | "valve",
+  upstream: "opendota" | "valve" | "stratz",
 ): Pick<GatewayOptions, "sharedCache" | "budget" | "onSharedError"> {
   const redis = getRedis();
   if (!redis) return {};
   const store = redis as unknown as ConstructorParameters<typeof RedisResponseCache>[0];
-  const { perMinute, perDay } = openDotaBudget(env());
   return {
     sharedCache: new RedisResponseCache(store, { prefix: `dd:gw:${upstream}` }),
-    // One budget for every OpenDota gateway (API and explorer): it's one provider quota.
-    budget:
-      upstream === "opendota"
-        ? new RedisUpstreamBudget(store, {
-            prefix: "dd:budget:opendota",
-            perMinute,
-            perDay,
-            onExhausted: (window) => logger.warn("opendota_budget_exhausted", { window }),
-            onMilestone: (usage) => logger.info("opendota_budget_usage", usage),
-            lane,
-          })
-        : undefined,
+    // One budget per provider quota (OpenDota's API and explorer gateways share one).
+    budget: budgetFor(upstream, store),
     onSharedError: ({ op, error }) => {
       // Fail open; log at most once a minute per instance.
       if (Date.now() - lastErrorLogAt < 60_000) return;

@@ -52,27 +52,33 @@ test("the battle report sums up your games over a period", async ({ page }) => {
   await expect(table).toContainText("Anti-Mage");
 });
 
-test("a custom range is a shareable URL", async ({ page }) => {
-  await page.goto("/api/v1/auth/steam/login");
-  await page.goto("/report");
-  const form = page.getByRole("form", { name: "Custom range" });
-  const day = (offset: number) =>
-    new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10);
-  // Pick To first: From can't be after it.
-  await pickDate(page, form.getByRole("button", { name: /^To/ }), day(1));
-  await pickDate(page, form.getByRole("button", { name: /^From/ }), day(5));
-  await expect(form.getByRole("button", { name: /^From/ })).toHaveAccessibleName(
-    new RegExp(
-      `^From ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${day(5)}T12:00:00Z`))}$`,
-    ),
-  );
-  await form.getByRole("button", { name: "Show range" }).click();
-  await expect(page).toHaveURL(new RegExp(`/report\\?from=${day(5)}&to=${day(1)}$`));
-  await expect(
-    page.getByRole("navigation", { name: "Period" }).getByRole("link", { name: "Custom" }),
-  ).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("region", { name: "Calendar" })).toContainText("of 5 days");
-  // Reloading the URL shows the same range.
-  await page.reload();
-  await expect(page.getByRole("region", { name: "Calendar" })).toContainText("of 5 days");
+// Dates below are computed in UTC; a browser in a zone ahead of UTC (e.g. Manila before 8am)
+// would be on a different calendar day, so this browser runs in UTC too.
+test.describe("custom range", () => {
+  test.use({ timezoneId: "UTC" });
+
+  test("a custom range is a shareable URL", async ({ page }) => {
+    await page.goto("/api/v1/auth/steam/login");
+    await page.goto("/report");
+    const form = page.getByRole("form", { name: "Custom range" });
+    const day = (offset: number) =>
+      new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10);
+    // Pick To first: From can't be after it.
+    await pickDate(page, form.getByRole("button", { name: /^To/ }), day(1));
+    await pickDate(page, form.getByRole("button", { name: /^From/ }), day(5));
+    await expect(form.getByRole("button", { name: /^From/ })).toHaveAccessibleName(
+      new RegExp(
+        `^From ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${day(5)}T12:00:00Z`))}$`,
+      ),
+    );
+    await form.getByRole("button", { name: "Show range" }).click();
+    await expect(page).toHaveURL(new RegExp(`/report\\?from=${day(5)}&to=${day(1)}$`));
+    await expect(
+      page.getByRole("navigation", { name: "Period" }).getByRole("link", { name: "Custom" }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("region", { name: "Calendar" })).toContainText("of 5 days");
+    // Reloading the URL shows the same range.
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Calendar" })).toContainText("of 5 days");
+  });
 });

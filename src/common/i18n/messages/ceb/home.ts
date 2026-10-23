@@ -53,6 +53,7 @@ export const home: MessageTree<typeof en> = {
     title: "Unsa ang kusgan karon",
     live: "Tinuod nga data",
     source: "High-rank nga duwa sa OpenDota · na-update {ago}",
+    sourcePositions: "Duwa nga Ancient–Immortal sa STRATZ, {range} · na-update {ago}",
     open: "Ablihi ang Meta",
     unavailable:
       "Dili available ang hero stats karon. Makita kini sa Meta page kung motubag na ang OpenDota.",

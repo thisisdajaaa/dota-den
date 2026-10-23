@@ -27,6 +27,8 @@ constructors. `.env.example` lists every variable with its default.
 | `VALVE_DATAFEED_BASE_URL`            | URL                     | Valve's datafeed | Tests point this at the fixture server                                                       |
 | `STEAM_WEB_API_KEY`                  | secret                  | unset            | "Friends playing now" on the overview (Steam presence). Unset: the strip is hidden           |
 | `STEAM_API_BASE_URL`                 | URL                     | Steam Web API    | Tests point this at the fixture server                                                       |
+| `STRATZ_API_TOKEN`                   | secret                  | unset            | Per-position public stats on the Meta page (ADR 0008 addendum). Unset: OpenDota lanes only   |
+| `STRATZ_API_BASE_URL`                | URL                     | STRATZ's API     | Tests point this at the fixture server (`<base>/graphql`)                                    |
 | `TWITCH_CLIENT_ID`                   | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                           |
 | `TWITCH_CLIENT_SECRET`               | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only               |
 | `KICK_CLIENT_ID`                     | string                  | unset            | Kick app: Kick's live Dota 2 streams on `/live`, next to Twitch's (with the secret)          |

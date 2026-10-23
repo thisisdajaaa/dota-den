@@ -65,6 +65,9 @@ export default defineConfig({
         // Friends playing now: a dummy key against the fixture's fake Steam Web API.
         STEAM_WEB_API_KEY: "e2e-steam-key",
         STEAM_API_BASE_URL: `${fixtureURL}/steam`,
+        // Per-position stats from the fixture's fake STRATZ (overrides any token in .env.local).
+        STRATZ_API_TOKEN: "e2e-stratz-fixture",
+        STRATZ_API_BASE_URL: `${fixtureURL}/stratz`,
         // Never call a paid model from tests (overrides any key in .env.local).
         GROQ_API_KEY: "",
         // The AI match coach talks to the fixture's stand-in for Groq (nothing else does).
@@ -130,6 +133,9 @@ export default defineConfig({
         KICK_CLIENT_ID: "",
         KICK_CLIENT_SECRET: "",
         STEAM_WEB_API_KEY: "",
+        // No STRATZ: the Meta page places heroes by OpenDota lane data, as before.
+        STRATZ_API_TOKEN: "",
+        STRATZ_API_BASE_URL: "",
         VAPID_PUBLIC_KEY: "",
         VAPID_PRIVATE_KEY: "",
         RESEND_API_KEY: "",

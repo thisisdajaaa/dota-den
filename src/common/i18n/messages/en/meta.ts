@@ -21,6 +21,10 @@ export const meta = {
       down: "Pro lane data is unavailable right now. Try again shortly.",
     },
   },
+  attribution: {
+    label: "Data:",
+    stratz: "STRATZ",
+  },
   page: {
     kicker: "Meta",
     title: "What's strong right now",
@@ -65,7 +69,17 @@ export const meta = {
     titleShort: "Top heroes",
     description:
       "Ranked by win rate at Ancient to Immortal and in this lane, with small samples pulled toward 50%, plus a small boost for heroes contested in tournaments.",
+    descriptionPositions:
+      "Ranked by win rate at this position in Ancient to Immortal games, with small samples pulled toward 50%, plus a small boost for heroes contested in tournaments. A hero is listed when at least {share} of its games, and {games} or more, are at this position.",
     publicSource: "High-rank and lane stats: OpenDota public games, updated {ago}.",
+    positionsSource:
+      "Position stats: STRATZ public games at Ancient–Immortal, {range} ({days} days), updated {ago}.",
+    trendSource: "Pick trends: OpenDota public games, updated {ago}.",
+    trendUnavailable: "Pick trends (OpenDota) are unavailable right now.",
+    positionsFallback:
+      "STRATZ position stats are unavailable right now, so this list places heroes by OpenDota lane data and hero roles.",
+    positionRate: "win rate at {pos} · {games} ({share} of its games)",
+    positionScope: "{pos}, Ancient–Immortal, {range}",
     proOk: "Tournaments: {drafts} in the last {days} days, updated {ago}.",
     proTooFew: "Tournaments: only {drafts} in the last {days} days, too few to use.",
     proUnavailable: "Tournament data is unavailable right now.",
@@ -101,6 +115,7 @@ export const meta = {
     contested:
       "Contested in tournaments: picked or banned in {pct} of {drafts} pro drafts over the last {days} days",
     lane: "Wins {pct} of {games} public games played in the {lane}",
+    position: "Wins {pct} of {games} Ancient–Immortal games at {pos}",
   },
   overview: {
     kicker: "At a glance",
@@ -115,9 +130,13 @@ export const meta = {
     },
     poolsAria: "Top heroes: {name}",
     winRate: "{rate} win rate",
+    winRateAt: "{rate} win rate at {pos}",
+    positionGames: "{games} · {share} of its games",
     fullRanking: "Full ranking:",
     source:
       "Source: OpenDota high-rank games and lane data, updated {ago}. Each hero is listed once, in the role it's played most.",
+    sourcePositions:
+      "Source: STRATZ public games at Ancient–Immortal, {range}, updated {ago}. Each hero is listed once, in the group of positions it's played at most. Tournament picks and pick trends (OpenDota) nudge the order.",
     empty: "Not enough data for this group right now.",
     contested: {
       kicker: "Tournaments",

@@ -11,7 +11,9 @@ import type { TopHeroesView } from "../dtos/responses/meta.dto";
 import type { RankedHero } from "../domain/meta-stats";
 import { TREND_THRESHOLD } from "../domain/patch-tips";
 import { POSITION_INFO } from "../domain/position";
+import { MIN_POSITION_GAMES, MIN_POSITION_SHARE } from "../domain/position-stats";
 import { MetaSection, Unavailable } from "./meta-section";
+import { formatDayRange, StratzAttribution } from "./stratz-attribution";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -51,6 +53,7 @@ export async function TopHeroesCard({
   const info = POSITION_INFO[view.position];
   const lane = info.laneName.replace(/^./, (c) => c.toUpperCase());
   const { sources } = view;
+  const positions = sources.positions.status === "ok" ? sources.positions : null;
   const titleId = "meta-top-heroes";
 
   return (
@@ -58,10 +61,41 @@ export async function TopHeroesCard({
       id={titleId}
       kicker={t("meta.topHeroes.kicker")}
       title={t("meta.topHeroes.title", { name: info.name })}
-      description={t("meta.topHeroes.description")}
+      description={
+        positions ? (
+          <>
+            <span className="block font-medium text-foreground/90">
+              {t("meta.topHeroes.positionScope", {
+                pos: info.short,
+                range: formatDayRange(positions.window),
+              })}
+            </span>
+            {t("meta.topHeroes.descriptionPositions", {
+              share: pct(MIN_POSITION_SHARE),
+              games: MIN_POSITION_GAMES.toLocaleString("en-US"),
+            })}
+          </>
+        ) : (
+          t("meta.topHeroes.description")
+        )
+      }
       footer={
         <>
-          {t("meta.topHeroes.publicSource", { ago: formatAgo(sources.publicFetchedAt, now) })}{" "}
+          {positions ? (
+            <>
+              {t("meta.topHeroes.positionsSource", {
+                range: formatDayRange(positions.window),
+                days: positions.window.days,
+                ago: formatAgo(positions.fetchedAt, now),
+              })}{" "}
+              {sources.publicFetchedAt
+                ? t("meta.topHeroes.trendSource", { ago: formatAgo(sources.publicFetchedAt, now) })
+                : t("meta.topHeroes.trendUnavailable")}
+            </>
+          ) : (
+            sources.publicFetchedAt &&
+            t("meta.topHeroes.publicSource", { ago: formatAgo(sources.publicFetchedAt, now) })
+          )}{" "}
           {sources.pro.status === "ok"
             ? t("meta.topHeroes.proOk", {
                 drafts: drafts(sources.pro.drafts),
@@ -74,9 +108,18 @@ export async function TopHeroesCard({
                   days: sources.pro.windowDays,
                 })
               : t("meta.topHeroes.proUnavailable")}
+          {positions && (
+            <>
+              {" "}
+              <StratzAttribution t={t} />
+            </>
+          )}
         </>
       }
     >
+      {sources.positions.status === "unavailable" && (
+        <Unavailable>{t("meta.topHeroes.positionsFallback")}</Unavailable>
+      )}
       {sources.lane === "unavailable" && (
         <Unavailable>{t("meta.topHeroes.laneUnavailable")}</Unavailable>
       )}
@@ -102,7 +145,22 @@ export async function TopHeroesCard({
                     </Link>
                     <TrendBadge hero={h} t={t} />
                   </div>
-                  {h.highRank && (
+                  {h.atPosition && (
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="text-foreground">{formatPercent(h.atPosition.rate)}</span>{" "}
+                        {t("meta.topHeroes.positionRate", {
+                          pos: POSITION_INFO[h.atPosition.position].short,
+                          games: games(h.atPosition.games),
+                          share: pct(h.atPosition.share),
+                        })}
+                      </p>
+                      <span className="hidden w-20 sm:block">
+                        <WinRateBar rate={h.atPosition.rate} />
+                      </span>
+                    </div>
+                  )}
+                  {!h.atPosition && h.highRank && (
                     <div className="flex items-center gap-3">
                       <p className="text-xs text-muted-foreground">
                         <span className="text-foreground">{formatPercent(h.highRank.rate)}</span>{" "}
@@ -113,20 +171,22 @@ export async function TopHeroesCard({
                       </span>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    {h.lane ? (
-                      <>
-                        {lane}:{" "}
-                        <span className="text-foreground">{formatPercent(h.lane.rate)}</span>{" "}
-                        {t("meta.topHeroes.laneRate", {
-                          games: games(h.lane.games),
-                          share: pct(h.lane.share),
-                        })}
-                      </>
-                    ) : (
-                      t("meta.topHeroes.laneNoData", { lane })
-                    )}
-                  </p>
+                  {!h.atPosition && (
+                    <p className="text-xs text-muted-foreground">
+                      {h.lane ? (
+                        <>
+                          {lane}:{" "}
+                          <span className="text-foreground">{formatPercent(h.lane.rate)}</span>{" "}
+                          {t("meta.topHeroes.laneRate", {
+                            games: games(h.lane.games),
+                            share: pct(h.lane.share),
+                          })}
+                        </>
+                      ) : (
+                        t("meta.topHeroes.laneNoData", { lane })
+                      )}
+                    </p>
+                  )}
                   {h.pro && (
                     <p className="text-xs text-muted-foreground">
                       {t("meta.topHeroes.tournaments", {

@@ -49,6 +49,7 @@ export const home = {
     title: "What's strong right now",
     live: "Real data",
     source: "OpenDota high-rank games · updated {ago}",
+    sourcePositions: "STRATZ Ancient–Immortal games, {range} · updated {ago}",
     open: "Open the Meta",
     unavailable:
       "Hero stats are unavailable right now. The Meta page shows them once OpenDota answers.",

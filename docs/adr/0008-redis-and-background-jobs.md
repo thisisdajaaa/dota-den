@@ -68,3 +68,41 @@ durable background work, without running a server of our own.
   password works too), and for jobs `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`,
   `QSTASH_NEXT_SIGNING_KEY`. Optional: `OPENDOTA_BUDGET_PER_MINUTE`, `OPENDOTA_BUDGET_PER_DAY`
   (defaults 60 and 3,000, or 1,200 and 100,000 with `OPENDOTA_API_KEY`).
+
+## Addendum (2026-10-24): STRATZ position stats for the Meta page
+
+OpenDota's lane roles can't tell a Pos 3 from the Pos 4 beside it, or a Pos 1 from the Pos 5, so
+the Meta page split cores from supports by catalog role tags, and misplaced heroes such as
+Bounty Hunter (tagged Escape and Nuker, played at Pos 4 in 80% of Ancient–Immortal games).
+STRATZ has real per-position public stats.
+
+- **Source.** One GraphQL request (`POST <STRATZ_API_BASE_URL>/graphql`, bearer token, required
+  `User-Agent: STRATZ_API`) asks `heroStats.winDay` for each of `POSITION_1`…`POSITION_5`
+  (aliased) at Ancient, Divine and Immortal, over the latest 7 days STRATZ has (`take: 7`).
+  Daily totals rather than `winWeek` (complete weeks only, so up to a week older) or
+  `winGameVersion` (its newest bucket is 7.40, with few games). STRATZ's daily totals lag:
+  in October 2026 the newest day was two weeks old, so the page always prints the real dates
+  ("Oct 4 – 10"), never "last 7 days". Data more than 28 days old is refused.
+- **Gateway.** Its own `ProviderGateway` (`stratz`: separate circuit, 10s timeout, 1 retry),
+  its own shared cache (`dd:gw:stratz`, 6h, the cache key is URL plus query body, never the
+  token) and its own Redis budget (`dd:budget:stratz`, 20 a minute and 500 a day, far under the
+  token's 8/s, 150/min, 1,500/h, 15,000/day). In memory the source keeps the last good answer
+  for 48h after failures and waits 5 minutes after a failure before asking again.
+- **Source split.** When STRATZ answers, it decides which heroes play a position and their win
+  rate there; catalog roles and OpenDota lane data aren't used (and no lane lookups are made).
+  OpenDota still supplies the 7-day pick trend, the high-rank record (all positions; kept for
+  the draft advisor) and tournament picks and bans, which nudge the order as before. When
+  STRATZ is unset, down or refused, everything falls back to the lane-and-role logic, and the
+  page says which source placed the heroes. The Meta page and the home preview name STRATZ
+  and link to stratz.com wherever its numbers are shown.
+- **Thresholds.** A hero counts for a position with at least 15% of its games there (about one
+  game in seven: a real, regular role, so flex heroes count for several positions) and at
+  least 1,000 games (a win rate's standard error is then about ±1.6 points; the least played
+  hero has about 5,000 games a week). Score = 1.75 × (win rate at the position, shrunk toward
+  50% with 1,000 virtual games, − 50%) + the tournament and trend nudges; 1.75 replaces the
+  high-rank (1) and lane (0.75) terms so the nudges keep their weight.
+- **Overview pools.** Each hero goes to the pool (Pos 1, Pos 2–3, Pos 4–5) holding the largest
+  combined share of all its games, and is shown at its most-played position in that pool. A
+  mid who wins a lot in its few Pos 1 games is still a mid; it's listed only if it ranks there.
+- **Warm job.** `meta-warm` fetches the STRATZ stats first (member budget, as background work),
+  then ranks every position; with STRATZ answering, that needs no OpenDota lane calls.
