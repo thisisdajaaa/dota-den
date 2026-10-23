@@ -318,6 +318,31 @@ describe("PlusService", () => {
     expect(await plus.limit(USER, 100)).toBe(100);
   });
 
+  it("counts only its own mode's subscriptions (staging and production share a database)", async () => {
+    // Staging (test mode) receives a test purchase: Plus there.
+    const staging = setup({ testMode: true });
+    expect(await staging.deliver(lsSubscriptionEvent({ testMode: true }))).toMatchObject({
+      outcome: "applied",
+    });
+    expect(await staging.plus.isPlus(USER)).toBe(true);
+
+    // Production (live mode) reads the same records: the test purchase grants nothing.
+    const live = new PlusService({
+      subscriptions: staging.subscriptions,
+      events: staging.events,
+      provider: provider({ testMode: false }),
+      enabled: () => true,
+      logger: staging.logger,
+      now: () => NOW,
+    });
+    expect(await live.isPlus(USER)).toBe(false);
+    expect(await live.limit(USER, 100)).toBe(100);
+    expect([...(await live.supporters([1]))]).toEqual([]);
+    expect(await live.plusUserIds()).toEqual([]);
+    expect(await live.plan(USER)).toMatchObject({ plus: false, canManage: false });
+    await expect(live.portalUrl(USER)).rejects.toThrow();
+  });
+
   it("is off (coming soon) without a provider and paused by the kill switch", async () => {
     const subscriptions = new MemorySubscriptions();
     const events = new MemoryWebhookEvents();
