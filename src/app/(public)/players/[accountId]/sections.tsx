@@ -63,7 +63,7 @@ export async function RecordTiles({ record }: Pick<PublicPlayerSections, "record
     return (
       <p
         role="alert"
-        className="panel flex items-center p-4 text-sm text-muted-foreground sm:col-span-2"
+        className="panel row-span-3 flex items-center p-4 text-sm text-muted-foreground sm:col-span-2"
       >
         {upstreamErrorCopy(t, res.error, "record")}
       </p>

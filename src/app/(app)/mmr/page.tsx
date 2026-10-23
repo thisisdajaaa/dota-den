@@ -128,7 +128,7 @@ export default async function MmrPage({ searchParams }: PageProps<"/mmr">) {
         }
       />
 
-      <section aria-label={t("mmr.page.summary")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label={t("mmr.page.summary")} className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile
           label={t("mmr.page.currentMmr")}
           value={current ? current.mmr.toLocaleString("en-US") : "—"}

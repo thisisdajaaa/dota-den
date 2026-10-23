@@ -59,7 +59,7 @@ export async function PairBanner({
         <p className="text-sm text-muted-foreground">
           <Link
             href={`/players/${friend.accountId32}`}
-            className="hover:text-foreground hover:underline"
+            className="relative hover:text-foreground hover:underline touch:tap-area"
           >
             {t("together.pair.viewProfile", { name: friendName })}
           </Link>
@@ -101,11 +101,12 @@ export async function PairStats({ analysis, now }: { analysis: PairAnalysis; now
           }
           detail={`${plural(t, "together.units.win", together.wins)} · ${plural(t, "together.units.loss", together.games - together.wins)}`}
         />
-        <div className="panel flex flex-col gap-1 p-4">
-          <span className="kicker">{t("together.pair.comparedKicker")}</span>
+        {/* Laid out like its StatTile neighbours (three rows of the grid) so the row lines up. */}
+        <div className="panel row-span-3 grid min-w-0 grid-rows-subgrid gap-1 p-4">
+          <span className="kicker self-start">{t("together.pair.comparedKicker")}</span>
           <span
             className={cn(
-              "text-xl font-semibold tracking-tight sm:text-2xl",
+              "text-lg leading-snug font-semibold tracking-tight sm:text-xl",
               copy.tone === "win" && "text-win",
               copy.tone === "loss" && "text-loss",
               copy.tone === "muted" && "text-muted-foreground",
@@ -113,7 +114,7 @@ export async function PairStats({ analysis, now }: { analysis: PairAnalysis; now
           >
             {copy.value}
           </span>
-          <span className="text-xs text-muted-foreground">{copy.detail}</span>
+          <span className="self-start text-xs text-muted-foreground">{copy.detail}</span>
         </div>
       </div>
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
@@ -198,7 +199,7 @@ export async function FormTogether({
                 href={`/matches/${f.matchId}`}
                 title={`${win ? t("together.form.win") : t("together.form.loss")} · ${name}`}
                 className={cn(
-                  "grid size-9 place-items-center rounded-md text-xs font-bold ring-1 transition-transform hover:-translate-y-0.5 focus-visible:-translate-y-0.5",
+                  "grid size-9 place-items-center rounded-md text-xs font-bold ring-1 transition-transform hover:-translate-y-0.5 focus-visible:-translate-y-0.5 touch:size-10",
                   win ? "bg-win/10 text-win ring-win/40" : "bg-loss/10 text-loss ring-loss/40",
                 )}
               >

@@ -8,7 +8,7 @@ export default async function SessionLoading() {
       <Skeleton className="h-5 w-32" />
       <Skeleton className="h-10 w-64" />
       <Skeleton className="h-28 rounded-2xl" />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-24 rounded-2xl" />
         ))}
