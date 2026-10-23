@@ -3,6 +3,7 @@
  * Every number here comes from upstream counts; nothing is estimated or filled in.
  */
 import { isSupportHero, POSITION_INFO, type Position } from "./position";
+import { positionCandidates, shareAt, type PositionStats } from "./position-stats";
 
 export interface WinCount {
   games: number;
@@ -101,6 +102,12 @@ export interface RankedHero {
   score: number;
   highRank: (WinCount & { rate: number; adjusted: number }) | null;
   lane: (WinCount & { rate: number; adjusted: number; share: number }) | null;
+  /**
+   * The hero's record at the ranked position from per-position stats (STRATZ), with the share
+   * of its games played there. null when the ranking came from lane data instead.
+   */
+  atPosition:
+    (WinCount & { position: Position; rate: number; adjusted: number; share: number }) | null;
   /** false when this hero's lane data was unavailable. */
   laneKnown: boolean;
   pro: (ProDraftHero & { drafts: number; windowDays: number; contestRate: number }) | null;
@@ -171,35 +178,112 @@ export function rankHeroes(
       adjusted: shrunkRate(p.wins, p.games, PUBLIC_PRIOR_GAMES),
     };
 
-    const proHero = proById.get(c.heroId);
-    const pro =
-      proUsable && ctx.pro
-        ? {
-            heroId: c.heroId,
-            picks: proHero?.picks ?? 0,
-            bans: proHero?.bans ?? 0,
-            leagues: proHero?.leagues ?? 0,
-            drafts: ctx.pro.drafts,
-            windowDays: ctx.pro.windowDays,
-            contestRate: Math.min(
-              1,
-              ((proHero?.picks ?? 0) + (proHero?.bans ?? 0)) / ctx.pro.drafts,
-            ),
-          }
-        : null;
+    const { pro, trend, bonus } = nudges(c.heroId, p, proById, proUsable, ctx);
+    const score = highRank.adjusted - 0.5 + (lane ? 0.75 * (lane.adjusted - 0.5) : 0) + bonus;
 
-    const trend = pickTrend(p.pickTrend, ctx.allPicksTrend);
-    const score =
-      highRank.adjusted -
-      0.5 +
-      (lane ? 0.75 * (lane.adjusted - 0.5) : 0) +
-      (pro ? 0.03 * pro.contestRate : 0) +
-      (trend ? 0.01 * Math.max(-0.5, Math.min(0.5, trend.change)) : 0);
-
-    out.push({ heroId: c.heroId, score, highRank, lane, laneKnown: c.lanes !== null, pro, trend });
+    out.push({
+      heroId: c.heroId,
+      score,
+      highRank,
+      lane,
+      atPosition: null,
+      laneKnown: c.lanes !== null,
+      pro,
+      trend,
+    });
   }
 
   return out.sort((a, b) => b.score - a.score || a.heroId - b.heroId);
+}
+
+/** Tournament contest and pick-trend data for one hero, and the small score boost they give. */
+function nudges(
+  heroId: number,
+  publicStats: HeroPublicStats | null,
+  proById: ReadonlyMap<number, ProDraftHero>,
+  proUsable: boolean,
+  ctx: { pro: ProDrafts | null; allPicksTrend: readonly number[] },
+): Pick<RankedHero, "pro" | "trend"> & { bonus: number } {
+  const proHero = proById.get(heroId);
+  const pro =
+    proUsable && ctx.pro
+      ? {
+          heroId,
+          picks: proHero?.picks ?? 0,
+          bans: proHero?.bans ?? 0,
+          leagues: proHero?.leagues ?? 0,
+          drafts: ctx.pro.drafts,
+          windowDays: ctx.pro.windowDays,
+          contestRate: Math.min(1, ((proHero?.picks ?? 0) + (proHero?.bans ?? 0)) / ctx.pro.drafts),
+        }
+      : null;
+  const trend = publicStats ? pickTrend(publicStats.pickTrend, ctx.allPicksTrend) : null;
+  const bonus =
+    (pro ? 0.03 * pro.contestRate : 0) +
+    (trend ? 0.01 * Math.max(-0.5, Math.min(0.5, trend.change)) : 0);
+  return { pro, trend, bonus };
+}
+
+/**
+ * The position win rate's weight in a per-position ranking. It stands in for both the
+ * high-rank and the lane win rate of the lane-based ranking (1 + 0.75), so the tournament and
+ * trend boosts keep the same weight relative to win rate as before.
+ */
+export const POSITION_RATE_WEIGHT = 1.75;
+
+/**
+ * Rank heroes for a position from per-position stats (STRATZ). Candidates are the heroes that
+ * play the position (see `positionCandidates`), whatever their catalog roles say.
+ *
+ * Score = 1.75 × (adjusted win rate at the position − 50%)
+ *       + up to 3 points for being contested in tournaments + a small trend nudge.
+ * OpenDota's high-rank record (all positions) and pick trend are kept when available; a hero
+ * missing from them is still ranked, on its position record alone.
+ */
+export function rankByPosition(
+  position: Position,
+  stats: PositionStats,
+  ctx: {
+    publicStats: ReadonlyMap<number, HeroPublicStats>;
+    pro: ProDrafts | null;
+    allPicksTrend: readonly number[];
+  },
+): RankedHero[] {
+  const proById = new Map(ctx.pro?.heroes.map((h) => [h.heroId, h]));
+  const proUsable = ctx.pro !== null && ctx.pro.drafts >= MIN_PRO_DRAFTS;
+  return positionCandidates(stats, position)
+    .map((c): RankedHero => {
+      const p = ctx.publicStats.get(c.heroId) ?? null;
+      const highRank =
+        p && p.games > 0
+          ? {
+              games: p.games,
+              wins: p.wins,
+              rate: p.wins / p.games,
+              adjusted: shrunkRate(p.wins, p.games, PUBLIC_PRIOR_GAMES),
+            }
+          : null;
+      const atPosition = {
+        position,
+        games: c.games,
+        wins: c.wins,
+        rate: c.wins / c.games,
+        adjusted: shrunkRate(c.wins, c.games, PUBLIC_PRIOR_GAMES),
+        share: c.share,
+      };
+      const { pro, trend, bonus } = nudges(c.heroId, p, proById, proUsable, ctx);
+      return {
+        heroId: c.heroId,
+        score: POSITION_RATE_WEIGHT * (atPosition.adjusted - 0.5) + bonus,
+        highRank,
+        lane: null,
+        atPosition,
+        laneKnown: false,
+        pro,
+        trend,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.heroId - b.heroId);
 }
 
 /**
@@ -239,27 +323,50 @@ export interface OverviewPool {
 }
 
 /**
- * Best heroes per pool from each position's lane-checked ranking. A hero ranked in several
- * pools is listed once, in the pool where it plays the largest share of its games (its score
- * there as the tiebreak), so a mid hero tagged "Carry" shows up as a mid.
+ * Best heroes per pool from each position's ranking. A hero ranked in several pools is listed
+ * once, in the pool where it plays the largest share of its games, so a mid hero tagged
+ * "Carry" shows up as a mid. With per-position stats (`positions`, STRATZ) that share is the
+ * pool's positions combined, over all the hero's games (Bounty Hunter: 80% Pos 4 + 16% Pos 5,
+ * so a support), and the hero is shown at the pool's position it plays most; it's left out
+ * when it didn't rank there. Without them it's the lane share from lane data, among the pools
+ * the hero ranked in. The hero's score is the last tiebreak.
  */
 export function overviewPools(
   byPosition: ReadonlyMap<Position, readonly RankedHero[]>,
   limit: number,
+  positions: PositionStats | null = null,
 ): OverviewPool[] {
-  const fit = (h: RankedHero) => [h.lane?.share ?? 0, h.score] as const;
-  const better = (a: RankedHero, b: RankedHero) => {
-    const [as, ascore] = fit(a);
-    const [bs, bscore] = fit(b);
-    return as !== bs ? as > bs : ascore > bscore;
+  const fit = (h: RankedHero, pool: (typeof OVERVIEW_POOLS)[number]) =>
+    positions && h.atPosition
+      ? ([shareAt(positions, h.heroId, pool.positions), h.atPosition.share, h.score] as const)
+      : ([h.lane?.share ?? 0, h.lane?.share ?? 0, h.score] as const);
+  const better = (a: readonly number[], b: readonly number[]) => {
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i];
+    return false;
+  };
+  // With position stats, a hero's pool is fixed by all its games, not just the rankings it
+  // made: a mid hero that wins a lot in its few Pos 1 games is still a mid.
+  const mainPool = (heroId: number): OverviewPoolKey | null => {
+    if (!positions) return null;
+    let best: { key: OverviewPoolKey; share: number } | null = null;
+    for (const pool of OVERVIEW_POOLS) {
+      const share = shareAt(positions, heroId, pool.positions);
+      if (!best || share > best.share) best = { key: pool.key, share };
+    }
+    return best && best.share > 0 ? best.key : null;
   };
   // Each hero's best pool.
-  const home = new Map<number, { pool: OverviewPoolKey; hero: RankedHero }>();
+  const home = new Map<
+    number,
+    { pool: OverviewPoolKey; hero: RankedHero; fit: readonly number[] }
+  >();
   for (const pool of OVERVIEW_POOLS) {
     for (const p of pool.positions) {
       for (const h of byPosition.get(p) ?? []) {
+        if (h.atPosition && positions && mainPool(h.heroId) !== pool.key) continue;
         const cur = home.get(h.heroId);
-        if (!cur || better(h, cur.hero)) home.set(h.heroId, { pool: pool.key, hero: h });
+        const f = fit(h, pool);
+        if (!cur || better(f, cur.fit)) home.set(h.heroId, { pool: pool.key, hero: h, fit: f });
       }
     }
   }

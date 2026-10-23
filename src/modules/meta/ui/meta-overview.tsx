@@ -11,6 +11,7 @@ import type { OverviewPool } from "../domain/meta-stats";
 import { POSITION_INFO } from "../domain/position";
 import { metaHref } from "./role-picker";
 import { Unavailable } from "./meta-section";
+import { formatDayRange, StratzAttribution } from "./stratz-attribution";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const positionsLabel = (pool: OverviewPool) =>
@@ -54,7 +55,28 @@ async function PoolHeroes({
                   {name}
                 </Link>
               )}
-              {h.highRank && (
+              {h.atPosition && (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    {t("meta.overview.winRateAt", {
+                      rate: formatPercent(h.atPosition.rate),
+                      pos: POSITION_INFO[h.atPosition.position].short,
+                    })}
+                  </p>
+                  <span className="max-w-16 min-w-6 flex-1">
+                    <WinRateBar rate={h.atPosition.rate} />
+                  </span>
+                </div>
+              )}
+              {!compact && h.atPosition && (
+                <p className="text-[0.7rem] text-muted-foreground tabular-nums">
+                  {t("meta.overview.positionGames", {
+                    games: plural(t, "meta.counts.games", h.atPosition.games),
+                    share: pct(h.atPosition.share),
+                  })}
+                </p>
+              )}
+              {!h.atPosition && h.highRank && (
                 <div className="flex items-center gap-2">
                   <p className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                     {t("meta.overview.winRate", { rate: formatPercent(h.highRank.rate) })}
@@ -64,7 +86,7 @@ async function PoolHeroes({
                   </span>
                 </div>
               )}
-              {!compact && h.highRank && (
+              {!compact && !h.atPosition && h.highRank && (
                 <p className="text-[0.7rem] text-muted-foreground tabular-nums">
                   {plural(t, "meta.counts.games", h.highRank.games)}
                 </p>
@@ -119,9 +141,20 @@ export async function MetaOverviewCards({
 
 export async function MetaOverviewFootnote({ view, now }: { view: OverviewView; now: Date }) {
   const t = await getT();
+  const ago = formatAgo(view.fetchedAt, now);
   return (
     <p className="text-xs text-muted-foreground">
-      {t("meta.overview.source", { ago: formatAgo(view.fetchedAt, now) })}
+      {view.positions ? (
+        <>
+          {t("meta.overview.sourcePositions", {
+            range: formatDayRange(view.positions.window),
+            ago,
+          })}{" "}
+          <StratzAttribution t={t} />
+        </>
+      ) : (
+        t("meta.overview.source", { ago })
+      )}
     </p>
   );
 }

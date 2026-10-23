@@ -23,6 +23,10 @@ export const meta: MessageTree<typeof en> = {
       down: "Hindi available ang pro lane data ngayon. Subukan ulit mamaya.",
     },
   },
+  attribution: {
+    label: "Data:",
+    stratz: "STRATZ",
+  },
   page: {
     kicker: "Meta",
     title: "Ano ang malakas ngayon",
@@ -67,6 +71,16 @@ export const meta: MessageTree<typeof en> = {
     titleShort: "Mga top hero",
     description:
       "Niranggo ayon sa win rate mula Ancient hanggang Immortal at sa lane na ito, na hinihila papuntang 50% ang maliliit na sample, kasama ang kaunting dagdag para sa mga hero na pinag-aagawan sa tournaments.",
+    descriptionPositions:
+      "Inayos ayon sa win rate sa posisyong ito sa mga larong Ancient hanggang Immortal, na hinihila papunta sa 50% ang maliliit na sample, at may kaunting dagdag para sa mga hero na pinag-aagawan sa tournaments. Kasama ang hero kapag hindi bababa sa {share} ng mga laro nito, at {games} o higit pa, ay nasa posisyong ito.",
+    positionsSource:
+      "Position stats: public na laro sa STRATZ, Ancient–Immortal, {range} ({days} araw), na-update {ago}.",
+    trendSource: "Pick trends: public na laro sa OpenDota, na-update {ago}.",
+    trendUnavailable: "Hindi available ang pick trends (OpenDota) ngayon.",
+    positionsFallback:
+      "Hindi available ang position stats ng STRATZ ngayon, kaya inilalagay ng listahang ito ang mga hero ayon sa lane data ng OpenDota at sa role ng hero.",
+    positionRate: "win rate sa {pos} · {games} ({share} ng mga laro nito)",
+    positionScope: "{pos}, Ancient–Immortal, {range}",
     publicSource: "High-rank at lane stats: public na laro sa OpenDota, na-update {ago}.",
     proOk: "Tournaments: {drafts} sa nakaraang {days} araw, na-update {ago}.",
     proTooFew: "Tournaments: {drafts} lang sa nakaraang {days} araw, kulang para magamit.",
@@ -109,6 +123,7 @@ export const meta: MessageTree<typeof en> = {
     contested:
       "Pinag-aagawan sa tournaments: na-pick o na-ban sa {pct} ng {drafts} pro draft sa nakaraang {days} araw",
     lane: "Panalo sa {pct} ng {games} public na laro sa {lane}",
+    position: "Panalo sa {pct} ng {games} na larong Ancient–Immortal sa {pos}",
   },
   overview: {
     kicker: "Mabilisang tingin",
@@ -123,6 +138,10 @@ export const meta: MessageTree<typeof en> = {
     },
     poolsAria: "Mga top hero: {name}",
     winRate: "{rate} win rate",
+    winRateAt: "{rate} win rate sa {pos}",
+    positionGames: "{games} · {share} ng mga laro nito",
+    sourcePositions:
+      "Source: public na laro sa STRATZ, Ancient–Immortal, {range}, na-update {ago}. Isang beses lang nakalista ang bawat hero, sa grupo ng posisyon kung saan ito pinakamadalas laruin. Bahagyang binabago ng tournament picks at pick trends (OpenDota) ang pagkakasunod.",
     fullRanking: "Buong ranking:",
     source:
       "Galing sa mga high-rank na laro at lane data ng OpenDota, na-update {ago}. Isang beses lang lumalabas ang bawat hero, sa role kung saan siya pinakamadalas laruin.",

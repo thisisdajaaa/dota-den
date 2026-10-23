@@ -4,6 +4,7 @@ import type { Result } from "@/common/result";
 import type { DuoRow } from "./domain/lane-duos";
 import type { HeroPublicStats, LaneStats, ProDrafts } from "./domain/meta-stats";
 import type { LaneGame } from "./domain/position";
+import type { PositionStats } from "./domain/position-stats";
 
 export type SourceError =
   | { type: "rate_limited"; retryAfterMs: number | null }
@@ -29,6 +30,14 @@ export interface MetaStatsSource {
   proDrafts(): SourceResult<ProDrafts>;
   /** Pro same-team same-lane pairs over the last 60 days. */
   proLaneDuos(): SourceResult<{ windowDays: number; rows: DuoRow[] }>;
+}
+
+/**
+ * Per-position public stats (STRATZ): every hero's games and wins at Pos 1–5, Ancient to
+ * Immortal, over the latest days the provider has. Optional: absent without a STRATZ token.
+ */
+export interface PositionStatsSource {
+  positionStats(): SourceResult<PositionStats>;
 }
 
 /** A player's recent games with lane info, for reading their usual position. */

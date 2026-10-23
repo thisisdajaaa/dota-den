@@ -53,6 +53,7 @@ export const home: MessageTree<typeof en> = {
     title: "Ano ang malakas ngayon",
     live: "Totoong data",
     source: "High-rank na laro sa OpenDota · na-update {ago}",
+    sourcePositions: "Larong Ancient–Immortal sa STRATZ, {range} · na-update {ago}",
     open: "Buksan ang Meta",
     unavailable:
       "Hindi available ang hero stats ngayon. Lalabas ito sa Meta page kapag sumagot na ang OpenDota.",

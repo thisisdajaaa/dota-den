@@ -14,6 +14,7 @@ import { getCurrentUser } from "@/modules/identity";
 import { metaService } from "@/modules/meta";
 import { heroPatchChanges } from "@/modules/meta/domain/patch-tips";
 import { MetaOverviewCompact } from "@/modules/meta/ui/meta-overview";
+import { formatDayRange, StratzAttribution } from "@/modules/meta/ui/stratz-attribution";
 import { signInHref } from "@/modules/identity/domain/return-path";
 import { patchesService } from "@/modules/patches";
 import { PlayerSearchForm } from "@/modules/players/ui/player-search-form";
@@ -183,9 +184,21 @@ async function MetaPreviewBody() {
   return (
     <>
       <MetaOverviewCompact view={res.value} catalog={catalog} className="min-h-[29rem]" />
-      <p className="mt-4 truncate text-[0.7rem] text-muted-foreground">
-        {t("home.preview.source", { ago: formatAgo(res.value.fetchedAt, new Date()) })}
-      </p>
+      {res.value.positions ? (
+        <p className="mt-4 flex gap-2 text-[0.7rem] text-muted-foreground">
+          <span className="min-w-0 truncate">
+            {t("home.preview.sourcePositions", {
+              range: formatDayRange(res.value.positions.window),
+              ago: formatAgo(res.value.fetchedAt, new Date()),
+            })}
+          </span>
+          <StratzAttribution t={t} />
+        </p>
+      ) : (
+        <p className="mt-4 truncate text-[0.7rem] text-muted-foreground">
+          {t("home.preview.source", { ago: formatAgo(res.value.fetchedAt, new Date()) })}
+        </p>
+      )}
     </>
   );
 }

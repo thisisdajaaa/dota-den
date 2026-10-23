@@ -15,7 +15,7 @@ export interface LatestPatch {
   heroes: ReadonlyMap<number, HeroPatchChange>;
 }
 
-export type TipKind = "rising" | "falling" | "patch" | "contested" | "lane";
+export type TipKind = "rising" | "falling" | "patch" | "contested" | "lane" | "position";
 
 export interface Tip {
   kind: TipKind;
@@ -63,6 +63,13 @@ export function tipsFor(hero: RankedHero, position: Position, patch: LatestPatch
     tips.push({
       kind: "contested",
       text: `Contested in tournaments: picked or banned in ${pct(hero.pro.contestRate)} of ${num(hero.pro.drafts)} pro drafts over the last ${hero.pro.windowDays} days`,
+    });
+  }
+  // Per-position stats (STRATZ) already need 1,000+ games at the position to rank a hero.
+  if (hero.atPosition && hero.atPosition.rate >= STRONG_LANE_RATE) {
+    tips.push({
+      kind: "position",
+      text: `Wins ${pct(hero.atPosition.rate)} of ${num(hero.atPosition.games)} Ancient–Immortal games at ${POSITION_INFO[hero.atPosition.position].short}`,
     });
   }
   if (hero.lane && hero.lane.rate >= STRONG_LANE_RATE && hero.lane.games >= STRONG_LANE_MIN_GAMES) {
