@@ -5,6 +5,7 @@ import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
 import { matchesService } from "@/modules/matches";
+import { plusService } from "@/modules/plus";
 import { OpenDotaPlayerDirectory, steamAvatar } from "./infrastructure/opendota-player-directory";
 import { PlayersController } from "./players.controller";
 import { FollowsRepository } from "./repositories/follows.repository";
@@ -13,7 +14,11 @@ import { FollowService } from "./services/follow.service";
 import { PlayersService } from "./services/players.service";
 
 export const followsRepository = new FollowsRepository(getDb);
-export const followService = new FollowService(followsRepository, { data: followsRepository });
+export const followService = new FollowService(followsRepository, {
+  data: followsRepository,
+  // Plus doubles the cap (ADR 0013).
+  limitFor: (userId, base) => plusService.limit(userId, base),
+});
 export const playerProfilesRepository = new PlayerProfilesRepository(getDb);
 
 /** The shared OpenDota gateway: one cache, dedup and circuit breaker for the whole app. */

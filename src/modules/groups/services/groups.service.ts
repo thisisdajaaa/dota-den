@@ -25,12 +25,28 @@ export class GroupsService {
       repository: GroupsRepositoryPort;
       profiles: MemberProfiles;
       newToken: () => string;
+      /** The player's group cap: Plus doubles it (ADR 0013). Default MAX_GROUPS_PER_USER. */
+      groupLimit?: (userId: string, base: number) => Promise<number>;
       now?: () => Date;
     },
   ) {}
 
   private now() {
     return this.deps.now?.() ?? new Date();
+  }
+
+  /** How many groups this player may be in at once. */
+  groupLimit(userId: string): Promise<number> {
+    return this.deps.groupLimit
+      ? this.deps.groupLimit(userId, MAX_GROUPS_PER_USER)
+      : Promise.resolve(MAX_GROUPS_PER_USER);
+  }
+
+  private tooMany(max: number) {
+    return new ConflictError(`You can be in at most ${max} groups.`, {
+      reason: "too_many_groups",
+      max,
+    });
   }
 
   async listMine(user: Actor): Promise<GroupSummaryDto[]> {
@@ -44,10 +60,8 @@ export class GroupsService {
   }
 
   async create(user: Actor, name: string): Promise<GroupSummaryDto> {
-    if ((await this.deps.repository.countForUser(user.id)) >= MAX_GROUPS_PER_USER)
-      throw new ConflictError(`You can be in at most ${MAX_GROUPS_PER_USER} groups.`, {
-        reason: "too_many_groups",
-      });
+    const max = await this.groupLimit(user.id);
+    if ((await this.deps.repository.countForUser(user.id)) >= max) throw this.tooMany(max);
     const now = this.now();
     const group = await this.deps.repository.create({
       name,
@@ -93,7 +107,11 @@ export class GroupsService {
   async invitePreview(user: Actor, token: string): Promise<InvitePreviewDto | null> {
     const group = await this.deps.repository.findByInviteToken(token);
     if (!group) return null;
-    const refusal = joinRefusal(group, user.id, await this.deps.repository.countForUser(user.id));
+    const [count, max] = await Promise.all([
+      this.deps.repository.countForUser(user.id),
+      this.groupLimit(user.id),
+    ]);
+    const refusal = joinRefusal(group, user.id, count, max);
     const owner = group.members.find((m) => m.userId === group.ownerUserId);
     const profiles = owner ? await this.deps.profiles.profiles([owner]) : new Map();
     return {
@@ -110,15 +128,16 @@ export class GroupsService {
   async join(user: Actor, token: string): Promise<GroupSummaryDto> {
     const group = await this.deps.repository.findByInviteToken(token);
     if (!group) throw new NotFoundError("This invite link doesn't work any more.");
-    const refusal = joinRefusal(group, user.id, await this.deps.repository.countForUser(user.id));
+    const [count, max] = await Promise.all([
+      this.deps.repository.countForUser(user.id),
+      this.groupLimit(user.id),
+    ]);
+    const refusal = joinRefusal(group, user.id, count, max);
     if (refusal === "group_full")
       throw new ConflictError(`This group is full (${MAX_GROUP_MEMBERS} members).`, {
         reason: refusal,
       });
-    if (refusal === "too_many_groups")
-      throw new ConflictError(`You can be in at most ${MAX_GROUPS_PER_USER} groups.`, {
-        reason: refusal,
-      });
+    if (refusal === "too_many_groups") throw this.tooMany(max);
     let joined = group;
     if (refusal === null) {
       const updated = await this.deps.repository.addMember(

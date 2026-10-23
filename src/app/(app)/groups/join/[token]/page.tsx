@@ -5,7 +5,7 @@ import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import { getCurrentUser } from "@/modules/identity";
 import { groupsService } from "@/modules/groups";
-import { MAX_GROUP_MEMBERS, MAX_GROUPS_PER_USER } from "@/modules/groups/domain/group";
+import { MAX_GROUP_MEMBERS } from "@/modules/groups/domain/group";
 import { InviteTokenParams } from "@/modules/groups/schemas/groups.schema";
 import { JoinButton } from "@/modules/groups/ui/join-button";
 
@@ -74,7 +74,7 @@ export default async function JoinGroupPage({ params }: PageProps<"/groups/join/
         </p>
       ) : preview.refusal === "too_many_groups" ? (
         <p role="alert" className="text-sm text-loss">
-          {t("groups.join.tooMany", { max: MAX_GROUPS_PER_USER })}
+          {t("groups.join.tooMany", { max: await groupsService.groupLimit(user.id) })}
         </p>
       ) : (
         <JoinButton token={parsed.data.token} />

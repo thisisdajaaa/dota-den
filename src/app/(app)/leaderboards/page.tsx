@@ -24,6 +24,7 @@ import { LeaderboardBoard } from "@/modules/leaderboards/ui/leaderboard-board";
 import { RankedWeekCard } from "@/modules/leaderboards/ui/ranked-week-card";
 import { VisibilityToggle } from "@/modules/leaderboards/ui/visibility-toggle";
 import { matchesService } from "@/modules/matches";
+import { plusService } from "@/modules/plus";
 import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -123,7 +124,12 @@ async function BoardSection({
   } catch (error) {
     logger.error("leaderboard_failed", { board: kind, scope, period, error });
   }
-  if (view) return <LeaderboardBoard view={view} />;
+  if (view) {
+    const accounts = [...view.rows, ...(view.youBelowCut ? [view.youBelowCut] : [])].map(
+      (r) => r.player.accountId32,
+    );
+    return <LeaderboardBoard view={view} supporters={await plusService.supporters(accounts)} />;
+  }
   const t = await getT();
   return (
     <section role="alert" className="panel grid place-items-center gap-3 px-6 py-16 text-center">

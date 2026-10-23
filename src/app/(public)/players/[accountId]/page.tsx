@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AlertTriangle, ArrowLeft, ArrowLeftRight, LayoutDashboard, LogIn } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { plusService } from "@/modules/plus";
+import { PlusBadge } from "@/modules/plus/ui/plus-badge";
 import { getT } from "@/common/i18n/server";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
@@ -54,10 +56,13 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
   if (!profileRes.ok && profileRes.error.type === "not_found") notFound();
 
   const isSelf = viewer?.accountId32 === accountId32;
-  const tracked =
+  // Supporter badges are shown to signed-in players only (like leaderboards, ADR 0013).
+  const [tracked, supporters] = await Promise.all([
     viewer && !isSelf
-      ? await followService.isFollowing(ownerOf(viewer), accountId32).catch(() => false)
-      : false;
+      ? followService.isFollowing(ownerOf(viewer), accountId32).catch(() => false)
+      : false,
+    viewer ? plusService.supporters([accountId32]) : new Set<number>(),
+  ]);
 
   const profile = profileRes.ok ? profileRes.value : null;
   const name = displayName(profile?.personaName ?? null, accountId32);
@@ -78,6 +83,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
         accountId32={accountId32}
         kicker={t("players.profile.kicker")}
       >
+        {supporters.has(accountId32) && <PlusBadge size="md" className="self-center" />}
         {isSelf ? (
           <Link
             href="/dashboard"

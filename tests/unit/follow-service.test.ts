@@ -85,6 +85,17 @@ describe("FollowService", () => {
     });
   });
 
+  it("asks for each player's own cap (Plus doubles it, ADR 0013)", async () => {
+    const repo = new FakeFollowRepository();
+    const service = new FollowService(repo, {
+      limitFor: async (userId, base) => (userId === "alice" ? base * 2 : base),
+    });
+    expect(await service.limit(alice)).toBe(200);
+    expect(await service.limit(bob)).toBe(100);
+    for (let id = 1; id <= 150; id++) await service.follow(alice, id);
+    expect(await repo.count("alice")).toBe(150);
+  });
+
   it("rejects following yourself and invalid account ids", async () => {
     const { service } = setup();
     expect(await service.follow(alice, alice.accountId32)).toEqual({

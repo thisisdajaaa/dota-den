@@ -22,7 +22,6 @@ export function streamerOwnerOf(user: { id: string; accountId32: number }): Stre
 /** Following channels on any streaming site: the "Following" row on /live. */
 export class StreamerFollowService {
   private readonly now: () => Date;
-  private readonly limit: number;
 
   constructor(
     private readonly deps: {
@@ -30,7 +29,10 @@ export class StreamerFollowService {
       /** Every configured site, to check channels and ask who is live. */
       directories: readonly StreamDirectory[];
       now?: () => Date;
+      /** A fixed cap (tests); otherwise `limitFor`, else MAX_STREAMER_FOLLOWS. */
       limit?: number;
+      /** The player's cap: Plus doubles it (ADR 0013). */
+      limitFor?: (userId: string, base: number) => Promise<number>;
       /** Needed for "Download your data" and account deletion only. */
       data?: {
         exportForOwner(owner: StreamerOwner): Promise<Record<string, unknown>[]>;
@@ -39,7 +41,14 @@ export class StreamerFollowService {
     },
   ) {
     this.now = deps.now ?? (() => new Date());
-    this.limit = deps.limit ?? MAX_STREAMER_FOLLOWS;
+  }
+
+  /** How many channels this player may follow. */
+  async limit(owner: StreamerOwner): Promise<number> {
+    if (this.deps.limit !== undefined) return this.deps.limit;
+    return this.deps.limitFor
+      ? this.deps.limitFor(owner.userId, MAX_STREAMER_FOLLOWS)
+      : MAX_STREAMER_FOLLOWS;
   }
 
   /**
@@ -53,10 +62,13 @@ export class StreamerFollowService {
     input: FollowStreamerInput,
   ): Promise<{ follow: StreamerFollow; created: boolean }> {
     const existing = await this.deps.repository.find(owner.userId, input.platform, input.channelId);
-    if (!existing && (await this.deps.repository.count(owner.userId)) >= this.limit)
-      throw new ConflictError(`You can follow up to ${this.limit} channels. Unfollow one first.`, {
-        limit: this.limit,
-      });
+    if (!existing) {
+      const limit = await this.limit(owner);
+      if ((await this.deps.repository.count(owner.userId)) >= limit)
+        throw new ConflictError(`You can follow up to ${limit} channels. Unfollow one first.`, {
+          limit,
+        });
+    }
 
     const directory = this.directory(input.platform);
     const lookup = directory

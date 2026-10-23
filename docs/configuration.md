@@ -134,10 +134,32 @@ To turn on bounce and complaint handling, add a webhook in Resend (Webhooks → 
 `https://<your-site>/api/v1/email/webhook` with the events `email.bounced` and `email.complained`,
 then copy its signing secret into `RESEND_WEBHOOK_SECRET`.
 
+## Dota Den Plus (optional)
+
+Unset, Plus doesn't exist: `/plus` says "coming soon", it isn't in the navigation, no checkout
+button renders, `POST /api/v1/plus/webhook` answers 404 and everyone is free. The design is in
+[ADR 0013](adr/0013-plus-subscriptions.md).
+
+| Variable                                                                | Default | Meaning                                                                                                                                        |
+| ----------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BILLING_PROVIDER`                                                      | unset   | `lemonsqueezy`. Needs `LEMONSQUEEZY_WEBHOOK_SECRET`                                                                                            |
+| `PLUS_ENABLED`                                                          | unset   | Kill switch: only `true` grants Plus and offers checkout. Anything else treats everyone as free; stored subscriptions and webhooks are kept    |
+| `LEMONSQUEEZY_WEBHOOK_SECRET`                                           | unset   | The webhook's signing secret (Lemon Squeezy → Settings → Webhooks). Webhooks are verified with it (HMAC-SHA256 of the raw body, `X-Signature`) |
+| `LEMONSQUEEZY_CHECKOUT_URL_MONTHLY`, `LEMONSQUEEZY_CHECKOUT_URL_YEARLY` | unset   | Each variant's checkout (share) link, `https://<store>.lemonsqueezy.com/buy/<id>`. A plan without one isn't offered                            |
+| `LEMONSQUEEZY_STORE_URL`                                                | unset   | The store, for the generic billing portal (`<store>/billing`); defaults to the checkout links' origin                                          |
+| `LEMONSQUEEZY_VARIANT_ID_MONTHLY`, `LEMONSQUEEZY_VARIANT_ID_YEARLY`     | unset   | Numeric variant ids, so the account page can say "Monthly" or "Yearly"                                                                         |
+| `LEMONSQUEEZY_TEST_MODE`                                                | `false` | `true` on a deployment that takes test-mode purchases; it then ignores live ones (and the other way round)                                     |
+
+Go-live alerts (a Plus feature) also need Web Push (`VAPID_*`), Twitch or Kick keys, and a schedule:
+run `npm run jobs:schedules` once per environment (needs `QSTASH_TOKEN` and `APP_URL`) to create the
+QStash schedule that calls `/api/jobs/streamer-alerts` every 5 minutes. Without QStash, any scheduler
+can call `GET /api/cron/streamer-alerts` with `Authorization: Bearer $CRON_SECRET`.
+
 ## Test-only
 
 | Variable                                  | Default                     | Used by                             |
 | ----------------------------------------- | --------------------------- | ----------------------------------- |
 | `MONGODB_TEST_URI`                        | `mongodb://127.0.0.1:27017` | Integration and E2E tests           |
 | `E2E_PORT`, `FIXTURE_PORT`, `E2E_DB_NAME` | see `playwright.config.ts`  | Run several E2E setups side by side |
+| `E2E_PLAIN_PORT`                          | `E2E_PORT + 2`              | The second E2E app server (no Plus) |
 | `CALIBRATE_DAYS`, `CALIBRATE_GAMES`       | `14`, `15000`               | `npm run draft:calibrate`           |

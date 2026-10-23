@@ -9,6 +9,8 @@ import { EmailDigestCard } from "@/modules/email/ui/email-digest-card";
 import { getCurrentUser } from "@/modules/identity";
 import { notificationService, vapidPublicKey } from "@/modules/notifications";
 import { NotificationsCard } from "@/modules/notifications/ui/notifications-card";
+import { plusService } from "@/modules/plus";
+import { PlanCard } from "@/modules/plus/ui/plan-card";
 import { isJourneyRange } from "@/modules/mmr/domain/journey";
 import { sharesService } from "@/modules/shares";
 import { SharedLinks } from "@/modules/shares/ui/shared-links";
@@ -24,12 +26,16 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
-  const [notifications, shares, discord, email] = await Promise.all([
+  const offer = plusService.offer();
+  const [notifications, shares, discord, email, plan] = await Promise.all([
     notificationService.status(user.id),
     sharesService.list(user.id),
     discordWebhookService.status(user.id),
     emailService.status(user.id),
+    plusService.plan(user.id),
   ]);
+  // The plan card exists once Plus is configured, or for anyone with a subscription on record.
+  const showPlan = offer.status !== "off" || plan.status !== null;
   const shareLinks = shares.map((s) => ({
     slug: s._id,
     url: `/s/${s._id}`,
@@ -72,10 +78,13 @@ export default async function AccountPage() {
         description={t("privacy.description")}
       />
 
+      {showPlan && <PlanCard plan={plan} offer={offer} />}
+
       <NotificationsCard
         publicKey={vapidPublicKey()}
         endpoints={notifications.endpoints}
         prefs={notifications.prefs}
+        plus={plan.plus}
       />
 
       <EmailDigestCard initial={email} />
@@ -115,7 +124,20 @@ export default async function AccountPage() {
             <li>{t("privacy.delete.friends")}</li>
             <li>{t("privacy.delete.backups")}</li>
             <li>{t("privacy.delete.opendota")}</li>
+            {showPlan && <li>{t("plus.deleteNote")}</li>}
           </ul>
+          {plan.stillBills && (
+            <p
+              role="alert"
+              data-testid="plus-delete-warning"
+              className="mt-3 rounded-lg border border-loss/40 bg-loss/10 p-3 text-sm text-foreground"
+            >
+              {t("plus.deleteWarning")}{" "}
+              <a href="/api/v1/me/plus/portal" className="font-medium text-gold hover:underline">
+                {t("plus.card.manage")}
+              </a>
+            </p>
+          )}
         </div>
         <DeleteAccountForm />
       </section>

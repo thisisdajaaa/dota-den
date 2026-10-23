@@ -2,8 +2,12 @@ import "server-only";
 import { getRedis } from "@/common/cache/redis";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
+import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
 import { lazy } from "@/common/utils/lazy";
+import { usersService } from "@/modules/identity";
+import { notificationService } from "@/modules/notifications";
+import { plusService } from "@/modules/plus";
 import { OpenDotaLiveSource } from "./infrastructure/opendota-live-source";
 import type { SharedCache } from "./infrastructure/directory-cache";
 import { KickDirectory } from "./infrastructure/kick-directory";
@@ -12,6 +16,7 @@ import { LiveController } from "./live.controller";
 import type { StreamDirectory } from "./live.ports";
 import { LiveService } from "./live.service";
 import { StreamerFollowsRepository } from "./repositories/streamer-follows.repository";
+import { StreamerAlertsService } from "./streamer-alerts.service";
 import { StreamerFollowService } from "./streamer-follows.service";
 
 /** Redis for the stream list and searches, or nothing when Redis isn't configured. */
@@ -82,6 +87,32 @@ export const streamerFollowService = lazy(
       repository: streamerFollowsRepository,
       directories: sites.directories,
       data: streamerFollowsRepository,
+      // Plus doubles the cap (ADR 0013).
+      limitFor: (userId, base) => plusService.limit(userId, base),
+    }),
+);
+
+/** Go-live alerts for Plus players (ADR 0013), run by the `streamer-alerts` job. */
+export const streamerAlerts = lazy(
+  () =>
+    new StreamerAlertsService({
+      plusUserIds: () => plusService.plusUserIds(),
+      notifications: {
+        get enabled() {
+          return notificationService.enabled;
+        },
+        subscribedUserIds: () => notificationService.subscribedUserIds(),
+        wants: async (userId) => (await notificationService.prefs(userId)).streamer_live,
+        notifyOnce: (userId, key, build) =>
+          notificationService.notifyOnce(userId, "streamer_live", key, build),
+      },
+      follows: streamerFollowsRepository,
+      directories: sites.directories,
+      languages: async (ids) =>
+        new Map(
+          (await usersService.findByIds(ids)).map((u) => [u.id, u.settings.language ?? null]),
+        ),
+      logger,
     }),
 );
 

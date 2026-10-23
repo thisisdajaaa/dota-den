@@ -5,6 +5,7 @@ import { cn } from "cn";
 import { PageHeader } from "@/components/page-header";
 import { StatTile } from "@/components/stat-tile";
 import { adminService } from "@/modules/admin";
+import { plusService } from "@/modules/plus";
 import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { formatAgo } from "@/modules/matches/ui/format";
@@ -42,6 +43,7 @@ export default async function AdminPage() {
     alerts,
     opsReports,
   } = await adminService.overview(now);
+  const plus = await plusService.adminCounts().catch(() => null);
 
   return (
     <div className="space-y-6">
@@ -129,6 +131,52 @@ export default async function AdminPage() {
           <p className="text-sm text-muted-foreground">{t("admin.retention.unavailable")}</p>
         )}
       </section>
+
+      {plus && (
+        <section aria-labelledby="admin-plus" className="panel space-y-4 p-5">
+          <div>
+            <h2 id="admin-plus" className="text-lg font-semibold">
+              {t("plus.admin.title")}
+            </h2>
+            {!plus.configured ? (
+              <p className="text-xs text-muted-foreground">{t("plus.admin.off")}</p>
+            ) : (
+              !plus.enabled && (
+                <p className="text-xs text-muted-foreground">{t("plus.admin.disabled")}</p>
+              )
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+            <StatTile label={t("plus.admin.entitled")} value={String(plus.entitled)} />
+            <StatTile
+              label={t("plus.admin.unlinked")}
+              value={String(plus.unlinked)}
+              detail={t("plus.admin.unlinkedDetail")}
+            />
+          </div>
+          {plus.byStatus.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("plus.admin.none")}</p>
+          ) : (
+            <table className="w-full max-w-md text-sm">
+              <caption className="sr-only">{t("plus.admin.caption")}</caption>
+              <thead>
+                <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
+                  <th className="py-2 font-medium">{t("plus.admin.status")}</th>
+                  <th className="py-2 text-right font-medium">{t("plus.admin.count")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {plus.byStatus.map((r) => (
+                  <tr key={r.status} className="border-t border-border/50">
+                    <td className="py-2">{t(`plus.card.status.${r.status}`)}</td>
+                    <td className="py-2 text-right tabular-nums">{r.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="admin-users" className="panel overflow-hidden">
         <h2 id="admin-users" className="px-5 pt-5 text-lg font-semibold">

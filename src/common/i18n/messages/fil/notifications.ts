@@ -48,6 +48,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Patch na nagbago sa mga hero mo",
       help: "Kapag may bagong patch na nagbago sa mga hero na nilalaro mo.",
     },
+    streamer_live: {
+      label: "Nag-live ang streamer (Plus)",
+      help: "Ilang minuto lang matapos mag-stream ang channel na fina-follow mo sa /live. Isang beses kada stream.",
+    },
   },
   push: {
     session: {
@@ -67,6 +71,11 @@ export const notifications: MessageTree<typeof en> = {
     list: "{items} at {last}",
     listMore: "{items} at {more} pa",
     heroFallback: "Hero #{id}",
+    live: {
+      title: "Live na si {name}",
+      body: "{title}",
+      bodyNoTitle: "Nagsi-stream ngayon sa {site}.",
+    },
     test: {
       title: "Gumagana ang mga notification",
       body: "Dito ka makakatanggap mula sa Dota Den. I-tap para buksan ang settings ng notification.",

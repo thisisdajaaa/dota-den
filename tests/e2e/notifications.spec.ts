@@ -78,7 +78,10 @@ test("notification settings need a session, the same origin and valid input", as
   // Only browser push services: the server POSTs to this address.
   const elsewhere = { ...SUBSCRIPTION, endpoint: "https://internal.example/hook" };
   expect((await put("subscription", elsewhere)).status()).toBe(400);
-  expect((await put("preferences", { session_recap: true })).status()).toBe(400);
+  // One kind at a time is fine (the others keep their setting); nothing, or an unknown kind, isn't.
+  expect((await put("preferences", { session_recap: true })).status()).toBe(200);
+  expect((await put("preferences", {})).status()).toBe(400);
+  expect((await put("preferences", { everything: true })).status()).toBe(400);
   expect(
     (
       await put("preferences", { session_recap: true, weekly_recap: true, patch_heroes: "yes" })

@@ -5,7 +5,6 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { getCurrentUser } from "@/modules/identity";
 import { groupsService } from "@/modules/groups";
-import { MAX_GROUPS_PER_USER } from "@/modules/groups/domain/group";
 import { CreateGroupForm } from "@/modules/groups/ui/create-group-form";
 import { GroupsList } from "@/modules/groups/ui/groups-list";
 
@@ -18,7 +17,10 @@ export default async function GroupsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
-  const groups = await groupsService.listMine(user);
+  const [groups, maxGroups] = await Promise.all([
+    groupsService.listMine(user),
+    groupsService.groupLimit(user.id),
+  ]);
   const shares = (
     <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="shares">
       <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
@@ -55,7 +57,9 @@ export default async function GroupsPage() {
           </section>
         )}
         <div className="space-y-6 lg:col-span-2">
-          {groups.length > 0 && <CreateGroupForm atCap={groups.length >= MAX_GROUPS_PER_USER} />}
+          {groups.length > 0 && (
+            <CreateGroupForm atCap={groups.length >= maxGroups} max={maxGroups} />
+          )}
           {shares}
         </div>
       </div>

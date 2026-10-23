@@ -11,13 +11,15 @@ export function ownerOf(user: { id: string; accountId32: number }): FollowOwner 
 
 export class FollowService {
   private readonly now: () => Date;
-  private readonly limit: number;
 
   constructor(
     private readonly repo: FollowsPort,
     private readonly opts: {
       now?: () => Date;
+      /** A fixed cap (tests); otherwise `limitFor`, else MAX_FOLLOWS_PER_USER. */
       limit?: number;
+      /** The player's cap: Plus doubles it (ADR 0013). */
+      limitFor?: (userId: string, base: number) => Promise<number>;
       /** Needed for "Download your data" and account deletion only. */
       data?: {
         exportForOwner(owner: FollowOwner): Promise<Record<string, unknown>[]>;
@@ -26,7 +28,14 @@ export class FollowService {
     } = {},
   ) {
     this.now = opts.now ?? (() => new Date());
-    this.limit = opts.limit ?? MAX_FOLLOWS_PER_USER;
+  }
+
+  /** How many players this owner may track. */
+  async limit(owner: FollowOwner): Promise<number> {
+    if (this.opts.limit !== undefined) return this.opts.limit;
+    return this.opts.limitFor
+      ? this.opts.limitFor(owner.userId, MAX_FOLLOWS_PER_USER)
+      : MAX_FOLLOWS_PER_USER;
   }
 
   /**
@@ -44,8 +53,9 @@ export class FollowService {
     if (existing) return ok({ follow: existing, created: false });
 
     // Concurrent requests can overshoot by a few; the limit bounds cost, it isn't a quota.
-    if ((await this.repo.count(owner.userId)) >= this.limit)
-      return err({ type: "limit_reached", limit: this.limit });
+    const limit = await this.limit(owner);
+    if ((await this.repo.count(owner.userId)) >= limit)
+      return err({ type: "limit_reached", limit });
 
     const follow: PlayerFollow = { userId: owner.userId, accountId32, createdAt: this.now() };
     const created = await this.repo.add(follow);

@@ -68,6 +68,18 @@ export class StreamerFollowsRepository implements StreamerFollowsPort {
     return docs.map(toFollow);
   }
 
+  /** Every follow of these users (go-live alerts). */
+  async forUsers(userIds: readonly string[]): Promise<StreamerFollow[]> {
+    if (userIds.length === 0) return [];
+    const docs = await (
+      await this.col()
+    )
+      .find({ userId: { $in: [...new Set(userIds)] } })
+      .limit(200_000)
+      .toArray();
+    return docs.map(toFollow);
+  }
+
   async count(userId: string): Promise<number> {
     return (await this.col()).countDocuments({ userId });
   }

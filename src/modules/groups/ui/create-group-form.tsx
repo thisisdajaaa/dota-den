@@ -14,7 +14,16 @@ import type { GroupSummaryDto } from "../dtos/responses/groups.dto";
  * Name a new group; opens it once created. `bare` drops the panel and title, for use inside
  * the page's empty state.
  */
-export function CreateGroupForm({ atCap, bare = false }: { atCap: boolean; bare?: boolean }) {
+export function CreateGroupForm({
+  atCap,
+  bare = false,
+  max = MAX_GROUPS_PER_USER,
+}: {
+  atCap: boolean;
+  bare?: boolean;
+  /** The player's group cap (Plus doubles it). */
+  max?: number;
+}) {
   const t = useT();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -81,9 +90,7 @@ export function CreateGroupForm({ atCap, bare = false }: { atCap: boolean; bare?
         {t("groups.create.title")}
       </h2>
       {atCap ? (
-        <p className="text-sm text-muted-foreground">
-          {t("groups.create.atCap", { max: MAX_GROUPS_PER_USER })}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("groups.create.atCap", { max })}</p>
       ) : (
         form
       )}

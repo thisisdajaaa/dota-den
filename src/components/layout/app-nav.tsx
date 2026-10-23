@@ -19,6 +19,7 @@ import {
   ScrollText,
   Shield,
   ShieldCheck,
+  Sparkles,
   Swords,
   TrendingUp,
   Trophy,
@@ -46,6 +47,7 @@ export type NavKey =
   | "leaderboards"
   | "live"
   | "account"
+  | "plus"
   | "admin";
 
 /** Sidebar sections, in order; Settings (account, admin) always comes last. */
@@ -71,6 +73,8 @@ const ITEMS: NavItem[] = [
   { key: "live", href: "/live", icon: Radio, auth: false, group: "tools" },
   { key: "leaderboards", href: "/leaderboards", icon: Trophy, auth: true, group: "community" },
   { key: "account", href: "/account", icon: UserCog, auth: true, group: "settings" },
+  // Only listed while Plus is on sale (ADR 0013).
+  { key: "plus", href: "/plus", icon: Sparkles, auth: true, group: "settings" },
   { key: "admin", href: "/admin", icon: ShieldCheck, auth: true, group: "settings" },
 ];
 

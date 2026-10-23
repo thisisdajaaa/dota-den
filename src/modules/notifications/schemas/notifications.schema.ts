@@ -14,11 +14,13 @@ export const SubscribeSchema = z
 
 export const UnsubscribeSchema = z.object({ endpoint: z.string().min(1).max(1000) }).strict();
 
+/** Every kind is optional: one left out keeps its current setting. */
 export const PrefsSchema = z
   .object(
-    Object.fromEntries(NOTIFICATION_KINDS.map((k) => [k, z.boolean()])) as Record<
+    Object.fromEntries(NOTIFICATION_KINDS.map((k) => [k, z.boolean().optional()])) as Record<
       (typeof NOTIFICATION_KINDS)[number],
-      z.ZodBoolean
+      z.ZodOptional<z.ZodBoolean>
     >,
   )
-  .strict();
+  .strict()
+  .refine((p) => Object.values(p).some((v) => v !== undefined), "Nothing to save");

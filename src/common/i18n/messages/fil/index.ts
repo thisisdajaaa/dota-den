@@ -29,6 +29,7 @@ import { shares } from "./shares";
 import { discord } from "./discord";
 import { presence } from "./presence";
 import { email } from "./email";
+import { plus } from "./plus";
 
 /** Every namespace of the fil messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -63,4 +64,5 @@ export const messages = {
   discord,
   presence,
   email,
+  plus,
 };

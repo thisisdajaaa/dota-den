@@ -914,6 +914,15 @@ const TWITCH_CHANNELS = [
     game: "Just Chatting",
   }),
   twitchChannel(9100, "fixturelegend", "FixtureLegend", null),
+  // Went live a moment ago (Plus go-live alerts), in another category so the Dota list and
+  // its counts stay as they are.
+  twitchChannel(9005, "plusalertcaster", "PlusAlertCaster", {
+    title: "Just went live",
+    viewers: 5,
+    language: "en",
+    game: "Art",
+    startedNow: true,
+  }),
   // Enough small Spanish streams to need "Show more".
   ...Array.from({ length: 25 }, (_, i) =>
     twitchChannel(9200 + i, `fixturefiller${i}`, `FixtureFiller${i}`, {
@@ -931,7 +940,9 @@ const twitchStream = (c) => ({
   viewer_count: c.live.viewers,
   language: c.live.language,
   game_name: c.live.game ?? "Dota 2",
-  started_at: "2026-10-01T10:00:00Z",
+  started_at: c.live.startedNow
+    ? new Date(Date.now() - 2 * 60_000).toISOString()
+    : "2026-10-01T10:00:00Z",
   thumbnail_url: `${TWITCH_CDN}/previews-ttv/live_user_${c.login}-{width}x{height}.jpg`,
 });
 function twitchStreams(url) {
@@ -1007,7 +1018,9 @@ const kickLivestream = (c) => ({
   has_mature_content: !!c.live.mature,
   viewer_count: c.live.viewers,
   thumbnail: `${KICK_IMAGES}/video_thumbnails/${c.slug}/480.webp`,
-  started_at: "2026-10-01T10:00:00Z",
+  started_at: c.live.startedNow
+    ? new Date(Date.now() - 2 * 60_000).toISOString()
+    : "2026-10-01T10:00:00Z",
   category: { id: 14, name: "Dota 2", thumbnail: `${KICK_FILES}/images/subcategories/14.jpg` },
   profile_picture: `${KICK_FILES}/images/user/${c.id}/profile_image/${c.slug}.webp`,
 });

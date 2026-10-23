@@ -217,3 +217,15 @@ describe("StreamerFollowService", () => {
     expect((await service.list(alice)).map((f) => f.platform)).toEqual(["twitch"]);
   });
 });
+
+describe("StreamerFollowService limits (ADR 0013)", () => {
+  it("asks for each player's own cap", async () => {
+    const service = new StreamerFollowService({
+      repository: new FakeRepo(),
+      directories: [],
+      limitFor: async (userId, base) => (userId === "alice" ? base * 2 : base),
+    });
+    expect(await service.limit(alice)).toBe(200);
+    expect(await service.limit(bob)).toBe(100);
+  });
+});

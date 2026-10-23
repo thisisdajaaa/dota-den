@@ -9,6 +9,7 @@ import { plural } from "@/common/i18n/translate";
 import { Button } from "@/components/ui/button";
 import {
   NOTIFICATION_KINDS,
+  PLUS_NOTIFICATION_KINDS,
   type NotificationKind,
   type NotificationPrefs,
 } from "../domain/notification";
@@ -67,11 +68,14 @@ export function NotificationsCard({
   publicKey,
   endpoints,
   prefs: initialPrefs,
+  plus = false,
 }: {
   /** Null when the server has no push keys. */
   publicKey: string | null;
   endpoints: string[];
   prefs: NotificationPrefs;
+  /** Plus players also choose Plus-only kinds (go-live alerts). */
+  plus?: boolean;
 }) {
   const t = useT();
   const [device, setDevice] = useState<DeviceState>("checking");
@@ -170,7 +174,10 @@ export function NotificationsCard({
     const next = { ...prefs, [kind]: on };
     setPrefs(next);
     try {
-      await apiRequest("/api/v1/me/notifications/preferences", { method: "PUT", body: next });
+      await apiRequest("/api/v1/me/notifications/preferences", {
+        method: "PUT",
+        body: { [kind]: on },
+      });
     } catch (e) {
       setPrefs(prefs);
       fail(e, t("notifications.card.saveFailed"));
@@ -250,22 +257,24 @@ export function NotificationsCard({
       {publicKey && devices.length > 0 && (
         <fieldset className="space-y-3">
           <legend className="text-sm font-medium">{t("notifications.card.kindsTitle")}</legend>
-          {NOTIFICATION_KINDS.map((kind) => (
-            <label key={kind} className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={prefs[kind]}
-                onChange={(e) => setKind(kind, e.target.checked)}
-                className="mt-1 accent-[var(--gold)]"
-              />
-              <span>
-                {t(`notifications.kinds.${kind}.label`)}
-                <span className="block text-xs text-muted-foreground">
-                  {t(`notifications.kinds.${kind}.help`)}
+          {NOTIFICATION_KINDS.filter((k) => plus || !PLUS_NOTIFICATION_KINDS.includes(k)).map(
+            (kind) => (
+              <label key={kind} className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={prefs[kind]}
+                  onChange={(e) => setKind(kind, e.target.checked)}
+                  className="mt-1 accent-[var(--gold)]"
+                />
+                <span>
+                  {t(`notifications.kinds.${kind}.label`)}
+                  <span className="block text-xs text-muted-foreground">
+                    {t(`notifications.kinds.${kind}.help`)}
+                  </span>
                 </span>
-              </span>
-            </label>
-          ))}
+              </label>
+            ),
+          )}
         </fieldset>
       )}
     </section>
