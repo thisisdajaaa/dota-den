@@ -80,13 +80,13 @@ export function FriendsPlayingStrip({
           {plural(t, "presence.count", data.friends.length)}
         </p>
       </div>
-      <ul className="flex gap-2 overflow-x-auto pb-1">
+      <ul className="flex snap-x [scrollbar-width:thin] gap-2 overflow-x-auto pb-1">
         {data.friends.map((f) => {
           const name = f.name ?? t("presence.unknownName", { id: f.accountId32 });
           const status = t(f.status === "in_match" ? "presence.inMatch" : "presence.inGame");
           const action = t(f.live ? "presence.watchLive" : "presence.viewProfile");
           return (
-            <li key={f.accountId32} className="shrink-0">
+            <li key={f.accountId32} className="shrink-0 snap-start">
               <Link
                 href={f.href}
                 aria-label={t("presence.link", { name, status, action })}

@@ -33,7 +33,7 @@ export function FollowButton({
       aria-label={label}
       title={label}
       className={cn(
-        "group/follow inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50",
+        "group/follow relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 touch:tap-area",
         compact ? "size-8" : "h-8 px-3",
         following
           ? "bg-gold/15 text-gold ring-1 ring-gold/30 hover:bg-gold/10"
