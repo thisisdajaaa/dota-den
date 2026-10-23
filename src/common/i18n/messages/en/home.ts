@@ -27,6 +27,7 @@ export const home = {
     body: "See how you really play solo versus with your stack, what each patch changed for your heroes, and practice drafts before the game that counts.",
     signIn: "Sign in through Steam",
     privacy: "We never see your password. Your data stays private by default.",
+    privacyLink: "How we handle your data",
     lookupLabel: "Or look up any player, no sign-in needed",
     example: "See an example profile",
     exampleWho: "Yatoro, a pro carry",

@@ -24,6 +24,7 @@ const PUBLIC = [
   "/draft/challenges",
   "/guides",
   "/live",
+  "/privacy",
 ];
 const SIGNED_IN = [
   "/dashboard",

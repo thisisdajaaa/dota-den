@@ -45,9 +45,20 @@ export const common: MessageTree<typeof en> = {
   footer: {
     terms: "Mga tuntunin",
     refunds: "Refund",
+    privacy: "Privacy",
     legal: "Legal",
     disclaimer:
       "Ang Dota Den ay hindi opisyal na proyekto ng mga fan. Hindi ito kaugnay o inendorso ng Valve Corporation. Ang Dota 2 ay rehistradong trademark ng Valve Corporation. Ang data ng mga laro ay galing sa OpenDota kung mayroon; ang patch notes ay naka-link sa opisyal na pinagmulan nito.",
+  },
+  legal: {
+    accountLink: "Account page",
+    contact: {
+      title: "Makipag-ugnayan",
+      email:
+        "May tanong tungkol sa page na ito o sa data mo? Mag-email sa {email}. Puwede mo ring i-download o i-delete ang data mo mismo sa {account}.",
+      fallback:
+        "Wala pang support inbox ang Dota Den. Hindi mo kailangang humingi sa amin para makita o matanggal ang data mo: puwede mong i-download o i-delete lahat ng iyon mismo sa {account}. Para sa bayad o refund, mag-reply sa resibo mo mula sa Lemon Squeezy.",
+    },
   },
   datePicker: {
     pick: "Pumili ng petsa",

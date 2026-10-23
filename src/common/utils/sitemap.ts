@@ -16,6 +16,7 @@ const PAGES: ReadonlyArray<Omit<SitemapEntry, "url"> & { path: string }> = [
   { path: "/draft/challenges", changeFrequency: "daily", priority: 0.6 },
   { path: "/live", changeFrequency: "hourly", priority: 0.6 },
   { path: "/players", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/privacy", changeFrequency: "monthly", priority: 0.3 },
 ];
 
 /**

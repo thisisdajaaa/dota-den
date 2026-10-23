@@ -270,19 +270,25 @@ function PlanOption({
   );
 }
 
-/** "Read the terms and the refund policy." with both words linked. */
+/** "Read the terms, the refund policy and the privacy policy." with each linked. */
 export function LegalLinks() {
   const t = useT();
-  const [before, middle, after] = t("plus.page.legal").split(/\{terms\}|\{refunds\}/);
+  const [before, first, second, after] = t("plus.page.legal").split(
+    /\{terms\}|\{refunds\}|\{privacy\}/,
+  );
   return (
     <span>
       {before}
       <Link href="/terms" className="text-gold hover:underline">
         {t("plus.page.termsLink")}
       </Link>
-      {middle}
+      {first}
       <Link href="/refunds" className="text-gold hover:underline">
         {t("plus.page.refundsLink")}
+      </Link>
+      {second}
+      <Link href="/privacy" className="text-gold hover:underline">
+        {t("plus.page.privacyLink")}
       </Link>
       {after}
     </span>
