@@ -185,6 +185,11 @@ const EnvSchema = z
         "RESEND_WEBHOOK_SECRET must look like whsec_<base64>",
       )
       .optional(),
+    /**
+     * Public contact address shown on the privacy, terms and refund pages (a mailto link).
+     * Unset: those pages point to the self-service Account page instead.
+     */
+    SUPPORT_EMAIL: z.email("SUPPORT_EMAIL must be an email address").optional(),
     /** Bearer secret for scheduled jobs (Vercel Cron). Cron routes answer 503 when unset. */
     CRON_SECRET: z.string().min(16).optional(),
     /**
