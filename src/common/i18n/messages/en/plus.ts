@@ -28,9 +28,18 @@ export const plus = {
       community: "Groups, together stats, tracked players and leaderboards",
       live: "Live games, streams and followed streamers",
       notifications: "Session, weekly and patch notifications",
+      coach: "AI match coach: one new review of your own parsed match per week",
     },
     plusTitle: "What Plus adds",
     perks: {
+      coach: {
+        title: "Unlimited AI coach",
+        body: "A coach review of any of your parsed matches, as often as you like (free: one new review a week). It's written from that match's numbers only, and it can be wrong.",
+      },
+      sync: {
+        title: "Priority sync",
+        body: "A long match history imports faster: shorter waits and bigger chunks between imports, and your newest unparsed games are sent to OpenDota for parsing (up to 3 per sync). It shares the same OpenDota budget as everyone, so free players aren't slowed down.",
+      },
       alerts: {
         title: "Go-live alerts",
         body: "A notification within a few minutes when a streamer you follow on /live starts streaming. Once per stream, and you can turn it off.",

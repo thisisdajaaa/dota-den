@@ -25,9 +25,18 @@ export const plus: MessageTree<typeof en> = {
       community: "Mga grupo, together stats, tracked players at leaderboards",
       live: "Mga live na laro, stream at fina-follow na streamer",
       notifications: "Mga notification para sa session, linggo at patch",
+      coach: "AI match coach: isang bagong review ng sarili mong na-parse na match kada linggo",
     },
     plusTitle: "Ano ang dagdag ng Plus",
     perks: {
+      coach: {
+        title: "Walang limit na AI coach",
+        body: "Coach review ng kahit anong na-parse mong match, kahit ilang beses (libre: isang bagong review kada linggo). Mula lang sa mga numero ng match na iyon ito isinusulat, at puwede itong magkamali.",
+      },
+      sync: {
+        title: "Priority sync",
+        body: "Mas mabilis ma-import ang mahabang match history: mas maikling paghihintay at mas malalaking batch, at ipinapa-parse sa OpenDota ang pinakabago mong hindi pa na-parse na laro (hanggang 3 kada sync). Iisang OpenDota budget pa rin ang gamit ng lahat, kaya hindi bumabagal ang mga libreng player.",
+      },
       alerts: {
         title: "Alerto kapag nag-live",
         body: "Notification sa loob ng ilang minuto kapag nag-stream ang streamer na fina-follow mo sa /live. Isang beses kada stream, at puwede mo itong i-off.",

@@ -25,9 +25,19 @@ export const plus: MessageTree<typeof en> = {
       community: "Mga grupo, together stats, tracked players ug leaderboards",
       live: "Mga live nga duwa, stream ug gi-follow nga streamer",
       notifications: "Mga notification para sa session, semana ug patch",
+      coach:
+        "AI match coach: usa ka bag-ong review sa imong kaugalingong na-parse nga duwa kada semana",
     },
     plusTitle: "Unsa ang idugang sa Plus",
     perks: {
+      coach: {
+        title: "Walay limit nga AI coach",
+        body: "Coach review sa bisan unsang na-parse nimo nga duwa, bisan pila ka higayon (libre: usa ka bag-ong review kada semana). Gikan ra sa mga numero niadtong duwa kini isulat, ug mahimo kining masayop.",
+      },
+      sync: {
+        title: "Priority sync",
+        body: "Mas paspas ma-import ang taas nga match history: mas mubo nga paghulat ug mas dagkong batch, ug ipa-parse sa OpenDota ang imong pinakabag-o nga wala pa na-parse nga duwa (hangtod 3 kada sync). Usa ra gihapon ang OpenDota budget sa tanan, mao nga dili mohinay ang mga libreng player.",
+      },
       alerts: {
         title: "Alerto kung mag-live",
         body: "Notification sulod sa pipila ka minuto kung mosugod og stream ang streamer nga imong gi-follow sa /live. Kausa matag stream, ug pwede nimo kining i-off.",
