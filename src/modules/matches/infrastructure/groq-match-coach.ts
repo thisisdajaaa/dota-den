@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { GroqClient } from "@/common/llm/groq-client";
 import type { Result } from "@/common/result";
-import type { CoachFactSheet } from "../domain/coach-facts";
+import type { CoachFactSheet, CoachLocale } from "../domain/coach-facts";
 import type { CoachWriter, CoachWriterError } from "../matches.ports";
 import { coachPrompt } from "./prompts/coach.prompts";
 
@@ -18,7 +18,7 @@ export class GroqMatchCoach implements CoachWriter {
 
   write(
     sheet: CoachFactSheet,
-    opts: { problems?: readonly string[] } = {},
+    opts: { locale: CoachLocale; problems?: readonly string[] },
   ): Promise<Result<unknown, CoachWriterError>> {
     const { system, user } = coachPrompt(sheet, opts);
     return this.client.chatJson(

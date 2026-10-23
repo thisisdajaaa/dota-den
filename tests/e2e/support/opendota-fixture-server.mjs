@@ -331,9 +331,12 @@ function coachAiDetail(index) {
  * grounding checks. GET /groq/calls counts the calls (cached reviews must make none).
  */
 let groqCalls = 0;
+/** The LANGUAGE line of the last coach prompt (the viewer's locale), for tests to check. */
+let groqLastLanguage = null;
 function groqCoach(body) {
   groqCalls++;
   const user = body.messages?.find((m) => m.role === "user")?.content ?? "";
+  groqLastLanguage = /^LANGUAGE: (\w+)/m.exec(user)?.[1] ?? null;
   const facts = new Map();
   for (const line of user.split("\n")) {
     const parts = line.split(" | ");
@@ -1402,7 +1405,7 @@ createServer((req, res) => {
   if (url.pathname.startsWith("/resend/") && resend(req, res, url) !== false) return;
   if (url.pathname === "/groq/calls") {
     res.writeHead(200, { "content-type": "application/json" });
-    return res.end(JSON.stringify({ calls: groqCalls }));
+    return res.end(JSON.stringify({ calls: groqCalls, lastLanguage: groqLastLanguage }));
   }
   if (url.pathname === "/groq/openai/v1/chat/completions" && req.method === "POST") {
     let raw = "";

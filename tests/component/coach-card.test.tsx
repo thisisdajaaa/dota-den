@@ -25,6 +25,7 @@ const REVIEW: CoachReviewDto = {
   matchId: "7000000012",
   heroId: 1,
   model: "openai/gpt-oss-120b",
+  locale: "en",
   createdAt: "2026-10-23T12:00:00.000Z",
   missing: ["party", "benchmarks"],
   points: [

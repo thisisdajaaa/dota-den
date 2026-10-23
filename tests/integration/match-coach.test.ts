@@ -42,6 +42,7 @@ const review = (over: Partial<StoredCoachReview> = {}): StoredCoachReview => ({
   accountId32: 22202,
   model: "m1",
   promptVersion: "coach-v1",
+  locale: "en",
   userId: "u-reviews",
   sheet: SHEET,
   points: [
@@ -52,12 +53,13 @@ const review = (over: Partial<StoredCoachReview> = {}): StoredCoachReview => ({
 });
 
 describe("CoachReviewsRepository", () => {
-  it("keeps one review per match, player, model and prompt version", async () => {
+  it("keeps one review per match, player, model, prompt version and language", async () => {
     const key = {
       matchId: "7000000012",
       accountId32: 22202,
       model: "m1",
       promptVersion: "coach-v1",
+      locale: "en" as const,
     };
     expect(await reviews.get(key)).toBeNull();
     const first = review();
@@ -70,6 +72,10 @@ describe("CoachReviewsRepository", () => {
     expect(await reviews.get({ ...key, model: "m2" })).toBeNull();
     await reviews.save(review({ promptVersion: "coach-v2" }));
     expect(await reviews.get({ ...key, promptVersion: "coach-v2" })).not.toBeNull();
+    // And another language too.
+    expect(await reviews.get({ ...key, locale: "ceb" })).toBeNull();
+    await reviews.save(review({ locale: "ceb" }));
+    expect((await reviews.get({ ...key, locale: "ceb" }))?.locale).toBe("ceb");
     const doc = await db.collection(MATCH_COLLECTIONS.coachReviews).findOne({});
     expect(doc).toMatchObject({ schemaVersion: 1 });
   });
@@ -78,10 +84,10 @@ describe("CoachReviewsRepository", () => {
     await reviews.save(review({ accountId32: 1, userId: "u-other", matchId: "1" }));
     const owner = { userId: "u-reviews", accountId32: 22202 };
     const exported = await reviews.exportForOwner(owner);
-    expect(exported).toHaveLength(2);
+    expect(exported).toHaveLength(3);
     expect(exported[0]).toMatchObject({ id: expect.stringContaining("7000000012:22202:m1:") });
     expect(exported[0]).not.toHaveProperty("schemaVersion");
-    expect(await reviews.deleteForOwner(owner)).toBe(2);
+    expect(await reviews.deleteForOwner(owner)).toBe(3);
     expect(await reviews.exportForOwner({ userId: "u-other", accountId32: 1 })).toHaveLength(1);
   });
 });

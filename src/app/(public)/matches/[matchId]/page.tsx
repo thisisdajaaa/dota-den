@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Clock, Info } from "lucide-react";
 import { cn } from "cn";
-import { getT } from "@/common/i18n/server";
+import { getLocale, getT } from "@/common/i18n/server";
 import { LocalTime } from "@/components/local-time";
 import { annotationsService } from "@/modules/annotations";
 import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
@@ -375,8 +375,10 @@ async function CoachSection({
   match: MatchDetail;
 }) {
   // Optional card: a failure (database, Plus lookup) just leaves it out.
-  const view = await matchCoachService
-    .view({ id: user.id, accountId32: user.accountId32 }, match)
+  const view = await getLocale()
+    .then((locale) =>
+      matchCoachService.view({ id: user.id, accountId32: user.accountId32 }, match, locale),
+    )
     .catch(() => null);
   if (!view || view.status === "off") return null;
   return <CoachCard matchId={match.matchId} initial={view} />;

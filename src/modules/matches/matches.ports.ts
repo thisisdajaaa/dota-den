@@ -33,7 +33,7 @@ export type {
   LineupFilter,
 } from "./domain/read-models";
 import type { DataOwner } from "@/common/privacy/user-data";
-import type { CoachFactSheet } from "./domain/coach-facts";
+import type { CoachFactSheet, CoachLocale } from "./domain/coach-facts";
 import type { CoachPoint } from "./domain/coach-review";
 import type { MatchDetail } from "./domain/match-detail";
 import type { MatchExtras } from "./domain/match-extras";
@@ -236,16 +236,17 @@ export interface CoachWriter {
   readonly model: string;
   write(
     sheet: CoachFactSheet,
-    opts?: { problems?: readonly string[] },
+    opts: { locale: CoachLocale; problems?: readonly string[] },
   ): Promise<Result<unknown, CoachWriterError>>;
 }
 
-/** What identifies one stored review: the same match, player, model and prompt. */
+/** What identifies one stored review: the same match, player, model, prompt and language. */
 export interface CoachReviewKey {
   matchId: string;
   accountId32: number;
   model: string;
   promptVersion: string;
+  locale: CoachLocale;
 }
 
 export interface StoredCoachReview extends CoachReviewKey {

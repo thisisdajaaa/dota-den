@@ -53,6 +53,8 @@ test("the owner gets a grounded coach review; the free one is weekly and reopeni
   await expect(card).toContainText("It can be wrong");
   await expect(card.getByTestId("coach-quota")).toHaveText("You've used this week's free review.");
   expect(await modelCalls(page)).toBe(before + 1);
+  // Written in the viewer's language (English here).
+  expect((await (await page.request.get(`${FIXTURE}/groq/calls`)).json()).lastLanguage).toBe("en");
 
   // A second parsed match within the week: the upsell instead of the button.
   await page.goto(`/matches/${ALSO_PARSED}`);

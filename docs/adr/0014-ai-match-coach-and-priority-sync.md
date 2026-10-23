@@ -36,9 +36,11 @@ checked before anyone sees it:
 1. zod shape (`schemas/coach-review.schema.ts`);
 2. 3–5 points, each citing at least one fact key, every key present in the sheet;
 3. **no invented numbers**: every number in the text must be one of the sheet's values (as
-   given, rounded, in thousands like "3.8k", or a clock time like "18:20"). Small counts
-   (0–10) and the phase marks 15/20/30 are allowed as context. This is a heuristic: a model
-   could still misquote a small count, which is why the UI shows our numbers.
+   given, rounded, or in thousands with one decimal like "3.8k"), small counts included:
+   "died 4 times" fails when the sheet says 3 deaths. The only numbers exempt are **time
+   markers**: "minute N", "min N", "N minutes", "N min", "first N minutes", "N-minute" (and
+   Filipino/Cebuano "minuto"), and clock times "N:SS". So a clock time in the text isn't
+   checked against the item timings; the cited timing chip next to the point shows ours.
 
 An answer that fails is retried **once**, with the problems listed in the prompt; a second
 failure (or the model being down or timing out) shows "the coach couldn't write this review",
@@ -65,7 +67,7 @@ integration test caught.) A hold becomes a counted use when the review is stored
 removed when generation fails; a crashed request's hold stops counting after 3 minutes.
 
 **Storage.** `match_coach_reviews` (`schemaVersion` 1), one document per
-`(matchId, accountId32, model, promptVersion)` (`_id` is that tuple), kept permanently: the
+`(matchId, accountId32, model, promptVersion, locale)` (`_id` is that tuple), kept permanently: the
 fact sheet, the points with their fact keys, the user and when it was written. Changing the
 model (`MATCH_COACH_MODEL`) or `COACH_PROMPT_VERSION` gives players a fresh review; old ones
 stay. `match_coach_usage` (`schemaVersion` 1): one document per user (`_id` = user id) with the
@@ -89,8 +91,11 @@ Dota account). Indexes are in `scripts/ensure-indexes.ts`.
 - Off without a key (`MATCH_COACH_API_KEY`, else `GROQ_API_KEY`) or with
   `MATCH_COACH_ENABLED=false`: the card isn't shown.
 
-Reviews are written in English, whatever the interface language; everything around them is
-translated.
+**Language.** The review is written in the viewer's interface language (`getLocale()`: en,
+fil or ceb), with hero and item names, fact keys and numbers kept as given. The locale is part
+of the cache key, so the same match in another language is a **new review**: for a free
+player it counts against the weekly quota like any other (accepted), and the earlier one stays
+stored and is shown again when they switch back.
 
 ### Plus priority sync
 

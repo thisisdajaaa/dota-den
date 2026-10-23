@@ -137,20 +137,40 @@ describe("coach fact sheet", () => {
 });
 
 describe("coach grounding", () => {
-  it("accepts numbers from the sheet: as given, rounded, in thousands, or as a clock", () => {
-    expect(ungroundedNumbers("48 last hits at 10:00, Battle Fury at 18:23", SHEET)).toEqual([]);
-    expect(ungroundedNumbers("3,812 gold by 10 minutes (about 3.8k)", SHEET)).toEqual([]);
-    expect(ungroundedNumbers("74% lane efficiency, KDA 5.3, around minute 18", SHEET)).toEqual([]);
-    // Small counts and phase marks are context, not statistics.
-    expect(ungroundedNumbers("Buy 2 wards before 20 minutes", SHEET)).toEqual([]);
+  it("accepts numbers from the sheet: as given, rounded, or in thousands", () => {
+    expect(ungroundedNumbers("48 last hits and 7 deaths", SHEET)).toEqual([]);
+    expect(ungroundedNumbers("3,812 gold (about 3.8k)", SHEET)).toEqual([]);
+    expect(ungroundedNumbers("74% lane efficiency, KDA 5.3", SHEET)).toEqual([]);
+  });
+
+  it("lets time markers through without a fact", () => {
+    for (const text of [
+      "by minute 10",
+      "around min 18",
+      "in the first 10 minutes",
+      "a 10-minute target",
+      "after 20 min",
+      "at 10:00 and again at 17:45",
+      "sa unang 10 minuto",
+      "pagkahuman sa minuto 15",
+    ])
+      expect(ungroundedNumbers(text, SHEET), text).toEqual([]);
+  });
+
+  it("small numbers and phase marks need a fact like any other number", () => {
+    const deaths3 = {
+      ...SHEET,
+      facts: SHEET.facts.map((f) => (f.key === "deaths" ? { ...f, value: 3 } : f)),
+    };
+    expect(ungroundedNumbers("You died 4 times", deaths3)).toEqual(["4"]);
+    expect(ungroundedNumbers("3 deaths is fine", deaths3)).toEqual([]);
+    expect(ungroundedNumbers("Buy 2 wards", SHEET)).toEqual(["2"]);
+    expect(ungroundedNumbers("aim for 20 by then", SHEET)).toEqual(["20"]);
   });
 
   it("flags numbers the sheet doesn't have", () => {
     expect(ungroundedNumbers("You died 12 times", SHEET)).toEqual(["12"]);
-    expect(ungroundedNumbers("4,100 gold and Battle Fury at 17:00", SHEET)).toEqual([
-      "4100",
-      "17:00",
-    ]);
+    expect(ungroundedNumbers("4,100 gold", SHEET)).toEqual(["4100"]);
     expect(ungroundedNumbers("80% efficiency, KDA 6.1", SHEET)).toEqual(["80", "6.1"]);
   });
 

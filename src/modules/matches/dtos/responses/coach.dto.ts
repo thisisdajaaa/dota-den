@@ -1,4 +1,4 @@
-import type { CoachFact, CoachMissing } from "../../domain/coach-facts";
+import type { CoachFact, CoachLocale, CoachMissing } from "../../domain/coach-facts";
 import { resolvePoints, type CoachQuota, type ResolvedCoachPoint } from "../../domain/coach-review";
 import type { StoredCoachReview } from "../../matches.ports";
 
@@ -13,6 +13,8 @@ export interface CoachReviewDto {
   matchId: string;
   heroId: number;
   model: string;
+  /** The language it was written in. */
+  locale: CoachLocale;
   createdAt: string;
   points: ResolvedCoachPoint[];
   /** Data this match doesn't have (the UI lists it; the coach was told). */
@@ -50,6 +52,7 @@ export const toReviewDto = (r: StoredCoachReview): CoachReviewDto => ({
   matchId: r.matchId,
   heroId: r.sheet.heroId,
   model: r.model,
+  locale: r.locale,
   createdAt: r.createdAt.toISOString(),
   points: resolvePoints(r.points, r.sheet),
   missing: r.sheet.missing,

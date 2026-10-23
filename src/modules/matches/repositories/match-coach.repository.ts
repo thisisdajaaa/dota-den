@@ -18,15 +18,15 @@ const isDuplicateKey = (e: unknown) =>
   typeof e === "object" && e !== null && "code" in e && e.code === 11000;
 
 export interface CoachReviewDoc extends StoredCoachReview {
-  /** `${matchId}:${accountId32}:${model}:${promptVersion}` */
+  /** `${matchId}:${accountId32}:${model}:${promptVersion}:${locale}` */
   _id: string;
   schemaVersion: number;
 }
 
 export const coachReviewId = (k: CoachReviewKey) =>
-  `${k.matchId}:${k.accountId32}:${k.model}:${k.promptVersion}`;
+  `${k.matchId}:${k.accountId32}:${k.model}:${k.promptVersion}:${k.locale}`;
 
-/** AI coach reviews, one per (match, player, model, prompt version), kept for good. */
+/** AI coach reviews, one per (match, player, model, prompt version, language), kept for good. */
 export class CoachReviewsRepository implements CoachReviewsPort {
   constructor(private readonly getDb: () => Promise<Db>) {}
 

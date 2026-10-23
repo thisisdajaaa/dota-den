@@ -13,6 +13,7 @@ import {
   buildCoachFactSheet,
   COACH_PROMPT_VERSION,
   type CoachFactSheet,
+  type CoachLocale,
 } from "../domain/coach-facts";
 import {
   checkCoachPoints,
@@ -89,10 +90,20 @@ export class MatchCoachService {
     return this.deps.writer !== null;
   }
 
-  private key(matchId: string, accountId32: number): CoachReviewKey | null {
+  /**
+   * A review is stored per language: the same match in another language is a new review
+   * (and, for free players, counts as one).
+   */
+  private key(matchId: string, accountId32: number, locale: CoachLocale): CoachReviewKey | null {
     const writer = this.deps.writer;
     if (!writer) return null;
-    return { matchId, accountId32, model: writer.model, promptVersion: COACH_PROMPT_VERSION };
+    return {
+      matchId,
+      accountId32,
+      model: writer.model,
+      promptVersion: COACH_PROMPT_VERSION,
+      locale,
+    };
   }
 
   private async plus(userId: string): Promise<boolean> {
@@ -121,10 +132,14 @@ export class MatchCoachService {
    * The coach card's starting state on a match page, for the player in it. The page already
    * has the match; nothing here calls the model.
    */
-  async view(user: CoachUser, match: MatchDetail): Promise<CoachViewDto | null> {
+  async view(
+    user: CoachUser,
+    match: MatchDetail,
+    locale: CoachLocale,
+  ): Promise<CoachViewDto | null> {
     const me = match.players.find((p) => p.accountId32 === user.accountId32);
     if (!me) return null;
-    const key = this.key(match.matchId, user.accountId32);
+    const key = this.key(match.matchId, user.accountId32, locale);
     if (!key) return { status: "off" };
     const stored = await this.deps.reviews.get(key);
     if (!stored && !isParsed(match, me)) return { status: "unparsed" };
@@ -134,8 +149,8 @@ export class MatchCoachService {
   }
 
   /** Writes (or re-opens) the coach review of the player's own match. */
-  async review(user: CoachUser, matchId: string): Promise<CoachResultDto> {
-    const key = this.key(matchId, user.accountId32);
+  async review(user: CoachUser, matchId: string, locale: CoachLocale): Promise<CoachResultDto> {
+    const key = this.key(matchId, user.accountId32, locale);
     if (!key) {
       throw new AppError("upstream_unavailable", "The AI coach isn't set up on this server.", {
         reason: "not_configured",
@@ -187,7 +202,7 @@ export class MatchCoachService {
 
     try {
       const sheet = await this.sheet(match, me);
-      const points = await this.write(sheet, matchId);
+      const points = await this.write(sheet, matchId, locale);
       const saved = await this.deps.reviews.save({
         ...key,
         userId: user.id,
@@ -236,7 +251,11 @@ export class MatchCoachService {
    * Asks the model, checks the answer, and asks once more (with what was wrong) when the
    * answer fails the checks. Each call takes one unit of the daily budget first.
    */
-  private async write(sheet: CoachFactSheet, matchId: string): Promise<CoachPoint[]> {
+  private async write(
+    sheet: CoachFactSheet,
+    matchId: string,
+    locale: CoachLocale,
+  ): Promise<CoachPoint[]> {
     const writer = this.deps.writer!;
     let problems: string[] = [];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -245,7 +264,7 @@ export class MatchCoachService {
           reason: "resting",
         });
       }
-      const reply = await writer.write(sheet, { problems });
+      const reply = await writer.write(sheet, { locale, problems });
       if (!reply.ok && reply.error.type === "unavailable") {
         this.deps.logger.warn("coach_model_unavailable", { matchId, cause: reply.error.cause });
         break;

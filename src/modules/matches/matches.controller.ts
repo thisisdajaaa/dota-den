@@ -10,6 +10,7 @@ import { handler } from "@/common/http/controller";
 import { requestId } from "@/common/http/http";
 import { ServiceResponse } from "@/common/http/service-response";
 import type { Logger } from "@/common/logging/logger";
+import { getLocale } from "@/common/i18n/server";
 import { requireUser } from "@/modules/identity";
 import { PARSE_REQUEST_LIMIT } from "./domain/sync-policy";
 import { CoachParamsSchema } from "./schemas/coach-review.schema";
@@ -122,7 +123,8 @@ export class MatchesController {
   coachReview = handler(
     { guard: requireUser, rateLimit: COACH_RATE_LIMIT, params: CoachParamsSchema },
     async ({ user, params }) => {
-      const result = await this.deps.coach().review(user, params.matchId);
+      // Written in the viewer's language (the same locale the page renders in).
+      const result = await this.deps.coach().review(user, params.matchId, await getLocale());
       return ServiceResponse.success(
         result,
         result.cached ? "Coach review" : "Coach review written",

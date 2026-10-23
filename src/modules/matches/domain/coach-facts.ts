@@ -13,7 +13,10 @@ import { PERF_STATS, type PerfStat } from "./match-performance";
 import type { ItemInfo } from "./read-models";
 
 /** Bump when the prompt or the fact sheet changes meaningfully: old reviews stay cached. */
-export const COACH_PROMPT_VERSION = "coach-v1";
+export const COACH_PROMPT_VERSION = "coach-v2";
+
+/** Languages the coach writes in: the interface languages (src/common/i18n/locales.ts). */
+export type CoachLocale = "en" | "fil" | "ceb";
 
 /** Items worth a timing: real purchases, not consumables, components or recipes. */
 export const KEY_ITEM_MIN_COST = 1_400;
@@ -335,56 +338,56 @@ export function factText(f: CoachFact): string {
 }
 
 /**
- * Numbers the coach may write without citing a fact: small counts and the game-phase marks
- * (minute 10, 20, 30) that frame advice. Everything else must be one of the sheet's values.
+ * Time markers the coach may write without citing a fact: "minute 10", "min 10", "10 minutes",
+ * "10 min", "first 10 minutes", "10-minute", and clock times like "18:20" (the review is
+ * written in the viewer's language, so Filipino/Cebuano "minuto" counts too). Every other
+ * number, small ones included, must be one of the sheet's values.
  */
-const CONTEXT_NUMBERS = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30]);
+const MINUTE_WORD = "(?:minutes?|mins?|minutos?)";
+const TIME_MARKERS = [
+  new RegExp(`\\b(?:first|unang)\\s+\\d+(?:\\.\\d+)?\\s*${MINUTE_WORD}\\b`, "gi"),
+  new RegExp(`\\b(?:minute|min|minuto)\\.?\\s+\\d+(?:\\.\\d+)?\\b`, "gi"),
+  new RegExp(`\\b\\d+(?:\\.\\d+)?\\s*(?:-\\s*)?${MINUTE_WORD}\\b`, "gi"),
+  /-?\b\d{1,3}:\d{2}\b/g,
+];
 
-/** Every number a fact allows the text to contain, as normalised strings. */
-function allowedNumbers(sheet: CoachFactSheet): { numbers: Set<number>; clocks: Set<string> } {
-  const numbers = new Set<number>(CONTEXT_NUMBERS);
-  const clocks = new Set<string>(["10:00", "20:00", "30:00"]);
+/** The text with every time marker blanked out (they need no fact). */
+function withoutTimeMarkers(text: string): string {
+  return TIME_MARKERS.reduce((t, re) => t.replace(re, " "), text);
+}
+
+/** Every number a fact allows the text to contain. */
+function allowedNumbers(sheet: CoachFactSheet): Set<number> {
+  const numbers = new Set<number>();
   for (const f of sheet.facts) {
     if (typeof f.value === "string") {
       for (const m of f.value.match(/\d+(?:\.\d+)?/g) ?? []) numbers.add(Number(m));
       continue;
     }
-    const v = f.value;
+    const v = Math.abs(f.value);
     numbers.add(v);
     numbers.add(Math.round(v));
     numbers.add(round(v, 1));
-    if (f.unit === "clock") {
-      clocks.add(clock(v));
-      // "around minute 13" for a 13:03 timing.
-      numbers.add(Math.floor(Math.abs(v) / 60));
-      numbers.add(Math.round(Math.abs(v) / 60));
-    }
-    if (Math.abs(v) >= 1000) {
-      // "12.3k" style: allowed as thousands with one decimal.
+    if (v >= 1000) {
+      // "3.8k" style: thousands with one decimal. Not whole thousands: "4k" for 3,812 would
+      // let a bare "4" through anywhere.
       numbers.add(round(v / 1000, 1));
-      numbers.add(Math.round(v / 1000));
     }
   }
-  return { numbers, clocks };
+  return numbers;
 }
 
 /**
- * Numbers in `text` that no fact in the sheet backs (empty when the text is grounded). Clock
- * times must match a fact's clock exactly; other numbers must equal a fact's value (as given,
- * rounded, or in thousands), or be a small context number.
+ * Numbers in `text` that no fact in the sheet backs (empty when the text is grounded). Time
+ * markers are skipped; every other number must equal a fact's value (as given, rounded, or
+ * in thousands with a "k").
  */
 export function ungroundedNumbers(text: string, sheet: CoachFactSheet): string[] {
-  const { numbers, clocks } = allowedNumbers(sheet);
+  const numbers = allowedNumbers(sheet);
   const out: string[] = [];
-  const cleaned = text.replace(/(\d),(\d{3})/g, "$1$2");
-  for (const m of cleaned.matchAll(/-?\d+(?::\d{2}|\.\d+)?/g)) {
-    const token = m[0];
-    if (token.includes(":")) {
-      if (!clocks.has(token.replace(/^-/, "")) && !clocks.has(token)) out.push(token);
-      continue;
-    }
-    const n = Math.abs(Number(token));
-    if (!numbers.has(n) && !numbers.has(-n)) out.push(token);
+  const cleaned = withoutTimeMarkers(text.replace(/(\d),(\d{3})/g, "$1$2"));
+  for (const m of cleaned.matchAll(/\d+(?:\.\d+)?/g)) {
+    if (!numbers.has(Number(m[0]))) out.push(m[0]);
   }
   return [...new Set(out)];
 }
