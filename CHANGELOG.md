@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-24
 
+- Privacy page: what Dota Den stores, who processes it, and how to download or delete it
+- Security: zod and ip-address updates
 - Meta: heroes placed by the position they are actually played (STRATZ public games, Ancient to Immortal), with win rates at that position; Bounty Hunter is now a support
 
 ## 2026-10-23
