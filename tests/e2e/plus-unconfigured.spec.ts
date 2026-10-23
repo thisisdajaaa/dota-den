@@ -17,7 +17,7 @@ test("without a payment provider, Plus is 'coming soon' and nothing can be bough
   await expect(
     page.getByRole("link", { name: /Get Plus|Sign in with Steam to get Plus/ }),
   ).toHaveCount(0);
-  await expect(page.getByText("$3.99")).toHaveCount(0);
+  await expect(page.getByText("₱299")).toHaveCount(0);
   // The legal drafts are reachable from the footer.
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "Terms" })).toHaveAttribute(
     "href",
