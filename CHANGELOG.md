@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-23
 
+- Stat tiles line up across every page, compact tables, no layouts cut off on phones or in Filipino, full tab names in the bottom bar
+- Plus prices shown in pesos; a test purchase can never grant Plus on production
 - AI match coach on your own parsed matches: coaching points that cite your real numbers, in your language (one free review a week; unlimited with Plus)
 - Priority sync for Plus: faster history imports and automatic replay parse requests for new games
 - Dota Den Plus groundwork (switched off until launch): pricing page, plan card, supporter badge, go-live alerts, higher limits, draft terms and refunds pages
