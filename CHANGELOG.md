@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-24
+
+- Meta: heroes placed by the position they are actually played (STRATZ public games, Ancient to Immortal), with win rates at that position; Bounty Hunter is now a support
+
 ## 2026-10-23
 
 - Stat tiles line up across every page, compact tables, no layouts cut off on phones or in Filipino, full tab names in the bottom bar
