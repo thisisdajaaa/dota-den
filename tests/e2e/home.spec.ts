@@ -9,7 +9,16 @@ test("guests see the real product, a player lookup and the latest patch's change
   // The hero preview is the Meta page with today's (fixture) numbers.
   const preview = page.getByRole("figure", { name: "Preview of the Meta page with today's data" });
   await expect(preview.getByRole("region", { name: "Carries" })).toContainText(/\d+\.\d% win rate/);
-  await expect(preview.getByRole("region", { name: "Supports" })).toContainText(/Fixture Hero/);
+  await expect(preview.getByRole("region", { name: "Carries" })).toContainText(
+    /\d+\.\d% win rate at Pos 1/,
+  );
+  // Placed by STRATZ position stats: a "Nuker" by its roles that's played at Pos 4.
+  await expect(preview.getByRole("region", { name: "Supports" })).toContainText("Fixture Hero 123");
+  await expect(preview).toContainText("STRATZ Ancient–Immortal games");
+  await expect(preview.getByRole("link", { name: "STRATZ" })).toHaveAttribute(
+    "href",
+    "https://stratz.com",
+  );
   await expect(preview.getByRole("link", { name: "Open the Meta" })).toHaveAttribute(
     "href",
     "/meta",
