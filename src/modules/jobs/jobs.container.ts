@@ -59,6 +59,9 @@ export const jobsService = new JobsService({
   queue: jobQueue,
   matches,
   backfillCooldownMs: BACKFILL_COOLDOWN_MS,
+  // Plus priority sync (ADR 0014): a shorter wait between a supporter's history chunks.
+  cooldownFor: async (accountId32) =>
+    (await matchSyncService.policyFor(accountId32)).backfillCooldownMs,
   warmDraftData,
   warmMeta,
   streamerAlerts: async () => {

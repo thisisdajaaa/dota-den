@@ -10,17 +10,25 @@ import { handler } from "@/common/http/controller";
 import { requestId } from "@/common/http/http";
 import { ServiceResponse } from "@/common/http/service-response";
 import type { Logger } from "@/common/logging/logger";
+import { getLocale } from "@/common/i18n/server";
 import { requireUser } from "@/modules/identity";
+import { PARSE_REQUEST_LIMIT } from "./domain/sync-policy";
+import { CoachParamsSchema } from "./schemas/coach-review.schema";
+import type { MatchCoachService } from "./services/match-coach.service";
 import { ON_VISIT_HISTORY_BUDGET_MS, type MatchSyncService } from "./services/match-sync.service";
 import type { MatchesService } from "./services/matches.service";
 
 const MatchParams = z.object({ matchId: z.string().regex(/^\d{6,20}$/, "Invalid match id") });
+
+/** Coach reviews per player: generous for Plus, but each new one costs a model call. */
+const COACH_RATE_LIMIT = { name: "match-coach", limit: 5, windowMs: 10 * 60_000 };
 
 export class MatchesController {
   constructor(
     private readonly deps: {
       sync: MatchSyncService;
       matches: MatchesService;
+      coach: () => MatchCoachService;
       /** Continue a long history in the background (durable queue only). */
       continueBackfill: (accountId32: number) => Promise<void>;
       /** Upstream failures are recorded for the admin page (logs are short-lived on Vercel). */
@@ -29,7 +37,7 @@ export class MatchesController {
        * New matches were imported: work that may follow (the Discord feed). Runs after the
        * response is sent, so it never slows the sync down.
        */
-      onNewMatches?: (accountId32: number) => void;
+      onNewMatches?: (user: { id: string; accountId32: number }) => void;
       /** Any successful sync: a few match details for the extras (after the response). */
       onSynced?: (accountId32: number) => void;
       logger: Pick<Logger, "info" | "warn">;
@@ -46,7 +54,7 @@ export class MatchesController {
     const log = { requestId: requestId(req), accountId32, durationMs: Date.now() - started };
     if (result.ok) {
       this.deps.logger.info("match_sync_completed", { ...log, ...result.value });
-      if (result.value.inserted > 0) this.deps.onNewMatches?.(accountId32);
+      if (result.value.inserted > 0) this.deps.onNewMatches?.({ id: user.id, accountId32 });
       this.deps.onSynced?.(accountId32);
       if (!result.value.backfillComplete) {
         await this.deps
@@ -93,7 +101,7 @@ export class MatchesController {
   /** POST /api/v1/matches/:matchId/parse: ask OpenDota to parse the replay. */
   requestParse = handler(
     {
-      rateLimit: { name: "match-parse", limit: 6, windowMs: 10 * 60_000 },
+      rateLimit: { name: "match-parse", ...PARSE_REQUEST_LIMIT },
       params: MatchParams,
     },
     async ({ params }) => {
@@ -104,6 +112,23 @@ export class MatchesController {
         throw new UpstreamUnavailableError("OpenDota couldn't take the request right now.");
       }
       return ServiceResponse.success({ requested: true }, "Parse requested", 202);
+    },
+  );
+
+  /**
+   * POST /api/v1/matches/:matchId/coach: the AI coach's review of your own parsed match.
+   * Plus: unlimited; free: one new review per rolling 7 days. A stored review is returned
+   * without counting.
+   */
+  coachReview = handler(
+    { guard: requireUser, rateLimit: COACH_RATE_LIMIT, params: CoachParamsSchema },
+    async ({ user, params }) => {
+      // Written in the viewer's language (the same locale the page renders in).
+      const result = await this.deps.coach().review(user, params.matchId, await getLocale());
+      return ServiceResponse.success(
+        result,
+        result.cached ? "Coach review" : "Coach review written",
+      );
     },
   );
 }

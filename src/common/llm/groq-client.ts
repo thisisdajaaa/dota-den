@@ -9,6 +9,11 @@ import { err, ok, type Result } from "@/common/result";
 
 export const GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+/** The chat completions URL under a base (GROQ_BASE_URL, for tests), else Groq's own. */
+export function groqChatUrl(base?: string): string {
+  return base ? `${base.replace(/\/$/, "")}/openai/v1/chat/completions` : GROQ_CHAT_URL;
+}
+
 export type ChatContent =
   | string
   | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>;

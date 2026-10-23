@@ -14,9 +14,16 @@ import type {
 } from "../matches.ports";
 import type { SyncError, SyncSummary } from "../dtos/responses/matches.dto";
 
-import { BACKFILL_COOLDOWN_MS, SYNC_COOLDOWN_MS } from "../domain/sync-policy";
+import {
+  BACKFILL_COOLDOWN_MS,
+  cooldownFor,
+  FREE_SYNC_POLICY,
+  MAX_PAGES_PER_SYNC,
+  SYNC_COOLDOWN_MS,
+  type SyncPolicy,
+} from "../domain/sync-policy";
 
-export { BACKFILL_COOLDOWN_MS, SYNC_COOLDOWN_MS };
+export { BACKFILL_COOLDOWN_MS, MAX_PAGES_PER_SYNC, SYNC_COOLDOWN_MS };
 export const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
 export const PAGE_SIZE = 100;
 /**
@@ -41,7 +48,6 @@ export const HISTORY_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const PERIODIC_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 /** Time for the upstream to finish a refresh before we re-walk the whole history. */
 export const RESCAN_DELAY_MS = 15 * 60 * 1000;
-export const MAX_PAGES_PER_SYNC = 5;
 /**
  * A sync the player is waiting on stops walking older history after this long; the rest
  * continues on the next sync (new matches always come first and aren't cut short).
@@ -76,16 +82,35 @@ export class MatchSyncService {
       /** Page size for walking history (defaults to `pageSize` when only that is set). */
       historyPageSize?: number;
       maxPages?: number;
+      /**
+       * The account's sync pace (Plus priority sync, ADR 0014). Defaults to the free policy;
+       * a failed lookup should resolve to the free policy too, never throw.
+       */
+      policy?: (accountId32: number) => Promise<SyncPolicy>;
     },
   ) {
     this.now = deps.now ?? (() => new Date());
   }
 
   /** Whether a sync is due: never synced, or past the applicable cooldown. */
-  static isStale(state: SyncState | null, now: Date): boolean {
+  static isStale(
+    state: SyncState | null,
+    now: Date,
+    policy: SyncPolicy = FREE_SYNC_POLICY,
+  ): boolean {
     if (!state?.lastSyncAt) return true;
-    const cooldown = state.backfillComplete ? SYNC_COOLDOWN_MS : BACKFILL_COOLDOWN_MS;
+    const cooldown = cooldownFor(state.backfillComplete, policy);
     return now.getTime() - state.lastSyncAt.getTime() >= cooldown;
+  }
+
+  /** The account's sync policy (free unless it has Plus). Never throws. */
+  async policyFor(accountId32: number): Promise<SyncPolicy> {
+    if (!this.deps.policy) return FREE_SYNC_POLICY;
+    try {
+      return await this.deps.policy(accountId32);
+    } catch {
+      return FREE_SYNC_POLICY;
+    }
   }
 
   /**
@@ -102,13 +127,15 @@ export class MatchSyncService {
   ): Promise<Result<SyncSummary, SyncError>> {
     const headPageSize = this.deps.pageSize ?? PAGE_SIZE;
     const historyPageSize = this.deps.historyPageSize ?? this.deps.pageSize ?? HISTORY_PAGE_SIZE;
-    let budget = opts.maxPages ?? this.deps.maxPages ?? MAX_PAGES_PER_SYNC;
+    const policy = await this.policyFor(accountId32);
+    // An explicit budget (the daily cron) wins; then a fixed one (tests); then the policy's.
+    let budget = opts.maxPages ?? this.deps.maxPages ?? policy.maxPages;
 
     const lock = await this.deps.syncState.acquire(accountId32, {
       now: this.now(),
       lockTtlMs: SYNC_LOCK_TTL_MS,
-      cooldownMs: SYNC_COOLDOWN_MS,
-      backfillCooldownMs: BACKFILL_COOLDOWN_MS,
+      cooldownMs: policy.cooldownMs,
+      backfillCooldownMs: policy.backfillCooldownMs,
     });
     if (lock.type === "locked") return err({ type: "sync_in_progress" });
     if (lock.type === "cooldown") return err({ type: "cooldown", retryAt: lock.retryAt });

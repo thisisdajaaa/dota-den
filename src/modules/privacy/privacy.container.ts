@@ -10,7 +10,7 @@ import { groupsService } from "@/modules/groups";
 import { usersService } from "@/modules/identity";
 import { activityService } from "@/modules/leaderboards";
 import { streamerFollowService } from "@/modules/live";
-import { matchExtrasService, matchesService } from "@/modules/matches";
+import { matchCoachService, matchExtrasService, matchesService } from "@/modules/matches";
 import { mmrJournalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
 import { plusService } from "@/modules/plus";
@@ -37,6 +37,8 @@ export const privacyService = lazy(
         draftsPrivacy,
         matchesService,
         matchExtrasService,
+        // AI coach reviews and the free quota's record (ADR 0014).
+        matchCoachService,
         togetherService,
         groupsService,
         annotationsService,

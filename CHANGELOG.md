@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-23
 
+- AI match coach on your own parsed matches: coaching points that cite your real numbers, in your language (one free review a week; unlimited with Plus)
+- Priority sync for Plus: faster history imports and automatic replay parse requests for new games
 - Dota Den Plus groundwork (switched off until launch): pricing page, plan card, supporter badge, go-live alerts, higher limits, draft terms and refunds pages
 - Security: security headers, a daily cap on AI draft calls, sessions verified before using the member OpenDota budget, rate limits on writes
 - Reliability: a friendly error page, background tasks always logged, faster database timeouts

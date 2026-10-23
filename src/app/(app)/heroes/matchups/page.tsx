@@ -14,10 +14,10 @@ import {
 import { LineupProgressNote, OwnMatchupsSections } from "@/modules/heroes/ui/own-matchups";
 import { getCurrentUser } from "@/modules/identity";
 import {
-  BACKFILL_COOLDOWN_MS,
   MatchSyncService,
   SYNC_COOLDOWN_MS,
   matchQueries,
+  matchSyncService,
   matchesService,
 } from "@/modules/matches";
 import { formatAgo } from "@/modules/matches/ui/format";
@@ -38,11 +38,12 @@ export default async function MatchupsPage({ searchParams }: PageProps<"/heroes/
   const t = await getT();
   const now = new Date();
 
-  const [view, played, heroes, status] = await Promise.all([
+  const [view, played, heroes, status, syncPolicy] = await Promise.all([
     heroesService.ownMatchups(user.accountId32, filter, now),
     matchQueries.playedHeroes(user.accountId32),
     matchesService.heroMap(),
     matchQueries.importStatus(user.accountId32),
+    matchSyncService.policyFor(user.accountId32),
   ]);
   const sync = status.sync;
 
@@ -76,9 +77,9 @@ export default async function MatchupsPage({ searchParams }: PageProps<"/heroes/
         description={t("heroes.own.description")}
         actions={
           <SyncControl
-            stale={MatchSyncService.isStale(sync, now)}
+            stale={MatchSyncService.isStale(sync, now, syncPolicy)}
             backfillComplete={sync?.backfillComplete ?? false}
-            backfillCooldownMs={BACKFILL_COOLDOWN_MS}
+            backfillCooldownMs={syncPolicy.backfillCooldownMs}
             recheckMs={SYNC_COOLDOWN_MS}
             awaitingHistory={status.totals.all === 0}
             lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}

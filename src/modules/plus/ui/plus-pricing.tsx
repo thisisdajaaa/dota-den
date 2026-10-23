@@ -4,12 +4,14 @@ import Link from "next/link";
 import {
   BadgeCheck,
   Bell,
+  Bot,
   Check,
   Clock,
   HeartHandshake,
   Layers,
   PauseCircle,
   Sparkles,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
@@ -21,12 +23,22 @@ import { PLAN_PRICES, type Plan } from "../domain/plans";
 import type { PlanDto, PlusOfferDto } from "../dtos/responses/plus.dto";
 import { PlusBadge } from "./plus-badge";
 
-const FREE_KEYS = ["matches", "mmr", "draft", "community", "live", "notifications"] as const;
+const FREE_KEYS = [
+  "matches",
+  "mmr",
+  "draft",
+  "community",
+  "live",
+  "notifications",
+  "coach",
+] as const;
 
 const PERKS: ReadonlyArray<{
-  key: "alerts" | "badge" | "limits" | "thanks";
+  key: "coach" | "sync" | "alerts" | "badge" | "limits" | "thanks";
   icon: LucideIcon;
 }> = [
+  { key: "coach", icon: Bot },
+  { key: "sync", icon: Zap },
   { key: "alerts", icon: Bell },
   { key: "badge", icon: BadgeCheck },
   { key: "limits", icon: Layers },

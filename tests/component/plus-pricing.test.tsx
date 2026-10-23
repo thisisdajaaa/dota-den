@@ -31,6 +31,26 @@ describe("PlusPricing", () => {
     expect(screen.getByRole("heading", { name: "Free for everyone, always" })).toBeInTheDocument();
   });
 
+  it("lists the AI coach (unlimited vs one a week free) and priority sync, honestly", () => {
+    render(
+      <PlusPricing offer={{ status: "off", plans: [] }} signedIn plan={null} limits={limits} />,
+    );
+    expect(screen.getByText("Unlimited AI coach")).toBeVisible();
+    expect(screen.getByText(/free: one new review a week/)).toBeVisible();
+    expect(screen.getByText(/it can be wrong/)).toBeVisible();
+    expect(screen.getByText("Priority sync")).toBeVisible();
+    expect(screen.getByText(/same OpenDota budget as everyone/)).toBeVisible();
+    // The weekly free review is listed under what's free.
+    const free = screen.getByRole("heading", { name: "Free for everyone, always" }).parentElement!;
+    expect(
+      within(free).getByText(/one new review of your own parsed match per week/),
+    ).toBeVisible();
+    // The existing perks stay.
+    expect(screen.getByText("Go-live alerts")).toBeVisible();
+    expect(screen.getByText("Supporter badge")).toBeVisible();
+    expect(screen.getByText("Room for more")).toBeVisible();
+  });
+
   it("says new subscriptions are paused under the kill switch", () => {
     render(
       <PlusPricing offer={{ status: "paused", plans: [] }} signedIn plan={null} limits={limits} />,

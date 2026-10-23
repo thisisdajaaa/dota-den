@@ -3,8 +3,8 @@ import { randomInt } from "node:crypto";
 import { afterResponse } from "@/common/http/after-response";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
-import { dailyCallBudget } from "@/common/llm/call-budget";
-import { GroqClient } from "@/common/llm/groq-client";
+import { sharedAiBudget } from "@/common/llm/call-budget";
+import { GroqClient, groqChatUrl } from "@/common/llm/groq-client";
 import { logger } from "@/common/logging/logger";
 import {
   openDotaConfig,
@@ -81,12 +81,15 @@ export async function getAiOpponent(): Promise<AiOpponentService> {
   // Moves and reviews share one daily Groq budget (signed-out players can call both).
   const advisor = config.GROQ_API_KEY
     ? new BudgetedDraftAdvisor(
-        new GroqDraftAdvisor(new GroqClient({ apiKey: config.GROQ_API_KEY }), {
-          model: config.DRAFT_AI_MODEL,
-          moveTimeoutMs: config.DRAFT_AI_MOVE_TIMEOUT_MS,
-          reviewTimeoutMs: config.DRAFT_AI_REVIEW_TIMEOUT_MS,
-        }),
-        dailyCallBudget("drafts", config.DRAFT_AI_BUDGET_PER_DAY),
+        new GroqDraftAdvisor(
+          new GroqClient({ apiKey: config.GROQ_API_KEY, url: groqChatUrl(config.GROQ_BASE_URL) }),
+          {
+            model: config.DRAFT_AI_MODEL,
+            moveTimeoutMs: config.DRAFT_AI_MOVE_TIMEOUT_MS,
+            reviewTimeoutMs: config.DRAFT_AI_REVIEW_TIMEOUT_MS,
+          },
+        ),
+        sharedAiBudget(config.DRAFT_AI_BUDGET_PER_DAY),
       )
     : null;
   return new AiOpponentService({

@@ -240,7 +240,139 @@ function laningFields(slot, me) {
   };
 }
 
+// AI match coach fixture (its own account, SteamID 76561197960468001): three Anti-Mage games,
+// newest first. The first two are parsed (laning, items, wards, team fights, benchmarks);
+// the third isn't. Party size isn't recorded (unknown, never solo).
+const COACH_AI = 202_273;
+const COACH_AI_MATCHES = Array.from({ length: 3 }, (_, i) => ({
+  match_id: 7_400_000_003 - i,
+  player_slot: 0,
+  radiant_win: i !== 1,
+  duration: 2400 + i * 60,
+  game_mode: 22,
+  lobby_type: 7,
+  hero_id: 1,
+  start_time: NOW - (i + 1) * 3 * 3600,
+  version: i < 2 ? 22 : null,
+  kills: 9,
+  deaths: 3,
+  assists: 7,
+  average_rank: 55,
+  party_size: null,
+  lane_role: 1,
+  is_roaming: false,
+  gold_per_min: 640,
+  xp_per_min: 710,
+  heroes: Object.fromEntries(
+    [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot, k) => [
+      String(slot),
+      { hero_id: slot === 0 ? 1 : 100 + k },
+    ]),
+  ),
+}));
+
+function coachAiDetail(index) {
+  const row = COACH_AI_MATCHES[index];
+  const parsed = row.version !== null;
+  const players = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot, k) => {
+    const me = slot === 0;
+    const base = player(slot, {
+      account_id: me ? COACH_AI : 92_000 + slot,
+      personaname: me ? "Fixture Student" : `Fixture ${slot}`,
+      hero_id: me ? 1 : 100 + k,
+      kills: me ? row.kills : 5,
+      deaths: me ? row.deaths : 5,
+      assists: me ? row.assists : 5,
+      gold_per_min: me ? row.gold_per_min : 500,
+      xp_per_min: me ? row.xp_per_min : 600,
+      party_id: null,
+      party_size: null,
+      ...(me
+        ? {
+            benchmarks: {
+              gold_per_min: { raw: 640, pct: 0.81, pct_bracket: 0.7 },
+              last_hits_per_min: { raw: 7.9, pct: 0.92, pct_bracket: 0.9 },
+              tower_damage: { raw: 1000, pct: 0.24, pct_bracket: 0.2 },
+            },
+          }
+        : {}),
+    });
+    return parsed ? { ...base, ...laningFields(slot, me) } : base;
+  });
+  return {
+    match_id: row.match_id,
+    start_time: row.start_time,
+    duration: row.duration,
+    radiant_win: row.radiant_win,
+    radiant_score: 31,
+    dire_score: 22,
+    game_mode: 22,
+    lobby_type: 7,
+    region: 3,
+    first_blood_time: 75,
+    version: row.version,
+    players,
+    teamfights: parsed
+      ? [
+          {
+            start: 1500,
+            players: players.map((p) =>
+              p.player_slot === 0 ? { deaths_pos: { 140: { 135: 1 } } } : {},
+            ),
+          },
+        ]
+      : null,
+  };
+}
+
+/**
+ * A stand-in for Groq's chat completions API (the AI match coach). It answers with three
+ * coaching points that quote values from the FACTS lines it was sent, so they pass the app's
+ * grounding checks. GET /groq/calls counts the calls (cached reviews must make none).
+ */
+let groqCalls = 0;
+/** The LANGUAGE line of the last coach prompt (the viewer's locale), for tests to check. */
+let groqLastLanguage = null;
+function groqCoach(body) {
+  groqCalls++;
+  const user = body.messages?.find((m) => m.role === "user")?.content ?? "";
+  groqLastLanguage = /^LANGUAGE: (\w+)/m.exec(user)?.[1] ?? null;
+  const facts = new Map();
+  for (const line of user.split("\n")) {
+    const parts = line.split(" | ");
+    if (parts.length === 3) facts.set(parts[0], parts[2]);
+  }
+  const points = [];
+  if (facts.has("lastHitsAt10"))
+    points.push({
+      kind: "strength",
+      title: "Clean last hitting in lane",
+      detail: `You had ${facts.get("lastHitsAt10")} last hits by minute 10. Keep that rhythm on every wave.`,
+      facts: ["lastHitsAt10"],
+    });
+  if (facts.has("item.bfury"))
+    points.push({
+      kind: "improve",
+      title: "Get Battle Fury sooner",
+      detail: `Battle Fury came at ${facts.get("item.bfury")}. Stack a camp before you leave lane to buy it earlier.`,
+      facts: ["item.bfury"],
+    });
+  points.push({
+    kind: "improve",
+    title: "Fewer deaths in fights",
+    detail: `You died ${facts.get("deaths")} times. Wait for your team before you jump in.`,
+    facts: ["deaths"],
+  });
+  return {
+    id: `chatcmpl-fixture-${groqCalls}`,
+    object: "chat.completion",
+    choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify({ points }) } }],
+  };
+}
+
 function matchDetail(id) {
+  const coachAi = COACH_AI_MATCHES.findIndex((m) => String(m.match_id) === id);
+  if (coachAi >= 0) return coachAiDetail(coachAi);
   const coach = COACH_MATCHES.findIndex((m) => String(m.match_id) === id);
   if (coach >= 0) return coachDetail(coach);
   const index = MATCHES.findIndex((m) => String(m.match_id) === id);
@@ -840,6 +972,7 @@ const routes = [
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Number(url.searchParams.get("limit") ?? 100);
       if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
+      if (Number(m[1]) === COACH_AI) return COACH_AI_MATCHES.slice(offset, offset + limit);
       if (Number(m[1]) === COACH) {
         const heroId = url.searchParams.get("hero_id");
         return COACH_MATCHES.filter((r) => !heroId || r.hero_id === Number(heroId)).slice(
@@ -1270,6 +1403,23 @@ createServer((req, res) => {
     return res.end(JSON.stringify(steam.body));
   }
   if (url.pathname.startsWith("/resend/") && resend(req, res, url) !== false) return;
+  if (url.pathname === "/groq/calls") {
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify({ calls: groqCalls, lastLanguage: groqLastLanguage }));
+  }
+  if (url.pathname === "/groq/openai/v1/chat/completions" && req.method === "POST") {
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => {
+      if (!/^Bearer .+/.test(req.headers.authorization ?? "")) {
+        res.writeHead(401, { "content-type": "application/json" });
+        return res.end(JSON.stringify({ error: { message: "Invalid API Key" } }));
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(groqCoach(JSON.parse(raw || "{}"))));
+    });
+    return;
+  }
   for (const [re, handler] of routes) {
     const m = re.exec(url.pathname);
     if (!m) continue;

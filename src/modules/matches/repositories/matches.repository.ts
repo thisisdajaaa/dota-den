@@ -41,6 +41,12 @@ export const MATCH_COLLECTIONS = {
   syncState: "match_sync_state",
   /** Per-match extras from parsed replays (item timings, lanes), per player. */
   extras: "match_extras",
+  /** AI match coach reviews, kept for good (ADR 0014). */
+  coachReviews: "match_coach_reviews",
+  /** Free coach reviews written (the rolling 7-day quota), with short-lived holds. */
+  coachUsage: "match_coach_usage",
+  /** Matches asked to be parsed by Plus auto requests (dedupe, expires). */
+  parseRequests: "match_parse_requests",
 } as const;
 
 export interface PlayerMatchFactDoc extends PlayerMatchFact {

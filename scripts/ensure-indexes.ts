@@ -36,6 +36,11 @@ import { MatchDraftReadsRepository } from "@/modules/drafts/repositories/match-d
 import { ReplayReadsRepository } from "@/modules/report/repositories/replay-reads.repository";
 import { MatchFactsRepository } from "@/modules/matches/repositories/matches.repository";
 import { MatchExtrasRepository } from "@/modules/matches/repositories/match-extras.repository";
+import {
+  CoachReviewsRepository,
+  CoachUsageRepository,
+  ParseRequestsRepository,
+} from "@/modules/matches/repositories/match-coach.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
 import { MmrEntriesRepository } from "@/modules/mmr/repositories/mmr-entries.repository";
 import { PatchesRepository } from "@/modules/patches/repositories/patches.repository";
@@ -80,6 +85,11 @@ async function main(): Promise<void> {
   await new ActivityRepository(async () => db).ensureIndexes();
   await new MatchFactsRepository(async () => db).ensureIndexes();
   await new MatchExtrasRepository(async () => db).ensureIndexes();
+  await Promise.all([
+    new CoachReviewsRepository(async () => db).ensureIndexes(),
+    new CoachUsageRepository(async () => db).ensureIndexes(),
+    new ParseRequestsRepository(async () => db).ensureIndexes(),
+  ]);
   await new ReplayReadsRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();

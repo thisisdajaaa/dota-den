@@ -27,6 +27,10 @@ behind a provider-agnostic `BillingProvider` port. The first adapter is Lemon Sq
   - **AI review**: there is no per-player quota today (only the per-minute rate limit against
     abuse), so free keeps exactly that. `aiReviewAllowance()` returns `"unlimited"` for Plus, so a
     future free quota can never apply to supporters.
+  - **AI match coach** and **priority sync** (added later, ADR 0014): unlimited coach reviews
+    (free: one new review per rolling 7 days; the coach is new, nothing free became paid), a
+    faster history import and automatic parse requests for new games, inside the same global
+    budgets.
 - Display prices **$3.99/month** and **$29.99/year** (US dollars). The provider charges, may show
   local currency and adds tax; the page says so.
 

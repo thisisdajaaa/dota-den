@@ -32,6 +32,9 @@ export type {
   LineupFacts,
   LineupFilter,
 } from "./domain/read-models";
+import type { DataOwner } from "@/common/privacy/user-data";
+import type { CoachFactSheet, CoachLocale } from "./domain/coach-facts";
+import type { CoachPoint } from "./domain/coach-review";
 import type { MatchDetail } from "./domain/match-detail";
 import type { MatchExtras } from "./domain/match-extras";
 import type { MatchListFilter } from "./schemas/match-list-filter.schema";
@@ -221,4 +224,76 @@ export interface MatchExtrasStore {
   parsedGamesOnHero(accountId32: number, heroId: number): Promise<number>;
   exportForOwner(owner: { accountId32: number }): Promise<Array<Record<string, unknown>>>;
   deleteForOwner(owner: { accountId32: number }): Promise<number>;
+}
+
+// --------------------------------- AI match coach (ADR 0014) ---------------------------------
+
+export type CoachWriterError =
+  { type: "unavailable"; cause: string } | { type: "invalid_response"; cause: string };
+
+/** The language model behind the coach. Returns its JSON unvalidated (the service checks it). */
+export interface CoachWriter {
+  readonly model: string;
+  write(
+    sheet: CoachFactSheet,
+    opts: { locale: CoachLocale; problems?: readonly string[] },
+  ): Promise<Result<unknown, CoachWriterError>>;
+}
+
+/** What identifies one stored review: the same match, player, model, prompt and language. */
+export interface CoachReviewKey {
+  matchId: string;
+  accountId32: number;
+  model: string;
+  promptVersion: string;
+  locale: CoachLocale;
+}
+
+export interface StoredCoachReview extends CoachReviewKey {
+  userId: string;
+  /** The facts the review was written from: the UI renders numbers from these. */
+  sheet: CoachFactSheet;
+  points: CoachPoint[];
+  createdAt: Date;
+}
+
+/** Reviews kept for good, one per key (re-opening one never calls the model again). */
+export interface CoachReviewsPort {
+  get(key: CoachReviewKey): Promise<StoredCoachReview | null>;
+  /** Stores the review unless one exists for its key; returns the stored one either way. */
+  save(review: StoredCoachReview): Promise<StoredCoachReview>;
+  exportForOwner(owner: DataOwner): Promise<Array<Record<string, unknown>>>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+export type CoachReservation = { ok: true; id: string } | { ok: false };
+
+/** Free players' coach reviews (the rolling-window quota). Only finished reviews count. */
+export interface CoachUsagePort {
+  /** When this user's counted reviews were written, since `since`. */
+  usesSince(userId: string, since: Date): Promise<Date[]>;
+  /**
+   * Holds one of the window's slots while a review is written, so two tabs can't both use the
+   * last one. Refused when the window is full (counted reviews plus live holds).
+   */
+  reserve(
+    userId: string,
+    opts: { matchId: string; now: Date; limit: number; windowMs: number; holdMs: number },
+  ): Promise<CoachReservation>;
+  /** The review was written: the hold becomes a counted use. */
+  confirm(id: string, now: Date): Promise<void>;
+  /** The review wasn't written: give the slot back. */
+  release(id: string): Promise<void>;
+  exportForOwner(owner: DataOwner): Promise<Array<Record<string, unknown>>>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+/** Auto parse requests for Plus (ADR 0014): recent unparsed games, and a dedupe record. */
+export interface ParseRequestsPort {
+  /** Imported games of this player that OpenDota hadn't parsed, newest first. */
+  recentUnparsed(accountId32: number, since: Date, limit: number): Promise<string[]>;
+  /** Claims a match for one parse request; false when it was asked for recently. */
+  claim(matchId: string, now: Date, ttlMs: number): Promise<boolean>;
+  /** Forgets a claim whose request didn't go out. */
+  release(matchId: string): Promise<void>;
 }

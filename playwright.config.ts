@@ -67,6 +67,9 @@ export default defineConfig({
         STEAM_API_BASE_URL: `${fixtureURL}/steam`,
         // Never call a paid model from tests (overrides any key in .env.local).
         GROQ_API_KEY: "",
+        // The AI match coach talks to the fixture's stand-in for Groq (nothing else does).
+        MATCH_COACH_API_KEY: "e2e-groq-fixture",
+        GROQ_BASE_URL: `${fixtureURL}/groq`,
         // Never use shared Redis or the durable job queue from tests (ADR 0008).
         UPSTASH_REDIS_REST_URL: "",
         UPSTASH_REDIS_REST_TOKEN: "",
@@ -116,6 +119,7 @@ export default defineConfig({
         VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
         IMAGE_SOURCE_BASE_URL: `${fixtureURL}/images`,
         GROQ_API_KEY: "",
+        MATCH_COACH_API_KEY: "",
         UPSTASH_REDIS_REST_URL: "",
         UPSTASH_REDIS_REST_TOKEN: "",
         QSTASH_TOKEN: "",

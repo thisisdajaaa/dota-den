@@ -52,6 +52,48 @@ describe("JobsService backfill", () => {
     await expect(down.svc.backfillChunk({ accountId32: 7 })).rejects.toThrow("unavailable");
   });
 
+  it("uses the account's own cooldown (Plus priority sync) for the wait and the dedup bucket", async () => {
+    const { q, enqueue } = queue();
+    const svc = new JobsService({
+      queue: () => q,
+      matches: {
+        sync: async () => ({ ok: true, value: { backfillComplete: false } }),
+        syncDue: async () => [],
+      },
+      backfillCooldownMs: 30_000,
+      cooldownFor: async (id) => (id === 7 ? 10_000 : 30_000),
+      warmDraftData: async () => [],
+      warmMeta: async () => [],
+      logger,
+      now: () => 1_000_000,
+    });
+    await svc.backfillChunk({ accountId32: 7, chunk: 0 });
+    expect(enqueue.mock.calls[0][2]).toEqual({
+      delaySec: 10,
+      dedupKey: `backfill:7@${Math.floor(1_010_000 / 10_000)}`,
+    });
+    await svc.backfillChunk({ accountId32: 8, chunk: 0 });
+    expect(enqueue.mock.calls[1][2]).toMatchObject({ delaySec: 30 });
+    // A failed lookup falls back to the free cooldown.
+    const fallback = new JobsService({
+      queue: () => q,
+      matches: {
+        sync: async () => ({ ok: true, value: { backfillComplete: false } }),
+        syncDue: async () => [],
+      },
+      backfillCooldownMs: 30_000,
+      cooldownFor: async () => {
+        throw new Error("down");
+      },
+      warmDraftData: async () => [],
+      warmMeta: async () => [],
+      logger,
+      now: () => 0,
+    });
+    await fallback.enqueueMatchBackfill(9);
+    expect(enqueue.mock.calls[2][2]).toMatchObject({ delaySec: 30 });
+  });
+
   it("only queues backfill on a durable queue", async () => {
     const inline = make(async () => ({ ok: true, value: { backfillComplete: false } }), false);
     await inline.svc.enqueueMatchBackfill(7);
