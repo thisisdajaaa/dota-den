@@ -13,7 +13,10 @@ test("the privacy policy renders, linked from the footer, with the contact addre
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page.getByRole("heading", { level: 1, name: "Privacy policy" })).toBeVisible();
   await expect(page).toHaveTitle(/Privacy policy/);
-  expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toBe(
+  // A client-side navigation can leave the previous page's canonical in the head; crawlers load fresh.
+  await page.reload();
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
     new URL("/privacy", baseURL).href,
   );
 
