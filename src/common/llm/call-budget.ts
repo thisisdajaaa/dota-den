@@ -70,3 +70,12 @@ export function dailyCallBudget(name: string, perDay: number): CallBudget {
     },
   };
 }
+
+/**
+ * The one daily budget every paid model call draws from: the AI captain, the draft review and
+ * the AI match coach. The counter name stays "drafts" (it predates the coach), so the cap and
+ * its usage logs carry on unchanged.
+ */
+export function sharedAiBudget(perDay: number): CallBudget {
+  return dailyCallBudget("drafts", perDay);
+}

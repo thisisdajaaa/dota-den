@@ -1,13 +1,11 @@
 import { getT } from "@/common/i18n/server";
 import type { HeroInfo, ItemInfo } from "../matches.ports";
+import { isKeyItem } from "../domain/coach-facts";
 import type { MatchPlayer } from "../domain/match-detail";
 import { clockTime, keyItemTimings, laneOpponents } from "../domain/match-laning";
 import { HeroPortrait, heroName } from "./hero-portrait";
 import { ItemIcon } from "./item-icon";
 import { ParseRequest } from "./parse-request";
-
-/** Items worth a timing: real purchases, not consumables, components or recipes. */
-const KEY_ITEM_MIN_COST = 1_400;
 
 const LANE_ROLE: Record<number, "safe" | "mid" | "off" | "jungle"> = {
   1: "safe",
@@ -61,15 +59,8 @@ export async function LaningCard({
           const l = selected.laning;
           const hero = heroes.get(selected.heroId);
           const opponents = laneOpponents(players, selected);
-          const timings = keyItemTimings(l.purchases, (key) => {
-            const it = byKey.get(key);
-            return (
-              !!it &&
-              !key.startsWith("recipe_") &&
-              it.qual !== "consumable" &&
-              (it.cost ?? 0) >= KEY_ITEM_MIN_COST
-            );
-          });
+          // The same items the AI coach is given timings for.
+          const timings = keyItemTimings(l.purchases, (key) => isKeyItem(byKey.get(key)));
           const rows = [selected, ...opponents];
           return (
             <div className="space-y-5">

@@ -13,8 +13,13 @@ export class JobsService {
     private readonly deps: {
       queue: () => JobQueue;
       matches: MatchSyncPort;
-      /** Wait between history chunks (the sync cooldown). */
+      /** Wait between history chunks (the sync cooldown) when `cooldownFor` isn't given. */
       backfillCooldownMs: number;
+      /**
+       * The account's wait between history chunks (shorter with Plus priority sync, ADR 0014).
+       * Should fall back to the free cooldown rather than throw.
+       */
+      cooldownFor?: (accountId32: number) => Promise<number>;
       warmDraftData: () => Promise<Array<{ key: string; ok: boolean }>>;
       /** The Meta page's slow tournament queries. */
       warmMeta: () => Promise<Array<{ key: string; ok: boolean }>>;
@@ -47,16 +52,27 @@ export class JobsService {
   ): Promise<void> {
     const queue = this.deps.queue();
     if (!queue.durable) return;
-    const delayMs = opts.delayMs ?? this.deps.backfillCooldownMs;
+    const cooldown = await this.cooldown(accountId32);
+    const delayMs = opts.delayMs ?? cooldown;
     await queue.enqueue(
       "match-backfill",
       { accountId32, chunk: opts.chunk ?? 0 },
       {
-        // One chunk per account per minute, whoever asks.
-        dedupKey: bucketedKey(`backfill:${accountId32}`, 60_000, this.now() + delayMs),
+        // One chunk per account per cooldown, whoever asks. The next chunk of a chain is
+        // always at least one cooldown later, so it lands in a later bucket than its parent.
+        dedupKey: bucketedKey(`backfill:${accountId32}`, cooldown, this.now() + delayMs),
         delaySec: Math.ceil(delayMs / 1000),
       },
     );
+  }
+
+  private async cooldown(accountId32: number): Promise<number> {
+    if (!this.deps.cooldownFor) return this.deps.backfillCooldownMs;
+    try {
+      return await this.deps.cooldownFor(accountId32);
+    } catch {
+      return this.deps.backfillCooldownMs;
+    }
   }
 
   /** One chunk of a match-history import; queues the next chunk while history remains. */
@@ -65,7 +81,7 @@ export class JobsService {
     const chunk = Number(payload.chunk ?? 0);
     if (!Number.isInteger(accountId32) || accountId32 <= 0) return;
     const res = await this.deps.matches.sync(accountId32);
-    const cooldown = this.deps.backfillCooldownMs;
+    const cooldown = await this.cooldown(accountId32);
     let waitMs: number | null = null;
     if (res.ok) {
       if (!res.value.backfillComplete) waitMs = cooldown;

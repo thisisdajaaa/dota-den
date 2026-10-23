@@ -6,7 +6,7 @@ import { plural } from "@/common/i18n/translate";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
-import { BACKFILL_COOLDOWN_MS, MatchSyncService, SYNC_COOLDOWN_MS } from "@/modules/matches";
+import { MatchSyncService, SYNC_COOLDOWN_MS, matchSyncService } from "@/modules/matches";
 import type { DashboardFilter } from "@/modules/matches/domain/read-models";
 import { matchQueries, matchesService } from "@/modules/matches";
 import { playersService } from "@/modules/players";
@@ -71,24 +71,27 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const queries = matchQueries;
   const owner = { userId: user.id, accountId32: user.accountId32 };
   const timeZone = getViewerTimeZone();
-  const [status, view, quick, heroes, latestSession, tz, notify, checklist] = await Promise.all([
-    queries.importStatus(user.accountId32),
-    queries.dashboardView(user.accountId32, filter, now, RECENT_MATCHES),
-    // The saved copy when there is one: the banner doesn't wait on OpenDota.
-    playersService.quickProfile(user.accountId32),
-    matchesService.heroMap(),
-    // Optional card: a sessions failure must not take down the dashboard.
-    sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
-    timeZone,
-    // Optional: only decides whether to invite the player to turn notifications on.
-    notificationService.status(user.id).catch(() => null),
-    // Optional card: a failure just hides the checklist.
-    timeZone
-      .then((zone) =>
-        onboardingService.checklist({ ...owner, createdAt: user.createdAt }, zone.timeZone),
-      )
-      .catch(() => null),
-  ]);
+  const [status, view, quick, heroes, latestSession, tz, notify, checklist, syncPolicy] =
+    await Promise.all([
+      queries.importStatus(user.accountId32),
+      queries.dashboardView(user.accountId32, filter, now, RECENT_MATCHES),
+      // The saved copy when there is one: the banner doesn't wait on OpenDota.
+      playersService.quickProfile(user.accountId32),
+      matchesService.heroMap(),
+      // Optional card: a sessions failure must not take down the dashboard.
+      sessionService.latest({ userId: user.id, accountId32: user.accountId32 }).catch(() => null),
+      timeZone,
+      // Optional: only decides whether to invite the player to turn notifications on.
+      notificationService.status(user.id).catch(() => null),
+      // Optional card: a failure just hides the checklist.
+      timeZone
+        .then((zone) =>
+          onboardingService.checklist({ ...owner, createdAt: user.createdAt }, zone.timeZone),
+        )
+        .catch(() => null),
+      // Plus priority sync: the page schedules the next chunk with the player's own cooldown.
+      matchSyncService.policyFor(user.accountId32),
+    ]);
   const { facts, recent, latestPatch } = view;
   const profile = quick.profile;
   // Medal history needs no typing: note the medal each visit (after the page is sent), from a
@@ -118,9 +121,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const banner = (
     <PlayerBanner profile={profile} accountId32={user.accountId32} signature={signature}>
       <SyncControl
-        stale={MatchSyncService.isStale(sync, now)}
+        stale={MatchSyncService.isStale(sync, now, syncPolicy)}
         backfillComplete={sync?.backfillComplete ?? false}
-        backfillCooldownMs={BACKFILL_COOLDOWN_MS}
+        backfillCooldownMs={syncPolicy.backfillCooldownMs}
         recheckMs={SYNC_COOLDOWN_MS}
         awaitingHistory={!hasAnyMatches}
         lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}

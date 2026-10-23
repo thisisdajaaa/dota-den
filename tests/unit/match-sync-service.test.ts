@@ -19,6 +19,13 @@ import {
   toFact,
 } from "@/modules/matches/services/match-sync.service";
 import type { PlayerMatchFact } from "@/modules/matches/domain/player-match-fact";
+import {
+  cooldownFor,
+  MAX_PAGES_PER_SYNC,
+  PLUS_BACKFILL_COOLDOWN_MS,
+  PLUS_MAX_PAGES_PER_SYNC,
+  policyFor,
+} from "@/modules/matches/domain/sync-policy";
 import { err, ok } from "@/common/result";
 
 const ACCOUNT = 22202;
@@ -551,5 +558,86 @@ describe("MatchSyncService", () => {
       expect(res.ok && res.value.lineupsComplete).toBe(false);
       expect(ctx.syncState.state).toMatchObject({ lineupBackfillOffset: 10, lockedUntil: null });
     });
+  });
+});
+
+describe("sync policy (Plus priority sync)", () => {
+  it("free and Plus policies: shorter backfill cooldown and more pages, same completed cooldown", () => {
+    expect(policyFor(false)).toEqual({
+      backfillCooldownMs: BACKFILL_COOLDOWN_MS,
+      cooldownMs: SYNC_COOLDOWN_MS,
+      maxPages: MAX_PAGES_PER_SYNC,
+    });
+    const plus = policyFor(true);
+    expect(plus.backfillCooldownMs).toBe(PLUS_BACKFILL_COOLDOWN_MS);
+    expect(plus.backfillCooldownMs).toBeLessThan(BACKFILL_COOLDOWN_MS);
+    expect(plus.maxPages).toBe(PLUS_MAX_PAGES_PER_SYNC);
+    expect(plus.maxPages).toBeGreaterThan(MAX_PAGES_PER_SYNC);
+    expect(plus.cooldownMs).toBe(SYNC_COOLDOWN_MS);
+    expect(cooldownFor(false, plus)).toBe(PLUS_BACKFILL_COOLDOWN_MS);
+    expect(cooldownFor(true, plus)).toBe(SYNC_COOLDOWN_MS);
+  });
+
+  function withPolicy(plus: boolean | "throws") {
+    let now = new Date("2026-09-29T12:00:00Z");
+    const history = Array.from({ length: 200 }, (_, i) => imported(199 - i));
+    const upstream = new FakeUpstream(history);
+    const syncState = new MemorySyncState();
+    const service = new MatchSyncService({
+      provider: upstream,
+      patches: { getTimeline: async () => ok([]) },
+      facts: new MemoryFacts(),
+      syncState,
+      now: () => now,
+      pageSize: 10,
+      policy: async () => {
+        if (plus === "throws") throw new Error("plus lookup failed");
+        return policyFor(plus);
+      },
+    });
+    return { service, upstream, advance: (ms: number) => (now = new Date(now.getTime() + ms)) };
+  }
+
+  it("a Plus sync reads more pages and may run again after the shorter cooldown", async () => {
+    const plus = withPolicy(true);
+    await plus.service.sync(ACCOUNT);
+    expect(plus.upstream.calls).toHaveLength(PLUS_MAX_PAGES_PER_SYNC);
+    plus.advance(PLUS_BACKFILL_COOLDOWN_MS - 1);
+    const early = await plus.service.sync(ACCOUNT);
+    expect(!early.ok && early.error.type).toBe("cooldown");
+    plus.advance(2);
+    expect((await plus.service.sync(ACCOUNT)).ok).toBe(true);
+
+    const free = withPolicy(false);
+    await free.service.sync(ACCOUNT);
+    expect(free.upstream.calls).toHaveLength(MAX_PAGES_PER_SYNC);
+    free.advance(PLUS_BACKFILL_COOLDOWN_MS + 1);
+    const cooling = await free.service.sync(ACCOUNT);
+    expect(!cooling.ok && cooling.error.type).toBe("cooldown");
+  });
+
+  it("falls back to the free policy when the Plus lookup fails, and the cron's budget wins", async () => {
+    const broken = withPolicy("throws");
+    expect(await broken.service.policyFor(ACCOUNT)).toEqual(policyFor(false));
+    await broken.service.sync(ACCOUNT);
+    expect(broken.upstream.calls).toHaveLength(MAX_PAGES_PER_SYNC);
+    const cron = withPolicy(true);
+    await cron.service.sync(ACCOUNT, { maxPages: 2 });
+    expect(cron.upstream.calls).toHaveLength(2);
+    // Staleness follows the account's policy too.
+    const state = {
+      accountId32: ACCOUNT,
+      lastSyncAt: new Date("2026-09-29T12:00:00Z"),
+      newestStartedAt: null,
+      backfillOffset: 0,
+      backfillComplete: false,
+      historyRefreshRequestedAt: null,
+      rescannedAt: null,
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: true,
+    };
+    const later = new Date(state.lastSyncAt.getTime() + PLUS_BACKFILL_COOLDOWN_MS);
+    expect(MatchSyncService.isStale(state, later, policyFor(true))).toBe(true);
+    expect(MatchSyncService.isStale(state, later)).toBe(false);
   });
 });

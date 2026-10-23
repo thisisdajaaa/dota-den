@@ -12,7 +12,9 @@ import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
 import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
 import { getCurrentUser } from "@/modules/identity";
-import { matchesService } from "@/modules/matches";
+import { matchCoachService, matchesService } from "@/modules/matches";
+import type { MatchDetail } from "@/modules/matches/domain/match-detail";
+import { CoachCard } from "@/modules/matches/ui/coach-card";
 import { partyGroups } from "@/modules/matches/domain/match-detail";
 import { isRanked } from "@/modules/matches/domain/queue-classification";
 import { averageRankTier } from "@/modules/matches/domain/rank-tier";
@@ -231,6 +233,13 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         hrefFor={(slot) => `/matches/${match.matchId}?p=${slot}#performance`}
       />
 
+      {/* The AI coach: only on your own match, for you. */}
+      {me && viewer && matchCoachService.enabled && (
+        <Suspense fallback={<SectionSkeleton label={t("matches.coach.label")} rows={2} />}>
+          <CoachSection user={viewer} match={match} />
+        </Suspense>
+      )}
+
       {/* Usually shown: reserve its space so the cards below don't jump when it arrives. */}
       <Suspense
         fallback={
@@ -356,4 +365,19 @@ async function NotesSection({ userId, matchId }: { userId: string; matchId: stri
   return (
     <MatchNotesCard matchId={matchId} initialTags={a?.tags ?? []} initialNote={a?.note ?? ""} />
   );
+}
+
+async function CoachSection({
+  user,
+  match,
+}: {
+  user: { id: string; accountId32: number };
+  match: MatchDetail;
+}) {
+  // Optional card: a failure (database, Plus lookup) just leaves it out.
+  const view = await matchCoachService
+    .view({ id: user.id, accountId32: user.accountId32 }, match)
+    .catch(() => null);
+  if (!view || view.status === "off") return null;
+  return <CoachCard matchId={match.matchId} initial={view} />;
 }

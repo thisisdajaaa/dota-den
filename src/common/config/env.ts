@@ -62,8 +62,17 @@ const TUNING = {
   DRAFT_AI_MOVE_TIMEOUT_MS: positiveInt(15_000, 120_000),
   DRAFT_AI_REVIEW_TIMEOUT_MS: positiveInt(30_000, 300_000),
   DRAFT_AI_REVIEW_ENABLED: flag(true),
-  /** Groq calls the AI captain and review may make per UTC day, across every instance. */
+  /**
+   * Groq calls per UTC day, across every instance, shared by the AI captain, the draft review
+   * and the AI match coach (one budget for every paid model call).
+   */
   DRAFT_AI_BUDGET_PER_DAY: positiveInt(2_000, 1_000_000),
+  /** AI match coach (ADR 0014): on when a Groq key is set, unless this is "false". */
+  MATCH_COACH_ENABLED: flag(true),
+  /** Groq model for the match coach. Defaults to the draft AI's model. */
+  MATCH_COACH_MODEL: z.string().trim().min(1).optional(),
+  /** Time limit for one coach answer (the service may ask twice). */
+  MATCH_COACH_TIMEOUT_MS: positiveInt(25_000, 120_000),
 
   // Leaderboards.
   LEADERBOARD_ROW_LIMIT: positiveInt(50, 500),
@@ -96,6 +105,10 @@ const EnvSchema = z
     IMAGE_SOURCE_BASE_URL: z.url().optional(),
     /** Groq key for the AI draft opponent; without it the AI uses a rule-based fallback. */
     GROQ_API_KEY: z.string().min(1).optional(),
+    /** Groq key for the AI match coach only; defaults to GROQ_API_KEY. */
+    MATCH_COACH_API_KEY: z.string().min(1).optional(),
+    /** Override for tests (fixture server). Defaults to Groq's API (https://api.groq.com). */
+    GROQ_BASE_URL: z.url().optional(),
     /** Multiplayer draft rooms (spec release gate: feature flag). Default on. */
     FEATURE_DRAFT_ROOMS: z
       .enum(["true", "false"])

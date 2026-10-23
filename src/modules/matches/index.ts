@@ -1,5 +1,6 @@
 /** Public API of the matches feature (ADR 0009). Read-model types live in ./domain. */
 export {
+  matchCoachService,
   matchesController,
   matchExtrasService,
   matchesService,
@@ -16,3 +17,4 @@ export {
 } from "./services/match-sync.service";
 export type { ExtrasRun, MatchExtrasService } from "./services/match-extras.service";
 export type { MatchQueries, MatchDetailProvider, ImportedPlayerMatch } from "./matches.ports";
+export type { CoachViewDto, CoachResultDto } from "./dtos/responses/coach.dto";
