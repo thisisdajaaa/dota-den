@@ -347,7 +347,7 @@ function groqCoach(body) {
     points.push({
       kind: "strength",
       title: "Clean last hitting in lane",
-      detail: `You had ${facts.get("lastHitsAt10")} last hits at 10:00. Keep that rhythm on every wave.`,
+      detail: `You had ${facts.get("lastHitsAt10")} last hits by minute 10. Keep that rhythm on every wave.`,
       facts: ["lastHitsAt10"],
     });
   if (facts.has("item.bfury"))

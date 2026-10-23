@@ -150,11 +150,21 @@ describe("coach grounding", () => {
       "in the first 10 minutes",
       "a 10-minute target",
       "after 20 min",
-      "at 10:00 and again at 17:45",
       "sa unang 10 minuto",
       "pagkahuman sa minuto 15",
     ])
       expect(ungroundedNumbers(text, SHEET), text).toEqual([]);
+  });
+
+  it("clock times are stats: they must match a fact", () => {
+    const bfury = {
+      ...SHEET,
+      facts: SHEET.facts.map((f) => (f.key === "item.bfury" ? { ...f, value: 1100 } : f)),
+    };
+    expect(ungroundedNumbers("Battle Fury at 17:00", bfury)).toEqual(["17:00"]);
+    expect(ungroundedNumbers("Battle Fury at 18:20", bfury)).toEqual([]);
+    expect(ungroundedNumbers("by minute 10", bfury)).toEqual([]);
+    expect(ungroundedNumbers("48 last hits at 10:00", bfury)).toEqual(["10:00"]);
   });
 
   it("small numbers and phase marks need a fact like any other number", () => {
@@ -177,7 +187,7 @@ describe("coach grounding", () => {
   const point = (over: Partial<CoachPoint> = {}): CoachPoint => ({
     kind: "improve",
     title: "Farm faster",
-    detail: "48 last hits at 10:00 is a start.",
+    detail: "48 last hits by minute 10 is a start.",
     factKeys: ["lastHitsAt10"],
     ...over,
   });
@@ -197,7 +207,7 @@ describe("coach grounding", () => {
     const none = checkCoachPoints([point(), point(), point({ factKeys: [] })], SHEET);
     expect(!none.ok && none.error).toEqual(["Point 3 cites no facts."]);
     const invented = checkCoachPoints(
-      [point(), point(), point({ detail: "Pros have 70 last hits at 10:00." })],
+      [point(), point(), point({ detail: "Pros have 70 last hits by minute 10." })],
       SHEET,
     );
     expect(!invented.ok && invented.error).toEqual([

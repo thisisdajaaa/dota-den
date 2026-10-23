@@ -339,21 +339,29 @@ export function factText(f: CoachFact): string {
 
 /**
  * Time markers the coach may write without citing a fact: "minute 10", "min 10", "10 minutes",
- * "10 min", "first 10 minutes", "10-minute", and clock times like "18:20" (the review is
- * written in the viewer's language, so Filipino/Cebuano "minuto" counts too). Every other
- * number, small ones included, must be one of the sheet's values.
+ * "10 min", "first 10 minutes", "10-minute" (and Filipino/Cebuano "minuto"). Clock times like
+ * "18:20" are not markers: they're stats (item timings, game length) and must match a fact.
  */
 const MINUTE_WORD = "(?:minutes?|mins?|minutos?)";
 const TIME_MARKERS = [
   new RegExp(`\\b(?:first|unang)\\s+\\d+(?:\\.\\d+)?\\s*${MINUTE_WORD}\\b`, "gi"),
   new RegExp(`\\b(?:minute|min|minuto)\\.?\\s+\\d+(?:\\.\\d+)?\\b`, "gi"),
   new RegExp(`\\b\\d+(?:\\.\\d+)?\\s*(?:-\\s*)?${MINUTE_WORD}\\b`, "gi"),
-  /-?\b\d{1,3}:\d{2}\b/g,
 ];
+const CLOCK = /-?\b\d{1,3}:\d{2}\b/g;
 
 /** The text with every time marker blanked out (they need no fact). */
 function withoutTimeMarkers(text: string): string {
   return TIME_MARKERS.reduce((t, re) => t.replace(re, " "), text);
+}
+
+/** Clock times the sheet has (item timings, game length), as the prompt writes them. */
+function allowedClocks(sheet: CoachFactSheet): Set<string> {
+  return new Set(
+    sheet.facts.flatMap((f) =>
+      f.unit === "clock" && typeof f.value === "number" ? [clock(f.value)] : [],
+    ),
+  );
 }
 
 /** Every number a fact allows the text to contain. */
@@ -378,14 +386,19 @@ function allowedNumbers(sheet: CoachFactSheet): Set<number> {
 }
 
 /**
- * Numbers in `text` that no fact in the sheet backs (empty when the text is grounded). Time
- * markers are skipped; every other number must equal a fact's value (as given, rounded, or
- * in thousands with a "k").
+ * Numbers in `text` that no fact in the sheet backs (empty when the text is grounded). Minute
+ * markers are skipped; a clock time must be one of the sheet's clocks exactly; every other
+ * number must equal a fact's value (as given, rounded, or in thousands with a "k").
  */
 export function ungroundedNumbers(text: string, sheet: CoachFactSheet): string[] {
   const numbers = allowedNumbers(sheet);
+  const clocks = allowedClocks(sheet);
   const out: string[] = [];
-  const cleaned = withoutTimeMarkers(text.replace(/(\d),(\d{3})/g, "$1$2"));
+  let cleaned = withoutTimeMarkers(text.replace(/(\d),(\d{3})/g, "$1$2"));
+  cleaned = cleaned.replace(CLOCK, (c) => {
+    if (!clocks.has(c) && !clocks.has(c.replace(/^-/, ""))) out.push(c);
+    return " ";
+  });
   for (const m of cleaned.matchAll(/\d+(?:\.\d+)?/g)) {
     if (!numbers.has(Number(m[0]))) out.push(m[0]);
   }

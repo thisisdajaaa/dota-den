@@ -26,7 +26,7 @@ const GOOD = {
     {
       kind: "strength",
       title: "Clean lane",
-      detail: "50 last hits at 10:00 is solid.",
+      detail: "50 last hits by minute 10 is solid.",
       facts: ["lastHitsAt10"],
     },
     {
@@ -178,7 +178,8 @@ describe("coach prompt and answer schema", () => {
     expect(coachPrompt(SHEET, { locale: "en" }).system).toMatch(/in English\./);
     // Small numbers need a fact; only time markers don't.
     expect(fil.system).toMatch(/small counts included/);
-    expect(fil.system).toMatch(/only numbers that need no fact are time markers/);
+    expect(fil.system).toMatch(/only numbers that need no fact are minute markers/);
+    expect(fil.system).toMatch(/A clock time like 18:20 is a stat/);
   });
 
   it("accepts the documented shape and rejects others", () => {
@@ -279,12 +280,12 @@ describe("MatchCoachService", () => {
   it("retries once with the problems when the answer is invalid, then succeeds", async () => {
     const invented = {
       points: GOOD.points.map((p, i) =>
-        i === 0 ? { ...p, detail: "Pros get 70 last hits at 10:00." } : p,
+        i === 0 ? { ...p, detail: "Pros get 70 last hits by minute 10." } : p,
       ),
     };
     const { service, write, take } = make({ replies: [invented, GOOD] });
     const res = await service.review(USER, "7000000012", "en");
-    expect(res.review.points[0].detail).toBe("50 last hits at 10:00 is solid.");
+    expect(res.review.points[0].detail).toBe("50 last hits by minute 10 is solid.");
     expect(write).toHaveBeenCalledTimes(2);
     expect(write.mock.calls[1]).toEqual([
       expect.anything(),

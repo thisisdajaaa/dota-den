@@ -39,8 +39,9 @@ checked before anyone sees it:
    given, rounded, or in thousands with one decimal like "3.8k"), small counts included:
    "died 4 times" fails when the sheet says 3 deaths. The only numbers exempt are **time
    markers**: "minute N", "min N", "N minutes", "N min", "first N minutes", "N-minute" (and
-   Filipino/Cebuano "minuto"), and clock times "N:SS". So a clock time in the text isn't
-   checked against the item timings; the cited timing chip next to the point shows ours.
+   Filipino/Cebuano "minuto"). Clock times "N:SS" are stats (item timings, game length): they
+   must match one of the sheet's clocks exactly ("Battle Fury at 17:00" fails when it was
+   18:20). Write "by minute 10", not "10:00", for a phase mark.
 
 An answer that fails is retried **once**, with the problems listed in the prompt; a second
 failure (or the model being down or timing out) shows "the coach couldn't write this review",
