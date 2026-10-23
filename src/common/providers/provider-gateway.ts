@@ -84,6 +84,16 @@ export interface CallOptions {
   isolated?: boolean;
 }
 
+/** Options for a cached read (`getJson`, `queryJson`). */
+export type ReadOptions = {
+  cacheTtlMs?: number;
+  headers?: HeadersInit;
+  /** Cache a successful response only if this accepts its body (e.g. no error inside). */
+  cacheIf?: (body: unknown) => boolean;
+  /** Cache time decided by the body (overrides cacheTtlMs; 0 = don't cache it). */
+  cacheTtlFor?: (body: unknown) => number;
+} & CallOptions;
+
 /** How the upstream looked to this instance lately (for owner alerts). */
 export interface GatewayHealth {
   circuitOpen: boolean;
@@ -118,52 +128,60 @@ export class ProviderGateway {
     };
   }
 
-  async getJson(
+  async getJson(url: string, opts: ReadOptions = {}): Promise<GatewayResponse> {
+    return this.read(url, url, undefined, opts);
+  }
+
+  /**
+   * A read-only POST with a JSON body (a GraphQL query): cached, deduplicated, retried and
+   * budgeted like `getJson`. The cache key is the URL plus the body, never the headers, so a
+   * bearer token sent in `headers` never reaches the shared cache.
+   */
+  async queryJson(url: string, body: unknown, opts: ReadOptions = {}): Promise<GatewayResponse> {
+    const payload = JSON.stringify(body);
+    return this.read(`POST ${url}\n${payload}`, url, payload, opts);
+  }
+
+  private async read(
+    key: string,
     url: string,
-    opts: {
-      cacheTtlMs?: number;
-      headers?: HeadersInit;
-      /** Cache a successful response only if this accepts its body (e.g. no error inside). */
-      cacheIf?: (body: unknown) => boolean;
-      /** Cache time decided by the body (overrides cacheTtlMs; 0 = don't cache it). */
-      cacheTtlFor?: (body: unknown) => number;
-    } & CallOptions = {},
+    body: string | undefined,
+    opts: ReadOptions,
   ): Promise<GatewayResponse> {
-    const cached = this.cache.get(url);
+    const cached = this.cache.get(key);
     if (cached && cached.expiresAt > this.now) return cached.value;
 
-    const pending = this.inFlight.get(url);
+    const pending = this.inFlight.get(key);
     if (pending) return pending;
 
-    const request = this.fetchThroughShared(url, opts).finally(() => this.inFlight.delete(url));
-    this.inFlight.set(url, request);
+    const request = this.fetchThroughShared(key, url, body, opts).finally(() =>
+      this.inFlight.delete(key),
+    );
+    this.inFlight.set(key, request);
     return request;
   }
 
   private async fetchThroughShared(
+    key: string,
     url: string,
-    opts: {
-      cacheTtlMs?: number;
-      headers?: HeadersInit;
-      cacheIf?: (body: unknown) => boolean;
-      cacheTtlFor?: (body: unknown) => number;
-    } & CallOptions,
+    body: string | undefined,
+    opts: ReadOptions,
   ): Promise<GatewayResponse> {
     const shared = opts.cacheTtlMs ? this.opts.sharedCache : undefined;
     // An expired answer, kept in case the upstream fails now.
-    let stale = opts.cacheTtlMs ? this.cache.get(url) : undefined;
+    let stale = opts.cacheTtlMs ? this.cache.get(key) : undefined;
     if (shared) {
-      const hit = await shared.get(url).catch((error: unknown) => {
+      const hit = await shared.get(key).catch((error: unknown) => {
         this.opts.onSharedError?.({ op: "cache_get", error });
         return null;
       });
       if (hit && hit.expiresAt > this.now) {
-        this.cache.set(url, hit);
+        this.cache.set(key, hit);
         return hit.value;
       }
       if (hit && (!stale || hit.expiresAt > stale.expiresAt)) stale = hit;
     }
-    const res = await this.execute(url, opts.headers, opts);
+    const res = await this.execute(url, opts.headers, opts, body);
     if (
       !res.ok &&
       res.kind !== "not_found" &&
@@ -184,8 +202,8 @@ export class ProviderGateway {
     if (ttl && cacheable) {
       // Remember when it was fetched, so readers of the cache can show its real age.
       const value = res.ok ? { ...res, fetchedAt: this.now } : res;
-      this.cache.set(url, { expiresAt: this.now + ttl, value });
-      await shared?.set(url, value, ttl, ttl + staleWindow(ttl)).catch((error: unknown) => {
+      this.cache.set(key, { expiresAt: this.now + ttl, value });
+      await shared?.set(key, value, ttl, ttl + staleWindow(ttl)).catch((error: unknown) => {
         this.opts.onSharedError?.({ op: "cache_set", error });
       });
     }
@@ -245,6 +263,8 @@ export class ProviderGateway {
     url: string,
     headers?: HeadersInit,
     call: CallOptions = {},
+    /** A JSON body: sent as a POST (a read-only query). */
+    body?: string,
   ): Promise<GatewayResponse> {
     if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
 
@@ -261,15 +281,29 @@ export class ProviderGateway {
       const started = this.now;
       let status: number | null = null;
       try {
-        const res = await fetchFn(url, {
-          headers: { accept: "application/json", ...headers },
-          signal: AbortSignal.timeout(timeoutMs),
-        });
+        const res = await fetchFn(
+          url,
+          body === undefined
+            ? {
+                headers: { accept: "application/json", ...headers },
+                signal: AbortSignal.timeout(timeoutMs),
+              }
+            : {
+                method: "POST",
+                headers: {
+                  accept: "application/json",
+                  "content-type": "application/json",
+                  ...headers,
+                },
+                body,
+                signal: AbortSignal.timeout(timeoutMs),
+              },
+        );
         status = res.status;
         if (res.ok) {
-          const body: unknown = await res.json();
+          const json: unknown = await res.json();
           this.recordSuccess();
-          return { ok: true, status: res.status, body };
+          return { ok: true, status: res.status, body: json };
         }
         if (res.status === 404) {
           this.recordSuccess();

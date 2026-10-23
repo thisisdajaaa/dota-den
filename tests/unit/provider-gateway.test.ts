@@ -30,6 +30,37 @@ const json = (body: unknown, status = 200, headers: HeadersInit = {}) =>
   new Response(JSON.stringify(body), { status, headers });
 
 describe("ProviderGateway", () => {
+  it("posts queries as JSON, caches them by URL and body, and keeps headers out of the key", async () => {
+    const shared = new Map<string, unknown>();
+    const { gw, fetch } = gateway([json({ data: 1 }), json({ data: 2 })], {
+      sharedCache: {
+        get: async () => null,
+        set: async (key, value) => {
+          shared.set(key, value);
+        },
+      },
+    });
+    const opts = { cacheTtlMs: 60_000, headers: { authorization: "Bearer secret-token" } };
+    const a = await gw.queryJson("https://x/graphql", { query: "{ a }" }, opts);
+    const again = await gw.queryJson("https://x/graphql", { query: "{ a }" }, opts);
+    const b = await gw.queryJson("https://x/graphql", { query: "{ b }" }, opts);
+    expect(a.ok && a.body).toEqual({ data: 1 });
+    expect(again.ok && again.body).toEqual({ data: 1 });
+    expect(b.ok && b.body).toEqual({ data: 2 });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://x/graphql");
+    expect(init.method).toBe("POST");
+    expect(init.body).toBe(JSON.stringify({ query: "{ a }" }));
+    expect(init.headers).toMatchObject({
+      "content-type": "application/json",
+      authorization: "Bearer secret-token",
+    });
+    expect([...shared.keys()].some((k) => k.includes("secret-token"))).toBe(false);
+    // A GET to the same URL is a different cache entry.
+    expect([...shared.keys()]).not.toContain("https://x/graphql");
+  });
+
   it("lets the body decide how long to cache it", async () => {
     const { gw, fetch, advance } = gateway([
       json({ version: null }),

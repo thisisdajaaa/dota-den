@@ -12,6 +12,20 @@ describe("parseEnv", () => {
     expect(env.AUTH_TEST_MODE).toBe(false);
   });
 
+  it("treats STRATZ as optional and validates its base URL", () => {
+    expect(parseEnv({ ...base, STRATZ_API_TOKEN: "" }).STRATZ_API_TOKEN).toBeUndefined();
+    const env = parseEnv({
+      ...base,
+      STRATZ_API_TOKEN: "tok",
+      STRATZ_API_BASE_URL: "http://localhost:3101/stratz",
+    });
+    expect(env.STRATZ_API_TOKEN).toBe("tok");
+    expect(env.STRATZ_API_BASE_URL).toBe("http://localhost:3101/stratz");
+    expect(() => parseEnv({ ...base, STRATZ_API_BASE_URL: "not a url" })).toThrow(
+      /STRATZ_API_BASE_URL/,
+    );
+  });
+
   it("refuses AUTH_TEST_MODE in production", () => {
     expect(() => parseEnv({ ...base, NODE_ENV: "production", AUTH_TEST_MODE: "true" })).toThrow(
       /AUTH_TEST_MODE/,

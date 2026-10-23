@@ -103,6 +103,13 @@ const EnvSchema = z
     VALVE_DATAFEED_BASE_URL: z.url().optional(),
     /** Tests only: where /img routes read hero and rank art (fixture server), not the CDNs. */
     IMAGE_SOURCE_BASE_URL: z.url().optional(),
+    /**
+     * STRATZ API token (stratz.com/api): real per-position public stats for the Meta page.
+     * Unset: the Meta page reads positions from OpenDota lane data and hero roles, as before.
+     */
+    STRATZ_API_TOKEN: z.string().trim().min(1).optional(),
+    /** Override for tests (fixture server). Defaults to https://api.stratz.com. */
+    STRATZ_API_BASE_URL: z.url().optional(),
     /** Groq key for the AI draft opponent; without it the AI uses a rule-based fallback. */
     GROQ_API_KEY: z.string().min(1).optional(),
     /** Groq key for the AI match coach only; defaults to GROQ_API_KEY. */
