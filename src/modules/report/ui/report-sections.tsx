@@ -205,12 +205,16 @@ export async function RolesCard({ roles, games }: { roles: BattleReport["roles"]
         {roles.byRole.map((r) => {
           const share = r.games / roles.withData;
           return (
-            <li key={r.role} className="grid grid-cols-[6rem_1fr_auto] items-center gap-3 text-sm">
+            // Phones: name and share on one line, the bar full width under them.
+            <li
+              key={r.role}
+              className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[6rem_1fr_auto]"
+            >
               <span>{t(`report.roles.names.${ROLE[r.role]}`)}</span>
-              <span className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <span className="order-last col-span-2 h-2 overflow-hidden rounded-full bg-white/[0.06] sm:order-none sm:col-span-1">
                 <span className="block h-full bg-gold/70" style={{ width: `${share * 100}%` }} />
               </span>
-              <span className="w-36 text-right text-xs text-muted-foreground tabular-nums">
+              <span className="text-right text-xs text-muted-foreground tabular-nums sm:w-40">
                 {t("report.roles.share", {
                   share: Math.round(share * 100),
                   rate: formatPercent(r.wins / r.games),

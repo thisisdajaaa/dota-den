@@ -86,7 +86,7 @@ export async function PatchDigestSection({ user }: { user: User }) {
                   <Link
                     href={`/patches/${version}#hero-${h.heroId}`}
                     aria-label={t("dashboard.patch.heroLink", { hero: name, version })}
-                    className="block truncate font-medium hover:text-gold"
+                    className="block truncate font-medium hover:text-gold touch:-my-2 touch:py-2"
                   >
                     {name}
                   </Link>

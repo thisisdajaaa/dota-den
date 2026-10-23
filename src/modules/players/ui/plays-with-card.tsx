@@ -50,7 +50,7 @@ export async function PlaysWithCard({
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/players/${p.accountId32}`}
-                    className="block truncate font-medium hover:text-gold focus-visible:text-gold focus-visible:outline-none"
+                    className="block truncate font-medium hover:text-gold focus-visible:text-gold focus-visible:outline-none touch:-my-2 touch:py-2"
                   >
                     {name}
                   </Link>

@@ -144,7 +144,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
             href="https://www.dota2.com/patches"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-sm text-gold hover:underline"
+            className="relative inline-flex items-center gap-1 text-sm text-gold hover:underline touch:tap-area"
           >
             dota2.com/patches <ExternalLink className="size-3.5" />
           </a>
@@ -219,7 +219,7 @@ export default async function PatchesPage({ searchParams }: PageProps<"/patches"
             {page.nextCursor && (
               <Link
                 href={`/patches?cursor=${page.nextCursor}`}
-                className="inline-flex items-center gap-1 font-medium text-gold hover:underline"
+                className="relative inline-flex items-center gap-1 font-medium text-gold hover:underline touch:tap-area"
               >
                 {t("patches.list.older")} <ChevronRight className="size-4" />
               </Link>

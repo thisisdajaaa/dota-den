@@ -183,7 +183,7 @@ export async function Scoreboard({
                           {p.accountId32 !== null && p.personaName ? (
                             <Link
                               href={`/players/${p.accountId32}`}
-                              className="max-w-32 truncate font-medium hover:text-gold hover:underline"
+                              className="max-w-32 truncate font-medium hover:text-gold hover:underline touch:-my-2.5 touch:py-2.5"
                             >
                               {p.personaName}
                             </Link>

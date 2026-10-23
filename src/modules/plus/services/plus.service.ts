@@ -54,9 +54,24 @@ export class PlusService {
     return { status: "available", plans: [...provider.plans] };
   }
 
+  /**
+   * Only subscriptions from this server's mode count. Staging (test mode) and production (live)
+   * share one database, so a test purchase must never grant Plus in production, nor a live one
+   * be managed from staging.
+   */
+  private ours(subs: readonly Subscription[]): Subscription[] {
+    const testMode = this.deps.provider?.testMode;
+    if (testMode === undefined) return [];
+    return subs.filter((s) => s.testMode === testMode);
+  }
+
   async entitlement(userId: string): Promise<Entitlement> {
     if (!this.enabled) return entitlementFor([], this.now(), false);
-    return entitlementFor(await this.deps.subscriptions.forUser(userId), this.now(), true);
+    return entitlementFor(
+      this.ours(await this.deps.subscriptions.forUser(userId)),
+      this.now(),
+      true,
+    );
   }
 
   async isPlus(userId: string): Promise<boolean> {
@@ -82,7 +97,7 @@ export class PlusService {
     if (!this.enabled || accountIds.length === 0) return new Set();
     try {
       const now = this.now();
-      const subs = await this.deps.subscriptions.possiblyEntitledForAccounts(accountIds);
+      const subs = this.ours(await this.deps.subscriptions.possiblyEntitledForAccounts(accountIds));
       return new Set(
         subs
           .filter((s) => s.accountId32 !== null && entitlementOf(s, now).plus)
@@ -98,14 +113,14 @@ export class PlusService {
   async plusUserIds(): Promise<string[]> {
     if (!this.enabled) return [];
     const now = this.now();
-    const subs = await this.deps.subscriptions.possiblyEntitled();
+    const subs = this.ours(await this.deps.subscriptions.possiblyEntitled());
     return [
       ...new Set(subs.filter((s) => s.userId && entitlementOf(s, now).plus).map((s) => s.userId!)),
     ];
   }
 
   async plan(userId: string): Promise<PlanDto> {
-    const subs = this.configured ? await this.deps.subscriptions.forUser(userId) : [];
+    const subs = this.configured ? this.ours(await this.deps.subscriptions.forUser(userId)) : [];
     const now = this.now();
     const s = summarise(subs, now, this.enabled);
     return {
@@ -140,7 +155,7 @@ export class PlusService {
    */
   async portalUrl(userId: string): Promise<string> {
     if (!this.configured) throw new NotFoundError("No subscription");
-    const subs = await this.deps.subscriptions.forUser(userId);
+    const subs = this.ours(await this.deps.subscriptions.forUser(userId));
     const url = subs.length > 0 ? this.portalFor(subs, this.now()) : null;
     if (!url) throw new NotFoundError("No subscription");
     return url;

@@ -12,26 +12,27 @@ async function Row({ label, record, hint }: { label: string; record: WinRecord; 
   const t = await getT();
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 py-2.5 sm:grid-cols-[8rem_1fr_auto]">
-      <div>
+      <div className="min-w-0">
         <div className="font-medium">{label}</div>
-        {hint && (
-          <div className="text-[0.7rem] whitespace-nowrap text-muted-foreground">{hint}</div>
-        )}
+        {hint && <div className="text-[0.7rem] text-muted-foreground">{hint}</div>}
       </div>
       <WinRateBar
         rate={record.winRate}
         muted={record.lowSample}
         className="order-last col-span-2 sm:order-none sm:col-span-1"
       />
-      <div className="text-right sm:w-40">
+      <div className="min-w-0 text-right sm:w-40">
         <div className="text-base font-semibold tabular-nums">{formatPercent(record.winRate)}</div>
-        <div className="text-[0.7rem] whitespace-nowrap text-muted-foreground tabular-nums">
-          {t("matches.queueSplit.record", {
-            wins: plural(t, "common.count.wins", record.wins),
-            losses: plural(t, "common.count.losses", record.losses),
-          })}
+        {/* The badge drops under the record when a long translation leaves no room. */}
+        <div className="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-[0.7rem] text-muted-foreground tabular-nums">
+          <span className="whitespace-nowrap">
+            {t("matches.queueSplit.record", {
+              wins: plural(t, "common.count.wins", record.wins),
+              losses: plural(t, "common.count.losses", record.losses),
+            })}
+          </span>
           {record.games > 0 && record.lowSample && (
-            <Badge variant="outline" className="ml-1.5 h-4 px-1 text-[0.6rem]">
+            <Badge variant="outline" className="h-4 px-1 text-[0.6rem]">
               {t("matches.queueSplit.fewGames")}
             </Badge>
           )}

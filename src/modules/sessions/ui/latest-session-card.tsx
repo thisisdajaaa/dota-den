@@ -55,7 +55,7 @@ export async function LatestSessionCard({
           </span>
           <Link
             href={`/sessions/${session.id}`}
-            className="inline-flex items-center gap-1 text-sm font-medium text-gold hover:underline"
+            className="relative inline-flex items-center gap-1 text-sm font-medium text-gold hover:underline touch:tap-area"
           >
             {t("sessions.latest.openRecap")} <ChevronRight aria-hidden className="size-4" />
           </Link>

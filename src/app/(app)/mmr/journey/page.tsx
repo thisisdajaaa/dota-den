@@ -146,7 +146,7 @@ export default async function JourneyPage({ searchParams }: PageProps<"/mmr/jour
 
       <section
         aria-label={t("mmr.journey.summary")}
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-3 md:grid-cols-4"
       >
         <StatTile
           label={t("mmr.journey.medalPeak")}

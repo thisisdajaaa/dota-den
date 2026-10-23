@@ -117,7 +117,7 @@ export function ChannelSearch({
           className="flex-1"
           inputClassName="h-10"
         />
-        <label className="inline-flex cursor-pointer items-center gap-2 text-sm select-none">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-sm select-none touch:min-h-10">
           <input
             type="checkbox"
             checked={liveOnly}

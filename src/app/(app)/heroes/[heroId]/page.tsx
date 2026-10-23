@@ -114,7 +114,7 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
 
       <section
         aria-label={t("heroes.detail.recordLabel")}
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-3 md:grid-cols-4"
       >
         <StatTile
           label={t("heroes.detail.winRate")}
@@ -151,7 +151,7 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
               : undefined
           }
         />
-        <Suspense fallback={<Skeleton className="h-28 rounded-2xl" />}>
+        <Suspense fallback={<Skeleton className="row-span-3 h-28 rounded-2xl" />}>
           <FarmTile details={details} />
         </Suspense>
       </section>
@@ -226,7 +226,7 @@ async function BackLink() {
   return (
     <Link
       href="/heroes"
-      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
     >
       <ArrowLeft aria-hidden className="size-4" />
       {t("heroes.detail.back")}

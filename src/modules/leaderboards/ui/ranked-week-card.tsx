@@ -54,7 +54,7 @@ export async function RankedWeekCard({
                 <span className="min-w-0 flex-1">
                   <Link
                     href={`/players/${r.accountId32}`}
-                    className="block truncate text-sm font-medium hover:text-gold"
+                    className="block truncate text-sm font-medium hover:text-gold touch:-my-2.5 touch:py-2.5"
                   >
                     {name}
                     {r.you && (

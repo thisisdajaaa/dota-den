@@ -47,8 +47,8 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   await page.goto("/plus");
   await expect(page.getByRole("heading", { level: 1, name: /Dota Den Plus/ })).toBeVisible();
   const monthly = page.getByRole("article", { name: "Monthly" });
-  await expect(monthly).toContainText("$3.99");
-  await expect(page.getByRole("article", { name: "Yearly" })).toContainText("$29.99");
+  await expect(monthly).toContainText("₱299");
+  await expect(page.getByRole("article", { name: "Yearly" })).toContainText("₱2,990");
   await expect(monthly.getByRole("link", { name: /Get Plus monthly/ })).toHaveAttribute(
     "href",
     "/api/v1/plus/checkout?plan=monthly",

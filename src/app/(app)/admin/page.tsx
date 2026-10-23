@@ -55,7 +55,7 @@ export default async function AdminPage() {
 
       <section
         aria-label={t("admin.totals.aria")}
-        className="grid grid-cols-2 gap-3 lg:grid-cols-6"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
       >
         <StatTile label={t("admin.totals.users")} value={String(totals.users)} />
         <StatTile label={t("admin.totals.newThisWeek")} value={String(totals.newThisWeek)} />
@@ -78,7 +78,8 @@ export default async function AdminPage() {
         </div>
         {retention ? (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-7">
+            {/* Four activity tiles, then the three opt-ins: seven in a row leaves no room for labels. */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <StatTile label={t("admin.retention.active1")} value={String(retention.active1)} />
               <StatTile label={t("admin.retention.active7")} value={String(retention.active7)} />
               <StatTile label={t("admin.retention.active30")} value={String(retention.active30)} />
@@ -103,24 +104,35 @@ export default async function AdminPage() {
                 detail={t("admin.retention.discordDetail")}
               />
             </div>
+            {/* Compact: the counts sit next to their week instead of across the whole panel. */}
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[28rem] text-sm">
+              <table className="w-full text-sm sm:w-auto">
                 <caption className="sr-only">{t("admin.retention.caption")}</caption>
                 <thead>
                   <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-                    <th className="py-2 font-medium">{t("admin.retention.week")}</th>
-                    <th className="py-2 text-right font-medium">{t("admin.retention.signedUp")}</th>
-                    <th className="py-2 text-right font-medium">{t("admin.retention.within7")}</th>
-                    <th className="py-2 text-right font-medium">{t("admin.retention.ever")}</th>
+                    <th className="py-2 pr-6 font-medium">{t("admin.retention.week")}</th>
+                    <th className="px-3 py-2 text-right font-medium sm:px-6">
+                      {t("admin.retention.signedUp")}
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium sm:px-6">
+                      {t("admin.retention.within7")}
+                    </th>
+                    <th className="py-2 pl-3 text-right font-medium sm:pl-6">
+                      {t("admin.retention.ever")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {retention.weeks.map((w) => (
                     <tr key={w.week} className="border-t border-border/50">
-                      <td className="py-2 tabular-nums">{w.week}</td>
-                      <td className="py-2 text-right tabular-nums">{w.signedUp}</td>
-                      <td className="py-2 text-right tabular-nums">{w.returnedWithin7}</td>
-                      <td className="py-2 text-right tabular-nums">{w.returnedEver}</td>
+                      <td className="py-2 pr-6 whitespace-nowrap tabular-nums">{w.week}</td>
+                      <td className="px-3 py-2 text-right tabular-nums sm:px-6">{w.signedUp}</td>
+                      <td className="px-3 py-2 text-right tabular-nums sm:px-6">
+                        {w.returnedWithin7}
+                      </td>
+                      <td className="py-2 pl-3 text-right tabular-nums sm:pl-6">
+                        {w.returnedEver}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -146,7 +158,7 @@ export default async function AdminPage() {
               )
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             <StatTile label={t("plus.admin.entitled")} value={String(plus.entitled)} />
             <StatTile
               label={t("plus.admin.unlinked")}
@@ -157,11 +169,11 @@ export default async function AdminPage() {
           {plus.byStatus.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("plus.admin.none")}</p>
           ) : (
-            <table className="w-full max-w-md text-sm">
+            <table className="w-full text-sm sm:w-auto sm:min-w-64">
               <caption className="sr-only">{t("plus.admin.caption")}</caption>
               <thead>
                 <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-                  <th className="py-2 font-medium">{t("plus.admin.status")}</th>
+                  <th className="py-2 pr-6 font-medium">{t("plus.admin.status")}</th>
                   <th className="py-2 text-right font-medium">{t("plus.admin.count")}</th>
                 </tr>
               </thead>
@@ -188,13 +200,13 @@ export default async function AdminPage() {
             <thead>
               <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
                 <th className="px-5 py-2 font-medium">{t("admin.users.player")}</th>
-                <th className="py-2 font-medium">{t("admin.users.joined")}</th>
-                <th className="py-2 font-medium">{t("admin.users.lastSeen")}</th>
-                <th className="py-2 text-right font-medium">{t("admin.users.matches")}</th>
-                <th className="py-2 text-right font-medium">{t("admin.users.mmrEntries")}</th>
-                <th className="py-2 text-right font-medium">{t("admin.users.drafts")}</th>
-                <th className="py-2 text-right font-medium">{t("admin.users.roomDrafts")}</th>
-                <th className="py-2 text-right font-medium">{t("admin.users.challenges")}</th>
+                <th className="py-2 pr-3 font-medium">{t("admin.users.joined")}</th>
+                <th className="px-3 py-2 font-medium">{t("admin.users.lastSeen")}</th>
+                <th className="px-3 py-2 text-right font-medium">{t("admin.users.matches")}</th>
+                <th className="px-3 py-2 text-right font-medium">{t("admin.users.mmrEntries")}</th>
+                <th className="px-3 py-2 text-right font-medium">{t("admin.users.drafts")}</th>
+                <th className="px-3 py-2 text-right font-medium">{t("admin.users.roomDrafts")}</th>
+                <th className="px-3 py-2 text-right font-medium">{t("admin.users.challenges")}</th>
                 <th className="px-5 py-2 font-medium">{t("admin.users.profile")}</th>
               </tr>
             </thead>
@@ -210,7 +222,7 @@ export default async function AdminPage() {
                         <span className="min-w-0">
                           <Link
                             href={`/players/${r.accountId32}`}
-                            className="block truncate font-medium hover:text-gold"
+                            className="block truncate font-medium hover:text-gold touch:-my-2 touch:py-2"
                           >
                             {name}
                           </Link>
@@ -224,8 +236,10 @@ export default async function AdminPage() {
                         </span>
                       </span>
                     </td>
-                    <td className="py-2.5 tabular-nums">{date(r.createdAt)}</td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 pr-3 whitespace-nowrap tabular-nums">
+                      {date(r.createdAt)}
+                    </td>
+                    <td className="px-3 py-2.5">
                       {r.lastSeenAt ? (
                         formatAgo(r.lastSeenAt, now)
                       ) : (
@@ -235,7 +249,7 @@ export default async function AdminPage() {
                         {plural(t, "admin.users.devices", r.sessions)}
                       </span>
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">
+                    <td className="px-3 py-2.5 text-right tabular-nums">
                       {(r.stats?.matches ?? 0).toLocaleString("en-US")}
                       <span className="block text-xs text-muted-foreground">
                         {r.stats?.lastSyncAt
@@ -245,10 +259,10 @@ export default async function AdminPage() {
                           : t("admin.users.neverSynced")}
                       </span>
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">{r.mmrEntries}</td>
-                    <td className="py-2.5 text-right tabular-nums">{r.drafts}</td>
-                    <td className="py-2.5 text-right tabular-nums">{r.roomDrafts}</td>
-                    <td className="py-2.5 text-right tabular-nums">{r.challenges}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{r.mmrEntries}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{r.drafts}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{r.roomDrafts}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{r.challenges}</td>
                     <td className="px-5 py-2.5 text-xs capitalize">{r.profileVisibility}</td>
                   </tr>
                 );

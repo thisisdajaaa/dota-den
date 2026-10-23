@@ -31,7 +31,7 @@ export default async function LiveGamePage({ params }: PageProps<"/live/[matchId
   const back = (
     <Link
       href="/live"
-      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
     >
       <ArrowLeft aria-hidden className="size-4" /> {t("live.game.allLive")}
     </Link>

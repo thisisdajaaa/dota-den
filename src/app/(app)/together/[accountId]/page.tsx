@@ -62,7 +62,7 @@ export default async function TogetherPairPage({ params }: PageProps<"/together/
     <div className="space-y-6">
       <Link
         href="/together"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("together.pairPage.back")}

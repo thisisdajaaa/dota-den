@@ -80,7 +80,7 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
       >
         <Link
           href="/sessions"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
         >
           <ArrowLeft aria-hidden className="size-4" /> {t("sessions.detail.all")}
         </Link>
@@ -125,7 +125,7 @@ export default async function SessionPage({ params }: PageProps<"/sessions/[sess
 
       <section
         aria-label={t("sessions.detail.stats")}
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-3 md:grid-cols-4"
       >
         <StatTile
           label={t("sessions.detail.record")}

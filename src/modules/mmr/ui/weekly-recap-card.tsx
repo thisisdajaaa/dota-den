@@ -58,7 +58,7 @@ export async function WeeklyRecapCard({
           {action}
           <Link
             href="/mmr?view=week"
-            className="inline-flex items-center gap-1 text-sm text-gold hover:underline"
+            className="relative inline-flex items-center gap-1 text-sm text-gold hover:underline touch:tap-area"
           >
             {t("mmr.recap.link")} <ChevronRight aria-hidden className="size-4" />
           </Link>

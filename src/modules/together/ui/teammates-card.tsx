@@ -147,7 +147,7 @@ export function TeammatesCard({ rows, now }: { rows: TeammateRow[]; now: string 
                     {" · "}
                     <Link
                       href={`/players/${row.accountId32}`}
-                      className="hover:text-foreground hover:underline"
+                      className="relative hover:text-foreground hover:underline touch:tap-area"
                     >
                       {t("together.teammates.profile")}
                     </Link>

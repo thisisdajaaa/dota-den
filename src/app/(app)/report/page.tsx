@@ -168,7 +168,7 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
 function ReportSkeleton() {
   return (
     <div className="space-y-6" aria-hidden>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {Array.from({ length: 6 }, (_, i) => (
           <Skeleton key={i} className="h-24 rounded-2xl" />
         ))}
@@ -237,7 +237,7 @@ async function ReportBody({
       {importedNotice}
       <section
         aria-label={t("report.tabs.overview")}
-        className="grid grid-cols-2 gap-3 lg:grid-cols-6"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
       >
         <StatTile
           label={t("report.tiles.games")}

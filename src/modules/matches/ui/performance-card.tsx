@@ -80,7 +80,7 @@ export async function PerformanceCard({
               aria-current={active ? "true" : undefined}
               aria-label={`${heroName(h, p.heroId)}${p.personaName ? ` (${p.personaName})` : ""}`}
               className={cn(
-                "rounded-md p-0.5 ring-1 transition",
+                "relative rounded-md p-0.5 ring-1 transition touch:tap-area",
                 active ? "ring-gold" : "opacity-60 ring-transparent hover:opacity-100",
                 p.side === "radiant" ? "bg-win/10" : "bg-loss/10",
               )}

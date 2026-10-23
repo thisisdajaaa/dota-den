@@ -72,7 +72,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
     <div className="space-y-6">
       <Link
         href="/players"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
       >
         <ArrowLeft aria-hidden className="size-4" />
         {t("players.profile.back")}
@@ -140,14 +140,14 @@ export default async function PlayerPage({ params }: PageProps<"/players/[accoun
         <Suspense
           fallback={
             <>
-              <Skeleton className="h-28 rounded-2xl" />
-              <Skeleton className="h-28 rounded-2xl" />
+              <Skeleton className="row-span-3 h-28 rounded-2xl" />
+              <Skeleton className="row-span-3 h-28 rounded-2xl" />
             </>
           }
         >
           <RecordTiles record={sections.record} />
         </Suspense>
-        <Suspense fallback={<Skeleton className="h-28 rounded-2xl" />}>
+        <Suspense fallback={<Skeleton className="row-span-3 h-28 rounded-2xl" />}>
           <FavouriteHeroTile heroes={sections.heroes} catalog={catalog} />
         </Suspense>
       </section>

@@ -26,7 +26,7 @@ describe("PlusPricing", () => {
     );
     expect(screen.getByRole("heading", { name: "Plus is coming soon" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
-    expect(screen.queryByText("$3.99")).not.toBeInTheDocument();
+    expect(screen.queryByText("₱299")).not.toBeInTheDocument();
     // Honest copy is there either way.
     expect(screen.getByRole("heading", { name: "Free for everyone, always" })).toBeInTheDocument();
   });
@@ -69,13 +69,13 @@ describe("PlusPricing", () => {
       />,
     );
     const monthly = screen.getByRole("article", { name: "Monthly" });
-    expect(within(monthly).getByText("$3.99")).toBeVisible();
+    expect(within(monthly).getByText("₱299")).toBeVisible();
     expect(within(monthly).getByRole("link", { name: /get plus monthly/i })).toHaveAttribute(
       "href",
       "/api/v1/plus/checkout?plan=monthly",
     );
     const yearly = screen.getByRole("article", { name: "Yearly" });
-    expect(within(yearly).getByText("$29.99")).toBeVisible();
+    expect(within(yearly).getByText("₱2,990")).toBeVisible();
     expect(screen.getByText(/local currency/i)).toBeVisible();
     expect(screen.getByText(/Cancel anytime/i)).toBeVisible();
     expect(screen.getByText(/Track up to 200 players, follow 200 channels/)).toBeVisible();

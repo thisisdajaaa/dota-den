@@ -49,7 +49,8 @@ export function FollowingRow({
       ) : channels.length === 0 ? (
         <p className="panel p-4 text-sm text-muted-foreground">{t("live.hub.following.empty")}</p>
       ) : (
-        <ul className="flex snap-x [scrollbar-width:thin] gap-3 overflow-x-auto pb-2">
+        // Phones: the row runs to the screen edges, so the next card peeks in as a cue to scroll.
+        <ul className="-mx-4 flex snap-x scroll-px-4 [scrollbar-width:thin] gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0">
           {channels.map((c) => (
             <FollowedTile
               key={`${c.platform}:${c.channelId}`}
@@ -94,18 +95,19 @@ function FollowedTile({
         <span className="block truncate text-sm font-medium">{c.displayName}</span>
         {isLive ? (
           <>
-            <span className="flex items-center gap-1 text-xs font-medium text-loss">
-              <PlatformBadge platform={c.platform} className="mr-0.5" />
-              {t("live.hub.card.live")}
-              <span className="text-muted-foreground tabular-nums">
+            {/* One line: the viewer count is cut short before it may wrap. */}
+            <span className="flex min-w-0 items-center gap-1 text-xs font-medium whitespace-nowrap text-loss">
+              <PlatformBadge platform={c.platform} className="mr-0.5 shrink-0" />
+              <span className="shrink-0">{t("live.hub.card.live")}</span>
+              <span className="truncate text-muted-foreground tabular-nums">
                 · {t("live.hub.card.viewers", { n: compactCount(c.stream!.viewers) })}
               </span>
             </span>
             <span className="block truncate text-xs text-muted-foreground">{c.stream!.title}</span>
           </>
         ) : (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <PlatformBadge platform={c.platform} className="mr-0.5" />
+          <span className="flex min-w-0 items-center gap-1 text-xs whitespace-nowrap text-muted-foreground">
+            <PlatformBadge platform={c.platform} className="mr-0.5 shrink-0" />
             {c.status === "offline"
               ? t("live.hub.following.offline")
               : t("live.hub.following.unknown")}
@@ -124,7 +126,7 @@ function FollowedTile({
         : "border-white/[0.07] bg-card/60 hover:border-white/20",
   );
   return (
-    <li className="relative w-60 shrink-0 snap-start">
+    <li className="relative w-72 shrink-0 snap-start">
       {isLive ? (
         <button
           type="button"
@@ -162,7 +164,7 @@ function FollowedTile({
         disabled={busy}
         aria-label={t("live.hub.follow.labelUnfollow", { name: c.displayName })}
         title={t("live.hub.follow.labelUnfollow", { name: c.displayName })}
-        className="absolute top-2 right-2 grid size-6 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+        className="absolute top-2 right-2 grid size-6 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 touch:tap-area"
       >
         <X aria-hidden className="size-3.5" />
       </button>

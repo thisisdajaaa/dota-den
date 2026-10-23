@@ -190,7 +190,7 @@ export async function ProGames({
               >
                 <span
                   className={cn(
-                    "w-9 shrink-0 text-xs font-semibold",
+                    "w-12 shrink-0 text-xs font-semibold",
                     g.won ? "text-win" : "text-loss",
                   )}
                 >
@@ -252,7 +252,7 @@ function CounterList({
               <li key={r.heroId}>
                 <Link
                   href={`/guides/${r.heroId}`}
-                  className="group flex items-center gap-2.5 rounded-md px-1 py-1 hover:bg-white/[0.03]"
+                  className="group flex items-center gap-2.5 rounded-md px-1 py-1 hover:bg-white/[0.03] touch:py-2"
                 >
                   <HeroPortrait hero={h} heroId={r.heroId} size="xs" />
                   <span className="min-w-0 flex-1 truncate text-sm group-hover:text-gold">

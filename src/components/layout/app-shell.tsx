@@ -48,7 +48,11 @@ const navFor = (user: { roles: readonly string[] }, plus: boolean): readonly Nav
 async function Brand() {
   const t = await getT();
   return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label={t("common.brand.home")}>
+    <Link
+      href="/"
+      className="relative flex shrink-0 items-center gap-2.5 whitespace-nowrap touch:tap-area"
+      aria-label={t("common.brand.home")}
+    >
       <BrandMark className="size-8 drop-shadow-[0_0_12px_oklch(0.8_0.13_80/0.35)]" />
       <span className="font-display text-lg font-bold tracking-wider">
         Dota <span className="text-gold">Den</span>
@@ -94,15 +98,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <>
         <SkipLink />
         <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-background/70 backdrop-blur-xl">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-8 px-4 sm:px-6">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-8">
             <Brand />
             <PublicNav enabled={ENABLED} />
             <Button asChild size="sm" className="ml-auto gap-2">
               {/* Full navigation, not client-side: the route redirects to Steam. */}
               <a href="/api/v1/auth/steam/login" aria-label={t("common.auth.signInSteam")}>
                 <SteamIcon className="size-4" />
-                <span className="hidden md:inline">{t("common.auth.signInSteam")}</span>
-                <span className="md:hidden">{t("common.auth.signIn")}</span>
+                <span className="hidden lg:inline">{t("common.auth.signInSteam")}</span>
+                <span className="lg:hidden">{t("common.auth.signIn")}</span>
               </a>
             </Button>
           </div>

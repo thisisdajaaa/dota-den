@@ -110,7 +110,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
     <div className="space-y-8">
       <Link
         href="/patches"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="relative inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground touch:tap-area"
       >
         <ArrowLeft aria-hidden className="size-4" /> {t("patches.detail.allPatches")}
       </Link>
@@ -142,7 +142,7 @@ export default async function PatchPage({ params }: PageProps<"/patches/[version
             href={patch.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:underline"
+            className="relative inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:underline touch:tap-area"
           >
             {t("patches.detail.official")} <ExternalLink aria-hidden className="size-3.5" />
           </a>

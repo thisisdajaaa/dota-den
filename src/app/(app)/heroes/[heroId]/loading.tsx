@@ -13,7 +13,7 @@ export default async function HeroLoading() {
           <Skeleton className="h-8 w-48" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-28 rounded-2xl" />
         ))}

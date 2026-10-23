@@ -48,7 +48,7 @@ async function PoolHeroes({
               ) : (
                 <Link
                   href={`/guides/${h.heroId}`}
-                  className="block truncate text-sm font-medium hover:text-gold hover:underline"
+                  className="block truncate text-sm font-medium hover:text-gold hover:underline touch:-my-2.5 touch:py-2.5"
                   title={name}
                 >
                   {name}
@@ -198,7 +198,7 @@ export async function ContestedCard({
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/guides/${h.heroId}`}
-                      className="block truncate text-sm font-medium hover:text-gold hover:underline"
+                      className="block truncate text-sm font-medium hover:text-gold hover:underline touch:-my-2.5 touch:py-2.5"
                     >
                       {heroName(hero, h.heroId)}
                     </Link>

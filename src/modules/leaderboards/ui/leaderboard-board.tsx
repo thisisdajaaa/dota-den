@@ -86,7 +86,7 @@ function PlayerCell({ t, player, supporter }: { t: T; player: PlayerView; suppor
         <p className="flex items-center gap-2">
           <Link
             href={`/players/${player.accountId32}`}
-            className="truncate font-medium hover:text-gold hover:underline"
+            className="truncate font-medium hover:text-gold hover:underline touch:-my-2.5 touch:py-2.5"
           >
             {player.name}
           </Link>

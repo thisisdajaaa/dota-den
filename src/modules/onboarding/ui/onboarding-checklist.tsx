@@ -69,7 +69,10 @@ export function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
                 {step.done ? t("onboarding.doneLabel") : t("onboarding.todoLabel")}
               </span>
               {step.href && !step.done ? (
-                <Link href={step.href} className="font-medium text-gold hover:underline">
+                <Link
+                  href={step.href}
+                  className="relative font-medium text-gold hover:underline touch:tap-area"
+                >
                   {t(`onboarding.steps.${step.id}.title`)}
                 </Link>
               ) : (
