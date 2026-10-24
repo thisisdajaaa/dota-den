@@ -25,10 +25,11 @@ export function parseScreenshotAnswer(content: string | null | undefined): Scree
     const n =
       typeof raw.mmr === "number"
         ? raw.mmr
-        : typeof raw.mmr === "string"
+        : typeof raw.mmr === "string" && raw.mmr.trim()
           ? Number(raw.mmr.replace(/[,\s]/g, ""))
           : NaN;
-    const mmr = Number.isInteger(n) && n >= 0 && n <= 15_000 ? n : null;
+    // A read of 0 is never a real rating (and "" would otherwise become 0).
+    const mmr = Number.isInteger(n) && n > 0 && n <= 15_000 ? n : null;
     const seen =
       typeof raw.seen === "string" && raw.seen.trim() ? raw.seen.trim().slice(0, 120) : null;
     return { mmr, seen: mmr === null ? null : seen };

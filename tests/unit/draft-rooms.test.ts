@@ -230,6 +230,34 @@ describe("DraftRoomService turns", () => {
 });
 
 describe("DraftRoomService timer and rematch", () => {
+  it("catches up every turn that ran out while the room sat idle", async () => {
+    const { svc, id, room, advance } = await startedRoom(true);
+    // Several turns' worth of time pass with nobody acting.
+    advance(170_000);
+    const seen = await svc.get(id);
+    expect(seen.ok).toBe(true);
+    const state = seen.ok ? seen.value.state : room.state;
+    // What get() returns is a live turn, not one that already expired.
+    const turn = currentTurn(state)!;
+    expect(turn).toBeTruthy();
+    expect(state.stepIndex).toBeGreaterThan(1);
+    const acting = turn.side === "radiant" ? host : guest;
+    const used = new Set(
+      Object.values(state.sides).flatMap((x) => [...x.picks, ...x.bans].map((p) => p.heroId)),
+    );
+    const heroId = POOL.find((h) => !used.has(h))!;
+    const res = await svc.act(id, acting, { type: turn.action, heroId }, state.stateVersion, "k1");
+    expect(res.ok).toBe(true);
+  });
+
+  it("acting straight away after a long idle spell resyncs instead of 'not your turn'", async () => {
+    const { svc, id, room, advance } = await startedRoom(true);
+    advance(170_000);
+    // The client still holds the version from before the timeouts.
+    const res = await svc.act(id, guest, { type: "ban", heroId: 5 }, room.state.stateVersion, "k2");
+    expect(res).toMatchObject({ ok: false, error: { type: "stale" } });
+  });
+
   it("resolves an expired turn on read, deterministically", async () => {
     const a = await startedRoom(true);
     const b = await startedRoom(true);

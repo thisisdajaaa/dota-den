@@ -20,6 +20,7 @@ import {
   POSITION_STATS_QUERY,
   StratzPositionSource,
   STRATZ_DAYS,
+  STRATZ_TTL_MS,
 } from "@/modules/meta/infrastructure/stratz-position-source";
 import { MetaService } from "@/modules/meta/meta.service";
 import type { MetaStatsSource, PositionStatsSource } from "@/modules/meta/meta.ports";
@@ -224,6 +225,33 @@ function stratzSource(
 }
 
 describe("StratzPositionSource", () => {
+  it("waits before asking again when the gateway can only hand back an old copy", async () => {
+    let now = NOW.getTime();
+    let calls = 0;
+    // Like ProviderGateway when STRATZ fails: the last good copy, with its old fetch time.
+    const gateway = {
+      queryJson: async () => {
+        calls++;
+        return {
+          ok: true as const,
+          status: 200,
+          body: stratzBody(HEROES),
+          fetchedAt: now - STRATZ_TTL_MS - 60_000,
+        };
+      },
+    };
+    const source = new StratzPositionSource(gateway as never, {
+      baseUrl: "https://stratz.test",
+      token: "t",
+      now: () => new Date(now),
+    });
+    for (let i = 0; i < 10; i++) {
+      expect((await source.positionStats()).ok).toBe(true);
+      now += 1_000;
+    }
+    expect(calls).toBe(1);
+  });
+
   it("posts the query with the token and STRATZ's user agent, and caches the answer", async () => {
     const { source, fetch } = stratzSource(() => ({ body: stratzBody(HEROES) }));
     const res = await source.positionStats();

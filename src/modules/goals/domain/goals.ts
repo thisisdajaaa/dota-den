@@ -56,7 +56,7 @@ export function describeGoal(goal: Goal, heroName: (id: number) => string): stri
     case "logAfterSessions":
       return "Log your MMR after every session";
     case "heroGames":
-      return `Play ${heroName(goal.heroId)} ${goal.target} times`;
+      return `Play ${heroName(goal.heroId)} in ${goal.target} ranked games`;
     case "custom":
       return goal.text;
   }
@@ -80,7 +80,8 @@ export function goalProgress(goal: Goal, week: WeekData): GoalProgress {
         goal,
         current: `${rate.toFixed(0)}% (${wins}–${n - wins})`,
         status: { kind: "winRate", rate: Number(rate.toFixed(0)), wins, losses: n - wins },
-        met: rate >= goal.target,
+        // Judged on the rounded rate it shows: "60%" against a 60% target is met.
+        met: Math.round(rate) >= goal.target,
         fraction: Math.min(1, rate / goal.target),
       };
     }

@@ -32,6 +32,19 @@ describe("weekly goals", () => {
     });
   });
 
+  it("judges a win rate goal on the rate it shows", () => {
+    // 31–21 is 59.6%, shown as "60%": against a 60% target it's met.
+    const games = Array.from({ length: 52 }, (_, i) => ({
+      startedAt: t(i),
+      result: i < 31 ? ("win" as const) : ("loss" as const),
+      heroId: 1,
+    }));
+    expect(goalProgress({ type: "winRate", target: 60 }, { ...week, games })).toMatchObject({
+      current: "60% (31–21)",
+      met: true,
+    });
+  });
+
   it("checks session length and MMR logging per session", () => {
     expect(goalProgress({ type: "maxPerSession", target: 3 }, week).met).toBe(true);
     expect(goalProgress({ type: "maxPerSession", target: 2 }, week).met).toBe(false);

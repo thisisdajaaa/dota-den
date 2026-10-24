@@ -30,6 +30,9 @@ type DraftInput = DistributiveOmit<DraftEvent, "expectedVersion" | "at">;
 export const MAX_ACTIVE_ROOMS = 50;
 export const ACTIVE_WINDOW_MS = 2 * 60 * 60 * 1000;
 
+/** More than any ruleset's number of steps: a guard on settling timeouts in a loop. */
+const MAX_SETTLE_STEPS = 40;
+
 export class DraftRoomService {
   private readonly now: () => number;
 
@@ -152,6 +155,8 @@ export class DraftRoomService {
       if (room.hostUserId !== actor.userId) return err({ type: "not_host" });
     } else {
       if (!side) return err({ type: "not_captain" });
+      // A client that's behind gets the current room to resync, not "not your turn".
+      if (room.state.stateVersion !== expectedVersion) return err({ type: "stale", room });
       const turn = currentTurn(room.state);
       if (!turn || turn.side !== side || turn.action !== action.type) {
         return err({ type: "not_your_turn" });
@@ -246,20 +251,31 @@ export class DraftRoomService {
     return res;
   }
 
+  /**
+   * Resolves every turn whose time ran out since the room was last touched (each timeout
+   * starts the next turn when the previous one expired, so an idle room can owe several).
+   */
   private async settleTimeout(room: DraftRoom): Promise<DraftRoom> {
-    if (room.status !== "in_progress") return room;
-    const time = resolveTime(room.state, this.now());
-    if (!time.timed || !time.expired || time.paused) return room;
-    const res = await this.applyDraft(
-      room,
-      null,
-      { type: "timeout", seed: timeoutSeed(room.id, room.state.stepIndex) },
-      null,
-      time.side,
-    );
-    if (res.ok) return res.value;
-    // Someone else resolved it first: read what they committed.
-    return (await this.deps.rooms.get(room.id)) ?? room;
+    let current = room;
+    // Bounded by the draft's length: each pass resolves one step or stops.
+    for (let i = 0; i < MAX_SETTLE_STEPS; i++) {
+      if (current.status !== "in_progress") return current;
+      const time = resolveTime(current.state, this.now());
+      if (!time.timed || !time.expired || time.paused) return current;
+      const step = current.state.stepIndex;
+      const res = await this.applyDraft(
+        current,
+        null,
+        { type: "timeout", seed: timeoutSeed(current.id, step) },
+        null,
+        time.side,
+      );
+      // Someone else resolved it first: read what they committed.
+      const next = res.ok ? res.value : ((await this.deps.rooms.get(current.id)) ?? current);
+      if (next.state.stepIndex === step && next.rev === current.rev) return next;
+      current = next;
+    }
+    return current;
   }
 
   private async commit(

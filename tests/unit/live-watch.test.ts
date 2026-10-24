@@ -43,6 +43,16 @@ describe("matchStreams", () => {
     expect(res[0].mentions).toEqual(["Team Spirit", "OG", "BLAST Slam VIII"]);
   });
 
+  it("doesn't link a pub stream whose title only shares a word with a team", () => {
+    // "Spirit" alone is also a hero's name; written in full, or with another name, it links.
+    const res = matchStreams(game(), [
+      stream("pub", "Storm Spirit mid 12k MMR grind", 9_000),
+      stream("full", "Team Spirit bootcamp scrims", 100),
+      stream("pair", "spirit vs og later today", 50),
+    ]);
+    expect(res.map((s) => s.channel).sort()).toEqual(["full", "pair"]);
+  });
+
   it("finds nothing for a public game without pros", () => {
     const pub = game({
       leagueId: null,

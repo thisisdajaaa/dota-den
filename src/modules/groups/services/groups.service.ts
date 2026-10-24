@@ -199,6 +199,8 @@ export class GroupsService {
     if (member.userId === user.id)
       throw new ConflictError("Leave the group instead of removing yourself.");
     await this.deps.repository.removeMember(group.id, member.userId, this.now());
+    // They saw the invite link: a new one, so being removed means staying out.
+    await this.deps.repository.setInviteToken(group.id, this.deps.newToken(), this.now());
   }
 
   async rename(user: Actor, id: string, name: string): Promise<GroupSummaryDto> {

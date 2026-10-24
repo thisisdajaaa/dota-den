@@ -15,7 +15,8 @@ export type SourceResult<T> = Promise<Result<T, SourceError>>;
 
 /** Your imported games (our database), for records and trends. */
 export interface OwnHeroGames {
-  games(accountId32: number): Promise<HeroGame[]>;
+  /** Every imported game, or every game on `heroId`. */
+  games(accountId32: number, heroId?: number): Promise<HeroGame[]>;
 }
 
 /** Your imported games with both lineups (our database), and how far their backfill is. */

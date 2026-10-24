@@ -173,7 +173,11 @@ export class StratzPositionSource implements PositionStatsSource {
     if (parsed.ok) {
       const fetchedAt = res.ok && res.fetchedAt ? new Date(res.fetchedAt) : this.now();
       this.memo = { value: parsed.value, fetchedAt };
-      this.failedUntil = 0;
+      // The gateway hands back its last good copy when STRATZ fails: past our freshness, that
+      // copy means the refresh failed, so wait before asking again (it would otherwise ask
+      // STRATZ on every request until the copy expires).
+      const servedStale = this.now().getTime() - fetchedAt.getTime() >= STRATZ_TTL_MS;
+      this.failedUntil = servedStale ? this.now().getTime() + STRATZ_RETRY_AFTER_FAILURE_MS : 0;
       return ok(this.memo);
     }
     this.lastError = parsed.error;

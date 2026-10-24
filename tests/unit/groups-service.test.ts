@@ -189,8 +189,12 @@ describe("GroupsService", () => {
     );
 
     await expect(service.removeMember(alice, id, 1)).rejects.toBeInstanceOf(ConflictError);
+    const before = (await service.forMember(alice, id)).inviteToken;
     await service.removeMember(alice, id, 3);
     expect(await service.findForMember(carol, id)).toBeNull();
+    // The removed member saw the link: it's replaced, so they can't just rejoin.
+    await expect(service.join(carol, before)).rejects.toBeInstanceOf(NotFoundError);
+    expect((await service.forMember(alice, id)).inviteToken).not.toBe(before);
     expect((await service.forMember(alice, id)).name).toBe("Renamed");
 
     await service.delete(alice, id);
