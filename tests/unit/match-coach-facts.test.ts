@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CoachAnswerSchema } from "@/modules/matches/schemas/coach-review.schema";
 import {
   buildCoachFactSheet,
   factLabel,
@@ -152,6 +153,12 @@ describe("coach grounding", () => {
       "after 20 min",
       "sa unang 10 minuto",
       "pagkahuman sa minuto 15",
+      // Non-breaking hyphen and en dash, as models write them.
+      "at the 10\u2011minute mark",
+      "sa 10\u2011minuto",
+      "a 10\u2013minute target",
+      "sa 10 ka minuto",
+      "sa unang 10 na minuto",
     ])
       expect(ungroundedNumbers(text, SHEET), text).toEqual([]);
   });
@@ -164,7 +171,37 @@ describe("coach grounding", () => {
     expect(ungroundedNumbers("Battle Fury at 17:00", bfury)).toEqual(["17:00"]);
     expect(ungroundedNumbers("Battle Fury at 18:20", bfury)).toEqual([]);
     expect(ungroundedNumbers("by minute 10", bfury)).toEqual([]);
-    expect(ungroundedNumbers("48 last hits at 10:00", bfury)).toEqual(["10:00"]);
+    // The 10-minute mark is a clock time the sheet backs while it has stats taken at 10 minutes.
+    expect(ungroundedNumbers("48 last hits at 10:00", bfury)).toEqual([]);
+    expect(ungroundedNumbers("48 last hits at 15:00", bfury)).toEqual(["15:00"]);
+    const noLaning = { ...SHEET, facts: SHEET.facts.filter((f) => !/At10$/.test(f.key)) };
+    expect(ungroundedNumbers("at 10:00", noLaning)).toEqual(["10:00"]);
+    // Times the prompt itself shows in a fact's label ("Team fight deaths after 30:00").
+    const phases: CoachFactSheet = {
+      ...noLaning,
+      facts: [
+        ...noLaning.facts,
+        {
+          key: "teamfightDeathsMid",
+          base: "teamfightDeathsMid",
+          subject: null,
+          value: 0,
+          unit: "count",
+        },
+      ],
+    };
+    expect(ungroundedNumbers("no team fight deaths from 10:00 to 30:00", phases)).toEqual([]);
+    expect(ungroundedNumbers("deaths after 30:00", noLaning)).toEqual(["30:00"]);
+    // A fact key quoted in the text isn't a number.
+    expect(ungroundedNumbers("48 last hits (lastHitsAt10)", bfury)).toEqual([]);
+    expect(ungroundedNumbers("goldAt99 shows it", bfury)).toEqual(["99"]);
+  });
+
+  it("keeps the first six facts a point cites instead of rejecting the answer", () => {
+    const point = { kind: "strength", title: "Big lane", detail: "Won the lane by a lot." };
+    const facts = ["kills", "deaths", "assists", "kda", "gpm", "xpm", "lastHitsAt10"];
+    const parsed = CoachAnswerSchema.parse({ points: [{ ...point, facts }] });
+    expect(parsed.points[0].facts).toEqual(facts.slice(0, 6));
   });
 
   it("small numbers and phase marks need a fact like any other number", () => {

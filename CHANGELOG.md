@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-24
 
+- AI match coach: reviews no longer fail on "10:00", the game phases or a non-breaking hyphen, and the coach no longer suggests target timings that aren't from your match (30 of 30 test reviews written in English, Filipino and Cebuano)
 - Counters from STRATZ: draft captain, challenges, hero guide matchups and pool advice now use the latest full week of Legend–Immortal pub games (about 180,000 games for a popular hero) instead of a few thousand pro games; draft win estimates re-fitted on that data (57.8% accurate on newer games, up from 57.0%)
 - Privacy page: what Dota Den stores, who processes it, and how to download or delete it
 - Security: zod and ip-address updates

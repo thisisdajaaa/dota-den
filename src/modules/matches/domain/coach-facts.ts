@@ -13,7 +13,7 @@ import { PERF_STATS, type PerfStat } from "./match-performance";
 import type { ItemInfo } from "./read-models";
 
 /** Bump when the prompt or the fact sheet changes meaningfully: old reviews stay cached. */
-export const COACH_PROMPT_VERSION = "coach-v2";
+export const COACH_PROMPT_VERSION = "coach-v3";
 
 /** Languages the coach writes in: the interface languages (src/common/i18n/locales.ts). */
 export type CoachLocale = "en" | "fil" | "ceb";
@@ -346,7 +346,8 @@ const MINUTE_WORD = "(?:minutes?|mins?|minutos?)";
 const TIME_MARKERS = [
   new RegExp(`\\b(?:first|unang)\\s+\\d+(?:\\.\\d+)?\\s*${MINUTE_WORD}\\b`, "gi"),
   new RegExp(`\\b(?:minute|min|minuto)\\.?\\s+\\d+(?:\\.\\d+)?\\b`, "gi"),
-  new RegExp(`\\b\\d+(?:\\.\\d+)?\\s*(?:-\\s*)?${MINUTE_WORD}\\b`, "gi"),
+  // "10 ka minuto" (Cebuano) and "10 na minuto" (Filipino) count too.
+  new RegExp(`\\b\\d+(?:\\.\\d+)?\\s*(?:-\\s*|(?:ka|na)\\s+)?${MINUTE_WORD}\\b`, "gi"),
 ];
 const CLOCK = /-?\b\d{1,3}:\d{2}\b/g;
 
@@ -355,12 +356,26 @@ function withoutTimeMarkers(text: string): string {
   return TIME_MARKERS.reduce((t, re) => t.replace(re, " "), text);
 }
 
-/** Clock times the sheet has (item timings, game length), as the prompt writes them. */
+/** The text without the sheet's fact keys: "goldAt10" quoted in a sentence isn't a 10. */
+function withoutFactKeys(text: string, sheet: CoachFactSheet): string {
+  const keys = sheet.facts.map((f) => f.key).sort((a, b) => b.length - a.length);
+  return keys.reduce((t, key) => t.split(key).join(" "), text);
+}
+
+/**
+ * Clock times the sheet has (item timings, game length), as the prompt writes them; the
+ * minute marks its stats are taken at ("10:00" when it has last hits at 10 minutes); and the
+ * times in its facts' labels ("Team fight deaths after 30:00").
+ */
 function allowedClocks(sheet: CoachFactSheet): Set<string> {
   return new Set(
-    sheet.facts.flatMap((f) =>
-      f.unit === "clock" && typeof f.value === "number" ? [clock(f.value)] : [],
-    ),
+    sheet.facts.flatMap((f) => {
+      const out: string[] = [...(factLabel(f).match(CLOCK) ?? [])];
+      const mark = /At(\d+)$/.exec(f.key);
+      if (mark) out.push(`${Number(mark[1])}:00`);
+      if (f.unit === "clock" && typeof f.value === "number") out.push(clock(f.value));
+      return out;
+    }),
   );
 }
 
@@ -394,7 +409,9 @@ export function ungroundedNumbers(text: string, sheet: CoachFactSheet): string[]
   const numbers = allowedNumbers(sheet);
   const clocks = allowedClocks(sheet);
   const out: string[] = [];
-  let cleaned = withoutTimeMarkers(text.replace(/(\d),(\d{3})/g, "$1$2"));
+  // Models often write "10‑minute" with a non-breaking hyphen (or a dash, or a minus sign).
+  const plain = text.replace(/[\u2010-\u2015\u2212]/g, "-").replace(/(\d),(\d{3})/g, "$1$2");
+  let cleaned = withoutTimeMarkers(withoutFactKeys(plain, sheet));
   cleaned = cleaned.replace(CLOCK, (c) => {
     if (!clocks.has(c) && !clocks.has(c.replace(/^-/, ""))) out.push(c);
     return " ";
