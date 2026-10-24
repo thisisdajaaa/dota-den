@@ -6,6 +6,24 @@ export const admin = {
   description:
     "Everyone who has signed in (production and staging share this database). Names and ranks come from their public OpenDota profiles.",
   notFound: { title: "Page not found", back: "Back to your overview" },
+  health: {
+    aria: "At a glance",
+    jobs: "Daily jobs",
+    alerts: "Alerts",
+    errors: "Errors",
+    background: "Background jobs",
+    ok: "OK",
+    none: "None",
+    unknown: "Unknown",
+    noRuns: "No runs yet",
+    failed: { one: "{n} failed", other: "{n} failed" },
+    alerts30: { one: "{n} in 30 days", other: "{n} in 30 days" },
+    errors7: { one: "{n} in 7 days", other: "{n} in 7 days" },
+    failed14: { one: "{n} in 14 days", other: "{n} in 14 days" },
+    plusOff: "Off",
+    plusPaused: "Paused",
+    plusOn: { one: "On sale · {n} member", other: "On sale · {n} members" },
+  },
   totals: {
     aria: "Totals",
     users: "Users",
@@ -37,6 +55,8 @@ export const admin = {
     within7: "Back within 7 days",
     ever: "Back ever",
     unavailable: "Activity couldn't be loaded.",
+    ofUsers: { one: "of {n} user", other: "of {n} users" },
+    reach: "Reach",
   },
   users: {
     title: "Users",

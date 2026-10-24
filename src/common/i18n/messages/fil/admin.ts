@@ -8,6 +8,24 @@ export const admin: MessageTree<typeof en> = {
   description:
     "Lahat ng nakapag-sign in (iisang database ang gamit ng production at staging). Galing sa public OpenDota profile nila ang mga pangalan at rank.",
   notFound: { title: "Hindi nahanap ang page", back: "Bumalik sa buod mo" },
+  health: {
+    aria: "Sa isang tingin",
+    jobs: "Mga daily job",
+    alerts: "Mga alerto",
+    errors: "Mga error",
+    background: "Mga background job",
+    ok: "OK",
+    none: "Wala",
+    unknown: "Hindi alam",
+    noRuns: "Wala pang run",
+    failed: { one: "{n} ang pumalya", other: "{n} ang pumalya" },
+    alerts30: { one: "{n} sa 30 araw", other: "{n} sa 30 araw" },
+    errors7: { one: "{n} sa 7 araw", other: "{n} sa 7 araw" },
+    failed14: { one: "{n} sa 14 araw", other: "{n} sa 14 araw" },
+    plusOff: "Naka-off",
+    plusPaused: "Naka-pause",
+    plusOn: { one: "Bukas · {n} miyembro", other: "Bukas · {n} miyembro" },
+  },
   totals: {
     aria: "Kabuuan",
     users: "Mga user",
@@ -39,6 +57,8 @@ export const admin: MessageTree<typeof en> = {
     within7: "Bumalik sa loob ng 7 araw",
     ever: "Bumalik kailanman",
     unavailable: "Hindi ma-load ang aktibidad.",
+    ofUsers: { one: "sa {n} user", other: "sa {n} user" },
+    reach: "Abot",
   },
   users: {
     title: "Mga user",
