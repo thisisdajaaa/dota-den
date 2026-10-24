@@ -55,7 +55,13 @@ function wordPattern(term: string): RegExp {
 /** One name a title can mention, compiled once per game. */
 interface Term {
   name: string;
-  patterns: RegExp[];
+  /** The name as given. */
+  full: RegExp;
+  /**
+   * Shortened forms ("Spirit" for "Team Spirit"). They can be ordinary words or hero names
+   * ("Storm Spirit mid"), so on their own they don't link a stream: see `linked`.
+   */
+  short: RegExp[];
 }
 
 /** The names a stream title may use for this game: teams, the league, and its pros. */
@@ -68,11 +74,30 @@ function gameTerms(game: LiveGame): Term[] {
   const pros = game.players.filter((p) => p.isPro && p.name).map((p) => p.name!.trim());
   return [...strong, ...pros]
     .filter((t) => t.length >= 2)
-    .map((name) => ({ name, patterns: variants(name).map(wordPattern) }));
+    .map((name) => ({
+      name,
+      full: wordPattern(name.trim()),
+      short: variants(name)
+        .filter((v) => v !== name.trim())
+        .map(wordPattern),
+    }));
 }
 
-const mentionsOf = (title: string, terms: readonly Term[]) =>
-  terms.filter((t) => t.patterns.some((p) => p.test(title))).map((t) => t.name);
+/**
+ * The names a title mentions, but only when that's a real link: a name written in full, or
+ * at least two different names ("Spirit vs Falcons"). A lone shortened name isn't enough.
+ */
+function mentionsOf(title: string, terms: readonly Term[]): string[] {
+  let full = false;
+  const found: string[] = [];
+  for (const t of terms) {
+    if (t.full.test(title)) {
+      full = true;
+      found.push(t.name);
+    } else if (t.short.some((p) => p.test(title))) found.push(t.name);
+  }
+  return full || found.length >= 2 ? found : [];
+}
 
 /**
  * Streams whose titles mention this game. There's no feed linking a match to a channel, so

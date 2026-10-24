@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { MmrEntryInputSchema } from "@/modules/mmr/schemas/mmr-entry.schema";
 
 describe("MmrEntryInputSchema", () => {
+  it("never turns an empty MMR into 0", () => {
+    for (const mmr of ["", "   ", null, false, undefined])
+      expect(
+        MmrEntryInputSchema.safeParse({ mmr, observedAt: "2026-10-20T10:00:00Z" }).success,
+        String(mmr),
+      ).toBe(false);
+    expect(
+      MmrEntryInputSchema.parse({ mmr: " 4520 ", observedAt: "2026-10-20T10:00:00Z" }).mmr,
+    ).toBe(4520);
+  });
+
   it("accepts a valid entry and normalises an empty note to null", () => {
     const res = MmrEntryInputSchema.safeParse({
       mmr: "5230",

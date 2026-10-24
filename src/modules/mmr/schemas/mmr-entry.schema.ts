@@ -9,11 +9,18 @@ const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
  * and the route handlers (trust boundary).
  */
 export const MmrEntryInputSchema = z.object({
-  mmr: z.coerce
-    .number({ error: "Enter your MMR as a number" })
-    .int("MMR is a whole number")
-    .min(MMR_MIN, `MMR can't be below ${MMR_MIN}`)
-    .max(MMR_MAX, `MMR can't be above ${MMR_MAX.toLocaleString("en-US")}`),
+  // Blank, null or false is "not entered", never 0 (coercing them would save an MMR of 0).
+  mmr: z.preprocess(
+    (v) =>
+      v === null || v === undefined || v === false || (typeof v === "string" && !v.trim())
+        ? undefined
+        : v,
+    z.coerce
+      .number({ error: "Enter your MMR as a number" })
+      .int("MMR is a whole number")
+      .min(MMR_MIN, `MMR can't be below ${MMR_MIN}`)
+      .max(MMR_MAX, `MMR can't be above ${MMR_MAX.toLocaleString("en-US")}`),
+  ),
   observedAt: z.coerce
     .date({ error: "Pick when you saw this MMR" })
     .refine((d) => d.getTime() <= Date.now() + FUTURE_TOLERANCE_MS, "That time is in the future")

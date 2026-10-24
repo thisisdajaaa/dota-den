@@ -295,8 +295,16 @@ export function draftOutlook(input: {
     w.matchups * (sides.radiant.matchups - sides.dire.matchups) +
     w.lanes * (sides.radiant.lanes - sides.dire.lanes) +
     w.synergy * (sides.radiant.synergy - sides.dire.synergy);
+  // With no hero data at all (both sources down) every edge is 0: that's not a 50% read.
+  const noEvidence =
+    meta.size === 0 &&
+    covered === 0 &&
+    sides.radiant.lanes === 0 &&
+    sides.dire.lanes === 0 &&
+    sides.radiant.synergy === 0 &&
+    sides.dire.synergy === 0;
   const radiantPct =
-    picked === 0
+    picked === 0 || noEvidence
       ? null
       : Math.round(Math.min(OUTLOOK_CEILING, Math.max(OUTLOOK_FLOOR, 100 * sigmoid(z))));
   const confidence =

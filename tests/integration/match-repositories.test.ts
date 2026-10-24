@@ -76,6 +76,39 @@ describe("MatchFactsRepository", () => {
   });
 });
 
+describe("MatchReadRepository.heroFacts", () => {
+  it("reads the whole history, or one hero's games, past the dashboard's 5,000", async () => {
+    const repo = new MatchFactsRepository(async () => db);
+    const facts = Array.from({ length: 5_010 }, (_, i) =>
+      fact(81, `hf${i}`, 1, {
+        heroId: i < 10 ? 74 : 1,
+        startedAt: new Date(Date.UTC(2020, 0, 1) + i * 3_600_000),
+      }),
+    );
+    await repo.upsertMany(facts);
+    const q = new MatchReadRepository(async () => db);
+    expect((await q.heroFacts(81)).length).toBe(5_010);
+    const invoker = await q.heroFacts(81, 74);
+    // The ten oldest games: beyond the newest 5,000 the dashboard reads.
+    expect(invoker.map((f) => f.heroId)).toEqual(Array(10).fill(74));
+    expect(invoker[0].startedAt.getTime()).toBeGreaterThan(invoker[9].startedAt.getTime());
+  });
+});
+
+describe("MatchReadRepository.markParsed", () => {
+  it("flips the stored rows of a match parsed after import, for those players only", async () => {
+    const repo = new MatchFactsRepository(async () => db);
+    await repo.upsertMany([fact(71, "mp1"), fact(72, "mp1"), fact(71, "mp2")]);
+    await new MatchReadRepository(async () => db).markParsed("mp1", [71, 72, 99]);
+    const facts = db.collection(MATCH_COLLECTIONS.facts);
+    const status = async (accountId32: number, matchId: string) =>
+      (await facts.findOne({ accountId32, matchId }))?.provenance.parseStatus;
+    expect(await status(71, "mp1")).toBe("parsed");
+    expect(await status(72, "mp1")).toBe("parsed");
+    expect(await status(71, "mp2")).toBe("unparsed");
+  });
+});
+
 describe("SyncStatesRepository", () => {
   const opts = (now: Date) => ({
     now,

@@ -160,6 +160,11 @@ export interface MatchQueries {
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;
   /**
+   * Every imported game (or every game on one hero), newest first: hero pages need the whole
+   * history, not the dashboard's newest 5,000.
+   */
+  heroFacts(accountId32: number, heroId?: number): Promise<DashboardFact[]>;
+  /**
    * The dashboard's games: the same rows as dashboardFacts, but only the summary's fields,
    * plus the newest `recent` games in full.
    */

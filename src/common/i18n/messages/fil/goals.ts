@@ -24,7 +24,7 @@ export const goals: MessageTree<typeof en> = {
     winRate: "Win rate",
     maxPerSession: "Maiikling session",
     logAfterSessions: "Mag-log ng MMR pagkatapos ng session",
-    heroGames: "Maglaro ng hero",
+    heroGames: "Maglaro ng hero sa ranked",
     custom: "Sarili mong goal",
   },
   editor: {
@@ -46,8 +46,8 @@ export const goals: MessageTree<typeof en> = {
     },
     logAfterSessions: "I-log ang MMR mo pagkatapos ng bawat session",
     heroGames: {
-      one: "Laruin si {hero} nang isang beses",
-      other: "Laruin si {hero} nang {n} beses",
+      one: "Laruin si {hero} sa ranked nang isang beses",
+      other: "Laruin si {hero} sa {n} ranked na laro",
     },
   },
   progress: {
@@ -56,7 +56,7 @@ export const goals: MessageTree<typeof en> = {
     longestSession: "Pinakamahabang session: {games}",
     noSessions: "Wala pang session",
     sessionsLogged: "{logged} / {total} session ang na-log",
-    heroGames: "{played} / {target} laro",
+    heroGames: "{played} / {target} ranked na laro",
     done: "Tapos na",
     notYet: "Hindi pa",
   },

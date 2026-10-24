@@ -37,10 +37,18 @@ export const guides: MessageTree<typeof en> = {
     fallbackName: "Hero #{id}",
   },
   items: {
-    kicker: "Mga pro game",
-    title: "Ano ang binibili ng mga pro",
-    description:
-      "Ang mga pinakabinibiling item sa bawat yugto ng mga bagong professional game, mula sa OpenDota. Hindi kasama ang mga consumable pagkatapos ng simula.",
+    kicker: { pubs: "Mga high-rank pub", pro: "Mga pro game" },
+    title: { pubs: "Mga item build", pro: "Ano ang binibili ng mga pro" },
+    description: {
+      pubs: "Ano ang binibili ng mga naglalaro ng {hero} sa {position} sa huling buong linggo ng mga larong Legend hanggang Immortal (mula sa STRATZ): ang mga panimulang item, tapos ang mga buong item ayon sa karaniwang minuto ng pagbili, kasama ang win rate ng mga larong bumili nito. Mas madalas manalo ang mga item na binibili nang mas huli dahil bahagyang umaabot doon ang mahahabang larong maganda ang takbo.",
+      pro: "Ang mga pinakabinibiling item sa bawat yugto ng mga bagong professional game, mula sa OpenDota. Hindi kasama ang mga consumable pagkatapos ng simula.",
+    },
+    position: "Pos {n}",
+    legend: "Bar: gaano kadalas binibili · %: win rate ng mga larong iyon",
+    positions: "Mga posisyon",
+    minute: "{n} min",
+    win: "{rate}%",
+    winTitle: "Win rate ng {games} larong bumili nito",
     noData: "Walang data.",
     fallbackName: "Item #{id}",
     phases: {

@@ -745,6 +745,61 @@ function stratzMatchups(heroIds) {
   });
   return { data: { heroStats: { matchUp } } };
 }
+/**
+ * STRATZ item builds: every fixture hero is mostly a Pos 1 (with some Pos 3), buying Magic
+ * Wand early, Power Treads and Battle Fury mid game and Black King Bar late; Boots of Speed
+ * (a plain component) shows that components are left out.
+ */
+function stratzItems(heroId) {
+  const minutes = (itemId, from, to, perMinute, rate) =>
+    Array.from({ length: to - from + 1 }, (_, i) => ({
+      itemId,
+      instance: 0,
+      time: from + i,
+      matchCount: Math.round(perMinute),
+      winCount: Math.round(Math.round(perMinute) * rate),
+    }));
+  const build = (scale) => ({
+    full: [
+      ...minutes(36, 1, 4, 300 * scale, 0.51),
+      ...minutes(29, 2, 4, 400 * scale, 0.5),
+      ...minutes(63, 8, 12, 250 * scale, 0.52),
+      ...minutes(145, 13, 17, 300 * scale, 0.55),
+      ...minutes(116, 24, 30, 120 * scale, 0.61),
+    ],
+    start: [
+      {
+        itemId: 44,
+        instance: 0,
+        wasGiven: false,
+        matchCount: Math.round(4000 * scale),
+        winCount: Math.round(2000 * scale),
+      },
+      {
+        itemId: 36,
+        instance: 0,
+        wasGiven: false,
+        matchCount: Math.round(900 * scale),
+        winCount: Math.round(450 * scale),
+      },
+    ],
+  });
+  const known = Boolean(HEROES[heroId]);
+  const heroStats = {
+    positions: known
+      ? [
+          { position: "POSITION_1", matchCount: 8000, winCount: 4160 },
+          { position: "POSITION_3", matchCount: 2000, winCount: 980 },
+        ]
+      : [],
+  };
+  for (const p of [1, 2, 3, 4, 5]) {
+    const b = known && (p === 1 || p === 3) ? build(p === 1 ? 1 : 0.25) : { full: [], start: [] };
+    heroStats[`full${p}`] = b.full;
+    heroStats[`start${p}`] = b.start;
+  }
+  return { data: { heroStats } };
+}
 function stratz(req, res, raw) {
   const send = (status, body) => {
     res.writeHead(status, { "content-type": "application/graphql-response+json; charset=utf-8" });
@@ -761,6 +816,8 @@ function stratz(req, res, raw) {
   } catch {
     return send(400, { errors: [{ message: "Bad JSON" }] });
   }
+  if (String(body.query ?? "").includes("itemFullPurchase"))
+    return send(200, stratzItems(Number(body.variables?.heroId)));
   if (String(body.query ?? "").includes("matchUp")) {
     const ids = Array.isArray(body.variables?.heroIds) ? body.variables.heroIds.map(Number) : [];
     return send(200, stratzMatchups(ids));

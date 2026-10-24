@@ -18,6 +18,8 @@ export interface MatchesStore {
     accountIds: readonly number[],
   ): Promise<Map<number, { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }>>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>>;
+  /** Marks these players' stored rows for a match as parsed (it was parsed after import). */
+  markParsed(matchId: string, accountIds: readonly number[]): Promise<void>;
   deleteForOwner(owner: DataOwner): Promise<Record<string, number>>;
 }
 
@@ -58,9 +60,21 @@ export class MatchesService {
     return res.ok ? res.value : null;
   }
 
-  /** One match with every player (cached upstream; parsed matches include replay data). */
-  match(matchId: string): Promise<Result<MatchDetail, ProviderError>> {
-    return this.deps.openDota.fetchMatch(matchId);
+  /**
+   * One match with every player (cached upstream; parsed matches include replay data). A
+   * parsed match also updates our stored rows, which say "unparsed" if it was parsed after
+   * they were imported (the extras and auto parse requests go by that flag).
+   */
+  async match(matchId: string): Promise<Result<MatchDetail, ProviderError>> {
+    const res = await this.deps.openDota.fetchMatch(matchId);
+    if (res.ok && res.value.parsed) {
+      const ids = res.value.players.flatMap((p) => (p.accountId32 ? [p.accountId32] : []));
+      if (ids.length)
+        await this.deps.store.markParsed(matchId, ids).catch((error: unknown) => {
+          this.deps.logger.warn("mark_parsed_failed", { matchId, error });
+        });
+    }
+    return res;
   }
 
   /** Ask OpenDota to parse a match's replay (laning, item timings, wards). */

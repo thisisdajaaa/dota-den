@@ -27,14 +27,14 @@ describe("draftOutlook", () => {
     expect(res.confidence).toBe("low");
   });
 
-  it("is 50% with no data at all, never inventing an edge", () => {
+  it("has no estimate with no data at all (a 50% would look like a real read)", () => {
     const res = draftOutlook({
       radiant: [core(1)],
       dire: [core(2)],
       meta: new Map(),
       matchups: new Map(),
     });
-    expect(res.radiantPct).toBe(50);
+    expect(res.radiantPct).toBeNull();
     expect(res.heroes.every((h) => h.winRate === null && h.contest === null)).toBe(true);
   });
 

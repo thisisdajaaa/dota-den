@@ -3,6 +3,7 @@ import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
 import { ProviderGateway } from "./provider-gateway";
 import { sharedGatewayOptions } from "./shared-gateway-options";
+import { StratzHeroItems } from "./stratz-hero-items";
 import { StratzHeroMatchups } from "./stratz-hero-matchups";
 
 export const STRATZ_DEFAULT_BASE_URL = "https://api.stratz.com";
@@ -23,6 +24,7 @@ export function stratzConfig(): StratzConfig | null {
 const globalForGateway = globalThis as typeof globalThis & {
   __ddStratz?: ProviderGateway;
   __ddStratzMatchups?: StratzHeroMatchups;
+  __ddStratzItems?: StratzHeroItems;
 };
 
 /**
@@ -63,4 +65,12 @@ export function stratzHeroMatchups(): StratzHeroMatchups | null {
   if (!config) return null;
   globalForGateway.__ddStratzMatchups ??= new StratzHeroMatchups(stratzGateway(), config);
   return globalForGateway.__ddStratzMatchups;
+}
+
+/** Shared STRATZ item builds per hero (parsed copies per instance), or null without a token. */
+export function stratzHeroItems(): StratzHeroItems | null {
+  const config = stratzConfig();
+  if (!config) return null;
+  globalForGateway.__ddStratzItems ??= new StratzHeroItems(stratzGateway(), config);
+  return globalForGateway.__ddStratzItems;
 }

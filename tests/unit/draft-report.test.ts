@@ -164,7 +164,9 @@ describe("lanes in the outlook and in picks", () => {
       matchups: new Map(),
       positions: table,
     });
-    expect(res.radiantPct).toBeGreaterThanOrEqual(without.radiantPct!);
+    // Lane results alone are evidence enough for an estimate; with nothing at all, there's none.
+    expect(res.radiantPct).toBeGreaterThanOrEqual(50);
+    expect(without.radiantPct).toBeNull();
     expect(res.report.radiant.criteria.find((c) => c.key === "lanes")?.grade).toMatch(/[AB]/);
     expect(res.report.provisional).toBe(true);
   });

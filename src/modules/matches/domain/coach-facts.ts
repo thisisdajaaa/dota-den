@@ -7,13 +7,14 @@
  */
 import type { MatchDetail, MatchPlayer } from "./match-detail";
 import { laneResult } from "./match-extras";
+import { classifyQueue } from "./queue-classification";
 import { keyItemTimings, laneOpponents } from "./match-laning";
 import { inWindow } from "./match-map";
 import { PERF_STATS, type PerfStat } from "./match-performance";
 import type { ItemInfo } from "./read-models";
 
 /** Bump when the prompt or the fact sheet changes meaningfully: old reviews stay cached. */
-export const COACH_PROMPT_VERSION = "coach-v3";
+export const COACH_PROMPT_VERSION = "coach-v4";
 
 /** Languages the coach writes in: the interface languages (src/common/i18n/locales.ts). */
 export type CoachLocale = "en" | "fil" | "ceb";
@@ -147,15 +148,17 @@ export function buildCoachFactSheet(input: {
   add("duration", match.durationSec, "clock");
   if (!add("patch", patch, "text")) missing.push("patch");
 
-  // Party: as reported upstream only. A missing party_size is unknown, never solo.
-  if (p.partySize === null) {
+  // Party: the app's one rule (classifyQueue). Missing or impossible party data, or a lobby
+  // that isn't matchmaking, is unknown, never solo.
+  const queue = classifyQueue({ lobbyType: match.lobbyType, partySize: p.partySize });
+  if (queue.queueClass === "unknown") {
     add("party", "unknown", "text");
     missing.push("party");
-  } else if (p.partySize <= 1) {
+  } else if (queue.queueClass === "solo") {
     add("party", "solo", "text");
   } else {
     add("party", "party", "text");
-    add("partySize", p.partySize, "count");
+    add("partySize", queue.partySize, "count");
   }
 
   add("kills", p.kills, "count");

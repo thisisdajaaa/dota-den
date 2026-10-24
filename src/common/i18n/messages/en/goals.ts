@@ -22,7 +22,7 @@ export const goals = {
     winRate: "Win rate",
     maxPerSession: "Short sessions",
     logAfterSessions: "Log MMR after sessions",
-    heroGames: "Play a hero",
+    heroGames: "Play a hero in ranked",
     custom: "Your own",
   },
   editor: {
@@ -43,7 +43,7 @@ export const goals = {
       other: "Play at most {n} ranked games per session",
     },
     logAfterSessions: "Log your MMR after every session",
-    heroGames: { one: "Play {hero} once", other: "Play {hero} {n} times" },
+    heroGames: { one: "Play {hero} in ranked once", other: "Play {hero} in {n} ranked games" },
   },
   progress: {
     needGames: "{games} / {min} games to count",
@@ -51,7 +51,7 @@ export const goals = {
     longestSession: "Longest session: {games}",
     noSessions: "No sessions yet",
     sessionsLogged: "{logged} / {total} sessions logged",
-    heroGames: "{played} / {target} games",
+    heroGames: "{played} / {target} ranked games",
     done: "Done",
     notYet: "Not yet",
   },

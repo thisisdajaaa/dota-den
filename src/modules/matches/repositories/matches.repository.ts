@@ -93,6 +93,7 @@ export class MatchFactsRepository implements MatchFactsPort {
         { accountId32: 1, "queue.queueClass": 1, startedAt: -1 },
         { name: "by_account_queue" },
       ),
+      facts.createIndex({ accountId32: 1, heroId: 1, startedAt: -1 }, { name: "by_account_hero" }),
       matches.createIndex({ matchId: 1 }, { unique: true, name: "uniq_matchId" }),
       matches.createIndex({ startedAt: -1 }, { name: "by_date" }),
       db
@@ -307,6 +308,8 @@ export const SUMMARY_FACT_PROJECTION = {
 
 /** The dashboard's (and its friends') cap: the newest games only. */
 const DASHBOARD_FACT_LIMIT = 5_000;
+/** Hero pages read the whole history; this only guards against something absurd. */
+const HERO_FACT_LIMIT = 100_000;
 
 type SummaryFactDoc = Pick<
   PlayerMatchFactDoc,
@@ -657,6 +660,33 @@ export class MatchReadRepository implements MatchQueries {
   }
 
   /** Admin overview: imported matches and sync state per account. */
+  async heroFacts(accountId32: number, heroId?: number): Promise<DashboardFact[]> {
+    const docs = await (
+      await this.facts()
+    )
+      .find(heroId === undefined ? { accountId32 } : { accountId32, heroId }, {
+        sort: { startedAt: -1 },
+        limit: HERO_FACT_LIMIT,
+        projection: FACT_PROJECTION,
+      })
+      .toArray();
+    return docs.map(toDashboardFact);
+  }
+
+  async markParsed(matchId: string, accountIds: readonly number[]): Promise<void> {
+    // By account and match: the unique index, so this never scans.
+    await (
+      await this.facts()
+    ).updateMany(
+      {
+        accountId32: { $in: [...accountIds] },
+        matchId,
+        "provenance.parseStatus": { $ne: "parsed" },
+      },
+      { $set: { "provenance.parseStatus": "parsed" } },
+    );
+  }
+
   async statsByAccount(
     accountIds: readonly number[],
   ): Promise<Map<number, { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }>> {

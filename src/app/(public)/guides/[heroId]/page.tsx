@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getT } from "@/common/i18n/server";
 import { guideService } from "@/modules/guides";
+import { isBuildFiller } from "@/modules/guides/domain/hero-guide";
 import { Benchmarks, Counters, ItemBuilds, ProGames } from "@/modules/guides/ui/guide-sections";
 import { matchesService } from "@/modules/matches";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
@@ -28,8 +29,13 @@ export async function generateMetadata({
     : { title: t("guides.heroFallbackTitle") };
 }
 
-export default async function HeroGuidePage({ params }: PageProps<"/guides/[heroId]">) {
+export default async function HeroGuidePage({
+  params,
+  searchParams,
+}: PageProps<"/guides/[heroId]">) {
   const { heroId: raw } = await params;
+  const { pos } = await searchParams;
+  const position = typeof pos === "string" && /^[1-5]$/.test(pos) ? Number(pos) : undefined;
   if (!HERO_ID.test(raw)) notFound();
   const heroId = Number(raw);
   const t = await getT();
@@ -38,7 +44,10 @@ export default async function HeroGuidePage({ params }: PageProps<"/guides/[hero
   if (heroes.size > 0 && !hero) notFound();
 
   const isConsumable = (id: number) => items.get(id)?.qual === "consumable";
-  const guide = await guideService.guide(heroId, isConsumable);
+  const guide = await guideService.guide(heroId, isConsumable, {
+    isFiller: (id) => isBuildFiller(items.get(id)),
+    position,
+  });
   const name = hero?.name ?? t("guides.hero.fallbackName", { id: heroId });
 
   return (
@@ -58,7 +67,13 @@ export default async function HeroGuidePage({ params }: PageProps<"/guides/[hero
         />
       </div>
 
-      <ItemBuilds items={guide.items} itemMap={items} />
+      <ItemBuilds
+        items={guide.items}
+        itemSource={guide.itemSource}
+        itemMap={items}
+        heroId={heroId}
+        heroLabel={name}
+      />
       <Counters counters={guide.counters} heroes={heroes} heroLabel={name} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Benchmarks benchmarks={guide.benchmarks} />

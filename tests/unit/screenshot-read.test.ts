@@ -16,6 +16,11 @@ describe("parseScreenshotAnswer", () => {
     ).toEqual({ mmr: 5420, seen: "profile" });
   });
 
+  it("never reads an empty or zero rating as 0", () => {
+    for (const reply of ['{"mmr": ""}', '{"mmr": " ", "seen": "x"}', '{"mmr": 0}', '{"mmr": "0"}'])
+      expect(parseScreenshotAnswer(reply), reply).toEqual({ mmr: null, seen: null });
+  });
+
   it("treats anything implausible as not found", () => {
     for (const bad of [
       '{"mmr": 99999}',

@@ -91,6 +91,10 @@ describe("coach fact sheet", () => {
     const duo = sheetFor(parsedMatch({ me: { partySize: 2 } }));
     expect(value(duo, "party")).toBe("party");
     expect(value(duo, "partySize")).toBe(2);
+    // The app's queue rule: impossible sizes and non-matchmaking lobbies are unknown.
+    expect(value(sheetFor(parsedMatch({ me: { partySize: 0 } })), "party")).toBe("unknown");
+    const lobby = { ...parsedMatch({ me: { partySize: 10 } }), lobbyType: 1 };
+    expect(value(sheetFor(lobby), "party")).toBe("unknown");
   });
 
   it("lists what's missing instead of filling it in", () => {

@@ -10,6 +10,19 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-24
 
+- Fixes from a full audit:
+  - MMR journal: an empty MMR field (or an empty screenshot read) can no longer save an MMR of 0
+  - Hero pages read your whole history, not just your newest 5,000 games
+  - Matches parsed after import are recognised as parsed (coaching extras and Plus parse requests)
+  - Draft rooms catch up every turn that timed out while nobody was looking; a lagging client resyncs instead of "not your turn"
+  - The draft outlook shows no estimate (instead of 50%) when no hero data is available
+  - Watch live: "Storm Spirit mid" no longer links to Team Spirit's game
+  - Weekly goals: a win rate shown as 60% meets a 60% goal; hero goals say they count ranked games
+  - The AI coach labels party play by the app's one rule (non-matchmaking lobbies are unknown)
+  - Removing a group member gives the group a new invite link
+  - Meta page: STRATZ is asked at most every 5 minutes while it's failing
+  - Dependencies: fast-uri 3.1.9 (moderate advisory)
+- Hero guides: item builds from STRATZ's high-rank pubs for each position the hero is played in (tabs), with the typical purchase minute and the win rate of games that bought each item; pro builds when STRATZ can't answer
 - Admin page redesign: health at a glance (jobs, alerts, errors, Plus) linking to each section, one compact metrics bar without repeats, users as cards on phones, operations in a side column
 - Plus (before launch): Plus lapses 3 days after a renewal date with no word from Lemon Squeezy (a lost webhook can't mean Plus forever), and the owner gets an alert for every refund
 - Plus (before launch): a payment event can no longer be lost when Lemon Squeezy retries during a slow delivery, no second subscription while a renewal is still being retried, and the yearly plan now says "2 months free" (the "37% less" was wrong for peso prices)

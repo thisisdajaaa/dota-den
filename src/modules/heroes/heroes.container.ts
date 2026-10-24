@@ -13,10 +13,9 @@ import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";
 export const heroesService = lazy(() => {
   return new HeroesService({
     own: {
-      games: async (accountId32) =>
-        (
-          await matchQueries.dashboardFacts(accountId32, { range: "all", mode: "all" }, new Date())
-        ).facts.map((f) => ({
+      // The whole history (the dashboard's query stops at the newest 5,000 games).
+      games: async (accountId32, heroId) =>
+        (await matchQueries.heroFacts(accountId32, heroId)).map((f) => ({
           matchId: f.matchId,
           heroId: f.heroId,
           startedAt: f.startedAt,

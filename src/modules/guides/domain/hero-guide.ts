@@ -1,7 +1,8 @@
 /**
  * Hero guides (pure). Everything here is what pros and strong players actually did, as
- * OpenDota reports it; nothing is invented. Item popularity comes from professional games,
- * benchmarks from recent public games on the hero, split by percentile.
+ * STRATZ and OpenDota report it; nothing is invented. Item builds come from a week of
+ * Legend–Immortal pubs per position (STRATZ), or from pro games (OpenDota) when STRATZ can't
+ * answer; benchmarks from recent public games on the hero, split by percentile.
  */
 
 export const PHASES = ["start", "early", "mid", "late"] as const;
@@ -9,10 +10,109 @@ export type Phase = (typeof PHASES)[number];
 
 export interface ItemPick {
   itemId: number;
-  /** Times bought in this phase across the recent pro games OpenDota analysed. */
+  /** Times bought in this phase (pro games), or games that bought it (pubs). */
   count: number;
   /** Relative to the phase's most-bought item (1 = the most bought). */
   relative: number;
+  /** Pubs only: share of the games that bought it which were won. */
+  winRate?: number;
+  /** Pubs only: the minute by which half of its purchases were made. */
+  minute?: number;
+}
+
+export type Position = 1 | 2 | 3 | 4 | 5;
+
+/** One item at one position in pub games (from the item source). */
+export interface PubItem {
+  itemId: number;
+  games: number;
+  wins: number;
+  minute: number | null;
+}
+
+/** A hero's pub games at one position, with what was bought. */
+export interface PubBuild {
+  position: Position;
+  games: number;
+  wins: number;
+  items: readonly PubItem[];
+  starting: readonly PubItem[];
+}
+
+/** Where the item lists come from. */
+export type ItemSource =
+  | {
+      source: "pubs";
+      position: Position;
+      /** Positions the hero is really played in, most played first. */
+      positions: { position: Position; games: number; share: number }[];
+    }
+  | { source: "pro" };
+
+/** A position is offered when at least this share of the hero's games are played there… */
+export const MIN_POSITION_SHARE = 0.1;
+/** …and it has at least this many games. */
+export const MIN_POSITION_GAMES = 1_000;
+/** Items bought in fewer games than this share of the position's games are left out. */
+const MIN_ITEM_SHARE = 0.02;
+/** Phase boundaries in minutes (by the typical purchase minute). */
+export const EARLY_UNTIL = 10;
+export const MID_UNTIL = 25;
+
+/** Positions worth a tab, most played first. */
+export function playedPositions(
+  builds: readonly PubBuild[],
+): { position: Position; games: number; share: number }[] {
+  const total = builds.reduce((n, b) => n + b.games, 0);
+  if (total === 0) return [];
+  return builds
+    .map((b) => ({ position: b.position, games: b.games, share: b.games / total }))
+    .filter((p) => p.share >= MIN_POSITION_SHARE && p.games >= MIN_POSITION_GAMES)
+    .sort((a, b) => b.games - a.games);
+}
+
+/**
+ * A position's build by phase: the starting items, then completed items by the minute they're
+ * typically bought (early before 10, mid until 25, late after). Most-bought first; rarely
+ * bought items and anything `exclude` names (consumables, plain components) are left out.
+ */
+export function pubPhases(
+  build: PubBuild,
+  exclude: (itemId: number) => boolean,
+  limit = 6,
+): Record<Phase, ItemPick[]> {
+  const floor = Math.max(1, build.games * MIN_ITEM_SHARE);
+  const pick = (rows: readonly PubItem[]): ItemPick[] => {
+    const top = [...rows]
+      .filter((r) => r.games >= floor && r.wins <= r.games)
+      .sort((a, b) => b.games - a.games || a.itemId - b.itemId)
+      .slice(0, limit);
+    const most = top[0]?.games ?? 1;
+    return top.map((r) => ({
+      itemId: r.itemId,
+      count: r.games,
+      relative: r.games / most,
+      winRate: r.wins / r.games,
+      ...(r.minute === null ? {} : { minute: r.minute }),
+    }));
+  };
+  const timed = build.items.filter((i) => i.minute !== null && !exclude(i.itemId));
+  return {
+    start: pick(build.starting),
+    early: pick(timed.filter((i) => i.minute! < EARLY_UNTIL)),
+    mid: pick(timed.filter((i) => i.minute! >= EARLY_UNTIL && i.minute! < MID_UNTIL)),
+    late: pick(timed.filter((i) => i.minute! >= MID_UNTIL)),
+  };
+}
+
+/**
+ * Items that aren't part of a build list after the start: consumables, secret-shop parts and
+ * plain components (a Blink Dagger, a component that's an item in its own right, stays).
+ */
+export function isBuildFiller(item: { qual: string | null; cost: number | null } | undefined) {
+  if (!item) return false;
+  if (item.qual === "consumable" || item.qual === "secret_shop") return true;
+  return item.qual === "component" && (item.cost ?? 0) < 2_000;
 }
 
 export const BENCH_STATS = [

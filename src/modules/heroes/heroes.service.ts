@@ -63,7 +63,7 @@ export class HeroesService {
   /** Your record and win-rate trend on one hero (from your imported games). */
   /** `timeZone` is the viewer's, for the win rate trend's day boundaries. */
   async overview(accountId32: number, heroId: number, timeZone: string): Promise<HeroOverview> {
-    const games: HeroGame[] = (await this.deps.own.games(accountId32)).filter(
+    const games: HeroGame[] = (await this.deps.own.games(accountId32, heroId)).filter(
       (g) => g.heroId === heroId,
     );
     return {
