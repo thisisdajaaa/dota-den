@@ -21,6 +21,8 @@ export function safeReturnPath(raw: unknown): string | null {
   }
   if (url.origin !== PROBE_ORIGIN) return null;
   if (url.pathname === "/api" || url.pathname.startsWith("/api/")) return null;
+  // Resolving can turn "/.//evil.com" or "/%2e//evil.com" into "//evil.com": check again.
+  if (url.pathname.startsWith("//")) return null;
   return `${url.pathname}${url.search}${url.hash}`;
 }
 

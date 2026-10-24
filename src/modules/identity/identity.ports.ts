@@ -8,6 +8,7 @@ export type IdentityVerificationError =
   | { type: "return_to_mismatch" }
   | { type: "missing_signed_fields"; missing: string[] }
   | { type: "invalid_claimed_id" }
+  | { type: "duplicate_parameter"; key: string }
   | { type: "stale_nonce" }
   | { type: "replayed_nonce" }
   | { type: "provider_rejected" }

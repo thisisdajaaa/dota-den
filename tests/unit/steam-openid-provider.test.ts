@@ -127,6 +127,40 @@ describe("SteamOpenIdProvider.verifyCallback", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("refuses a callback that repeats an openid field (sign-in as someone else)", async () => {
+    const VICTIM = "76561197960265728";
+    // The attacker's own, genuinely signed callback, with the victim's id slipped in first:
+    // checks that read the first value would see the victim; Steam would verify the last.
+    const real = validParams();
+    const forged = new URLSearchParams();
+    forged.append("openid.claimed_id", `https://steamcommunity.com/openid/id/${VICTIM}`);
+    forged.append("openid.identity", `https://steamcommunity.com/openid/id/${VICTIM}`);
+    for (const [k, v] of real) forged.append(k, v);
+    const { provider, fetch } = setup();
+    const result = await verify(provider, forged);
+    expect(result).toEqual({
+      ok: false,
+      error: { type: "duplicate_parameter", key: "openid.claimed_id" },
+    });
+    // Refused before Steam is even asked.
+    expect(fetch).not.toHaveBeenCalled();
+    // Any repeated openid field, not only the id.
+    const twice = validParams();
+    twice.append("openid.response_nonce", twice.get("openid.response_nonce")!);
+    expect((await verify(setup().provider, twice)).ok).toBe(false);
+  });
+
+  it("asks Steam about exactly the values it checked", async () => {
+    const { provider, fetch } = setup();
+    const params = validParams();
+    params.append("utm_source", "x");
+    await verify(provider, params);
+    const sent = new URLSearchParams(fetch.mock.calls[0][1].body as string);
+    expect(sent.get("openid.claimed_id")).toBe(params.get("openid.claimed_id"));
+    expect(sent.getAll("openid.claimed_id")).toHaveLength(1);
+    expect(sent.has("utm_source")).toBe(false);
+  });
+
   it("rejects when Steam says the assertion is invalid", async () => {
     const { provider } = setup({
       steamReply: "ns:http://specs.openid.net/auth/2.0\nis_valid:false\n",
