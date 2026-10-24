@@ -34,6 +34,12 @@ export function SiteFooter({ showPlus = false }: { showPlus?: boolean }) {
             >
               {t("common.footer.refunds")}
             </Link>
+            <Link
+              href="/privacy"
+              className="relative hover:text-foreground hover:underline touch:tap-area"
+            >
+              {t("common.footer.privacy")}
+            </Link>
           </nav>
         </div>
         <LanguageSwitcher />

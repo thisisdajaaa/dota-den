@@ -20,29 +20,30 @@ constructors. `.env.example` lists every variable with its default.
 
 ## Upstreams and auth
 
-| Variable                             | Type                    | Default          | Used for                                                                                     |
-| ------------------------------------ | ----------------------- | ---------------- | -------------------------------------------------------------------------------------------- |
-| `OPENDOTA_API_KEY`                   | secret                  | unset            | Higher OpenDota limits; sent as the `api_key` query parameter (logs record paths only)       |
-| `OPENDOTA_BASE_URL`                  | URL                     | public API       | Tests point this at the fixture server                                                       |
-| `VALVE_DATAFEED_BASE_URL`            | URL                     | Valve's datafeed | Tests point this at the fixture server                                                       |
-| `STEAM_WEB_API_KEY`                  | secret                  | unset            | "Friends playing now" on the overview (Steam presence). Unset: the strip is hidden           |
-| `STEAM_API_BASE_URL`                 | URL                     | Steam Web API    | Tests point this at the fixture server                                                       |
-| `STRATZ_API_TOKEN`                   | secret                  | unset            | Per-position public stats on the Meta page (ADR 0008 addendum). Unset: OpenDota lanes only   |
-| `STRATZ_API_BASE_URL`                | URL                     | STRATZ's API     | Tests point this at the fixture server (`<base>/graphql`)                                    |
-| `TWITCH_CLIENT_ID`                   | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                           |
-| `TWITCH_CLIENT_SECRET`               | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only               |
-| `KICK_CLIENT_ID`                     | string                  | unset            | Kick app: Kick's live Dota 2 streams on `/live`, next to Twitch's (with the secret)          |
-| `KICK_CLIENT_SECRET`                 | secret                  | unset            | Kick app secret. Unset: `/live` lists Twitch only                                            |
-| `KICK_API_BASE_URL`, `KICK_AUTH_URL` | URL                     | Kick's API       | Tests point these at the fixture server                                                      |
-| `VAPID_PUBLIC_KEY`                   | string                  | unset            | Web Push public key (`npx web-push generate-vapid-keys`). Set both VAPID keys, or neither    |
-| `VAPID_PRIVATE_KEY`                  | secret                  | unset            | Web Push private key. Unset: notifications are off and the Account page says so (ADR 0010)   |
-| `VAPID_SUBJECT`                      | `mailto:` or `https:`   | `APP_URL`        | Contact for push services                                                                    |
-| `GROQ_API_KEY`                       | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review |
-| `ADMIN_STEAM_IDS`                    | comma list of SteamID64 | empty            | Users granted the admin role (manual patch import)                                           |
-| `CRON_SECRET`                        | secret, 16+ chars       | unset            | Bearer secret Vercel Cron sends to `/api/cron/*`. Unset disables cron routes (503)           |
-| `ADMIN_ALERT_WEBHOOK_URL`            | Discord webhook URL     | unset            | Owner alerts also go to this Discord channel. Only `https://discord.com/api/webhooks/…` URLs |
-| `AUTH_TEST_MODE`                     | `true`/`false`          | `false`          | Fake identity provider for E2E and local dev. Refused when `NODE_ENV=production`             |
-| `FEATURE_DRAFT_ROOMS`                | `true`/`false`          | `true`           | Multiplayer draft rooms on or off                                                            |
+| Variable                             | Type                    | Default          | Used for                                                                                                                                                              |
+| ------------------------------------ | ----------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENDOTA_API_KEY`                   | secret                  | unset            | Higher OpenDota limits; sent as the `api_key` query parameter (logs record paths only)                                                                                |
+| `OPENDOTA_BASE_URL`                  | URL                     | public API       | Tests point this at the fixture server                                                                                                                                |
+| `VALVE_DATAFEED_BASE_URL`            | URL                     | Valve's datafeed | Tests point this at the fixture server                                                                                                                                |
+| `STEAM_WEB_API_KEY`                  | secret                  | unset            | "Friends playing now" on the overview (Steam presence). Unset: the strip is hidden                                                                                    |
+| `STEAM_API_BASE_URL`                 | URL                     | Steam Web API    | Tests point this at the fixture server                                                                                                                                |
+| `STRATZ_API_TOKEN`                   | secret                  | unset            | Per-position public stats on the Meta page (ADR 0008 addendum). Unset: OpenDota lanes only                                                                            |
+| `STRATZ_API_BASE_URL`                | URL                     | STRATZ's API     | Tests point this at the fixture server (`<base>/graphql`)                                                                                                             |
+| `TWITCH_CLIENT_ID`                   | string                  | unset            | Twitch app: find and embed streams of live games (with the secret)                                                                                                    |
+| `TWITCH_CLIENT_SECRET`               | secret                  | unset            | Twitch app secret. Unset: live games show Twitch and YouTube search links only                                                                                        |
+| `KICK_CLIENT_ID`                     | string                  | unset            | Kick app: Kick's live Dota 2 streams on `/live`, next to Twitch's (with the secret)                                                                                   |
+| `KICK_CLIENT_SECRET`                 | secret                  | unset            | Kick app secret. Unset: `/live` lists Twitch only                                                                                                                     |
+| `KICK_API_BASE_URL`, `KICK_AUTH_URL` | URL                     | Kick's API       | Tests point these at the fixture server                                                                                                                               |
+| `VAPID_PUBLIC_KEY`                   | string                  | unset            | Web Push public key (`npx web-push generate-vapid-keys`). Set both VAPID keys, or neither                                                                             |
+| `VAPID_PRIVATE_KEY`                  | secret                  | unset            | Web Push private key. Unset: notifications are off and the Account page says so (ADR 0010)                                                                            |
+| `VAPID_SUBJECT`                      | `mailto:` or `https:`   | `APP_URL`        | Contact for push services                                                                                                                                             |
+| `GROQ_API_KEY`                       | secret                  | unset            | Language model for the AI captain and AI review. Without it: data-only captain, no AI review                                                                          |
+| `ADMIN_STEAM_IDS`                    | comma list of SteamID64 | empty            | Users granted the admin role (manual patch import)                                                                                                                    |
+| `CRON_SECRET`                        | secret, 16+ chars       | unset            | Bearer secret Vercel Cron sends to `/api/cron/*`. Unset disables cron routes (503)                                                                                    |
+| `SUPPORT_EMAIL`                      | email address           | unset            | Public contact shown as a mailto link on `/privacy`, `/terms` and `/refunds`. Unset: those pages point to the self-service Account page (download and delete) instead |
+| `ADMIN_ALERT_WEBHOOK_URL`            | Discord webhook URL     | unset            | Owner alerts also go to this Discord channel. Only `https://discord.com/api/webhooks/…` URLs                                                                          |
+| `AUTH_TEST_MODE`                     | `true`/`false`          | `false`          | Fake identity provider for E2E and local dev. Refused when `NODE_ENV=production`                                                                                      |
+| `FEATURE_DRAFT_ROOMS`                | `true`/`false`          | `true`           | Multiplayer draft rooms on or off                                                                                                                                     |
 
 ## AI
 

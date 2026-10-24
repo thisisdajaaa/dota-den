@@ -3,7 +3,8 @@
  *
  * DRAFT (legal): the `terms` and `refunds` texts below are plain-language drafts for the owner
  * to review before Plus goes on sale. They are not legal advice. Check them against Lemon
- * Squeezy's own buyer terms and refund policy, and fill in a contact address.
+ * Squeezy's own buyer terms and refund policy. The contact section under them comes from
+ * SUPPORT_EMAIL (common.legal.contact).
  */
 export const plus = {
   badge: {
@@ -91,9 +92,10 @@ export const plus = {
       limitsA:
         "Nothing is deleted. You just can't add more until you're under the free limit again.",
     },
-    legal: "Read the {terms} and the {refunds}.",
+    legal: "Read the {terms}, the {refunds} and the {privacy}.",
     termsLink: "terms",
     refundsLink: "refund policy",
+    privacyLink: "privacy policy",
   },
   card: {
     title: "Your plan",

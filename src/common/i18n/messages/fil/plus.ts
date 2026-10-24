@@ -88,9 +88,10 @@ export const plus: MessageTree<typeof en> = {
       limitsA:
         "Walang mabubura. Hindi ka lang makakapagdagdag hangga't hindi ka bumababa sa libreng limit.",
     },
-    legal: "Basahin ang {terms} at ang {refunds}.",
+    legal: "Basahin ang {terms}, ang {refunds} at ang {privacy}.",
     termsLink: "mga tuntunin",
     refundsLink: "patakaran sa refund",
+    privacyLink: "patakaran sa privacy",
   },
   card: {
     title: "Ang plan mo",

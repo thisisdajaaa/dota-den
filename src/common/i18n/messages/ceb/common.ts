@@ -45,9 +45,20 @@ export const common: MessageTree<typeof en> = {
   footer: {
     terms: "Mga termino",
     refunds: "Refund",
+    privacy: "Privacy",
     legal: "Legal",
     disclaimer:
       "Ang Dota Den kay dili opisyal nga proyekto sa mga fan. Dili kini konektado o gi-endorso sa Valve Corporation. Ang Dota 2 kay rehistradong trademark sa Valve Corporation. Ang data sa mga duwa gikan sa OpenDota kung naa; ang patch notes naka-link sa opisyal nga gigikanan niini.",
+  },
+  legal: {
+    accountLink: "Account page",
+    contact: {
+      title: "Kontaka mi",
+      email:
+        "Naa kay pangutana bahin niini nga page o sa imong data? Pag-email sa {email}. Mahimo usab nimo nga i-download o i-delete ang imong data mismo sa {account}.",
+      fallback:
+        "Wala pay support inbox ang Dota Den. Dili nimo kinahanglan mangayo kanamo aron makita o matangtang ang imong data: mahimo nimong i-download o i-delete tanan niini mismo sa {account}. Para sa bayad o refund, pag-reply sa imong resibo gikan sa Lemon Squeezy.",
+    },
   },
   datePicker: {
     pick: "Pagpili og petsa",

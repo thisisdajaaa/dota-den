@@ -31,6 +31,7 @@ export const home: MessageTree<typeof en> = {
     body: "Tingnan kung paano ka talaga maglaro nang solo kumpara sa stack mo, ano ang binago ng bawat patch sa mga hero mo, at mag-practice ng draft bago ang larong mahalaga.",
     signIn: "Mag-sign in gamit ang Steam",
     privacy: "Hindi namin nakikita ang password mo. Private ang data mo bilang default.",
+    privacyLink: "Paano namin hinahawakan ang data mo",
     lookupLabel: "O hanapin ang kahit sinong player, kahit hindi naka-sign in",
     example: "Tingnan ang halimbawang profile",
     exampleWho: "Yatoro, isang pro carry",

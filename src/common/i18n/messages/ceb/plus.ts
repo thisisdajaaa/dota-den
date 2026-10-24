@@ -88,9 +88,10 @@ export const plus: MessageTree<typeof en> = {
       limitsQ: "Unsa ang mahitabo sa akong dugang nga follow kung matapos ang Plus?",
       limitsA: "Walay mapapas. Dili ka lang makadugang hangtod mous-os ka sa libreng limit.",
     },
-    legal: "Basaha ang {terms} ug ang {refunds}.",
+    legal: "Basaha ang {terms}, ang {refunds} ug ang {privacy}.",
     termsLink: "mga termino",
     refundsLink: "palisiya sa refund",
+    privacyLink: "palisiya sa privacy",
   },
   card: {
     title: "Imong plan",

@@ -81,6 +81,10 @@ describe("PlusPricing", () => {
     expect(screen.getByText(/Track up to 200 players, follow 200 channels/)).toBeVisible();
     expect(screen.getByRole("link", { name: "terms" })).toHaveAttribute("href", "/terms");
     expect(screen.getByRole("link", { name: "refund policy" })).toHaveAttribute("href", "/refunds");
+    expect(screen.getByRole("link", { name: "privacy policy" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
   });
 
   it("asks guests to sign in first and tells subscribers they have it", () => {

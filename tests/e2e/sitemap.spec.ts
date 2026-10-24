@@ -11,7 +11,17 @@ test("robots.txt points to a sitemap of public pages, hero guides and patches", 
   const res = await request.get("/sitemap.xml");
   expect(res.ok()).toBe(true);
   const xml = await res.text();
-  for (const path of ["/meta", "/guides", "/patches", "/draft", "/live", "/players"])
+  for (const path of [
+    "/meta",
+    "/guides",
+    "/patches",
+    "/draft",
+    "/live",
+    "/players",
+    "/privacy",
+    "/terms",
+    "/refunds",
+  ])
     expect(xml).toContain(`${path}</loc>`);
   // The fixture's hero catalog and stored patches.
   expect(xml).toMatch(/\/guides\/\d+<\/loc>/);

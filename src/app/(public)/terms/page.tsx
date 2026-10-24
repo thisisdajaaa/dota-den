@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { env } from "@/common/config/env";
 import { getT } from "@/common/i18n/server";
 import { LegalPage } from "@/modules/plus/ui/legal-page";
 
@@ -6,9 +7,9 @@ import { LegalPage } from "@/modules/plus/ui/legal-page";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("plus.terms.title") };
+  return { title: t("plus.terms.title"), alternates: { canonical: "/terms" } };
 }
 
 export default function Page() {
-  return <LegalPage doc="terms" />;
+  return <LegalPage doc="terms" supportEmail={env().SUPPORT_EMAIL ?? null} />;
 }

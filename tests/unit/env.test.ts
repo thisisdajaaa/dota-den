@@ -26,6 +26,16 @@ describe("parseEnv", () => {
     );
   });
 
+  it("treats SUPPORT_EMAIL as an optional, validated email address", () => {
+    expect(parseEnv(base).SUPPORT_EMAIL).toBeUndefined();
+    expect(parseEnv({ ...base, SUPPORT_EMAIL: "" }).SUPPORT_EMAIL).toBeUndefined();
+    expect(parseEnv({ ...base, SUPPORT_EMAIL: "help@example.com" }).SUPPORT_EMAIL).toBe(
+      "help@example.com",
+    );
+    for (const bad of ["help", "help@", "Dota Den <help@example.com>", "mailto:help@example.com"])
+      expect(() => parseEnv({ ...base, SUPPORT_EMAIL: bad })).toThrow(/SUPPORT_EMAIL/);
+  });
+
   it("refuses AUTH_TEST_MODE in production", () => {
     expect(() => parseEnv({ ...base, NODE_ENV: "production", AUTH_TEST_MODE: "true" })).toThrow(
       /AUTH_TEST_MODE/,

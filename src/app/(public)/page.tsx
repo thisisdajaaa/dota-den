@@ -371,7 +371,12 @@ export default async function LandingPage({ searchParams }: PageProps<"/">) {
                 </a>
               </Button>
             )}
-            <span className="text-xs text-muted-foreground">{t("home.hero.privacy")}</span>
+            <span className="text-xs text-muted-foreground">
+              {t("home.hero.privacy")}{" "}
+              <Link href="/privacy" className="text-gold hover:underline">
+                {t("home.hero.privacyLink")}
+              </Link>
+            </span>
           </div>
           <div className="max-w-xl space-y-3 border-t border-white/[0.06] pt-6">
             <PlayerSearchForm variant="inline" label={t("home.hero.lookupLabel")} />

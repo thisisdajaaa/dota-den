@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { E2E_CRON_SECRET } from "./tests/e2e/support/cron";
 import { E2E_PLUS_CHECKOUT, E2E_PLUS_WEBHOOK_SECRET } from "./tests/e2e/support/plus-webhook";
 import { E2E_RESEND_WEBHOOK_SECRET } from "./tests/e2e/support/resend-webhook";
+import { E2E_SUPPORT_EMAIL } from "./tests/e2e/support/legal";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
@@ -89,6 +90,8 @@ export default defineConfig({
         EMAIL_TOKEN_SECRET: "",
         // Bounce and complaint webhooks: tests sign fake Resend events with this test secret.
         RESEND_WEBHOOK_SECRET: E2E_RESEND_WEBHOOK_SECRET,
+        // The legal pages show this contact address (the second server leaves it unset).
+        SUPPORT_EMAIL: E2E_SUPPORT_EMAIL,
         // Cron routes and the backup report (tests send this as the bearer secret).
         CRON_SECRET: E2E_CRON_SECRET,
         // Never post owner alerts to a real Discord channel from tests.
@@ -142,6 +145,7 @@ export default defineConfig({
         EMAIL_FROM: "",
         RESEND_WEBHOOK_SECRET: "",
         ADMIN_ALERT_WEBHOOK_URL: "",
+        SUPPORT_EMAIL: "",
         BILLING_PROVIDER: "",
         PLUS_ENABLED: "",
         LEMONSQUEEZY_WEBHOOK_SECRET: "",

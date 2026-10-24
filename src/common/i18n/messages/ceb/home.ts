@@ -31,6 +31,7 @@ export const home: MessageTree<typeof en> = {
     body: "Tan-awa kung giunsa nimo pagdula gyud nga solo kontra sa imong stack, unsa ang giusab sa matag patch sa imong mga hero, ug pag-practice og draft una sa duwa nga importante.",
     signIn: "Mo-sign in pinaagi sa Steam",
     privacy: "Dili namo makita ang imong password. Private ang imong data isip default.",
+    privacyLink: "Unsaon namo pagdumala ang imong data",
     lookupLabel: "O pangitaa ang bisan kinsa nga player, bisan wala naka-sign in",
     example: "Tan-awa ang pananglitan nga profile",
     exampleWho: "Yatoro, usa ka pro carry",
