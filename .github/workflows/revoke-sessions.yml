@@ -1,0 +1,51 @@
+name: Revoke all sessions
+
+# Emergency tool: signs everyone out by deleting every session (and pending sign-in nonce) in
+# one environment's database. Everyone simply signs in with Steam again. Run it by hand from
+# the Actions tab after a security fix to sign-in, or if a session token may have leaked.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Which database"
+        type: choice
+        options: [production, staging]
+        required: true
+      confirm:
+        description: 'Type "sign everyone out" to confirm'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  revoke:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 5
+    steps:
+      - name: Check the confirmation
+        if: inputs.confirm != 'sign everyone out'
+        run: |
+          echo "::error::Type exactly: sign everyone out"
+          exit 1
+
+      - name: Delete every session
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB_NAME: ${{ vars.MONGODB_DB_NAME || 'dota_den' }}
+        run: |
+          set -euo pipefail
+          test -n "$MONGODB_URI" || { echo "::error::MONGODB_URI is not set"; exit 1; }
+          mkdir -p /tmp/revoke && cd /tmp/revoke
+          npm init -y >/dev/null && npm install --silent mongodb@7.7.0
+          node --input-type=module -e '
+            import { MongoClient } from "mongodb";
+            const client = new MongoClient(process.env.MONGODB_URI);
+            await client.connect();
+            const db = client.db(process.env.MONGODB_DB_NAME);
+            const sessions = await db.collection("auth_sessions").deleteMany({});
+            const nonces = await db.collection("auth_nonces").deleteMany({});
+            console.log(`${process.env.MONGODB_DB_NAME}: ${sessions.deletedCount} sessions and ${nonces.deletedCount} sign-in nonces deleted`);
+            await client.close();
+          '
