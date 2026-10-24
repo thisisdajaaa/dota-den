@@ -31,8 +31,9 @@ behind a provider-agnostic `BillingProvider` port. The first adapter is Lemon Sq
     (free: one new review per rolling 7 days; the coach is new, nothing free became paid), a
     faster history import and automatic parse requests for new games, inside the same global
     budgets.
-- Display prices **$3.99/month** and **$29.99/year** (US dollars). The provider charges, may show
-  local currency and adds tax; the page says so.
+- Display prices **₱299/month** and **₱2,990/year** (Philippine pesos; the yearly plan is ten
+  months' price, "2 months free"). The provider charges, may show local currency and adds tax;
+  the page says so. (First drafted as $3.99 / $29.99; switched to pesos on 2026-10-23.)
 
 ### Verified provider facts (Lemon Squeezy docs, read 2026-10-23)
 

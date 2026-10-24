@@ -7,7 +7,7 @@ import {
   type WebhookEventDocument,
   type WebhookEventOutcome,
 } from "../plus.model";
-import type { WebhookEventsPort } from "../plus.ports";
+import type { WebhookClaim, WebhookEventsPort } from "../plus.ports";
 
 /**
  * Kept 90 days: long past any provider retry, so a replay inside that window is a no-op, and a
@@ -32,11 +32,13 @@ export class WebhookEventsRepository implements WebhookEventsPort {
     await col.createIndex({ userId: 1 }, { name: "by_user", sparse: true });
   }
 
-  async claim(event: Parameters<WebhookEventsPort["claim"]>[0]): Promise<boolean> {
+  async claim(
+    event: Parameters<WebhookEventsPort["claim"]>[0],
+    staleMs: number,
+  ): Promise<WebhookClaim> {
+    const col = await this.col();
     try {
-      await (
-        await this.col()
-      ).insertOne({
+      await col.insertOne({
         _id: event.id,
         provider: event.provider,
         eventName: event.eventName,
@@ -44,13 +46,31 @@ export class WebhookEventsRepository implements WebhookEventsPort {
         userId: event.userId,
         outcome: "processing",
         receivedAt: event.receivedAt,
+        claimedAt: event.receivedAt,
         schemaVersion: PLUS_SCHEMA_VERSION,
       });
-      return true;
+      return "claimed";
     } catch (error) {
-      if ((error as { code?: number }).code === 11000) return false;
-      throw error;
+      if ((error as { code?: number }).code !== 11000) throw error;
     }
+    // Already received: take it over if its handler died (claimed long ago, never finished).
+    const before = new Date(event.receivedAt.getTime() - staleMs);
+    const taken = await col.findOneAndUpdate(
+      {
+        _id: event.id,
+        outcome: "processing",
+        $or: [
+          { claimedAt: { $lt: before } },
+          { claimedAt: { $exists: false }, receivedAt: { $lt: before } },
+        ],
+      },
+      { $set: { claimedAt: event.receivedAt } },
+    );
+    if (taken) return "claimed";
+    const current = await col.findOne({ _id: event.id }, { projection: { outcome: 1 } });
+    // Released meanwhile (its handler failed): this delivery can't know, so retry later.
+    if (!current) return "in_progress";
+    return current.outcome === "processing" ? "in_progress" : "duplicate";
   }
 
   async finish(id: string, outcome: WebhookEventOutcome, userId?: string | null): Promise<void> {

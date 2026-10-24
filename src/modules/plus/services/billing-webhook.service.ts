@@ -1,4 +1,9 @@
-import { NotFoundError, UnauthorizedError, ValidationError } from "@/common/errors/app-error";
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "@/common/errors/app-error";
 import type { Logger } from "@/common/logging/logger";
 import { applySnapshot } from "../domain/subscription";
 import type {
@@ -10,6 +15,12 @@ import type {
 } from "../plus.ports";
 import type { WebhookEventOutcome } from "../plus.model";
 import type { WebhookResultDto } from "../dtos/responses/plus.dto";
+
+/**
+ * A claim older than this was left by a delivery that died (functions stop after 60 s): the
+ * next delivery takes it over instead of acknowledging an event nobody applied.
+ */
+export const WEBHOOK_CLAIM_STALE_MS = 2 * 60_000;
 
 /** A webhook request as it arrived: the exact body bytes and a header lookup. */
 export interface BillingWebhookRequest {
@@ -64,15 +75,22 @@ export class BillingWebhookService {
     const subscriptionId =
       event.kind === "subscription" ? event.snapshot.subscriptionId : event.subscriptionId;
     const userId = event.kind === "subscription" ? event.snapshot.userId : event.userId;
-    const claimed = await this.deps.events.claim({
-      id: event.eventId,
-      provider: provider.name,
-      eventName: event.eventName,
-      subscriptionId,
-      userId,
-      receivedAt: now,
-    });
-    if (!claimed) return { outcome: "duplicate" };
+    const claim = await this.deps.events.claim(
+      {
+        id: event.eventId,
+        provider: provider.name,
+        eventName: event.eventName,
+        subscriptionId,
+        userId,
+        receivedAt: now,
+      },
+      WEBHOOK_CLAIM_STALE_MS,
+    );
+    if (claim === "duplicate") return { outcome: "duplicate" };
+    // Still being handled by another delivery: answer with an error so the provider retries
+    // (acknowledging it would lose the event if that delivery then fails).
+    if (claim === "in_progress")
+      throw new ConflictError("This event is still being handled.", { reason: "in_progress" });
 
     try {
       const { outcome, linkedUser } = await this.handle(provider, event, now);

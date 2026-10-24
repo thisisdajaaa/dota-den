@@ -62,12 +62,14 @@ export const plus = {
     yearly: "Yearly",
     perMonth: "per month",
     perYear: "per year",
-    yearlySaving: "About 37% less than paying monthly",
+    yearlySaving: "2 months free compared with paying monthly",
     subscribe: "Get Plus",
     subscribeMonthly: "Get Plus monthly",
     subscribeYearly: "Get Plus yearly",
     signIn: "Sign in with Steam to get Plus",
     youHavePlus: "You have Plus. Thank you!",
+    stillBilling:
+      "You still have a Plus subscription: a payment didn't go through, or it's paused. Update your card or resume it from your account page instead of starting a new one, so you're never charged twice.",
     manage: "Manage your plan",
     notes: {
       currency:

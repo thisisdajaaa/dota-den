@@ -136,13 +136,22 @@ export class PlusService {
     };
   }
 
-  /** The provider's checkout for this player. Refused when Plus isn't on sale or they have it. */
+  /**
+   * The provider's checkout for this player. Refused when Plus isn't on sale, when they have
+   * it, and while a subscription of theirs can still charge (a failed renewal being retried,
+   * paused, unpaid): a second purchase then could bill them twice.
+   */
   async checkoutUrl(userId: string, plan: Plan): Promise<string> {
     const provider = this.deps.provider;
     if (!this.enabled || !provider || !provider.plans.includes(plan))
       throw new NotFoundError("Plus isn't available here yet.");
     if (await this.isPlus(userId))
       throw new ConflictError("You already have Plus. Manage it from your account page.");
+    if (stillBills(this.ours(await this.deps.subscriptions.forUser(userId))))
+      throw new ConflictError(
+        "You still have a Plus subscription. Update your payment or resume it from your account page.",
+        { reason: "still_billing" },
+      );
     const url = provider.checkoutUrl(plan, userId);
     if (!url) throw new NotFoundError("Plus isn't available here yet.");
     return url;
@@ -172,7 +181,7 @@ export class PlusService {
 
   async adminCounts(): Promise<PlusAdminCountsDto> {
     const [rows, entitled] = await Promise.all([
-      this.deps.subscriptions.countsByStatus(),
+      this.deps.subscriptions.countsByStatus(this.deps.provider?.testMode ?? null),
       this.configured ? this.plusUserIds() : Promise.resolve([]),
     ]);
     const byStatus = new Map<string, number>();

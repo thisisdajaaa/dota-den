@@ -108,7 +108,9 @@ describe("SubscriptionsRepository (Mongo)", () => {
     expect(entitled).toContain("q1");
     expect(entitled).not.toContain("q2");
     expect(entitled).not.toContain("q3");
-    const counts = await repo.countsByStatus();
+    // All three are live-mode subscriptions: the test-mode count has none of them.
+    expect(await repo.countsByStatus(true)).toEqual([]);
+    const counts = await repo.countsByStatus(false);
     expect(counts).toEqual(
       expect.arrayContaining([
         { status: "expired", linked: true, count: 1 },
@@ -144,29 +146,45 @@ describe("WebhookEventsRepository (Mongo)", () => {
       userId: "u9",
       receivedAt: at("2026-10-23T12:00:00Z"),
     };
-    const claims = await Promise.all([repo.claim(event), repo.claim(event), repo.claim(event)]);
-    expect(claims.filter(Boolean)).toHaveLength(1);
+    const STALE = 120_000;
+    const claims = await Promise.all([
+      repo.claim(event, STALE),
+      repo.claim(event, STALE),
+      repo.claim(event, STALE),
+    ]);
+    expect(claims.filter((c) => c === "claimed")).toHaveLength(1);
+    expect(claims.filter((c) => c === "in_progress")).toHaveLength(2);
+    // A delivery killed mid-way: its claim is taken over once it's older than STALE.
+    const later = { ...event, receivedAt: at("2026-10-23T12:01:00Z") };
+    expect(await repo.claim(later, STALE)).toBe("in_progress");
+    const muchLater = { ...event, receivedAt: at("2026-10-23T12:03:00Z") };
+    expect(await repo.claim(muchLater, STALE)).toBe("claimed");
+    expect(await repo.claim(muchLater, STALE)).toBe("in_progress");
     await repo.finish(event.id, "applied");
+    expect(await repo.claim(muchLater, STALE)).toBe("duplicate");
     const raw = await db
       .collection(PLUS_COLLECTIONS.webhookEvents)
       .findOne({ _id: event.id as never });
     expect(raw).toMatchObject({ outcome: "applied", schemaVersion: 1, userId: "u9" });
     await repo.release(event.id);
-    expect(await repo.claim(event)).toBe(true);
+    expect(await repo.claim(event, STALE)).toBe("claimed");
   });
 
   it("expires events with a TTL and deletes one owner's events", async () => {
     const repo = new WebhookEventsRepository(async () => db);
     const indexes = await db.collection(PLUS_COLLECTIONS.webhookEvents).indexes();
     expect(indexes.find((i) => i.name === "ttl")?.expireAfterSeconds).toBe(90 * 24 * 3600);
-    await repo.claim({
-      id: "lemonsqueezy:del",
-      provider: "lemonsqueezy",
-      eventName: "subscription_updated",
-      subscriptionId: "1",
-      userId: "gone",
-      receivedAt: new Date(),
-    });
+    await repo.claim(
+      {
+        id: "lemonsqueezy:del",
+        provider: "lemonsqueezy",
+        eventName: "subscription_updated",
+        subscriptionId: "1",
+        userId: "gone",
+        receivedAt: new Date(),
+      },
+      120_000,
+    );
     const owner = { userId: "gone", accountId32: 1 };
     expect(await repo.exportForOwner(owner)).toHaveLength(1);
     expect(await repo.deleteForOwner(owner)).toBe(1);

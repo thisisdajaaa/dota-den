@@ -34,5 +34,7 @@ export interface WebhookEventDocument {
   userId: string | null;
   outcome: WebhookEventOutcome;
   receivedAt: Date;
+  /** When the current delivery started handling it (older events: `receivedAt`). */
+  claimedAt?: Date;
   schemaVersion: number;
 }

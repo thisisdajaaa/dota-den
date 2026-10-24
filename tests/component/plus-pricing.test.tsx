@@ -112,6 +112,23 @@ describe("PlusPricing", () => {
     expect(screen.getByText(/You have Plus/)).toBeVisible();
     expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
   });
+
+  it("sends a player whose subscription still bills to their account, not to a second checkout", () => {
+    render(
+      <PlusPricing
+        offer={{ status: "available", plans: ["monthly", "yearly"] }}
+        signedIn
+        plan={{ ...freePlan, reason: "none", status: "paused", stillBills: true }}
+        limits={limits}
+      />,
+    );
+    expect(screen.getByText(/never charged twice/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Manage your plan" })).toHaveAttribute(
+      "href",
+      "/account#plan",
+    );
+    expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
+  });
 });
 
 describe("PlanCard", () => {
