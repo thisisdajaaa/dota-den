@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { laneKey, laneRecord, opposingPositions } from "@/modules/drafts/domain/draft-lanes";
 import { draftOutlook } from "@/modules/drafts/domain/draft-outlook";
+import calibration from "@/modules/drafts/domain/draft-calibration.json";
 import { assignPositions, type PositionTable } from "@/modules/drafts/domain/draft-positions";
 import {
   compositionChecks,
@@ -154,7 +155,16 @@ describe("lanes in the outlook and in picks", () => {
     const safe = res.lanes.find((l) => l.lane === "radiant_safe")!;
     expect(safe).toMatchObject({ source: "pro_lanes", games: 32, wins: 25 });
     expect(res.sides.radiant.lanes).toBeGreaterThan(0);
-    expect(res.radiantPct).toBeGreaterThan(50);
+    // Lanes count in the estimate, with the small weight the calibration gives them.
+    expect(calibration.estimate.weights.lanes).toBeGreaterThan(0);
+    const without = draftOutlook({
+      radiant: [hero(1), hero(5)],
+      dire: [hero(13), hero(14)],
+      meta: new Map(),
+      matchups: new Map(),
+      positions: table,
+    });
+    expect(res.radiantPct).toBeGreaterThanOrEqual(without.radiantPct!);
     expect(res.report.radiant.criteria.find((c) => c.key === "lanes")?.grade).toMatch(/[AB]/);
     expect(res.report.provisional).toBe(true);
   });

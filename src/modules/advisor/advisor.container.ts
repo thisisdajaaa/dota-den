@@ -1,5 +1,6 @@
 import "server-only";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
+import { stratzHeroMatchups } from "@/common/providers/stratz";
 import { metaService } from "@/modules/meta";
 import { lazy } from "@/common/utils/lazy";
 import { AdvisorService } from "./advisor.service";
@@ -7,9 +8,12 @@ import { OpenDotaAdvisorSource } from "./infrastructure/opendota-advisor-source"
 
 export const advisorService = lazy(() => {
   const source = new OpenDotaAdvisorSource(openDotaGateway(), openDotaConfig());
+  const stratz = stratzHeroMatchups();
   return new AdvisorService({
     poolRows: (id, days) => source.poolRows(id, days),
-    matchups: (heroId) => source.matchups(heroId),
+    // The latest full week of Legend–Immortal pubs from STRATZ; OpenDota's pro-only tables when it can't answer.
+    matchups: async (heroId) =>
+      (await stratz?.forHero(heroId).catch(() => null))?.vs ?? source.matchups(heroId),
     role: async (id) => {
       const res = await metaService.userRole(id);
       return res.ok ? res.value.derivation.position : null;

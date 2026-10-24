@@ -6,6 +6,7 @@ import { getDb } from "@/common/db/mongo";
 import { sharedAiBudget } from "@/common/llm/call-budget";
 import { GroqClient, groqChatUrl } from "@/common/llm/groq-client";
 import { logger } from "@/common/logging/logger";
+import { stratzHeroMatchups } from "@/common/providers/stratz";
 import {
   openDotaConfig,
   openDotaExplorerGateway,
@@ -19,6 +20,7 @@ import { BudgetedDraftAdvisor } from "./infrastructure/budgeted-draft-advisor";
 import { GroqDraftAdvisor } from "./infrastructure/groq-draft-advisor";
 import { OpenDotaAbilityCatalog } from "./infrastructure/opendota-ability-catalog";
 import { OpenDotaDraftInsights } from "./infrastructure/opendota-draft-insights";
+import { StratzDraftInsights } from "./infrastructure/stratz-draft-insights";
 import { rankedLineups } from "./infrastructure/opendota-ranked-lineups";
 import { DraftHistoryRepository } from "./repositories/draft-history.repository";
 import { DraftMetaCacheRepository } from "./repositories/draft-meta-cache.repository";
@@ -50,8 +52,17 @@ async function scoringHeroes(): Promise<AiHero[]> {
   }));
 }
 
-/** Tournament and public hero data for the AI captain, cached in MongoDB across instances. */
-export function draftInsights(): OpenDotaDraftInsights {
+/**
+ * Tournament and public hero data for the AI captain, cached in MongoDB across instances.
+ * Public win rates and matchups come from STRATZ when it's set up.
+ */
+export function draftInsights(): OpenDotaDraftInsights | StratzDraftInsights {
+  const openDota = openDotaInsights();
+  const stratz = stratzHeroMatchups();
+  return stratz ? new StratzDraftInsights(stratz, openDota) : openDota;
+}
+
+function openDotaInsights(): OpenDotaDraftInsights {
   const config = env();
   return new OpenDotaDraftInsights(openDotaGateway(), {
     ...openDotaConfig(),

@@ -1,7 +1,8 @@
 /**
  * Fit the draft outlook's weights to real results.
  *
- * Usage: npm run draft:calibrate   (reads OPENDOTA_API_KEY from .env.local if present)
+ * Usage: npm run draft:calibrate   (reads OPENDOTA_API_KEY and STRATZ_API_TOKEN from .env.local
+ * if present; with a STRATZ token, hero win rates and matchups come from STRATZ, as in the app)
  *
  * 1. Recent ranked Divine+ All Pick games (hero picks and the winner) from OpenDota's
  *    explorer.
@@ -30,11 +31,19 @@ import { draftOutlook } from "@/modules/drafts/domain/draft-outlook";
 import { CRITERIA } from "@/modules/drafts/domain/draft-report";
 import type { MatchupTable, ScoringHero } from "@/modules/drafts/domain/draft-scoring";
 import { OpenDotaDraftInsights } from "@/modules/drafts/infrastructure/opendota-draft-insights";
+import { StratzDraftInsights } from "@/modules/drafts/infrastructure/stratz-draft-insights";
 import { ProviderGateway } from "@/common/providers/provider-gateway";
+import { StratzHeroMatchups } from "@/common/providers/stratz-hero-matchups";
 
 const BASE = process.env.OPENDOTA_BASE_URL ?? "https://api.opendota.com/api";
 const KEY = process.env.OPENDOTA_API_KEY;
-const DAYS = Number(process.env.CALIBRATE_DAYS ?? 14);
+const STRATZ_TOKEN = process.env.STRATZ_API_TOKEN;
+/**
+ * With STRATZ, drafts are scored on the full week before last and only games from the 7 days
+ * since are used, so no game is both in the hero data and among the games it's tested on.
+ * (The app reads the latest full week; its drafts are just as new to it.)
+ */
+const DAYS = Number(process.env.CALIBRATE_DAYS ?? (STRATZ_TOKEN ? 7 : 14));
 const LIMIT = Number(process.env.CALIBRATE_GAMES ?? 15_000);
 const OUT = "src/modules/drafts/domain/draft-calibration.json";
 
@@ -78,11 +87,26 @@ async function main() {
     ]),
   );
 
-  const insights = new OpenDotaDraftInsights(gateway, {
+  const openDota = new OpenDotaDraftInsights(gateway, {
     baseUrl: BASE,
     apiKey: KEY,
     budgetMs: 120_000,
   });
+  const insights = STRATZ_TOKEN
+    ? new StratzDraftInsights(
+        new StratzHeroMatchups(
+          new ProviderGateway({ name: "stratz", timeoutMs: 30_000 }),
+          {
+            baseUrl: process.env.STRATZ_API_BASE_URL ?? "https://api.stratz.com",
+            token: STRATZ_TOKEN,
+          },
+          Date.now,
+          2,
+        ),
+        openDota,
+      )
+    : openDota;
+  log(`Hero win rates and matchups from ${STRATZ_TOKEN ? "STRATZ" : "OpenDota"}`);
   const [meta, pro, synergy, positions, lanes] = await Promise.all([
     insights.heroMeta(),
     insights.proMeta(),
@@ -102,7 +126,8 @@ async function main() {
       ids.slice(i, i + 3).map(async (id) => [id, await insights.matchups(id)] as const),
     );
     for (const [id, t] of batch) if (t) matchups.set(id, t);
-    await new Promise((r) => setTimeout(r, KEY ? 100 : 3_100)); // free tier: 60 calls a minute
+    // OpenDota's free tier allows 60 calls a minute; STRATZ answers from its 5 cached chunks.
+    if (!STRATZ_TOKEN) await new Promise((r) => setTimeout(r, KEY ? 100 : 3_100));
   }
   log(`${matchups.size} matchup tables`);
 

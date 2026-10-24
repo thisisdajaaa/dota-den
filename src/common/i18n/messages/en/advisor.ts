@@ -18,6 +18,5 @@ export const advisor = {
   played: { one: "You've played it once lately", other: "You've played it {n} times lately" },
   counts: {
     games: { one: "1 game", other: "{n} games" },
-    proGames: { one: "1 pro game", other: "{n} pro games" },
   },
 } as const;

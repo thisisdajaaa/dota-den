@@ -73,7 +73,7 @@ export async function PoolAdviceCard({
                         <span className="text-foreground">{name(c.nemesisId)}</span>:{" "}
                         {t("advisor.beatsDetail", {
                           rate: formatPercent(c.winRate),
-                          games: plural(t, "advisor.counts.proGames", c.games),
+                          games: plural(t, "advisor.counts.games", c.games),
                           hero: name(c.nemesisId),
                           lossRate: formatPercent(c.yourLossRate),
                         })}

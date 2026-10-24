@@ -13,6 +13,7 @@ import {
   type Benchmark,
   type Counter,
   type ItemPick,
+  type MatchupSource,
   type Phase,
   type ProGame,
 } from "../domain/hero-guide";
@@ -279,28 +280,32 @@ function CounterList({
   );
 }
 
-/** Who the hero beats and who beats it, in pro games. */
+/** Who the hero beats and who beats it, in high-rank pubs (or pro games, when that's the source). */
 export async function Counters({
   counters,
   heroes,
   heroLabel,
 }: {
-  counters: { strongAgainst: Counter[]; weakAgainst: Counter[] } | null;
+  counters: { strongAgainst: Counter[]; weakAgainst: Counter[]; source: MatchupSource } | null;
   heroes: Map<number, HeroInfo>;
   heroLabel: string;
 }) {
   const t = await getT();
   const noneText = t("guides.counters.none");
   const gamesText = (n: number) => plural(t, "guides.counters.games", n);
+  const source = counters?.source ?? "pubs";
   return (
     <section aria-labelledby="guide-counters" className="panel space-y-4 p-5">
       <div>
-        <p className="kicker">{t("guides.counters.kicker")}</p>
+        <p className="kicker">{t(`guides.counters.kicker.${source}`)}</p>
         <h2 id="guide-counters" className="text-lg font-semibold">
           {t("guides.counters.title")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {t("guides.counters.description", { hero: heroLabel, min: MIN_MATCHUP_GAMES })}
+          {t(`guides.counters.description.${source}`, {
+            hero: heroLabel,
+            min: MIN_MATCHUP_GAMES,
+          })}
         </p>
       </div>
       {!counters ? (

@@ -719,6 +719,32 @@ function stratzPositionStats(days) {
   }
   return { data: { heroStats } };
 }
+/**
+ * STRATZ matchups for the requested heroes: the OpenDota fixture's head-to-head skews on top
+ * of each hero's public win rate, so hero strength matches the fixture's heroStats. Ids that
+ * aren't heroes come back empty, as STRATZ answers them.
+ */
+function stratzMatchups(heroIds) {
+  const matchUp = heroIds.map((self) => {
+    if (!HEROES[self]) return { heroId: self, vs: [], with: [] };
+    const rate = self < 100 ? 0.48 : 0.44 + ((self * 7) % 13) / 100;
+    const others = HERO_IDS.filter((other) => other !== self);
+    return {
+      heroId: self,
+      vs: others.map((other) => {
+        const skew = (((self * 31 + other * 17) % 21) - 10) / 200;
+        const matchCount = 3_000 + (other % 5) * 200;
+        return { heroId2: other, matchCount, winCount: Math.round(matchCount * (rate + skew)) };
+      }),
+      with: others.map((other) => ({
+        heroId2: other,
+        matchCount: 600,
+        winCount: Math.round(600 * rate),
+      })),
+    };
+  });
+  return { data: { heroStats: { matchUp } } };
+}
 function stratz(req, res, raw) {
   const send = (status, body) => {
     res.writeHead(status, { "content-type": "application/graphql-response+json; charset=utf-8" });
@@ -734,6 +760,10 @@ function stratz(req, res, raw) {
     body = JSON.parse(raw || "{}");
   } catch {
     return send(400, { errors: [{ message: "Bad JSON" }] });
+  }
+  if (String(body.query ?? "").includes("matchUp")) {
+    const ids = Array.isArray(body.variables?.heroIds) ? body.variables.heroIds.map(Number) : [];
+    return send(200, stratzMatchups(ids));
   }
   if (!String(body.query ?? "").includes("winDay"))
     return send(200, { errors: [{ message: "Unsupported fixture query" }] });
