@@ -1,6 +1,7 @@
 /**
  * Owner alerts (pure rules): when something the owner must fix has gone wrong (a daily job
- * failed or stopped running, OpenDota is down, a backup or restore drill failed), and how
+ * failed or stopped running, OpenDota is down, a backup or restore drill failed, a Plus
+ * payment was refunded), and how
  * often the same problem may be raised.
  */
 
@@ -11,6 +12,7 @@ export const ALERT_KINDS = [
   "cron_stale",
   "opendota_down",
   "backup_failed",
+  "plus_refund",
   "test",
 ] as const;
 export type AlertKind = (typeof ALERT_KINDS)[number];

@@ -100,6 +100,10 @@ export const admin = {
     failed: "Failed",
     viewRun: "View run",
     messages: {
+      plus_refund: {
+        title: "Plus payment refunded",
+        body: "A {event} came in for subscription {subscription}. A refund doesn't end Plus by itself: cancel the subscription in Lemon Squeezy if Plus should stop now.",
+      },
       cron_failed: {
         title: "Daily job failed: {cron}",
         body: "The {cron} run failed: {error}",

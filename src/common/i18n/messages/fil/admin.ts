@@ -102,6 +102,10 @@ export const admin: MessageTree<typeof en> = {
     failed: "Pumalya",
     viewRun: "Tingnan ang run",
     messages: {
+      plus_refund: {
+        title: "Na-refund ang bayad sa Plus",
+        body: "May {event} para sa subscription {subscription}. Hindi natatapos ang Plus dahil lang sa refund: i-cancel ang subscription sa Lemon Squeezy kung dapat nang tumigil ang Plus.",
+      },
       cron_failed: {
         title: "Pumalya ang daily job: {cron}",
         body: "Pumalya ang run ng {cron}: {error}",

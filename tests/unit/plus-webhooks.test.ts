@@ -154,12 +154,14 @@ function setup(opts: { configured?: boolean; testMode?: boolean } = {}) {
     ),
   };
   const p = opts.configured === false ? null : provider({ testMode: opts.testMode ?? false });
+  const alerts = { raise: vi.fn(async (_alert: unknown) => null) };
   const webhooks = new BillingWebhookService({
     provider: p,
     subscriptions,
     events,
     users,
     logger,
+    alerts,
     now: () => NOW,
   });
   const plus = new PlusService({
@@ -175,7 +177,7 @@ function setup(opts: { configured?: boolean; testMode?: boolean } = {}) {
       body,
       header: (name) => (name.toLowerCase() === "x-signature" ? signature : null),
     });
-  return { subscriptions, events, logger, users, webhooks, plus, deliver };
+  return { subscriptions, events, logger, users, webhooks, plus, deliver, alerts };
 }
 
 describe("BillingWebhookService", () => {
@@ -223,6 +225,35 @@ describe("BillingWebhookService", () => {
     // An attacker (or a retry) resending the first, validly signed, body changes nothing.
     expect(await deliver(created)).toEqual({ outcome: "duplicate" });
     expect([...subscriptions.docs.values()][0].status).toBe("cancelled");
+  });
+
+  it("tells the owner about a refund, which doesn't end Plus by itself", async () => {
+    const { deliver, alerts, plus } = setup();
+    await deliver(lsSubscriptionEvent());
+    const refund = JSON.stringify({
+      meta: { event_name: "subscription_payment_refunded", custom_data: { user_id: USER } },
+      data: { type: "subscription-invoices", id: "77", attributes: { subscription_id: 1001 } },
+    });
+    expect(await deliver(refund)).toEqual({ outcome: "ignored" });
+    expect(alerts.raise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "plus_refund",
+        vars: { event: "subscription_payment_refunded", subscription: "1001" },
+      }),
+    );
+    expect(await plus.isPlus(USER)).toBe(true);
+    // A failing alert never fails the webhook.
+    alerts.raise.mockRejectedValueOnce(new Error("push down"));
+    const again = refund.replace('"77"', '"78"');
+    expect(await deliver(again)).toEqual({ outcome: "ignored" });
+    // Other non-subscription events raise nothing.
+    alerts.raise.mockClear();
+    await deliver(
+      refund
+        .replace("subscription_payment_refunded", "subscription_payment_success")
+        .replace('"77"', '"79"'),
+    );
+    expect(alerts.raise).not.toHaveBeenCalled();
   });
 
   it("makes the provider retry while another delivery is still handling the event", async () => {
