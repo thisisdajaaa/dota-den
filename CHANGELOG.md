@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-25
+
+- Security: Steam sign-in refuses callbacks that repeat a field (they could be used to sign in as another player), and return paths that only point elsewhere once resolved are refused
+
 ## 2026-10-24
 
 - Admin page redesign: health at a glance (jobs, alerts, errors, Plus) linking to each section, one compact metrics bar without repeats, users as cards on phones, operations in a side column

@@ -57,4 +57,9 @@ describe("signInHref", () => {
     expect(signInHref("//evil.example")).toBe("/api/v1/auth/steam/login");
     expect(signInHref(undefined)).toBe("/api/v1/auth/steam/login");
   });
+
+  it("refuses paths that only become another host once resolved", () => {
+    for (const raw of ["/.//evil.com", "/..//evil.com", "/%2e//evil.com", "/a/..//evil.com"])
+      expect(safeReturnPath(raw), raw).toBeNull();
+  });
 });

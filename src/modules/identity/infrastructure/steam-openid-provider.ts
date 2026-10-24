@@ -56,6 +56,16 @@ export class SteamOpenIdProvider implements IdentityProvider {
     params: URLSearchParams;
     expectedReturnTo: string;
   }): Promise<Result<SteamId64, IdentityVerificationError>> {
+    // Every check below reads one value per field, and Steam verifies the same values: a
+    // repeated field could let Steam vouch for one value while we accept another (sign-in as
+    // someone else), so a callback that repeats any openid.* field is refused outright.
+    const seen = new Set<string>();
+    for (const key of params.keys()) {
+      if (!key.startsWith("openid.")) continue;
+      if (seen.has(key)) return err({ type: "duplicate_parameter", key });
+      seen.add(key);
+    }
+
     const mode = params.get("openid.mode");
     if (mode !== "id_res") return err({ type: "not_positive_assertion", mode });
 
@@ -105,8 +115,9 @@ export class SteamOpenIdProvider implements IdentityProvider {
   private async checkAuthentication(
     params: URLSearchParams,
   ): Promise<Result<true, IdentityVerificationError>> {
+    // Exactly the values verifyCallback checked (one per field: duplicates were refused).
     const body = new URLSearchParams();
-    for (const [k, v] of params) if (k.startsWith("openid.")) body.set(k, v);
+    for (const [k, v] of params) if (k.startsWith("openid.") && !body.has(k)) body.set(k, v);
     body.set("openid.mode", "check_authentication");
 
     let text: string;
