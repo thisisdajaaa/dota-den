@@ -3,6 +3,7 @@ import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
+import { ownerAlerts } from "@/modules/alerts";
 import { usersService } from "@/modules/identity";
 import { USER_ID_PATTERN } from "./domain/plans";
 import { LemonSqueezyProvider } from "./infrastructure/lemon-squeezy-provider";
@@ -52,6 +53,7 @@ export const billingWebhooks = lazy(
   () =>
     new BillingWebhookService({
       provider: provider.current,
+      alerts: { raise: (alert) => ownerAlerts.raise(alert) },
       subscriptions: subscriptionsRepository,
       events: webhookEventsRepository,
       users: {

@@ -5,6 +5,7 @@ import {
   ValidationError,
 } from "@/common/errors/app-error";
 import type { Logger } from "@/common/logging/logger";
+import type { Alert } from "@/modules/alerts/domain/alert-rules";
 import { applySnapshot } from "../domain/subscription";
 import type {
   BillingEvent,
@@ -51,6 +52,8 @@ export class BillingWebhookService {
       events: WebhookEventsPort;
       users: PlusUserLookup;
       logger: Pick<Logger, "info" | "warn">;
+      /** Tells the owner about refunds (they don't end Plus by themselves). */
+      alerts?: { raise(alert: Alert): Promise<unknown> };
       now?: () => Date;
     },
   ) {
@@ -108,6 +111,17 @@ export class BillingWebhookService {
     }
   }
 
+  /** A refund keeps the subscription (and Plus) going: the owner decides whether to cancel. */
+  private async alertRefund(event: Extract<BillingEvent, { kind: "other" }>): Promise<void> {
+    await this.deps.alerts
+      ?.raise({
+        kind: "plus_refund",
+        key: `plus_refund:${event.eventId}`,
+        vars: { event: event.eventName, subscription: event.subscriptionId ?? "unknown" },
+      })
+      .catch((error: unknown) => this.deps.logger.warn("plus_refund_alert_failed", { error }));
+  }
+
   private async handle(
     provider: BillingProvider,
     event: BillingEvent,
@@ -115,7 +129,10 @@ export class BillingWebhookService {
   ): Promise<{ outcome: Exclude<WebhookEventOutcome, "processing">; linkedUser?: string | null }> {
     // Test purchases never grant Plus on a live deployment, and the other way round.
     if (event.testMode !== provider.testMode) return { outcome: "mode_mismatch" };
-    if (event.kind !== "subscription") return { outcome: "ignored" };
+    if (event.kind !== "subscription") {
+      if (/refund/.test(event.eventName)) await this.alertRefund(event);
+      return { outcome: "ignored" };
+    }
 
     const { snapshot } = event;
     const user = snapshot.userId ? await this.deps.users.byId(snapshot.userId) : null;

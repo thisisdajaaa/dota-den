@@ -2,7 +2,9 @@
  * Who has Plus right now (pure). Computed on the server from stored subscription state only;
  * nothing the browser sends can grant it (ADR 0013).
  *
- * - `active`, `on_trial`: Plus.
+ * - `active`, `on_trial`: Plus, until a few days past the renewal date: a renewal (or its
+ *   failure) always sends a webhook, so with none by then, one was lost and Plus lapses
+ *   instead of lasting forever. The next event restores it.
  * - `past_due`: Plus for a grace period after the first failed renewal, while the provider
  *   retries the card; then free until a payment succeeds.
  * - `cancelled`: Plus until the end of the period already paid for (`ends_at`).
@@ -14,6 +16,8 @@ import type { Subscription, SubscriptionStatus } from "./subscription";
 
 /** How long a failed renewal keeps Plus (Lemon Squeezy retries for about two weeks). */
 export const PAST_DUE_GRACE_MS = 7 * 24 * 3_600_000;
+/** How long past its renewal date an active subscription without news keeps Plus. */
+export const RENEWAL_SLACK_MS = 3 * 24 * 3_600_000;
 
 export type EntitlementReason =
   "active" | "trial" | "grace" | "cancelled_until_period_end" | "none" | "disabled";
@@ -37,9 +41,10 @@ export function entitlementOf(sub: Entitling, now: Date): Entitlement {
   const t = now.getTime();
   switch (sub.status) {
     case "active":
-      return { plus: true, reason: "active", until: null };
-    case "on_trial":
-      return { plus: true, reason: "trial", until: null };
+    case "on_trial": {
+      if (sub.renewsAt && t >= sub.renewsAt.getTime() + RENEWAL_SLACK_MS) return FREE;
+      return { plus: true, reason: sub.status === "active" ? "active" : "trial", until: null };
+    }
     case "past_due": {
       const since = (sub.pastDueSince ?? sub.providerUpdatedAt).getTime();
       const until = new Date(since + PAST_DUE_GRACE_MS);
