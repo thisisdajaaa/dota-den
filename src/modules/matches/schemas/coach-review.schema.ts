@@ -11,7 +11,11 @@ export const CoachAnswerSchema = z.object({
         kind: z.enum(["strength", "improve"]),
         title: z.string().trim().min(3).max(90),
         detail: z.string().trim().min(10).max(420),
-        facts: z.array(z.string().trim().min(1).max(60)).max(6),
+        // A point citing more than six facts keeps its first six instead of failing the answer.
+        facts: z
+          .array(z.string().trim().min(1).max(60))
+          .max(20)
+          .transform((keys) => keys.slice(0, 6)),
       }),
     )
     .min(1)
