@@ -19,12 +19,31 @@ test("hero guides show pro builds, benchmarks and pro games", async ({ page }) =
   await expect(page).toHaveURL(/\/guides\/1$/);
   await expect(page.getByRole("heading", { level: 1, name: "Anti-Mage" })).toBeVisible();
 
-  const items = page.getByRole("region", { name: "What pros buy" });
+  // Item builds from STRATZ's high-rank pubs, at the hero's main position.
+  const items = page.getByRole("region", { name: "Item builds" });
+  await expect(items).toContainText("High-rank pubs");
+  await expect(items).toContainText("at Pos 1");
   await expect(items.getByRole("group", { name: "Starting items" })).toContainText("Tango");
-  // Consumables are left out after the start.
-  await expect(items.getByRole("group", { name: "Early game" })).not.toContainText("Tango");
-  await expect(items.getByRole("group", { name: "Mid game" })).toContainText("Battle Fury");
+  // Consumables and plain components are left out after the start.
+  const early = items.getByRole("group", { name: "Early game" });
+  await expect(early).toContainText("Magic Wand");
+  await expect(early).not.toContainText("Tango");
+  await expect(early).not.toContainText("Boots of Speed");
+  const mid = items.getByRole("group", { name: "Mid game" });
+  await expect(mid).toContainText("Battle Fury");
+  await expect(mid).toContainText("15 min");
+  await expect(mid).toContainText("55%");
   await expect(items.getByRole("group", { name: "Late game" })).toContainText("Black King Bar");
+  // Another position the hero is played in: its own build.
+  const positions = items.getByRole("navigation", { name: "Positions" });
+  await expect(positions.getByRole("link", { name: /Pos 1/ })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await positions.getByRole("link", { name: /Pos 3/ }).click();
+  await expect(page).toHaveURL(/\/guides\/1\?pos=3$/);
+  await expect(items).toContainText("at Pos 3");
+  await page.goto("/guides/1");
 
   const bench = page.getByRole("region", { name: "What strong games look like" });
   await expect(bench.getByRole("row", { name: /Gold per minute/ })).toContainText("880");
@@ -73,8 +92,11 @@ test.describe("without a STRATZ token", () => {
   // The second app server runs without STRATZ: matchups are OpenDota's, from pro games.
   test.use({ baseURL: process.env.E2E_PLAIN_URL ?? "http://localhost:3102" });
 
-  test("guide matchups say they're from pro games", async ({ page }) => {
+  test("guide matchups and items say they're from pro games", async ({ page }) => {
     await page.goto("/guides/1");
+    const items = page.getByRole("region", { name: "What pros buy" });
+    await expect(items.getByRole("group", { name: "Mid game" })).toContainText("Battle Fury");
+    await expect(items.getByRole("navigation", { name: "Positions" })).toHaveCount(0);
     const matchups = page.getByRole("region", { name: "Matchups" });
     await expect(matchups).toContainText("Pro games");
     await expect(matchups).toContainText("against each hero in pro games");

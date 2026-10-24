@@ -37,10 +37,18 @@ export const guides: MessageTree<typeof en> = {
     fallbackName: "Hero #{id}",
   },
   items: {
-    kicker: "Mga pro game",
-    title: "Unsay gipalit sa mga pro",
-    description:
-      "Ang labing gipalit nga mga item sa matag yugto sa mga bag-ong professional game, gikan sa OpenDota. Wala giapil ang mga consumable human sa sinugdanan.",
+    kicker: { pubs: "Mga high-rank pub", pro: "Mga pro game" },
+    title: { pubs: "Mga item build", pro: "Unsay gipalit sa mga pro" },
+    description: {
+      pubs: "Unsay gipalit sa mga nagdula og {hero} sa {position} sa katapusang tibuok semana sa mga duwa nga Legend hangtod Immortal (gikan sa STRATZ): ang mga sinugdanang item, dayon ang mga kompleto nga item sumala sa kasagarang minuto sa pagpalit, uban ang win rate sa mga duwa nga mipalit niini. Mas kanunay modaog ang mga item nga gipalit sa ulahi tungod kay ang tag-as nga mga duwa nga maayo ang dagan ang makaabot niini.",
+      pro: "Ang labing gipalit nga mga item sa matag yugto sa mga bag-ong professional game, gikan sa OpenDota. Wala giapil ang mga consumable human sa sinugdanan.",
+    },
+    position: "Pos {n}",
+    legend: "Bar: unsa ka kanunay gipalit · %: win rate sa maong mga duwa",
+    positions: "Mga posisyon",
+    minute: "{n} min",
+    win: "{rate}%",
+    winTitle: "Win rate sa {games} ka duwa nga mipalit niini",
     noData: "Walay data.",
     fallbackName: "Item #{id}",
     phases: {

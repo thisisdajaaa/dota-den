@@ -13,6 +13,7 @@ import {
   type Benchmark,
   type Counter,
   type ItemPick,
+  type ItemSource,
   type MatchupSource,
   type Phase,
   type ProGame,
@@ -24,22 +25,61 @@ function Unavailable({ text }: { text: string }) {
 
 export async function ItemBuilds({
   items,
+  itemSource,
   itemMap,
+  heroId,
+  heroLabel,
 }: {
   items: Record<Phase, ItemPick[]> | null;
+  itemSource: ItemSource;
   itemMap: Map<number, ItemInfo>;
+  heroId: number;
+  heroLabel: string;
 }) {
   const t = await getT();
   const phaseLabel = (phase: Phase) => t(`guides.items.phases.${phase}`);
+  const pubs = itemSource.source === "pubs" ? itemSource : null;
   return (
     <section aria-labelledby="guide-items" className="panel space-y-4 p-5">
       <div>
-        <p className="kicker">{t("guides.items.kicker")}</p>
+        <p className="kicker">{t(`guides.items.kicker.${itemSource.source}`)}</p>
         <h2 id="guide-items" className="text-lg font-semibold">
-          {t("guides.items.title")}
+          {t(`guides.items.title.${itemSource.source}`)}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t("guides.items.description")}</p>
+        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+          {pubs
+            ? t("guides.items.description.pubs", {
+                hero: heroLabel,
+                position: t("guides.items.position", { n: pubs.position }),
+              })
+            : t("guides.items.description.pro")}
+        </p>
       </div>
+      {pubs && pubs.positions.length > 1 && (
+        <nav aria-label={t("guides.items.positions")} className="flex flex-wrap gap-2">
+          {pubs.positions.map((p) => {
+            const current = p.position === pubs.position;
+            return (
+              <Link
+                key={p.position}
+                href={`/guides/${heroId}?pos=${p.position}`}
+                scroll={false}
+                aria-current={current ? "page" : undefined}
+                className={cn(
+                  "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm",
+                  current
+                    ? "border-gold/50 bg-gold/10 text-gold"
+                    : "border-white/[0.08] text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t("guides.items.position", { n: p.position })}
+                <span className="text-xs opacity-75">{Math.round(p.share * 100)}%</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+      {pubs && items && <p className="text-xs text-muted-foreground">{t("guides.items.legend")}</p>}
       {!items ? (
         <Unavailable text={t("guides.unavailable")} />
       ) : (
@@ -58,19 +98,37 @@ export async function ItemBuilds({
                     return (
                       <li key={it.itemId} className="flex items-center gap-2.5">
                         <ItemIcon itemId={it.itemId} items={itemMap} />
-                        <span className="min-w-0 flex-1 truncate text-sm">{name}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {name}
+                          {it.minute !== undefined && (
+                            <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
+                              {t("guides.items.minute", { n: it.minute })}
+                            </span>
+                          )}
+                        </span>
                         <span
                           aria-hidden
-                          className="h-1.5 w-16 overflow-hidden rounded-full bg-white/[0.06]"
+                          className="h-1.5 w-12 overflow-hidden rounded-full bg-white/[0.06] sm:w-16"
                         >
                           <span
                             className="block h-full rounded-full bg-gold/70"
                             style={{ width: `${Math.round(it.relative * 100)}%` }}
                           />
                         </span>
-                        <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">
-                          {it.count.toLocaleString("en-US")}×
-                        </span>
+                        {it.winRate !== undefined ? (
+                          <span
+                            className="w-12 text-right text-xs text-muted-foreground tabular-nums"
+                            title={t("guides.items.winTitle", {
+                              games: it.count.toLocaleString("en-US"),
+                            })}
+                          >
+                            {t("guides.items.win", { rate: Math.round(it.winRate * 100) })}
+                          </span>
+                        ) : (
+                          <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">
+                            {it.count.toLocaleString("en-US")}×
+                          </span>
+                        )}
                       </li>
                     );
                   })}

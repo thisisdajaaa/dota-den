@@ -10,6 +10,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-24
 
+- Hero guides: item builds from STRATZ's high-rank pubs for each position the hero is played in (tabs), with the typical purchase minute and the win rate of games that bought each item; pro builds when STRATZ can't answer
 - Admin page redesign: health at a glance (jobs, alerts, errors, Plus) linking to each section, one compact metrics bar without repeats, users as cards on phones, operations in a side column
 - Plus (before launch): Plus lapses 3 days after a renewal date with no word from Lemon Squeezy (a lost webhook can't mean Plus forever), and the owner gets an alert for every refund
 - Plus (before launch): a payment event can no longer be lost when Lemon Squeezy retries during a slow delivery, no second subscription while a renewal is still being retried, and the yearly plan now says "2 months free" (the "37% less" was wrong for peso prices)

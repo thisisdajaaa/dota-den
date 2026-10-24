@@ -1,7 +1,9 @@
-import type { MatchupRow, MatchupSource, Phase, ProGame } from "./domain/hero-guide";
+import type { MatchupRow, MatchupSource, Phase, ProGame, PubBuild } from "./domain/hero-guide";
 
 /** Where guide data comes from. Each call is null when that source is unavailable. */
 export interface GuideSource {
+  /** Pub item builds per position (STRATZ); absent or null when unavailable. */
+  itemBuilds?(heroId: number): Promise<PubBuild[] | null>;
   /** Item purchase counts per phase from professional games. */
   itemPopularity(heroId: number): Promise<Record<Phase, Record<string, number>> | null>;
   /** Percentile tables per stat, from recent public games on the hero. */

@@ -32,10 +32,18 @@ export const guides = {
     fallbackName: "Hero #{id}",
   },
   items: {
-    kicker: "Pro games",
-    title: "What pros buy",
-    description:
-      "Most-bought items in each phase of recent professional games, from OpenDota. Consumables are left out after the start.",
+    kicker: { pubs: "High-rank pubs", pro: "Pro games" },
+    title: { pubs: "Item builds", pro: "What pros buy" },
+    description: {
+      pubs: "What {hero} players buy at {position} in the last full week of Legend to Immortal games (from STRATZ): the starting items, then completed items by the minute they're typically bought, with the win rate of the games that bought them. Items bought later win more often partly because long games that are going well get to them.",
+      pro: "Most-bought items in each phase of recent professional games, from OpenDota. Consumables are left out after the start.",
+    },
+    position: "Pos {n}",
+    legend: "Bar: how often it's bought · %: win rate of those games",
+    positions: "Positions",
+    minute: "{n} min",
+    win: "{rate}%",
+    winTitle: "Win rate of the {games} games that bought it",
     noData: "No data.",
     fallbackName: "Item #{id}",
     phases: {

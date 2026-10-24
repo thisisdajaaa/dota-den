@@ -1,16 +1,23 @@
+import type { StratzHeroItems } from "@/common/providers/stratz-hero-items";
 import type { StratzHeroMatchups } from "@/common/providers/stratz-hero-matchups";
 import type { GuideSource } from "../guides.ports";
-import type { MatchupRow, MatchupSource } from "../domain/hero-guide";
+import type { MatchupRow, MatchupSource, PubBuild } from "../domain/hero-guide";
 
 /**
- * Guide data with matchups from STRATZ (the latest full week of Legend–Immortal pubs) instead of OpenDota's
- * pro-only ones. Everything else, and matchups STRATZ can't answer, come from `fallback`.
+ * Guide data with matchups and item builds from STRATZ (the latest full week of
+ * Legend–Immortal pubs) instead of OpenDota's pro-only ones. Everything else, and anything
+ * STRATZ can't answer, comes from `fallback`.
  */
 export class StratzGuideSource implements GuideSource {
   constructor(
     private readonly stratz: StratzHeroMatchups,
     private readonly fallback: GuideSource,
+    private readonly items: StratzHeroItems | null = null,
   ) {}
+
+  async itemBuilds(heroId: number): Promise<PubBuild[] | null> {
+    return (await this.items?.forHero(heroId).catch(() => null)) ?? null;
+  }
 
   itemPopularity = (heroId: number) => this.fallback.itemPopularity(heroId);
   benchmarks = (heroId: number) => this.fallback.benchmarks(heroId);
