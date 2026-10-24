@@ -30,8 +30,10 @@ test("hero guides show pro builds, benchmarks and pro games", async ({ page }) =
   await expect(bench.getByRole("row", { name: /Gold per minute/ })).toContainText("880");
   await expect(bench.getByRole("row", { name: /Last hits per minute/ })).toContainText("8.4");
 
-  // Matchups from pro games, each opponent linking to its own guide.
+  // Matchups from STRATZ's high-rank pubs, each opponent linking to its own guide.
   const matchups = page.getByRole("region", { name: "Matchups" });
+  await expect(matchups).toContainText("High-rank pubs");
+  await expect(matchups).toContainText("Legend to Immortal games (from STRATZ)");
   await expect(matchups.getByRole("group", { name: "Anti-Mage is strong against" })).toBeVisible();
   await expect(matchups.getByRole("group", { name: "Anti-Mage struggles against" })).toBeVisible();
   await expect(matchups.getByRole("link").first()).toHaveAttribute("href", /^\/guides\/\d+$/);
@@ -65,4 +67,19 @@ test("hero images are small resized copies, never through Vercel's image optimiz
   expect(res.status()).toBe(200);
   expect(res.headers()["content-type"]).toBe("image/webp");
   expect((await res.body()).length).toBeLessThan(15_000);
+});
+
+test.describe("without a STRATZ token", () => {
+  // The second app server runs without STRATZ: matchups are OpenDota's, from pro games.
+  test.use({ baseURL: process.env.E2E_PLAIN_URL ?? "http://localhost:3102" });
+
+  test("guide matchups say they're from pro games", async ({ page }) => {
+    await page.goto("/guides/1");
+    const matchups = page.getByRole("region", { name: "Matchups" });
+    await expect(matchups).toContainText("Pro games");
+    await expect(matchups).toContainText("against each hero in pro games");
+    await expect(
+      matchups.getByRole("group", { name: "Anti-Mage is strong against" }),
+    ).toBeVisible();
+  });
 });

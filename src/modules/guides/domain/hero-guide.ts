@@ -102,6 +102,9 @@ export interface MatchupRow {
   wins: number;
 }
 
+/** Where a hero's matchups come from: the latest full week of Legend–Immortal pubs, or pro games. */
+export type MatchupSource = "pubs" | "pro";
+
 export interface Counter extends MatchupRow {
   /** Raw win rate against this hero. */
   rate: number;
@@ -112,7 +115,7 @@ export const MIN_MATCHUP_GAMES = 25;
 const MATCHUP_PRIOR = 30;
 
 /**
- * Who the hero beats and who beats it in pro games, ranked by a win rate pulled toward 50%
+ * Who the hero beats and who beats it, ranked by a win rate pulled toward 50%
  * for small samples (so a 9–1 record can't top the list). Raw rates and game counts are kept
  * for display.
  */

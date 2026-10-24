@@ -3,6 +3,7 @@ import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
 import { ProviderGateway } from "./provider-gateway";
 import { sharedGatewayOptions } from "./shared-gateway-options";
+import { StratzHeroMatchups } from "./stratz-hero-matchups";
 
 export const STRATZ_DEFAULT_BASE_URL = "https://api.stratz.com";
 
@@ -19,7 +20,10 @@ export function stratzConfig(): StratzConfig | null {
   return { baseUrl: STRATZ_API_BASE_URL ?? STRATZ_DEFAULT_BASE_URL, token: STRATZ_API_TOKEN };
 }
 
-const globalForGateway = globalThis as typeof globalThis & { __ddStratz?: ProviderGateway };
+const globalForGateway = globalThis as typeof globalThis & {
+  __ddStratz?: ProviderGateway;
+  __ddStratzMatchups?: StratzHeroMatchups;
+};
 
 /**
  * Shared STRATZ gateway: its own circuit, so STRATZ trouble never trips OpenDota's, and its own
@@ -51,4 +55,12 @@ export function stratzGateway(): ProviderGateway {
       }),
   });
   return globalForGateway.__ddStratz;
+}
+
+/** Shared STRATZ hero matchups (one parsed copy per instance), or null without a token. */
+export function stratzHeroMatchups(): StratzHeroMatchups | null {
+  const config = stratzConfig();
+  if (!config) return null;
+  globalForGateway.__ddStratzMatchups ??= new StratzHeroMatchups(stratzGateway(), config);
+  return globalForGateway.__ddStratzMatchups;
 }

@@ -45,7 +45,7 @@ export class GuideService {
               g.playerName ?? (g.accountId32 ? (names?.get(g.accountId32) ?? null) : null),
           }))
         : null,
-      counters: matchups ? counters(matchups) : null,
+      counters: matchups ? { ...counters(matchups.rows), source: matchups.source } : null,
     };
   }
 

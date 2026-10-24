@@ -81,10 +81,12 @@ export const guides: MessageTree<typeof en> = {
     kdaSr: "kills, deaths, assists",
   },
   counters: {
-    kicker: "Mga pro game",
+    kicker: { pubs: "Mga high-rank pub", pro: "Mga pro game" },
     title: "Mga matchup",
-    description:
-      "Win rate ni {hero} batok sa matag hero sa mga pro game. Ang mga hero lang nga adunay {min}+ ka dula ang giihap, ug ang gagmay nga sample gibira paingon sa 50% sa ranking.",
+    description: {
+      pubs: "Win rate ni {hero} batok sa matag hero sa katapusang tibuok semana sa mga duwa nga Legend hangtod Immortal (gikan sa STRATZ). Ang mga hero lang nga adunay {min}+ ka dula ang giihap, ug ang gagmay nga sample gibira paingon sa 50% sa ranking.",
+      pro: "Win rate ni {hero} batok sa matag hero sa mga pro game. Ang mga hero lang nga adunay {min}+ ka dula ang giihap, ug ang gagmay nga sample gibira paingon sa 50% sa ranking.",
+    },
     strong: "Kusgan si {hero} batok sa",
     weak: "Naglisod si {hero} batok sa",
     none: "Wala pay klarong matchup.",

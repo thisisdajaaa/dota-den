@@ -24,6 +24,5 @@ export const advisor: MessageTree<typeof en> = {
   },
   counts: {
     games: { one: "1 ka dula", other: "{n} ka dula" },
-    proGames: { one: "1 ka pro game", other: "{n} ka pro game" },
   },
 };

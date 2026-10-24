@@ -75,10 +75,12 @@ export const guides = {
     kdaSr: "kills, deaths, assists",
   },
   counters: {
-    kicker: "Pro games",
+    kicker: { pubs: "High-rank pubs", pro: "Pro games" },
     title: "Matchups",
-    description:
-      "{hero}'s win rate against each hero in pro games. Only heroes with {min}+ games count, and small samples are pulled toward 50% when ranking.",
+    description: {
+      pubs: "{hero}'s win rate against each hero over the last full week of Legend to Immortal games (from STRATZ). Only heroes with {min}+ games count, and small samples are pulled toward 50% when ranking.",
+      pro: "{hero}'s win rate against each hero in pro games. Only heroes with {min}+ games count, and small samples are pulled toward 50% when ranking.",
+    },
     strong: "{hero} is strong against",
     weak: "{hero} struggles against",
     none: "No clear matchups yet.",
