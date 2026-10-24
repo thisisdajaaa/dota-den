@@ -82,6 +82,16 @@ describe("CoachCard", () => {
     expect(within(card()).queryByRole("button", { name: "Write my review" })).toBeNull();
   });
 
+  it("offers the review once a refresh brings the parsed match", () => {
+    const { rerender } = render(
+      <CoachCard matchId="7000000012" initial={{ status: "unparsed" }} />,
+    );
+    expect(card()).toHaveTextContent("needs parsing first");
+    rerender(<CoachCard matchId="7000000012" initial={{ status: "available", quota: FREE }} />);
+    expect(within(card()).getByRole("button", { name: "Write my review" })).toBeEnabled();
+    expect(card()).not.toHaveTextContent("needs parsing first");
+  });
+
   it("shows the free quota left, or unlimited with Plus, and labels it as AI", () => {
     renderCard({ status: "available", quota: FREE });
     expect(screen.getByTestId("coach-quota")).toHaveTextContent("1 free review left this week");

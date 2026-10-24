@@ -73,6 +73,13 @@ export function factName(t: Translator<Messages>, f: CoachFact): string {
 export function CoachCard({ matchId, initial }: { matchId: string; initial: CoachViewDto }) {
   const t = useT();
   const [view, setView] = useState(initial);
+  // The page refreshes while a parse request waits: take the server's newer state (e.g.
+  // unparsed → available) instead of keeping the first one.
+  const [shown, setShown] = useState(initial);
+  if (initial !== shown) {
+    setShown(initial);
+    if (initial.status !== shown.status) setView(initial);
+  }
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
 
