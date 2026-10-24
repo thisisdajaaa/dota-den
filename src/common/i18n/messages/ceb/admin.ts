@@ -8,6 +8,24 @@ export const admin: MessageTree<typeof en> = {
   description:
     "Tanan nga naka-sign in na (usa ra ka database ang gamit sa production ug staging). Ang mga ngalan ug rank gikan sa ilang public OpenDota profile.",
   notFound: { title: "Wala makit-i ang page", back: "Balik sa imong overview" },
+  health: {
+    aria: "Sa usa ka tan-aw",
+    jobs: "Mga daily job",
+    alerts: "Mga alerto",
+    errors: "Mga error",
+    background: "Mga background job",
+    ok: "OK",
+    none: "Wala",
+    unknown: "Wala mahibaw-i",
+    noRuns: "Wala pay run",
+    failed: { one: "{n} ang napakyas", other: "{n} ang napakyas" },
+    alerts30: { one: "{n} sa 30 ka adlaw", other: "{n} sa 30 ka adlaw" },
+    errors7: { one: "{n} sa 7 ka adlaw", other: "{n} sa 7 ka adlaw" },
+    failed14: { one: "{n} sa 14 ka adlaw", other: "{n} sa 14 ka adlaw" },
+    plusOff: "Naka-off",
+    plusPaused: "Naka-pause",
+    plusOn: { one: "Abli · {n} ka miyembro", other: "Abli · {n} ka miyembro" },
+  },
   totals: {
     aria: "Total",
     users: "Mga user",
@@ -39,6 +57,8 @@ export const admin: MessageTree<typeof en> = {
     within7: "Mibalik sulod sa 7 ka adlaw",
     ever: "Mibalik bisan kanus-a",
     unavailable: "Dili ma-load ang kalihokan.",
+    ofUsers: { one: "sa {n} ka user", other: "sa {n} ka user" },
+    reach: "Abot",
   },
   users: {
     title: "Mga user",

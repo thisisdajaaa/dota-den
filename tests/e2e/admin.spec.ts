@@ -10,8 +10,15 @@ test("admins see every user and their activity", async ({ page }) => {
   const users = page.getByRole("region", { name: "Users" });
   await expect(users.getByRole("link", { name: "Fixture Hero" })).toBeVisible();
   await expect(users).toContainText("admin");
+  await expect(page.getByRole("region", { name: "Totals" })).toContainText("Active in 7 days");
+  // Health at a glance, each linking to its section.
+  const glance = page.getByRole("navigation", { name: "At a glance" });
+  await expect(glance.getByRole("link", { name: /Daily jobs/ })).toHaveAttribute(
+    "href",
+    "#admin-cron",
+  );
   const retention = page.getByRole("region", { name: "Who comes back" });
-  await expect(retention.getByText("Active in 7 days")).toBeVisible();
+  await expect(retention).toContainText("Reach");
   await expect(
     retention.getByRole("table", { name: "Sign-ups per week and how many came back" }),
   ).toBeVisible();
