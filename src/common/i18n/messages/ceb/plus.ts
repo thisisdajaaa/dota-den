@@ -59,12 +59,14 @@ export const plus: MessageTree<typeof en> = {
     yearly: "Tinuig",
     perMonth: "matag bulan",
     perYear: "matag tuig",
-    yearlySaving: "Mga 37% nga mas barato kaysa binulan",
+    yearlySaving: "Libre ang 2 ka bulan kumpara sa binulan nga bayad",
     subscribe: "Pagkuha og Plus",
     subscribeMonthly: "Pagkuha og Plus binulan",
     subscribeYearly: "Pagkuha og Plus tinuig",
     signIn: "Pag-sign in gamit ang Steam aron makakuha og Plus",
     youHavePlus: "Naa na kay Plus. Salamat!",
+    stillBilling:
+      "Naa pa kay Plus subscription: adunay bayad nga wala molampos, o naka-pause kini. I-update ang imong card o ipadayon kini gikan sa imong account page imbes magsugod og bag-o, aron dili ka masingil kaduha.",
     manage: "I-manage ang imong plan",
     notes: {
       currency:

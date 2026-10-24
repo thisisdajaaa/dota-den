@@ -94,11 +94,13 @@ export class SubscriptionsRepository implements SubscriptionsPort {
     return docs.map(toSubscription);
   }
 
-  async countsByStatus() {
+  async countsByStatus(testMode: boolean | null) {
     const rows = await (
       await this.col()
     )
       .aggregate<{ _id: { status: SubscriptionStatus; linked: boolean }; count: number }>([
+        // Production and staging share the database: count only this deployment's mode.
+        ...(testMode === null ? [] : [{ $match: { testMode } }]),
         {
           $group: {
             _id: { status: "$status", linked: { $ne: ["$userId", null] } },

@@ -6,7 +6,13 @@ import {
   stillBills,
   summarise,
 } from "@/modules/plus/domain/entitlement";
-import { aiReviewAllowance, limitFor, PLUS_LIMIT_MULTIPLIER } from "@/modules/plus/domain/plans";
+import {
+  aiReviewAllowance,
+  limitFor,
+  PLAN_PRICES,
+  PLUS_LIMIT_MULTIPLIER,
+} from "@/modules/plus/domain/plans";
+import { plus as en } from "@/common/i18n/messages/en/plus";
 import {
   applySnapshot,
   type Subscription,
@@ -300,5 +306,14 @@ describe("applySnapshot", () => {
       portalUrl: "https://x/p",
       portalUrlAt: at("2026-10-23T00:00:00Z"),
     });
+  });
+});
+
+describe("plan prices", () => {
+  const pesos = (amount: string) => Number(amount.replace(/[^\d.]/g, ""));
+
+  it('yearly is ten months\' price, as the pricing page says ("2 months free")', () => {
+    expect(pesos(PLAN_PRICES.yearly.amount)).toBe(10 * pesos(PLAN_PRICES.monthly.amount));
+    expect(en.page.yearlySaving).toContain("2 months free");
   });
 });

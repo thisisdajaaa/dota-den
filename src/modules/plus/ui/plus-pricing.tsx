@@ -161,6 +161,17 @@ export function PlusPricing({
                 <Link href="/account#plan">{t("plus.page.manage")}</Link>
               </Button>
             </div>
+          ) : plan?.stillBills ? (
+            // A renewal that failed (or a paused plan) is still a subscription: fix it, don't
+            // buy a second one.
+            <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
+              <p className="max-w-xl text-sm" role="status">
+                {t("plus.page.stillBilling")}
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/account#plan">{t("plus.page.manage")}</Link>
+              </Button>
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {offer.plans.map((p) => (

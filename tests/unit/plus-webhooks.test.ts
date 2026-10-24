@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import {
   signLemonSqueezy,
@@ -6,7 +6,10 @@ import {
   webhookEventId,
 } from "@/modules/plus/domain/webhook-signature";
 import { LemonSqueezyProvider } from "@/modules/plus/infrastructure/lemon-squeezy-provider";
-import { BillingWebhookService } from "@/modules/plus/services/billing-webhook.service";
+import {
+  BillingWebhookService,
+  WEBHOOK_CLAIM_STALE_MS,
+} from "@/modules/plus/services/billing-webhook.service";
 import { PlusService } from "@/modules/plus/services/plus.service";
 import {
   lsSubscriptionEvent,
@@ -222,6 +225,28 @@ describe("BillingWebhookService", () => {
     expect([...subscriptions.docs.values()][0].status).toBe("cancelled");
   });
 
+  it("makes the provider retry while another delivery is still handling the event", async () => {
+    const { deliver, events, plus } = setup();
+    const created = lsSubscriptionEvent();
+    const id = `lemonsqueezy:${createHash("sha256").update(created).digest("hex")}`;
+    // A slow first delivery is still working on it: acknowledging would lose the event.
+    events.events.set(id, {
+      outcome: "processing",
+      userId: USER,
+      claimedAt: new Date(NOW.getTime() - 30_000),
+    });
+    await expect(deliver(created)).rejects.toMatchObject({ code: "conflict" });
+    expect(await plus.isPlus(USER)).toBe(false);
+    // That delivery died: once its claim is stale, the next one applies the event.
+    events.events.set(id, {
+      outcome: "processing",
+      userId: USER,
+      claimedAt: new Date(NOW.getTime() - WEBHOOK_CLAIM_STALE_MS - 1),
+    });
+    expect(await deliver(created)).toEqual({ outcome: "applied" });
+    expect(await plus.isPlus(USER)).toBe(true);
+  });
+
   it("ignores an older event that arrives after a newer one", async () => {
     const { deliver, subscriptions, plus } = setup();
     await deliver(
@@ -341,6 +366,8 @@ describe("PlusService", () => {
     expect(await live.plusUserIds()).toEqual([]);
     expect(await live.plan(USER)).toMatchObject({ plus: false, canManage: false });
     await expect(live.portalUrl(USER)).rejects.toThrow();
+    expect(await live.adminCounts()).toMatchObject({ byStatus: [], unlinked: 0, entitled: 0 });
+    expect((await staging.plus.adminCounts()).byStatus).toEqual([{ status: "active", count: 1 }]);
   });
 
   it("is off (coming soon) without a provider and paused by the kill switch", async () => {
@@ -397,6 +424,27 @@ describe("PlusService", () => {
     await expect(plus.checkoutUrl(USER, "monthly")).rejects.toMatchObject({ code: "conflict" });
     const { plus: off } = setup({ configured: false });
     await expect(off.checkoutUrl(USER, "monthly")).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("refuses a second checkout while a subscription can still charge (no double billing)", async () => {
+    const { deliver, plus } = setup();
+    // Paused: no Plus, but the subscription resumes billing later.
+    await deliver(lsSubscriptionEvent({ event: "subscription_paused", status: "paused" }));
+    expect(await plus.isPlus(USER)).toBe(false);
+    expect(await plus.plan(USER)).toMatchObject({ plus: false, stillBills: true });
+    await expect(plus.checkoutUrl(USER, "yearly")).rejects.toMatchObject({
+      code: "conflict",
+      details: { reason: "still_billing" },
+    });
+    // Once it has expired, buying again is fine.
+    await deliver(
+      lsSubscriptionEvent({
+        event: "subscription_expired",
+        status: "expired",
+        updatedAt: "2026-10-23T12:20:00.000000Z",
+      }),
+    );
+    await expect(plus.checkoutUrl(USER, "yearly")).resolves.toContain("checkout");
   });
 
   it("uses the fresh signed portal link, else the store's portal", async () => {

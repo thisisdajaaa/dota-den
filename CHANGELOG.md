@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-24
 
+- Plus (before launch): a payment event can no longer be lost when Lemon Squeezy retries during a slow delivery, no second subscription while a renewal is still being retried, and the yearly plan now says "2 months free" (the "37% less" was wrong for peso prices)
+- AI coach: the card offers the review as soon as the requested replay parse arrives, without a reload
 - AI match coach: reviews no longer fail on "10:00", the game phases or a non-breaking hyphen, and the coach no longer suggests target timings that aren't from your match (30 of 30 test reviews written in English, Filipino and Cebuano)
 - Counters from STRATZ: draft captain, challenges, hero guide matchups and pool advice now use the latest full week of Legend–Immortal pub games (about 180,000 games for a popular hero) instead of a few thousand pro games; draft win estimates re-fitted on that data (57.8% accurate on newer games, up from 57.0%)
 - Privacy page: what Dota Den stores, who processes it, and how to download or delete it

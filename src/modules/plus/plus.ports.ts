@@ -61,21 +61,33 @@ export interface SubscriptionsPort {
   possiblyEntitledForAccounts(accountIds: readonly number[]): Promise<Subscription[]>;
   /** Every linked subscription that may grant Plus (for go-live alerts). */
   possiblyEntitled(): Promise<Subscription[]>;
-  countsByStatus(): Promise<{ status: SubscriptionStatus; linked: boolean; count: number }[]>;
+  /** Subscriptions per status, of one mode (test or live), or of both when `testMode` is null. */
+  countsByStatus(
+    testMode: boolean | null,
+  ): Promise<{ status: SubscriptionStatus; linked: boolean; count: number }[]>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }
 
+export type WebhookClaim = "claimed" | "duplicate" | "in_progress";
+
 export interface WebhookEventsPort {
-  /** Claims an event id; false when it was already received (a retry or a replay). */
-  claim(event: {
-    id: string;
-    provider: BillingProviderName;
-    eventName: string;
-    subscriptionId: string | null;
-    userId: string | null;
-    receivedAt: Date;
-  }): Promise<boolean>;
+  /**
+   * Claims an event id: "claimed" to handle it; "duplicate" when it was already handled (a
+   * retry or a replay); "in_progress" while another delivery is still handling it. A claim
+   * older than `staleMs` (a function killed mid-way) can be taken over.
+   */
+  claim(
+    event: {
+      id: string;
+      provider: BillingProviderName;
+      eventName: string;
+      subscriptionId: string | null;
+      userId: string | null;
+      receivedAt: Date;
+    },
+    staleMs: number,
+  ): Promise<WebhookClaim>;
   finish(id: string, outcome: WebhookEventOutcome, userId?: string | null): Promise<void>;
   /** Forget a claim whose handling failed, so the provider's retry is handled. */
   release(id: string): Promise<void>;

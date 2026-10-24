@@ -80,12 +80,13 @@ export class MemorySubscriptions implements SubscriptionsPort {
   async possiblyEntitled() {
     return [...this.docs.values()].filter((s) => s.userId && POSSIBLY_ENTITLED.includes(s.status));
   }
-  async countsByStatus() {
+  async countsByStatus(testMode: boolean | null) {
     const counts = new Map<
       string,
       { status: Subscription["status"]; linked: boolean; count: number }
     >();
     for (const s of this.docs.values()) {
+      if (testMode !== null && s.testMode !== testMode) continue;
       const k = `${s.status}:${s.userId !== null}`;
       const row = counts.get(k) ?? { status: s.status, linked: s.userId !== null, count: 0 };
       row.count++;
@@ -104,12 +105,23 @@ export class MemorySubscriptions implements SubscriptionsPort {
 }
 
 export class MemoryWebhookEvents implements WebhookEventsPort {
-  readonly events = new Map<string, { outcome: WebhookEventOutcome; userId: string | null }>();
+  readonly events = new Map<
+    string,
+    { outcome: WebhookEventOutcome; userId: string | null; claimedAt?: Date }
+  >();
 
-  async claim(e: Parameters<WebhookEventsPort["claim"]>[0]) {
-    if (this.events.has(e.id)) return false;
-    this.events.set(e.id, { outcome: "processing", userId: e.userId });
-    return true;
+  async claim(e: Parameters<WebhookEventsPort["claim"]>[0], staleMs: number) {
+    const existing = this.events.get(e.id);
+    if (
+      !existing ||
+      (existing.outcome === "processing" &&
+        existing.claimedAt &&
+        existing.claimedAt.getTime() < e.receivedAt.getTime() - staleMs)
+    ) {
+      this.events.set(e.id, { outcome: "processing", userId: e.userId, claimedAt: e.receivedAt });
+      return "claimed" as const;
+    }
+    return existing.outcome === "processing" ? ("in_progress" as const) : ("duplicate" as const);
   }
   async finish(id: string, outcome: WebhookEventOutcome, userId?: string | null) {
     const e = this.events.get(id);
