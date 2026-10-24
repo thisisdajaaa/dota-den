@@ -93,8 +93,17 @@ test("create a group, a friend joins by link, outsiders get a 404, then remove a
   ).toHaveCount(0);
   expect((await friend.goto(groupPath))?.status()).toBe(404);
 
-  // They rejoin by the same link, then leave on their own.
+  // Removing them replaced the link they saw: it no longer works for them.
   await friend.goto(inviteUrl);
+  await expect(
+    friend.getByRole("heading", { name: "This invite link doesn't work" }),
+  ).toBeVisible();
+  await owner.reload();
+  const newUrl = (await owner.getByTestId("invite-url").textContent())!.trim();
+  expect(newUrl).not.toBe(inviteUrl);
+
+  // Invited again with the new link, they rejoin, then leave on their own.
+  await friend.goto(newUrl);
   await clickUntil(friend.getByRole("button", { name: "Join group" }), () =>
     expect(friend).toHaveURL(new RegExp(`${groupPath}$`), { timeout: 5000 }),
   );
@@ -107,9 +116,9 @@ test("create a group, a friend joins by link, outsiders get a 404, then remove a
 
   // Resetting the link stops the old one.
   await clickUntil(owner.getByRole("button", { name: "Reset link" }), () =>
-    expect(owner.getByTestId("invite-url")).not.toHaveText(inviteUrl, { timeout: 5000 }),
+    expect(owner.getByTestId("invite-url")).not.toHaveText(newUrl, { timeout: 5000 }),
   );
-  await friend.goto(inviteUrl);
+  await friend.goto(newUrl);
   await expect(
     friend.getByRole("heading", { name: "This invite link doesn't work" }),
   ).toBeVisible();
