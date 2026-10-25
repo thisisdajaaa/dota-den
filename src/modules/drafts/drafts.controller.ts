@@ -10,18 +10,21 @@ import { handler } from "@/common/http/controller";
 import { requestId } from "@/common/http/http";
 import { ServiceResponse } from "@/common/http/service-response";
 import type { Logger } from "@/common/logging/logger";
-import { optionalUser } from "@/modules/identity";
+import { optionalUser, requireUser } from "@/modules/identity";
 import type { Grade } from "./domain/challenges";
 import { decodeSnapshot } from "./domain/snapshot";
 import {
   AiMoveSchema,
   GradeSchema,
   OutlookSchema,
+  PickForMeSchema,
   SuggestionsSchema,
 } from "./schemas/draft-requests.schema";
 import { toRoleMaps } from "./schemas/roles.schema";
 import type { AiOpponentService } from "./services/ai-opponent.service";
 import type { ChallengeService } from "./services/challenge.service";
+import type { PickForMeService } from "./services/pick-for-me.service";
+import type { Position } from "./domain/pick-for-me";
 
 const limit = (name: Parameters<typeof apiLimit>[0], bucket: string) => () => ({
   name: bucket,
@@ -48,6 +51,7 @@ export class DraftsController {
     private readonly deps: {
       ai: () => Promise<AiOpponentService>;
       challenges: () => Promise<ChallengeService>;
+      pickForMe: () => PickForMeService;
       /** Record a signed-in player's challenge answer (leaderboards); never fails the grade. */
       recordChallenge: (
         userId: string,
@@ -56,6 +60,28 @@ export class DraftsController {
       logger: Pick<Logger, "info">;
     },
   ) {}
+
+  /**
+   * POST /api/v1/drafts/pick-for-me: your heroes ranked for a real ranked draft (signed in;
+   * Plus sees the top five, everyone else the best one).
+   */
+  pickForMe = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "draft-pick-for-me", limit: 30, windowMs: 60_000 },
+      body: PickForMeSchema,
+      invalidMessage: "Invalid draft",
+    },
+    async ({ user, body }) =>
+      ServiceResponse.success(
+        await this.deps.pickForMe().suggest(user, {
+          enemies: body.enemies,
+          allies: body.allies,
+          bans: body.bans,
+          position: body.position as Position | null,
+        }),
+      ),
+  );
 
   /** POST /api/v1/drafts/ai-move: the AI captain's next pick or ban in a practice draft. */
   aiMove = handler(
