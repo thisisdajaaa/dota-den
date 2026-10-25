@@ -110,6 +110,28 @@ export class MetaService {
     });
   }
 
+  /**
+   * Each hero's share of its high-rank games at each position (STRATZ, 0..1), or null when
+   * position stats aren't available. For other features (the draft helper's position filter).
+   */
+  async positionShares(): Promise<ReadonlyMap<number, Record<Position, number>> | null> {
+    const stats = await this.positionStats();
+    if (stats.status !== "ok") return null;
+    const out = new Map<number, Record<Position, number>>();
+    for (const [heroId, counts] of stats.value.value.heroes) {
+      const total = POSITIONS.reduce((n, p) => n + counts[p].games, 0);
+      if (total === 0) continue;
+      out.set(
+        heroId,
+        Object.fromEntries(POSITIONS.map((p) => [p, counts[p].games / total])) as Record<
+          Position,
+          number
+        >,
+      );
+    }
+    return out;
+  }
+
   /** STRATZ position stats, or the reason they can't be used ("off" without a source). */
   private async positionStats(): Promise<
     | { status: "ok"; value: Fetched<PositionStats> }

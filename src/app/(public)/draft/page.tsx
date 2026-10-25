@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Eye, History, Puzzle, Users } from "lucide-react";
+import { AlertTriangle, Eye, History, Puzzle, Sparkles, Users } from "lucide-react";
 import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -159,6 +159,11 @@ export default async function DraftPage({ searchParams }: PageProps<"/draft">) {
         description={t("drafts.pages.description")}
         actions={
           <>
+            <Button asChild>
+              <Link href="/draft/pick">
+                <Sparkles aria-hidden className="size-4" /> {t("drafts.pages.pickForMe")}
+              </Link>
+            </Button>
             <Button asChild variant="outline">
               <Link href="/draft/rooms/new">
                 <Users aria-hidden className="size-4" /> {t("drafts.pages.withFriend")}

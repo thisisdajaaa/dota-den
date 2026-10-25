@@ -6,6 +6,7 @@ import { getDb } from "@/common/db/mongo";
 import { sharedAiBudget } from "@/common/llm/call-budget";
 import { GroqClient, groqChatUrl } from "@/common/llm/groq-client";
 import { logger } from "@/common/logging/logger";
+import { lazy } from "@/common/utils/lazy";
 import { stratzHeroMatchups } from "@/common/providers/stratz";
 import {
   openDotaConfig,
@@ -14,6 +15,9 @@ import {
 } from "@/common/providers/opendota";
 import { activityService } from "@/modules/leaderboards";
 import { matchesService } from "@/modules/matches";
+import { matchQueries } from "@/modules/matches";
+import { plusService } from "@/modules/plus";
+import { metaService } from "@/modules/meta";
 import { DraftRoomsController } from "./draft-rooms.controller";
 import { DraftsController } from "./drafts.controller";
 import { BudgetedDraftAdvisor } from "./infrastructure/budgeted-draft-advisor";
@@ -32,6 +36,7 @@ import { ChallengeService } from "./services/challenge.service";
 import { DraftHistoryService } from "./services/draft-history.service";
 import { DraftRecordService } from "./services/draft-record.service";
 import { DraftRoomService } from "./services/draft-room.service";
+import { PickForMeService } from "./services/pick-for-me.service";
 import type { DraftHero } from "./ui/types";
 
 export const draftHistoryRepository = new DraftHistoryRepository(getDb);
@@ -183,9 +188,34 @@ export async function getDraftHeroes(): Promise<DraftHero[]> {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * "Pick for me" for real ranked drafts: the player's pool from their imported games, STRATZ
+ * high-rank matchups and position shares (everything resolved when used).
+ */
+export const pickForMeService = lazy(
+  () =>
+    new PickForMeService({
+      pool: async (accountId32) => {
+        const byHero = new Map<number, { heroId: number; games: number; wins: number }>();
+        for (const f of await matchQueries.heroFacts(accountId32)) {
+          const h = byHero.get(f.heroId) ?? { heroId: f.heroId, games: 0, wins: 0 };
+          h.games++;
+          if (f.result === "win") h.wins++;
+          byHero.set(f.heroId, h);
+        }
+        return [...byHero.values()];
+      },
+      records: async () => (await stratzHeroMatchups()?.all()) ?? null,
+      positionShares: () => metaService.positionShares(),
+      isPlus: (userId) => plusService.isPlus(userId),
+      logger,
+    }),
+);
+
 export const draftsController = new DraftsController({
   ai: getAiOpponent,
   challenges: getChallengeService,
+  pickForMe: () => pickForMeService,
   // A failure here must never cost the player their grade, so it's logged and skipped.
   recordChallenge: async (userId, answer) => {
     try {
