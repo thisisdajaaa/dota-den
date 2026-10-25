@@ -21,6 +21,11 @@ test("the battle report sums up your games over a period", async ({ page }) => {
     /^\/matches\/\d+$/,
   );
   await expect(page.getByRole("region", { name: "Most played heroes" })).toContainText("Anti-Mage");
+  // The AI read is a Plus feature: without Plus, the panel says so and links to Plus.
+  const read = page.getByRole("region", { name: "What this period says" });
+  await expect(read).toContainText("Plus members get an AI read");
+  await expect(read.getByRole("link", { name: "See Plus" })).toHaveAttribute("href", "/plus");
+  await expect(read.getByRole("button", { name: "Write my read" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Calendar" })).toContainText(
     "Played on 12 of 90 days",
   );

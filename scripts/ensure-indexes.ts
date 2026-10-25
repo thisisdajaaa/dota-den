@@ -33,7 +33,10 @@ import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-hist
 import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-meta-cache.repository";
 import { DraftRoomsRepository } from "@/modules/drafts/repositories/draft-rooms.repository";
 import { MatchDraftReadsRepository } from "@/modules/drafts/repositories/match-draft-reads.repository";
-import { ReplayReadsRepository } from "@/modules/report/repositories/replay-reads.repository";
+import {
+  PeriodReadsRepository,
+  ReplayReadsRepository,
+} from "@/modules/report/repositories/replay-reads.repository";
 import { MatchFactsRepository } from "@/modules/matches/repositories/matches.repository";
 import { MatchExtrasRepository } from "@/modules/matches/repositories/match-extras.repository";
 import {
@@ -93,6 +96,7 @@ async function main(): Promise<void> {
     new AutoReviewsRepository(async () => db).ensureIndexes(),
   ]);
   await new ReplayReadsRepository(async () => db).ensureIndexes();
+  await new PeriodReadsRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();

@@ -33,6 +33,14 @@ export const plus: MessageTree<typeof en> = {
         title: "Walang limit na AI coach",
         body: "Coach review ng kahit anong na-parse mong match, kahit ilang beses (libre: isang bagong review kada linggo). Mula lang sa mga numero ng match na iyon ito isinusulat, at puwede itong magkamali. Awtomatiko ring nirerebyu ang pinakabago mong ranked game pagkatapos ng bawat sync, at may notification kapag handa na ang review.",
       },
+      read: {
+        title: "AI read ng battle report mo",
+        body: "Pumili ng kahit anong panahon sa battle report mo at makakuha ng ilang obserbasyon at isang dapat pagtuunan, isinulat mula lang sa mga numero ng page na iyon (nakalista ang mga ginamit na numero).",
+      },
+      pick: {
+        title: "Pumili para sa akin: ang top five mo",
+        body: "Sa totoong ranked draft, idagdag ang mga pick ng kalaban at makita ang limang pinakamagandang hero mo laban sa kanila, kasama ang record mo at bawat matchup (libre: ang pinakamaganda).",
+      },
       sync: {
         title: "Priority sync",
         body: "Mas mabilis ma-import ang mahabang match history: mas maikling paghihintay at mas malalaking batch, at ipinapa-parse sa OpenDota ang pinakabago mong hindi pa na-parse na laro (hanggang 3 kada sync). Iisang OpenDota budget pa rin ang gamit ng lahat, kaya hindi bumabagal ang mga libreng player.",

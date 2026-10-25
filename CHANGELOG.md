@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-25
 
+- Plus: AI read of your battle report for any period: a few observations and one focus, written from that page's numbers only and checked against them
 - Pick for me (ranked draft helper): add the enemy picks during a real ranked draft and your own heroes are ranked by your record and how they do against those picks (and with your team) in high-rank games; Plus shows the top five
 - Plus: automatic AI review of your newest ranked games after each sync, written once the replay is parsed, with a notification (switch it off in notification settings)
 - Security: Steam sign-in refuses callbacks that repeat a field (they could be used to sign in as another player), and return paths that only point elsewhere once resolved are refused
