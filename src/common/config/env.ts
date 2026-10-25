@@ -126,6 +126,21 @@ const EnvSchema = z
     /** Override for tests (fixture server). Defaults to Steam's Web API. */
     STEAM_API_BASE_URL: z.url().optional(),
     /** Twitch app credentials: embed matching streams on live game pages. Unset: search links only. */
+    /**
+     * Discord application (discord.com/developers): "Connect Discord" on the account page
+     * (client id + secret, OAuth2 `identify`) and the Dota Den bot's slash commands (public
+     * key, to verify interactions; bot token, only for registering the commands).
+     */
+    DISCORD_CLIENT_ID: z
+      .string()
+      .regex(/^\d{15,25}$/)
+      .optional(),
+    DISCORD_CLIENT_SECRET: z.string().min(1).optional(),
+    DISCORD_PUBLIC_KEY: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/i)
+      .optional(),
+    DISCORD_BOT_TOKEN: z.string().min(1).optional(),
     TWITCH_CLIENT_ID: z.string().min(1).optional(),
     TWITCH_CLIENT_SECRET: z.string().min(1).optional(),
     /** Overrides for tests (fixture server). Default to Twitch's. */

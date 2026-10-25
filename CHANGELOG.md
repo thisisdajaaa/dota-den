@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-25
 
+- Discord (switched on once the Discord app is set up): link your Discord on the account page, and the Dota Den bot answers `/den me` (your week, form and heroes) and `/den leaderboard` (your server's ranked wins this week)
 - Plus: AI read of your battle report for any period: a few observations and one focus, written from that page's numbers only and checked against them
 - Pick for me (ranked draft helper): add the enemy picks during a real ranked draft and your own heroes are ranked by your record and how they do against those picks (and with your team) in high-rank games; Plus shows the top five
 - Plus: automatic AI review of your newest ranked games after each sync, written once the replay is parsed, with a notification (switch it off in notification settings)

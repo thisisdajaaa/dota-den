@@ -87,3 +87,35 @@ export interface FeedHeroes {
   /** Hero names and portrait URLs by hero id. */
   all(): Promise<Map<number, { name: string; imageUrl: string | null }>>;
 }
+
+/** Who a Discord sign-in says the player is. */
+export interface DiscordIdentity {
+  id: string;
+  username: string;
+  globalName: string | null;
+  avatar: string | null;
+}
+
+/** A Dota Den account linked to a Discord account. */
+export interface DiscordLink {
+  discordId: string;
+  userId: string;
+  accountId32: number;
+  username: string;
+  globalName: string | null;
+  avatar: string | null;
+  /** Servers where the player used the bot. */
+  guilds: string[];
+  linkedAt: Date;
+}
+
+export interface DiscordLinksPort {
+  forUser(userId: string): Promise<DiscordLink | null>;
+  forDiscord(discordId: string): Promise<DiscordLink | null>;
+  inGuild(guildId: string, limit: number): Promise<DiscordLink[]>;
+  link(input: Omit<DiscordLink, "guilds" | "linkedAt">, now: Date): Promise<void>;
+  rememberGuild(discordId: string, guildId: string): Promise<void>;
+  unlink(userId: string): Promise<boolean>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}

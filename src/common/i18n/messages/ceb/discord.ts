@@ -3,6 +3,41 @@ import type { discord as en } from "../en/discord";
 
 /** Cebuano. */
 export const discord: MessageTree<typeof en> = {
+  bot: {
+    help: "Dota Den bot: ang `/den me` nagpakita sa imong miaging semana, form ug labing kanunay nga mga hero; ang `/den leaderboard` nag-ranggo sa mga naka-link nga miyembro niini nga server sumala sa ranked wins karong semanaha. I-link una ang imong Discord: {url}/account",
+    notLinked: "I-link una ang imong Discord sa Dota Den (pipila lang ka segundo): {url}",
+    serverOnly: "Matag server ang leaderboard: gamita kini sa usa ka channel sa server.",
+    meTitle: "{name} sa Dota Den",
+    week: "Katapusang 7 ka adlaw",
+    weekValue: "{wins}W {losses}L ({rate}%)",
+    noGames: "Wala pay duwa",
+    form: "Katapusang 10 ka duwa",
+    heroes: "Labing kanunay (30 ka adlaw)",
+    record: "{wins}W {losses}L",
+    footer: "Gikan sa public match data nga imong gi-import sa Dota Den.",
+    boardTitle: "Ranked wins karong semanaha",
+    boardFooter:
+      "Mga naka-link nga miyembro nga migamit og /den niini nga server. Katapusang 7 ka adlaw.",
+    boardEmpty:
+      "Wala pay ranked nga duwa karong semanaha gikan sa mga naka-link nga miyembro dinhi. Mogawas ang mga miyembro human nila gamiton ang /den niini nga server.",
+  },
+  link: {
+    title: "Discord account",
+    description:
+      "I-link ang imong Discord account aron mahibaw ang Dota Den bot nga ikaw kana: `/den me` ug ang semanal nga leaderboard sa server. Imong Discord name ug id lang ang among mahibaw-an.",
+    connect: "Ikonektar ang Discord",
+    linkedAs: "Naka-link isip {name}",
+    unlink: "Tangtanga ang link",
+    unlinking: "Gitangtang…",
+    off: "Wala pa ma-set up ang pagkonektar sa Discord.",
+    outcomes: {
+      linked: "Naka-link na ang Discord.",
+      denied: "Wala gikumpirma sa Discord ang link. Sulayi pag-usab.",
+      bad_state: "Na-expire na ang maong link. Sulayi pag-usab.",
+      off: "Wala pa ma-set up ang pagkonektar sa Discord.",
+    },
+    failed: "Wala matangtang ang link. Sulayi pag-usab.",
+  },
   card: {
     title: "Discord",
     description:

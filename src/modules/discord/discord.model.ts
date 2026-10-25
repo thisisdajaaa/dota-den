@@ -1,7 +1,26 @@
 export const DISCORD_COLLECTIONS = {
   webhooks: "discord_webhooks",
   log: "discord_post_log",
+  links: "discord_links",
 } as const;
+
+/**
+ * A Dota Den account linked to a Discord account (OAuth2 `identify`). `guilds` are the servers
+ * where the player used the bot: the server leaderboard counts only them (no member lists are
+ * read from Discord).
+ */
+export interface DiscordLinkDocument {
+  /** The Discord user id. */
+  _id: string;
+  userId: string;
+  accountId32: number;
+  username: string;
+  globalName: string | null;
+  avatar: string | null;
+  guilds: string[];
+  linkedAt: Date;
+  updatedAt: Date;
+}
 
 /**
  * A player's Discord feed: one webhook per player. `token` is a secret (anyone with it can
