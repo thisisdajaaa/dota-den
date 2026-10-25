@@ -131,9 +131,15 @@ const EnvSchema = z
      * (client id + secret, OAuth2 `identify`) and the Dota Den bot's slash commands (public
      * key, to verify interactions; bot token, only for registering the commands).
      */
-    DISCORD_CLIENT_ID: z.string().regex(/^\d{15,25}$/).optional(),
+    DISCORD_CLIENT_ID: z
+      .string()
+      .regex(/^\d{15,25}$/)
+      .optional(),
     DISCORD_CLIENT_SECRET: z.string().min(1).optional(),
-    DISCORD_PUBLIC_KEY: z.string().regex(/^[0-9a-f]{64}$/i).optional(),
+    DISCORD_PUBLIC_KEY: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/i)
+      .optional(),
     DISCORD_BOT_TOKEN: z.string().min(1).optional(),
     TWITCH_CLIENT_ID: z.string().min(1).optional(),
     TWITCH_CLIENT_SECRET: z.string().min(1).optional(),
