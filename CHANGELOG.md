@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-25
 
+- Plus: automatic AI review of your newest ranked games after each sync, written once the replay is parsed, with a notification (switch it off in notification settings)
 - Security: Steam sign-in refuses callbacks that repeat a field (they could be used to sign in as another player), and return paths that only point elsewhere once resolved are refused
 
 ## 2026-10-24

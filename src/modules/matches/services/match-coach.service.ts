@@ -33,6 +33,7 @@ import {
   type CoachViewDto,
 } from "../dtos/responses/coach.dto";
 import type {
+  AutoReviewsPort,
   CoachReviewKey,
   CoachReviewsPort,
   CoachUsagePort,
@@ -71,6 +72,8 @@ export class MatchCoachService {
       patches: PatchTimelineSource;
       reviews: CoachReviewsPort;
       usage: CoachUsagePort;
+      /** Plus auto reviews scheduled for the player (only for data export and deletion). */
+      autoReviews?: Pick<AutoReviewsPort, "exportForOwner" | "deleteForOwner">;
       /** Plus entitlement (false on any failure, and while Plus is switched off). */
       isPlus: (userId: string) => Promise<boolean>;
       /** The model; null when no key is configured (the coach is off). */
@@ -297,19 +300,21 @@ export class MatchCoachService {
   }
 
   async exportMyData(owner: DataOwner) {
-    const [reviews, uses] = await Promise.all([
+    const [reviews, uses, scheduled] = await Promise.all([
       this.deps.reviews.exportForOwner(owner),
       this.deps.usage.exportForOwner(owner),
+      this.deps.autoReviews?.exportForOwner(owner) ?? Promise.resolve([]),
     ]);
-    return { coachReviews: reviews, coachReviewUses: uses };
+    return { coachReviews: reviews, coachReviewUses: uses, coachAutoReviews: scheduled };
   }
 
   async deleteMyData(owner: DataOwner) {
-    const [reviews, uses] = await Promise.all([
+    const [reviews, uses, scheduled] = await Promise.all([
       this.deps.reviews.deleteForOwner(owner),
       this.deps.usage.deleteForOwner(owner),
+      this.deps.autoReviews?.deleteForOwner(owner) ?? Promise.resolve(0),
     ]);
-    return { coachReviews: reviews, coachReviewUses: uses };
+    return { coachReviews: reviews, coachReviewUses: uses, coachAutoReviews: scheduled };
   }
 }
 

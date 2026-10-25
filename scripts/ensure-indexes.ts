@@ -39,6 +39,7 @@ import { MatchExtrasRepository } from "@/modules/matches/repositories/match-extr
 import {
   CoachReviewsRepository,
   CoachUsageRepository,
+  AutoReviewsRepository,
   ParseRequestsRepository,
 } from "@/modules/matches/repositories/match-coach.repository";
 import { MedalHistoryRepository } from "@/modules/mmr/repositories/medal-history.repository";
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
     new CoachReviewsRepository(async () => db).ensureIndexes(),
     new CoachUsageRepository(async () => db).ensureIndexes(),
     new ParseRequestsRepository(async () => db).ensureIndexes(),
+    new AutoReviewsRepository(async () => db).ensureIndexes(),
   ]);
   await new ReplayReadsRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();

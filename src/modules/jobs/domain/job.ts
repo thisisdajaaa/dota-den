@@ -10,6 +10,8 @@ export const JOB_NAMES = [
   "meta-warm",
   // Plus go-live alerts (ADR 0013): a QStash schedule delivers it every few minutes.
   "streamer-alerts",
+  // Plus auto post-game review: waits for the replay parse, then writes the coach review.
+  "coach-auto-review",
 ] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 

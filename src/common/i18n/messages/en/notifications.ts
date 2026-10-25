@@ -49,6 +49,10 @@ export const notifications = {
       label: "Streamer goes live (Plus)",
       help: "Within a few minutes of a channel you follow on /live starting a stream. Once per stream.",
     },
+    coach_review: {
+      label: "AI review of new ranked games (Plus)",
+      help: "After a sync finds new ranked games, the AI coach reviews the newest once their replays are parsed, and tells you here. Turning this off stops the automatic reviews too.",
+    },
   },
   push: {
     session: {
@@ -68,6 +72,10 @@ export const notifications = {
     list: "{items} and {last}",
     listMore: "{items} and {more} more",
     heroFallback: "Hero #{id}",
+    coachReview: {
+      title: "Your {hero} game is reviewed",
+      body: "{first} · {points} coaching points from your real numbers.",
+    },
     live: {
       title: "{name} is live",
       body: "{title}",

@@ -32,7 +32,7 @@ export const plus: MessageTree<typeof en> = {
     perks: {
       coach: {
         title: "Walay limit nga AI coach",
-        body: "Coach review sa bisan unsang na-parse nimo nga duwa, bisan pila ka higayon (libre: usa ka bag-ong review kada semana). Gikan ra sa mga numero niadtong duwa kini isulat, ug mahimo kining masayop.",
+        body: "Coach review sa bisan unsang na-parse nimo nga duwa, bisan pila ka higayon (libre: usa ka bag-ong review kada semana). Gikan ra sa mga numero niadtong duwa kini isulat, ug mahimo kining masayop. Awtomatiko usab nga gi-review ang imong pinakabag-o nga ranked nga duwa human sa matag sync, ug adunay notification kung andam na ang review.",
       },
       sync: {
         title: "Priority sync",

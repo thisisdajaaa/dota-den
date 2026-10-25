@@ -52,6 +52,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Nag-live ang streamer (Plus)",
       help: "Pipila ka minuto human mosugod og stream ang channel nga imong gi-follow sa /live. Kausa matag stream.",
     },
+    coach_review: {
+      label: "AI review sa mga bag-ong ranked nga duwa (Plus)",
+      help: "Kung adunay bag-ong ranked nga duwa nga makita ang sync, i-review sa AI coach ang pinakabag-o kung na-parse na ang replay, ug sultihan ka dinhi. Kung imong i-off kini, mohunong usab ang awtomatikong mga review.",
+    },
   },
   push: {
     session: {
@@ -71,6 +75,10 @@ export const notifications: MessageTree<typeof en> = {
     list: "{items} ug {last}",
     listMore: "{items} ug {more} pa",
     heroFallback: "Hero #{id}",
+    coachReview: {
+      title: "Na-review na ang imong duwa sa {hero}",
+      body: "{first} · {points} ka coaching point gikan sa imong tinuod nga numero.",
+    },
     live: {
       title: "Live na si {name}",
       body: "{title}",
