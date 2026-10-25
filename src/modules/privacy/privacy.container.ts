@@ -17,7 +17,7 @@ import { plusService } from "@/modules/plus";
 import { sharesService } from "@/modules/shares";
 import { patchWatchlistService } from "@/modules/patches";
 import { practiceService } from "@/modules/practice";
-import { battleReportService } from "@/modules/report";
+import { battleReportService, periodReadService } from "@/modules/report";
 import { followService } from "@/modules/players";
 import { sessionService } from "@/modules/sessions";
 import { togetherService } from "@/modules/together";
@@ -45,6 +45,8 @@ export const privacyService = lazy(
         goalsService,
         practiceService,
         battleReportService,
+        // The battle report's AI reads (Plus).
+        periodReadService,
         notificationService,
         sharesService,
         discordWebhookService,

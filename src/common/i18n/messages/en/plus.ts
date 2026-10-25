@@ -37,6 +37,14 @@ export const plus = {
         title: "Unlimited AI coach",
         body: "A coach review of any of your parsed matches, as often as you like (free: one new review a week). It's written from that match's numbers only, and it can be wrong. Your newest ranked games are also reviewed automatically after each sync, with a notification when the review is ready.",
       },
+      read: {
+        title: "AI read of your battle report",
+        body: "Pick any period on your battle report and get a few observations about it and one thing to focus on, written from that page's numbers only (each lists the numbers it uses).",
+      },
+      pick: {
+        title: "Pick for me: your top five",
+        body: "During a real ranked draft, add the enemy picks and see your five best heroes against them, with your record and each matchup (free: the best one).",
+      },
       sync: {
         title: "Priority sync",
         body: "A long match history imports faster: shorter waits and bigger chunks between imports, and your newest unparsed games are sent to OpenDota for parsing (up to 3 per sync). It shares the same OpenDota budget as everyone, so free players aren't slowed down.",

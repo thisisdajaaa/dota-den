@@ -5,6 +5,8 @@
  * The model only ever sees this sheet; the UI renders the numbers from it, not from the
  * model's text.
  */
+import { clock, ungroundedIn } from "@/common/utils/grounding";
+export { clock };
 import type { MatchDetail, MatchPlayer } from "./match-detail";
 import { laneResult } from "./match-extras";
 import { classifyQueue } from "./queue-classification";
@@ -318,13 +320,6 @@ export function factLabel(f: CoachFact): string {
   return EN_BASE[f.base];
 }
 
-/** "12:34" (or "-1:20" before the horn). */
-export function clock(sec: number): string {
-  const sign = sec < 0 ? "-" : "";
-  const s = Math.abs(Math.round(sec));
-  return `${sign}${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
 /** A fact's value as the prompt writes it (and as the coach must quote it). */
 export function factText(f: CoachFact): string {
   if (typeof f.value === "string") return f.value;
@@ -341,86 +336,13 @@ export function factText(f: CoachFact): string {
 }
 
 /**
- * Time markers the coach may write without citing a fact: "minute 10", "min 10", "10 minutes",
- * "10 min", "first 10 minutes", "10-minute" (and Filipino/Cebuano "minuto"). Clock times like
- * "18:20" are not markers: they're stats (item timings, game length) and must match a fact.
- */
-const MINUTE_WORD = "(?:minutes?|mins?|minutos?)";
-const TIME_MARKERS = [
-  new RegExp(`\\b(?:first|unang)\\s+\\d+(?:\\.\\d+)?\\s*${MINUTE_WORD}\\b`, "gi"),
-  new RegExp(`\\b(?:minute|min|minuto)\\.?\\s+\\d+(?:\\.\\d+)?\\b`, "gi"),
-  // "10 ka minuto" (Cebuano) and "10 na minuto" (Filipino) count too.
-  new RegExp(`\\b\\d+(?:\\.\\d+)?\\s*(?:-\\s*|(?:ka|na)\\s+)?${MINUTE_WORD}\\b`, "gi"),
-];
-const CLOCK = /-?\b\d{1,3}:\d{2}\b/g;
-
-/** The text with every time marker blanked out (they need no fact). */
-function withoutTimeMarkers(text: string): string {
-  return TIME_MARKERS.reduce((t, re) => t.replace(re, " "), text);
-}
-
-/** The text without the sheet's fact keys: "goldAt10" quoted in a sentence isn't a 10. */
-function withoutFactKeys(text: string, sheet: CoachFactSheet): string {
-  const keys = sheet.facts.map((f) => f.key).sort((a, b) => b.length - a.length);
-  return keys.reduce((t, key) => t.split(key).join(" "), text);
-}
-
-/**
- * Clock times the sheet has (item timings, game length), as the prompt writes them; the
- * minute marks its stats are taken at ("10:00" when it has last hits at 10 minutes); and the
- * times in its facts' labels ("Team fight deaths after 30:00").
- */
-function allowedClocks(sheet: CoachFactSheet): Set<string> {
-  return new Set(
-    sheet.facts.flatMap((f) => {
-      const out: string[] = [...(factLabel(f).match(CLOCK) ?? [])];
-      const mark = /At(\d+)$/.exec(f.key);
-      if (mark) out.push(`${Number(mark[1])}:00`);
-      if (f.unit === "clock" && typeof f.value === "number") out.push(clock(f.value));
-      return out;
-    }),
-  );
-}
-
-/** Every number a fact allows the text to contain. */
-function allowedNumbers(sheet: CoachFactSheet): Set<number> {
-  const numbers = new Set<number>();
-  for (const f of sheet.facts) {
-    if (typeof f.value === "string") {
-      for (const m of f.value.match(/\d+(?:\.\d+)?/g) ?? []) numbers.add(Number(m));
-      continue;
-    }
-    const v = Math.abs(f.value);
-    numbers.add(v);
-    numbers.add(Math.round(v));
-    numbers.add(round(v, 1));
-    if (v >= 1000) {
-      // "3.8k" style: thousands with one decimal. Not whole thousands: "4k" for 3,812 would
-      // let a bare "4" through anywhere.
-      numbers.add(round(v / 1000, 1));
-    }
-  }
-  return numbers;
-}
-
-/**
- * Numbers in `text` that no fact in the sheet backs (empty when the text is grounded). Minute
- * markers are skipped; a clock time must be one of the sheet's clocks exactly; every other
- * number must equal a fact's value (as given, rounded, or in thousands with a "k").
+ * Numbers in `text` that no fact in the sheet backs (empty when the text is grounded): the
+ * shared grounding rule (minute markers skipped, clock times exact, other numbers as given,
+ * rounded or in thousands), with the facts as the prompt labels them.
  */
 export function ungroundedNumbers(text: string, sheet: CoachFactSheet): string[] {
-  const numbers = allowedNumbers(sheet);
-  const clocks = allowedClocks(sheet);
-  const out: string[] = [];
-  // Models often write "10‑minute" with a non-breaking hyphen (or a dash, or a minus sign).
-  const plain = text.replace(/[\u2010-\u2015\u2212]/g, "-").replace(/(\d),(\d{3})/g, "$1$2");
-  let cleaned = withoutTimeMarkers(withoutFactKeys(plain, sheet));
-  cleaned = cleaned.replace(CLOCK, (c) => {
-    if (!clocks.has(c) && !clocks.has(c.replace(/^-/, ""))) out.push(c);
-    return " ";
-  });
-  for (const m of cleaned.matchAll(/\d+(?:\.\d+)?/g)) {
-    if (!numbers.has(Number(m[0]))) out.push(m[0]);
-  }
-  return [...new Set(out)];
+  return ungroundedIn(
+    text,
+    sheet.facts.map((f) => ({ key: f.key, label: factLabel(f), value: f.value, unit: f.unit })),
+  );
 }

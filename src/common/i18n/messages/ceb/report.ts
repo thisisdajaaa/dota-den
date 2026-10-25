@@ -2,6 +2,23 @@ import type { MessageTree } from "../../translate";
 import type { report as en } from "../en/report";
 
 export const report: MessageTree<typeof en> = {
+  read: {
+    kicker: "AI read (Plus)",
+    title: "Unsay giingon niini nga panahon",
+    about:
+      "Pipila ka obserbasyon bahin niini nga mga duwa ug usa ka angay tutokan, gisulat sa AI gikan lang sa mga numero niini nga page (nakalista ang mga numero nga gigamit). Mahimo kining masayop.",
+    write: "Isulat ang akong read",
+    writing: "Gibasa ang imong mga duwa…",
+    plusOnly:
+      "Ang mga Plus member adunay AI read sa bisan unsang panahon: mga pattern sa ilang mga duwa ug usa ka angay tutokan sunod.",
+    seePlus: "Tan-awa ang Plus",
+    resting: "Nagpahulay ang AI coach karong adlawa. Sulayi pag-usab ugma.",
+    failed:
+      "Wala makasulat ang AI og read nga mapamatud-an sa imong mga numero. Sulayi pag-usab unya.",
+    offline: "Dili maabot ang Dota Den karon.",
+    basedOn: "Base sa",
+    kinds: { strength: "Maayo", improve: "Pauswagon", focus: "Tutokan" },
+  },
   title: "Battle report",
   heading: "Imong battle report",
   description: "{from} hangtod {to}: tanan nimong public nga duwa, gikan sa OpenDota.",

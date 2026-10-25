@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CalendarSearch } from "lucide-react";
 import { Suspense } from "react";
-import { getT } from "@/common/i18n/server";
+import { getLocale, getT } from "@/common/i18n/server";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
@@ -13,7 +13,8 @@ import { dayKeyFormatter } from "@/common/time/day-key";
 import { getCurrentUser, type User } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
 import { formatDuration, formatPercent } from "@/modules/matches/ui/format";
-import { battleReportService, type ReportReplaysView } from "@/modules/report";
+import { battleReportService, periodReadService, type ReportReplaysView } from "@/modules/report";
+import { PeriodReadCard, type PeriodReadInitial } from "@/modules/report/ui/period-read-card";
 import {
   MAX_LOOKBACK_DAYS,
   MAX_RANGE_DAYS,
@@ -196,10 +197,31 @@ async function ReportBody({
   emptyAction: { href: string; label: string };
 }) {
   const owner = { userId: user.id, accountId32: user.accountId32 };
-  const [view, t] = await Promise.all([
+  const [view, t, locale] = await Promise.all([
     battleReportService.report(owner, range, timeZone).catch(() => null),
     getT(),
+    getLocale(),
   ]);
+  // The AI read (Plus): a stored one, or whether one can be written. Never fails the page.
+  const read: PeriodReadInitial =
+    view && tab === "overview" && view.report.games > 0
+      ? await periodReadService
+          .view(user, view, locale)
+          .then((v): PeriodReadInitial =>
+            v.status === "ready"
+              ? {
+                  status: "ready",
+                  read: {
+                    points: v.read.points,
+                    facts: v.read.facts,
+                    createdAt: v.read.createdAt.toISOString(),
+                    cached: true,
+                  },
+                }
+              : v,
+          )
+          .catch((): PeriodReadInitial => ({ status: "off" }))
+      : { status: "off" };
   // Replay reads only on the overview, and only when OpenDota answered (imports have none).
   const replays =
     view?.source === "opendota" && tab === "overview" && view.report.games > 0
@@ -277,6 +299,7 @@ async function ReportBody({
           }
         />
       </section>
+      <PeriodReadCard from={view.from} to={view.to} initial={read} />
 
       <CompareCard
         current={view.current}

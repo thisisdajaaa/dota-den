@@ -156,3 +156,14 @@ review is announced with a `coach_review` push (once per match). That notificati
 also the feature's switch: off means no automatic reviews and no AI calls. A game is scheduled
 once per player for 3 days (`match_auto_reviews`, TTL), and that record is exported and deleted
 with the player's coach data.
+
+## Addendum (2026-10-25): the battle report's AI read
+
+The battle report gets an AI read for Plus: 3 to 5 observations about the chosen period and one
+"focus", written by the coach's model from the report's own numbers (record, win rate, streaks,
+KDA and GPM against the period before, the top five heroes, lane roles with enough replay data,
+and the MMR change only when it's exact). The grounding check is shared with the coach
+(`src/common/utils/grounding.ts`): every number must be a fact's value, each point cites fact
+keys, and a failed check is retried once with the problems. It's written only on request, on the
+shared daily AI budget, rate-limited per player, and kept 30 days per period, game count and
+language (`report_ai_reads`, exported and deleted with the player's data).

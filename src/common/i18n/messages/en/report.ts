@@ -1,5 +1,21 @@
 /** UI copy for the report feature. */
 export const report = {
+  read: {
+    kicker: "AI read (Plus)",
+    title: "What this period says",
+    about:
+      "A few observations about these games and one thing to focus on, written by AI from the numbers on this page only (each lists the numbers it uses). It can be wrong.",
+    write: "Write my read",
+    writing: "Reading your games…",
+    plusOnly:
+      "Plus members get an AI read of any period: patterns in their games and one focus for next time.",
+    seePlus: "See Plus",
+    resting: "The AI coach is resting for today. Try again tomorrow.",
+    failed: "The AI couldn't write a read it could back with your numbers. Try again later.",
+    offline: "Can't reach Dota Den right now.",
+    basedOn: "Based on",
+    kinds: { strength: "Going well", improve: "Work on", focus: "Focus" },
+  },
   title: "Battle report",
   heading: "Your battle report",
   description: "{from} to {to}: all your public games, from OpenDota.",
