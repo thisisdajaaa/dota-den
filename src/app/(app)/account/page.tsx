@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { discordWebhookService } from "@/modules/discord";
+import { discordLinkService, discordWebhookService } from "@/modules/discord";
+import { DiscordLinkCard } from "@/modules/discord/ui/discord-link-card";
 import { DiscordCard } from "@/modules/discord/ui/discord-card";
 import { emailService } from "@/modules/email";
 import { EmailDigestCard } from "@/modules/email/ui/email-digest-card";
@@ -22,15 +23,20 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("privacy.title") };
 }
 
-export default async function AccountPage() {
+const DISCORD_OUTCOMES = ["linked", "denied", "bad_state", "off"] as const;
+
+export default async function AccountPage({ searchParams }: PageProps<"/account">) {
+  const { discord: discordParam } = await searchParams;
+  const discordOutcome = DISCORD_OUTCOMES.find((o) => o === discordParam) ?? null;
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
   const offer = plusService.offer();
-  const [notifications, shares, discord, email, plan] = await Promise.all([
+  const [notifications, shares, discord, discordLink, email, plan] = await Promise.all([
     notificationService.status(user.id),
     sharesService.list(user.id),
     discordWebhookService.status(user.id),
+    discordLinkService.status(user.id).catch(() => ({ enabled: false, linked: null })),
     emailService.status(user.id),
     plusService.plan(user.id),
   ]);
@@ -88,6 +94,8 @@ export default async function AccountPage() {
       />
 
       <EmailDigestCard initial={email} />
+
+      <DiscordLinkCard initial={discordLink} outcome={discordOutcome} />
 
       <DiscordCard initial={discord} />
 

@@ -1,5 +1,39 @@
 /** UI copy and post text for the Discord feed. */
 export const discord = {
+  bot: {
+    help: "Dota Den bot: `/den me` shows your last week, form and most played heroes; `/den leaderboard` ranks linked members of this server by ranked wins this week. Link your Discord first: {url}/account",
+    notLinked: "Link your Discord to Dota Den first (it takes a few seconds): {url}",
+    serverOnly: "The leaderboard is per server: use it in a server channel.",
+    meTitle: "{name} on Dota Den",
+    week: "Last 7 days",
+    weekValue: "{wins}W {losses}L ({rate}%)",
+    noGames: "No games yet",
+    form: "Last 10 games",
+    heroes: "Most played (30 days)",
+    record: "{wins}W {losses}L",
+    footer: "From public match data you imported on Dota Den.",
+    boardTitle: "Ranked wins this week",
+    boardFooter: "Linked members who've used /den in this server. Last 7 days.",
+    boardEmpty:
+      "No ranked games this week from linked members here yet. Members show up after they use /den in this server.",
+  },
+  link: {
+    title: "Discord account",
+    description:
+      "Link your Discord account so the Dota Den bot knows it's you: `/den me` and this server's weekly leaderboard. We only learn your Discord name and id.",
+    connect: "Connect Discord",
+    linkedAs: "Linked as {name}",
+    unlink: "Unlink",
+    unlinking: "Unlinking…",
+    off: "Connecting Discord isn't set up yet.",
+    outcomes: {
+      linked: "Discord linked.",
+      denied: "Discord didn't confirm the link. Try again.",
+      bad_state: "That link expired. Try again.",
+      off: "Connecting Discord isn't set up yet.",
+    },
+    failed: "Couldn't unlink. Try again.",
+  },
   card: {
     title: "Discord",
     description:

@@ -1,6 +1,9 @@
 /** Public API of the Discord feed feature (ADR 0009). */
 export {
+  discordBotService,
   discordController,
+  discordLinkService,
+  discordLinksRepository,
   discordFeedService,
   discordPostLogRepository,
   discordWebhookService,

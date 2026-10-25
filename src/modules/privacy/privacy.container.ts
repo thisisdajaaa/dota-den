@@ -2,7 +2,7 @@ import "server-only";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
-import { discordWebhookService } from "@/modules/discord";
+import { discordLinkService, discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
 import { emailService } from "@/modules/email";
 import { goalsService } from "@/modules/goals";
@@ -50,6 +50,8 @@ export const privacyService = lazy(
         notificationService,
         sharesService,
         discordWebhookService,
+        // The linked Discord account (the bot).
+        discordLinkService,
         emailService,
         // The local subscription record; billing records stay with the provider (ADR 0013).
         plusService,

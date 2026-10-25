@@ -3,6 +3,40 @@ import type { discord as en } from "../en/discord";
 
 /** Filipino. */
 export const discord: MessageTree<typeof en> = {
+  bot: {
+    help: "Dota Den bot: ipinapakita ng `/den me` ang huling linggo mo, form at mga pinakamadalas na hero; niraranggo ng `/den leaderboard` ang mga naka-link na miyembro ng server na ito ayon sa ranked wins ngayong linggo. I-link muna ang Discord mo: {url}/account",
+    notLinked: "I-link muna ang Discord mo sa Dota Den (ilang segundo lang): {url}",
+    serverOnly: "Kada server ang leaderboard: gamitin ito sa isang channel ng server.",
+    meTitle: "{name} sa Dota Den",
+    week: "Huling 7 araw",
+    weekValue: "{wins}W {losses}L ({rate}%)",
+    noGames: "Wala pang laro",
+    form: "Huling 10 laro",
+    heroes: "Pinakamadalas (30 araw)",
+    record: "{wins}W {losses}L",
+    footer: "Mula sa public match data na in-import mo sa Dota Den.",
+    boardTitle: "Ranked wins ngayong linggo",
+    boardFooter: "Mga naka-link na miyembrong gumamit ng /den sa server na ito. Huling 7 araw.",
+    boardEmpty:
+      "Wala pang ranked game ngayong linggo mula sa mga naka-link na miyembro rito. Lalabas ang mga miyembro kapag ginamit nila ang /den sa server na ito.",
+  },
+  link: {
+    title: "Discord account",
+    description:
+      "I-link ang Discord account mo para malaman ng Dota Den bot na ikaw iyan: `/den me` at ang lingguhang leaderboard ng server. Discord name at id mo lang ang nalalaman namin.",
+    connect: "Ikonekta ang Discord",
+    linkedAs: "Naka-link bilang {name}",
+    unlink: "Alisin ang link",
+    unlinking: "Inaalis…",
+    off: "Hindi pa naka-set up ang pagkonekta ng Discord.",
+    outcomes: {
+      linked: "Naka-link na ang Discord.",
+      denied: "Hindi kinumpirma ng Discord ang link. Subukan ulit.",
+      bad_state: "Nag-expire ang link na iyon. Subukan ulit.",
+      off: "Hindi pa naka-set up ang pagkonekta ng Discord.",
+    },
+    failed: "Hindi naalis ang link. Subukan ulit.",
+  },
   card: {
     title: "Discord",
     description:
