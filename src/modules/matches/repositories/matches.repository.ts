@@ -47,6 +47,8 @@ export const MATCH_COLLECTIONS = {
   coachUsage: "match_coach_usage",
   /** Matches asked to be parsed by Plus auto requests (dedupe, expires). */
   parseRequests: "match_parse_requests",
+  /** Plus auto post-game reviews scheduled per player and match (dedupe, expires). */
+  autoReviews: "match_auto_reviews",
 } as const;
 
 export interface PlayerMatchFactDoc extends PlayerMatchFact {

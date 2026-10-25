@@ -25,6 +25,8 @@ export class JobsService {
       warmMeta: () => Promise<Array<{ key: string; ok: boolean }>>;
       /** Plus go-live alerts (one run). Optional: without it the job does nothing. */
       streamerAlerts?: () => Promise<Record<string, unknown>>;
+      /** One attempt at a Plus auto review (it re-queues itself while the replay is parsed). */
+      coachAutoReview?: (payload: Record<string, unknown>) => Promise<void>;
       logger: Pick<Logger, "info">;
       now?: () => number;
     },
@@ -39,7 +41,26 @@ export class JobsService {
       "streamer-alerts": async () => {
         await this.runStreamerAlerts();
       },
+      "coach-auto-review": async (payload) => {
+        await this.deps.coachAutoReview?.(payload);
+      },
     };
+  }
+
+  /**
+   * Queue one attempt at a Plus auto review. Each attempt has its own dedup key, so a retry
+   * runs once however many times it's queued. Without a durable queue nothing can wait: the
+   * attempt runs right after the response instead.
+   */
+  async enqueueCoachAutoReview(
+    payload: { userId: string; matchId: string; attempt: number },
+    delaySec: number,
+  ): Promise<void> {
+    const queue = this.deps.queue();
+    await queue.enqueue("coach-auto-review", payload, {
+      dedupKey: `coach-review:${payload.userId}:${payload.matchId}:${payload.attempt}`,
+      ...(queue.durable ? { delaySec } : {}),
+    });
   }
 
   /**

@@ -1,5 +1,6 @@
 /** Public API of the matches feature (ADR 0009). Read-model types live in ./domain. */
 export {
+  autoReviewService,
   matchCoachService,
   matchesController,
   matchExtrasService,

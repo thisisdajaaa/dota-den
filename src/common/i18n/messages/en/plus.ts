@@ -35,7 +35,7 @@ export const plus = {
     perks: {
       coach: {
         title: "Unlimited AI coach",
-        body: "A coach review of any of your parsed matches, as often as you like (free: one new review a week). It's written from that match's numbers only, and it can be wrong.",
+        body: "A coach review of any of your parsed matches, as often as you like (free: one new review a week). It's written from that match's numbers only, and it can be wrong. Your newest ranked games are also reviewed automatically after each sync, with a notification when the review is ready.",
       },
       sync: {
         title: "Priority sync",

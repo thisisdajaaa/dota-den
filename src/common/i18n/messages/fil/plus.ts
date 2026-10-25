@@ -31,7 +31,7 @@ export const plus: MessageTree<typeof en> = {
     perks: {
       coach: {
         title: "Walang limit na AI coach",
-        body: "Coach review ng kahit anong na-parse mong match, kahit ilang beses (libre: isang bagong review kada linggo). Mula lang sa mga numero ng match na iyon ito isinusulat, at puwede itong magkamali.",
+        body: "Coach review ng kahit anong na-parse mong match, kahit ilang beses (libre: isang bagong review kada linggo). Mula lang sa mga numero ng match na iyon ito isinusulat, at puwede itong magkamali. Awtomatiko ring nirerebyu ang pinakabago mong ranked game pagkatapos ng bawat sync, at may notification kapag handa na ang review.",
       },
       sync: {
         title: "Priority sync",

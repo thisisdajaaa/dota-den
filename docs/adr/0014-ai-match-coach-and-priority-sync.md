@@ -145,3 +145,14 @@ else's and the import waits.
 - Plus players' imports draw on the shared OpenDota budget faster while they're importing
   (up to 8 pages every 10 s instead of 5 every 30 s, per importing supporter), plus up to 3
   parse requests per sync. Watch `opendota_budget_usage` as Plus grows.
+
+## Addendum (2026-10-25): automatic reviews for Plus
+
+After a Plus member's sync imports new games, the two newest ranked games from the last day are
+scheduled for an automatic coach review (`coach-auto-review` job, QStash). Each attempt asks the
+coach for the review; an unparsed replay or a busy OpenDota is retried after 5, 10, 20, 30 and
+45 minutes, then given up. The daily AI budget spent, or a model failure, stops it. A written
+review is announced with a `coach_review` push (once per match). That notification setting is
+also the feature's switch: off means no automatic reviews and no AI calls. A game is scheduled
+once per player for 3 days (`match_auto_reviews`, TTL), and that record is exported and deleted
+with the player's coach data.

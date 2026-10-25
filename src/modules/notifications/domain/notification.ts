@@ -2,13 +2,16 @@ import { addDays, weekday, type DayKey } from "@/common/time/day-key";
 
 /**
  * What a player can be notified about. Each can be turned off separately. `streamer_live`
- * (a followed channel went live) is a Plus feature (ADR 0013): only sent to Plus players.
+ * (a followed channel went live) and `coach_review` (an automatic AI review of a new ranked
+ * game is ready) are Plus features (ADR 0013): only sent to Plus players. Turning
+ * `coach_review` off also stops the reviews being written automatically.
  */
 export const NOTIFICATION_KINDS = [
   "session_recap",
   "weekly_recap",
   "patch_heroes",
   "streamer_live",
+  "coach_review",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -20,10 +23,14 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   weekly_recap: true,
   patch_heroes: true,
   streamer_live: true,
+  coach_review: true,
 };
 
 /** Kinds only Plus players get (the settings hide them for everyone else). */
-export const PLUS_NOTIFICATION_KINDS: readonly NotificationKind[] = ["streamer_live"];
+export const PLUS_NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  "streamer_live",
+  "coach_review",
+];
 
 /** Saved settings from before a kind existed get that kind's default. */
 export function withDefaults(prefs: Partial<NotificationPrefs> | null): NotificationPrefs {

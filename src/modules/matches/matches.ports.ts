@@ -294,6 +294,16 @@ export interface CoachUsagePort {
 }
 
 /** Auto parse requests for Plus (ADR 0014): recent unparsed games, and a dedupe record. */
+/** Plus auto post-game reviews: which games to review, and a dedupe record per player. */
+export interface AutoReviewsPort {
+  /** This player's imported ranked games since `since`, newest first. */
+  recentRanked(accountId32: number, since: Date, limit: number): Promise<string[]>;
+  /** Claims one game for one player's automatic review; false when it's already scheduled. */
+  claim(userId: string, matchId: string, now: Date, ttlMs: number): Promise<boolean>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
 export interface ParseRequestsPort {
   /** Imported games of this player that OpenDota hadn't parsed, newest first. */
   recentUnparsed(accountId32: number, since: Date, limit: number): Promise<string[]>;

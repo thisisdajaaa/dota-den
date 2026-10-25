@@ -6,6 +6,7 @@ import type {
   CoachReviewKey,
   CoachReviewsPort,
   CoachUsagePort,
+  AutoReviewsPort,
   ParseRequestsPort,
   StoredCoachReview,
 } from "../matches.ports";
@@ -277,5 +278,74 @@ export class ParseRequestsRepository implements ParseRequestsPort {
 
   async release(matchId: string): Promise<void> {
     await (await this.col()).deleteOne({ _id: matchId });
+  }
+}
+
+interface AutoReviewDoc {
+  /** `${userId}:${matchId}` */
+  _id: string;
+  userId: string;
+  matchId: string;
+  scheduledAt: Date;
+  expiresAt: Date;
+}
+
+/** Plus auto post-game reviews: recent ranked games, and which are already scheduled. */
+export class AutoReviewsRepository implements AutoReviewsPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
+
+  private async col() {
+    return (await this.getDb()).collection<AutoReviewDoc>(MATCH_COLLECTIONS.autoReviews);
+  }
+
+  async ensureIndexes(): Promise<void> {
+    const col = await this.col();
+    await Promise.all([
+      col.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, name: "ttl_expiresAt" }),
+      col.createIndex({ userId: 1 }, { name: "by_user" }),
+    ]);
+  }
+
+  async recentRanked(accountId32: number, since: Date, limit: number): Promise<string[]> {
+    if (limit <= 0) return [];
+    const docs = await (
+      await this.getDb()
+    )
+      .collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts)
+      // Served by the by_account_date index.
+      .find(
+        { accountId32, ranked: true, startedAt: { $gte: since } },
+        { projection: { _id: 0, matchId: 1 } },
+      )
+      .sort({ startedAt: -1 })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => d.matchId);
+  }
+
+  async claim(userId: string, matchId: string, now: Date, ttlMs: number): Promise<boolean> {
+    const col = await this.col();
+    const _id = `${userId}:${matchId}`;
+    const expiresAt = new Date(now.getTime() + ttlMs);
+    try {
+      await col.insertOne({ _id, userId, matchId, scheduledAt: now, expiresAt });
+      return true;
+    } catch (e) {
+      if (!isDuplicateKey(e)) throw e;
+      // Expired but not yet swept by the TTL monitor.
+      const res = await col.updateOne(
+        { _id, expiresAt: { $lte: now } },
+        { $set: { scheduledAt: now, expiresAt } },
+      );
+      return res.modifiedCount === 1;
+    }
+  }
+
+  async exportForOwner(owner: DataOwner) {
+    return forExport(await (await this.col()).find({ userId: owner.userId }).toArray());
+  }
+
+  async deleteForOwner(owner: DataOwner): Promise<number> {
+    return (await (await this.col()).deleteMany({ userId: owner.userId })).deletedCount;
   }
 }

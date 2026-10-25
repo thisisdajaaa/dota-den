@@ -335,12 +335,13 @@ describe("NotificationTriggersService", () => {
   });
 });
 
-it("gives settings saved before a kind existed that kind's default (go-live alerts on)", () => {
+it("gives settings saved before a kind existed that kind's default (Plus kinds on)", () => {
   expect(withDefaults({ session_recap: false, weekly_recap: true, patch_heroes: true })).toEqual({
     session_recap: false,
     weekly_recap: true,
     patch_heroes: true,
     streamer_live: true,
+    coach_review: true,
   });
   expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
 });
@@ -352,6 +353,7 @@ it("has a default for every kind", () => {
     "weekly_recap",
     "patch_heroes",
     "streamer_live",
+    "coach_review",
   ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });
