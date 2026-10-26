@@ -118,6 +118,12 @@ export const admin: MessageTree<typeof en> = {
     done: "Nahuman sa {seconds}s: {synced} na-sync, {importing} nag-import pa, {failed} napakyas, {skipped} gilaktawan.",
     adminsOnly: "Para sa admin ra.",
     syncFailed: "Napakyas ang sync.",
+    schedules: "I-set up ang job schedules",
+    schedulesPending: "Gi-set up…",
+    schedulesDone:
+      "Na-set up ang {n} ka schedule (matag 5 minuto: go-live alerts ug session companion).",
+    schedulesOff: "Walay QStash dinhi: sa app mismo modagan ang mga job.",
+    schedulesFailed: "Dili ma-set up ang mga schedule.",
   },
   alerts: {
     title: "Mga alerto",

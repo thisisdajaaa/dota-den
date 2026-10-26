@@ -116,6 +116,12 @@ export const admin = {
     done: "Done in {seconds}s: {synced} synced, {importing} still importing, {failed} failed, {skipped} skipped.",
     adminsOnly: "Admins only.",
     syncFailed: "The sync failed.",
+    schedules: "Set up job schedules",
+    schedulesPending: "Setting up…",
+    schedulesDone:
+      "{n} schedules set up (every 5 minutes: go-live alerts and the session companion).",
+    schedulesOff: "QStash isn't configured here: jobs run in the app instead.",
+    schedulesFailed: "The schedules couldn't be set up.",
   },
   alerts: {
     title: "Alerts",
