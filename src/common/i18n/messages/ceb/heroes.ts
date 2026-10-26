@@ -14,6 +14,11 @@ export const heroes: MessageTree<typeof en> = {
     yourRank: "Imong rank",
     rankAbove: "Ang rank nga mas taas",
     summary: "Imong pinakadakong kulang ug imong pinakakusog",
+    teaser: {
+      kicker: "Batok sa imong rank",
+      title: "Asa ka kumpara sa {rank}",
+      link: "Tan-awa ang pagtandi sa matag hero",
+    },
     workOn: "Pauswagon",
     strength: "Imong labaw",
     gap: {

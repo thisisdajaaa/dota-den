@@ -12,6 +12,11 @@ export const heroes = {
     yourRank: "Your rank",
     rankAbove: "The rank above",
     summary: "Your biggest gap and your biggest edge",
+    teaser: {
+      kicker: "Against your rank",
+      title: "Where you stand vs {rank}",
+      link: "See how you compare on every hero",
+    },
     workOn: "Work on",
     strength: "Your edge",
     gap: {

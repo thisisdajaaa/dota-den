@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-26
 
+- Overview: the queue card no longer stretches into an empty block; recent form sits under it, and a new "Where you stand" card beside your heroes shows your biggest gap and edge against your rank (How you compare); recent matches shows 8 games
 - How you compare: when OpenDota is down, your imported games are compared instead (kills + assists and deaths; last hits need OpenDota), and the message says which source failed
 - Plus: admins have Plus without a subscription (no supporter badge, not counted as paying)
 - Admin: "What gets used": uses and players per paid or AI feature (last 7 and 30 days), and the share of recent ranked games with a parsed replay
