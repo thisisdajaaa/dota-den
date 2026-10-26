@@ -47,6 +47,7 @@ export class CompareService {
       this.deps.isPlus(user.id).catch(() => false),
     ]);
     const yourBracket = bracketOf(tier);
+    // At the top bracket (Divine–Immortal) there is no rank above: "next" is the same.
     const bracket = yourBracket && (target === "next" ? nextBracket(yourBracket) : yourBracket);
     const plan: CompareView["plan"] = plus ? "plus" : "free";
     const games =

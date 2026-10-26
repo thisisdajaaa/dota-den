@@ -38,6 +38,16 @@ describe("GroqClient", () => {
     expect(
       await new GroqClient({ apiKey: "k", fetch: bad, retryDelayMs: 0 }).chat([], { model: "m" }),
     ).toMatchObject({ ok: false, error: { type: "unavailable", cause: "status 400" } });
+    // The provider's reason is kept for the log.
+    const denied = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: { message: "Access denied." } }), { status: 403 }),
+    );
+    expect(
+      await new GroqClient({ apiKey: "k", fetch: denied, retryDelayMs: 0 }).chat([], {
+        model: "m",
+      }),
+    ).toMatchObject({ ok: false, error: { cause: "status 403: Access denied." } });
     expect(bad).toHaveBeenCalledTimes(1);
     const down = vi.fn(async () => Promise.reject(new TypeError("fetch failed")));
     const res = await new GroqClient({ apiKey: "k", fetch: down, retryDelayMs: 0 }).chat([], {

@@ -15,6 +15,7 @@ export const report: MessageTree<typeof en> = {
     resting: "Nagpahulay ang AI coach karong adlawa. Sulayi pag-usab ugma.",
     failed:
       "Wala makasulat ang AI og read nga mapamatud-an sa imong mga numero. Sulayi pag-usab unya.",
+    unavailable: "Wala motubag ang AI service karon. Sulayi pag-usab unya.",
     offline: "Dili maabot ang Dota Den karon.",
     basedOn: "Base sa",
     kinds: { strength: "Maayo", improve: "Pauswagon", focus: "Tutokan" },

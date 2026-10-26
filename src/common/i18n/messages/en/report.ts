@@ -12,6 +12,7 @@ export const report = {
     seePlus: "See Plus",
     resting: "The AI coach is resting for today. Try again tomorrow.",
     failed: "The AI couldn't write a read it could back with your numbers. Try again later.",
+    unavailable: "The AI service isn't answering right now. Try again in a little while.",
     offline: "Can't reach Dota Den right now.",
     basedOn: "Based on",
     kinds: { strength: "Going well", improve: "Work on", focus: "Focus" },

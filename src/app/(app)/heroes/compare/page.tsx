@@ -5,9 +5,13 @@ import { getT } from "@/common/i18n/server";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { compareService } from "@/modules/heroes";
+import { nextBracket, type RankBracket } from "@/modules/heroes/domain/compare";
 import { CompareSections } from "@/modules/heroes/ui/compare-view";
 import { getCurrentUser } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
+
+/** Divine–Immortal: STRATZ has no finer bracket, so there is no rank above to compare with. */
+const isTop = (b: RankBracket) => nextBracket(b) === b;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -38,16 +42,23 @@ export default async function ComparePage({ searchParams }: PageProps<"/heroes/c
         title={t("heroes.compare.title")}
         description={t("heroes.compare.description")}
       />
-      {view.yourBracket && (
-        <SegmentedLinks
-          label={t("heroes.compare.against")}
-          options={[
-            { value: "mine", label: t("heroes.compare.yourRank") },
-            { value: "next", label: t("heroes.compare.rankAbove") },
-          ]}
-          active={target}
-          href={(v) => (v === "next" ? "/heroes/compare?vs=next" : "/heroes/compare")}
-        />
+      {view.yourBracket &&
+      view.yourBracket === view.bracket &&
+      target === "mine" &&
+      isTop(view.yourBracket) ? (
+        <p className="text-sm text-muted-foreground">{t("heroes.compare.topBracket")}</p>
+      ) : (
+        view.yourBracket && (
+          <SegmentedLinks
+            label={t("heroes.compare.against")}
+            options={[
+              { value: "mine", label: t("heroes.compare.yourRank") },
+              { value: "next", label: t("heroes.compare.rankAbove") },
+            ]}
+            active={target}
+            href={(v) => (v === "next" ? "/heroes/compare?vs=next" : "/heroes/compare")}
+          />
+        )
       )}
       <CompareSections view={view} heroes={heroes} />
     </div>
