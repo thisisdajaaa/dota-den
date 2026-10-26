@@ -15,6 +15,8 @@ export const plus = {
     title: "Dota Den Plus",
     kicker: "Support Dota Den",
     lead: "Everything that's free today stays free. Plus is a way to keep Dota Den running, with a few extras for the players who chip in.",
+    staffTitle: "You have Plus",
+    staffBody: "You're an admin, so every Plus feature is on for you without a subscription.",
     comingSoonTitle: "Plus is coming soon",
     comingSoonBody:
       "We're getting payments ready. Nothing is for sale yet, and nothing you use today will be locked behind it.",

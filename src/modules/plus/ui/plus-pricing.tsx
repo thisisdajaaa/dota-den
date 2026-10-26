@@ -114,12 +114,18 @@ export function PlusPricing({
         </div>
       </section>
 
-      {offer.status === "off" && (
-        <Banner icon={Clock} title={t("plus.page.comingSoonTitle")}>
-          {t("plus.page.comingSoonBody")}
+      {plan?.reason === "staff" ? (
+        <Banner icon={Sparkles} title={t("plus.page.staffTitle")}>
+          {t("plus.page.staffBody")}
         </Banner>
+      ) : (
+        offer.status === "off" && (
+          <Banner icon={Clock} title={t("plus.page.comingSoonTitle")}>
+            {t("plus.page.comingSoonBody")}
+          </Banner>
+        )
       )}
-      {offer.status === "paused" && (
+      {offer.status === "paused" && plan?.reason !== "staff" && (
         <Banner icon={PauseCircle} title={t("plus.page.pausedTitle")}>
           {t("plus.page.pausedBody")}
         </Banner>

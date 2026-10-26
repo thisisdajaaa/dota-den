@@ -17,7 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PlusPage() {
   const user = await getCurrentUser({ tolerateErrors: true });
   const offer = plusService.offer();
-  const plan = user && offer.status !== "off" ? await plusService.plan(user.id) : null;
+  // Loaded even when Plus isn't on sale: admins have it anyway (staff).
+  const plan = user ? await plusService.plan(user.id).catch(() => null) : null;
   return (
     <PlusPricing
       offer={offer}
