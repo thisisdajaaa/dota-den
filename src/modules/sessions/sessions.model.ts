@@ -4,6 +4,8 @@ export const SESSIONS_SCHEMA_VERSION = 1;
 export const SESSION_COLLECTIONS = {
   notes: "session_notes",
   settings: "session_settings",
+  /** Session companion (Plus): when each player was last seen in Dota and what's announced. */
+  companion: "session_companion",
 } as const;
 
 export interface SessionNoteDoc extends SessionNote {

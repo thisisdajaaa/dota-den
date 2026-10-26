@@ -1,4 +1,6 @@
+import type { DataOwner } from "@/common/privacy/user-data";
 import type { GapMinutes, SessionMatch } from "./domain/session";
+import type { CompanionState } from "./domain/companion";
 import type { MmrObservation } from "./domain/session-mmr";
 import type { SessionNote } from "./domain/session-note";
 
@@ -37,4 +39,12 @@ export interface SessionSettingsPort {
 export interface PersonalDataStore {
   exportForOwner(owner: SessionOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: SessionOwner): Promise<number>;
+}
+
+/** The session companion's record per player (Plus). */
+export interface CompanionStatePort {
+  get(userId: string): Promise<CompanionState>;
+  save(userId: string, state: CompanionState): Promise<void>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
 }

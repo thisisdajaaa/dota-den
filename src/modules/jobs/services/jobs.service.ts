@@ -27,6 +27,8 @@ export class JobsService {
       streamerAlerts?: () => Promise<Record<string, unknown>>;
       /** One attempt at a Plus auto review (it re-queues itself while the replay is parsed). */
       coachAutoReview?: (payload: Record<string, unknown>) => Promise<void>;
+      /** One run of the Plus session companion. */
+      sessionCompanion?: () => Promise<unknown>;
       logger: Pick<Logger, "info">;
       now?: () => number;
     },
@@ -43,6 +45,9 @@ export class JobsService {
       },
       "coach-auto-review": async (payload) => {
         await this.deps.coachAutoReview?.(payload);
+      },
+      "session-companion": async () => {
+        await this.deps.sessionCompanion?.();
       },
     };
   }

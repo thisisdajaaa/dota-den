@@ -19,7 +19,7 @@ import { patchWatchlistService } from "@/modules/patches";
 import { practiceService } from "@/modules/practice";
 import { battleReportService, periodReadService } from "@/modules/report";
 import { followService } from "@/modules/players";
-import { sessionService } from "@/modules/sessions";
+import { sessionCompanionService, sessionService } from "@/modules/sessions";
 import { togetherService } from "@/modules/together";
 import { PrivacyController } from "./privacy.controller";
 import { PrivacyService } from "./privacy.service";
@@ -30,6 +30,8 @@ export const privacyService = lazy(
       parts: [
         mmrJournalService,
         sessionService,
+        // The session companion's record (Plus).
+        sessionCompanionService,
         followService,
         streamerFollowService,
         patchWatchlistService,

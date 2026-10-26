@@ -9,7 +9,13 @@ import {
   type SessionNoteDoc,
   type SessionSettingsDoc,
 } from "../sessions.model";
-import type { PersonalDataStore, SessionNotesPort, SessionSettingsPort } from "../sessions.ports";
+import type { CompanionState } from "../domain/companion";
+import type {
+  CompanionStatePort,
+  PersonalDataStore,
+  SessionNotesPort,
+  SessionSettingsPort,
+} from "../sessions.ports";
 
 const PROJECTION = { _id: 0, schemaVersion: 0, createdAt: 0 } as const;
 
@@ -144,5 +150,46 @@ export class SessionSettingsRepository implements SessionSettingsPort, PersonalD
 
   async deleteForOwner(owner: DataOwner): Promise<number> {
     return (await (await this.col()).deleteMany({ userId: owner.userId })).deletedCount;
+  }
+}
+
+interface CompanionDoc {
+  /** The user id. */
+  _id: string;
+  lastInGameAt: Date | null;
+  lastSyncAt: Date | null;
+  watermark: Date | null;
+  updatedAt: Date;
+}
+
+/** The session companion's record per player (Plus). */
+export class CompanionStateRepository implements CompanionStatePort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
+
+  private async col() {
+    return (await this.getDb()).collection<CompanionDoc>(SESSION_COLLECTIONS.companion);
+  }
+
+  async get(userId: string): Promise<CompanionState> {
+    const d = await (await this.col()).findOne({ _id: userId });
+    return {
+      lastInGameAt: d?.lastInGameAt ?? null,
+      lastSyncAt: d?.lastSyncAt ?? null,
+      watermark: d?.watermark ?? null,
+    };
+  }
+
+  async save(userId: string, state: CompanionState): Promise<void> {
+    await (
+      await this.col()
+    ).updateOne({ _id: userId }, { $set: { ...state, updatedAt: new Date() } }, { upsert: true });
+  }
+
+  async exportForOwner(owner: DataOwner) {
+    return forExport(await (await this.col()).find({ _id: owner.userId }).toArray());
+  }
+
+  async deleteForOwner(owner: DataOwner): Promise<number> {
+    return (await (await this.col()).deleteMany({ _id: owner.userId })).deletedCount;
   }
 }

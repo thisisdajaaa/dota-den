@@ -46,6 +46,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Pilii para nako: imong top five",
         body: "Sa tinuod nga ranked draft, idugang ang mga pick sa kaaway ug tan-awa ang imong lima ka labing maayong hero batok kanila, uban ang imong record ug matag matchup (libre: ang labing maayo).",
       },
+      session: {
+        title: "Kauban sa session",
+        body: "Samtang nagdula ka, adunay notification human sa matag dula: ang resulta, ang imong record karong session ug, kung ipakita sa imong kaugalingong history nga mas kanunay kang mapildi human sa sunod-sunod nga pildi, pahinumdom nga mopahulay usa.",
+      },
       sync: {
         title: "Priority sync",
         body: "Mas paspas ma-import ang taas nga match history: mas mubo nga paghulat ug mas dagkong batch, ug ipa-parse sa OpenDota ang imong pinakabag-o nga wala pa na-parse nga duwa (hangtod 3 kada sync). Usa ra gihapon ang OpenDota budget sa tanan, mao nga dili mohinay ang mga libreng player.",

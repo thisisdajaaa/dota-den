@@ -52,6 +52,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Nag-live ang streamer (Plus)",
       help: "Ilang minuto lang matapos mag-stream ang channel na fina-follow mo sa /live. Isang beses kada stream.",
     },
+    session_live: {
+      label: "Live session updates (Plus)",
+      help: "Habang nakikita ka ng Steam sa Dota: bawat tapos na laro kasama ang record mo sa session, at paalala kapag sinasabi ng sarili mong history na mas humihina ka kapag sunod-sunod ang talo.",
+    },
     coach_review: {
       label: "AI review ng mga bagong ranked game (Plus)",
       help: "Kapag may nakitang bagong ranked game ang sync, rerebyuhin ng AI coach ang pinakabago pag na-parse na ang replay, at sasabihan ka rito. Kapag pinatay ito, titigil din ang mga awtomatikong review.",
@@ -75,6 +79,14 @@ export const notifications: MessageTree<typeof en> = {
     list: "{items} at {last}",
     listMore: "{items} at {more} pa",
     heroFallback: "Hero #{id}",
+    sessionLive: {
+      title: "{result} sa {hero} · {wins}–{losses} ngayong session",
+      win: "Panalo",
+      loss: "Talo",
+      body: "Ayos. Tuloy lang.",
+      bodyLoss: "Bawi sa susunod.",
+      tilt: "{losses} sunod-sunod na talo. Pagkatapos ng ganitong streak, nananalo ka ng {after}% sa susunod na laro ({games} laro), kumpara sa {baseline}% karaniwan. Baka mas sulit ang maikling pahinga kaysa sa susunod na queue.",
+    },
     coachReview: {
       title: "Na-review na ang laro mo sa {hero}",
       body: "{first} · {points} coaching point mula sa totoong numero mo.",

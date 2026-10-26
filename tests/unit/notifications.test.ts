@@ -342,6 +342,7 @@ it("gives settings saved before a kind existed that kind's default (Plus kinds o
     patch_heroes: true,
     streamer_live: true,
     coach_review: true,
+    session_live: true,
   });
   expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
 });
@@ -354,6 +355,7 @@ it("has a default for every kind", () => {
     "patch_heroes",
     "streamer_live",
     "coach_review",
+    "session_live",
   ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });

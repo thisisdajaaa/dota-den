@@ -12,6 +12,7 @@ export const NOTIFICATION_KINDS = [
   "patch_heroes",
   "streamer_live",
   "coach_review",
+  "session_live",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -24,12 +25,14 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   patch_heroes: true,
   streamer_live: true,
   coach_review: true,
+  session_live: true,
 };
 
 /** Kinds only Plus players get (the settings hide them for everyone else). */
 export const PLUS_NOTIFICATION_KINDS: readonly NotificationKind[] = [
   "streamer_live",
   "coach_review",
+  "session_live",
 ];
 
 /** Saved settings from before a kind existed get that kind's default. */

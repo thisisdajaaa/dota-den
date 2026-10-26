@@ -49,6 +49,10 @@ export const plus = {
         title: "Pick for me: your top five",
         body: "During a real ranked draft, add the enemy picks and see your five best heroes against them, with your record and each matchup (free: the best one).",
       },
+      session: {
+        title: "Session companion",
+        body: "While you play, a notification after each game with the result, your record this session and, when your own history shows you lose more after a losing streak, a heads-up to take a break.",
+      },
       sync: {
         title: "Priority sync",
         body: "A long match history imports faster: shorter waits and bigger chunks between imports, and your newest unparsed games are sent to OpenDota for parsing (up to 3 per sync). It shares the same OpenDota budget as everyone, so free players aren't slowed down.",

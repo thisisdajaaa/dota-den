@@ -10,7 +10,11 @@
 import { Client } from "@upstash/qstash";
 import { env } from "@/common/config/env";
 
-const SCHEDULES = [{ id: "dota-den-streamer-alerts", job: "streamer-alerts", cron: "*/5 * * * *" }];
+const SCHEDULES = [
+  { id: "dota-den-streamer-alerts", job: "streamer-alerts", cron: "*/5 * * * *" },
+  // Plus session companion: in-game players' new games, every 5 minutes.
+  { id: "dota-den-session-companion", job: "session-companion", cron: "*/5 * * * *" },
+];
 
 async function main(): Promise<void> {
   const { QSTASH_TOKEN, QSTASH_URL, APP_URL, VERCEL_AUTOMATION_BYPASS_SECRET: bypass } = env();

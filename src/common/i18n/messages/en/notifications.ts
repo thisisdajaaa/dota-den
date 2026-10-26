@@ -49,6 +49,10 @@ export const notifications = {
       label: "Streamer goes live (Plus)",
       help: "Within a few minutes of a channel you follow on /live starting a stream. Once per stream.",
     },
+    session_live: {
+      label: "Live session updates (Plus)",
+      help: "While Steam shows you in Dota: each finished game with your session record, and a heads-up when your own history says you play worse on a losing streak.",
+    },
     coach_review: {
       label: "AI review of new ranked games (Plus)",
       help: "After a sync finds new ranked games, the AI coach reviews the newest once their replays are parsed, and tells you here. Turning this off stops the automatic reviews too.",
@@ -72,6 +76,14 @@ export const notifications = {
     list: "{items} and {last}",
     listMore: "{items} and {more} more",
     heroFallback: "Hero #{id}",
+    sessionLive: {
+      title: "{result} on {hero} · {wins}–{losses} this session",
+      win: "Win",
+      loss: "Loss",
+      body: "Nice. Keep it going.",
+      bodyLoss: "Shake it off and reset before the next one.",
+      tilt: "{losses} losses in a row. After a streak like this you win {after}% of the next game ({games} games), against {baseline}% normally. A short break might be worth more than the next queue.",
+    },
     coachReview: {
       title: "Your {hero} game is reviewed",
       body: "{first} · {points} coaching points from your real numbers.",

@@ -328,6 +328,7 @@ describe("jobs", () => {
         "meta-warm": handler,
         "streamer-alerts": handler,
         "coach-auto-review": handler,
+        "session-companion": handler,
       },
       runs: repo,
     });
