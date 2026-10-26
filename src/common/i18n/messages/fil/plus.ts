@@ -33,6 +33,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Walang limit na AI coach",
         body: "Coach review ng kahit anong na-parse mong match, kahit ilang beses (libre: isang bagong review kada linggo). Mula lang sa mga numero ng match na iyon ito isinusulat, at puwede itong magkamali. Awtomatiko ring nirerebyu ang pinakabago mong ranked game pagkatapos ng bawat sync, at may notification kapag handa na ang review.",
       },
+      compare: {
+        title: "Paano ka ikumpara, sa bawat hero",
+        body: "Ang last hits, kills + assists at deaths mo sa bawat hero laban sa mga player na kapareho mo ng rank (o mas mataas), sa parehong haba ng laro, kasama ang pinakamalaking kulang mo (libre: ang pinakamadalas mong hero).",
+      },
       read: {
         title: "AI read ng battle report mo",
         body: "Pumili ng kahit anong panahon sa battle report mo at makakuha ng ilang obserbasyon at isang dapat pagtuunan, isinulat mula lang sa mga numero ng page na iyon (nakalista ang mga ginamit na numero).",

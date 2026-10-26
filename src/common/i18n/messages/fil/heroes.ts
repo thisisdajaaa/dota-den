@@ -2,6 +2,60 @@ import type { MessageTree } from "../../translate";
 import type { heroes as en } from "../en/heroes";
 
 export const heroes: MessageTree<typeof en> = {
+  compare: {
+    metaTitle: "Paano ka ikumpara",
+    link: "Paano ka ikumpara",
+    back: "Mga hero mo",
+    kicker: "Mga hero mo",
+    title: "Paano ka ikumpara",
+    description:
+      "Ang mga laro mo sa bawat hero laban sa mga player na kapareho mo ng rank sa parehong hero, sa parehong haba ng laro: kasing-farm, kasing-laban at kasing-buhay ka ba nila?",
+    against: "Ikumpara sa",
+    yourRank: "Rank mo",
+    rankAbove: "Ang rank na mas mataas",
+    summary: "Ang pinakamalaking kulang mo at ang pinakamalakas mo",
+    workOn: "Pagbutihin",
+    strength: "Lamang mo",
+    gap: {
+      lastHits: {
+        better: "{hero}: mas marami ng {pct}% ang last hits mo kaysa sa mga {rank} player",
+        worse: "{hero}: mas kaunti ng {pct}% ang last hits mo kaysa sa mga {rank} player",
+      },
+      fights: {
+        better: "{hero}: mas marami ng {pct}% ang kills + assists mo kaysa sa mga {rank} player",
+        worse: "{hero}: mas kaunti ng {pct}% ang kills + assists mo kaysa sa mga {rank} player",
+      },
+      deaths: {
+        better: "{hero}: mas kaunti ng {pct}% ang deaths mo kaysa sa mga {rank} player",
+        worse: "{hero}: mas marami ng {pct}% ang deaths mo kaysa sa mga {rank} player",
+      },
+    },
+    numbers: "Ikaw {yours} · sila {theirs} (kada laro, parehong haba)",
+    heroesTitle: "Laban sa mga {rank} player",
+    games: { one: "1 laro", other: "{n} laro" },
+    stats: { lastHits: "Last hits", fights: "Kills + assists", deaths: "Deaths" },
+    brackets: {
+      HERALD_GUARDIAN: "Herald–Guardian",
+      CRUSADER_ARCHON: "Crusader–Archon",
+      LEGEND_ANCIENT: "Legend–Ancient",
+      DIVINE_IMMORTAL: "Divine–Immortal",
+    },
+    locked: {
+      one: "Sa Plus, 1 pang hero mo ang makukumpara.",
+      other: "Sa Plus, {n} pang hero mo ang makukumpara.",
+    },
+    seePlus: "Tingnan ang Plus",
+    method:
+      "Ang mga public game mo sa huling {days} araw (15 minuto o higit pa; mga hero na may 5+ laro), laban sa average ng huling buong linggo ng mga laro sa rank na iyon sa STRATZ, kinuha sa haba ng bawat laro mo. Kasama sa average ng rank ang mga talo nila, kaya ang player na madalas manalo ay mas mataas sa kills at assists.",
+    status: {
+      unranked:
+        "Kailangan ng rank medal mo para makapagkumpara: laruin ang calibration games mo (o ipakita nang public ang rank mo sa Dota), tapos bumalik.",
+      unavailable:
+        "Hindi available ngayon ang mga average ng rank. Subukan ulit pagkalipas ng ilang minuto.",
+      too_few:
+        "Maglaro ng hindi bababa sa 5 laro (15 minuto o higit pa) sa isang hero sa huling 60 araw para makumpara ito.",
+    },
+  },
   title: "Mga hero",
   counts: {
     games: { one: "1 laro", other: "{n} laro" },
