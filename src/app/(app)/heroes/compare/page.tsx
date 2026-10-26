@@ -42,10 +42,7 @@ export default async function ComparePage({ searchParams }: PageProps<"/heroes/c
         title={t("heroes.compare.title")}
         description={t("heroes.compare.description")}
       />
-      {view.yourBracket &&
-      view.yourBracket === view.bracket &&
-      target === "mine" &&
-      isTop(view.yourBracket) ? (
+      {view.yourBracket && isTop(view.yourBracket) ? (
         <p className="text-sm text-muted-foreground">{t("heroes.compare.topBracket")}</p>
       ) : (
         view.yourBracket && (
