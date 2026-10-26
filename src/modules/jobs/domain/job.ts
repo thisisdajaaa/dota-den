@@ -12,6 +12,8 @@ export const JOB_NAMES = [
   "streamer-alerts",
   // Plus auto post-game review: waits for the replay parse, then writes the coach review.
   "coach-auto-review",
+  // Plus session companion: a QStash schedule delivers it every 5 minutes.
+  "session-companion",
 ] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 

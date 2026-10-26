@@ -9,7 +9,7 @@ import { PresenceController } from "./presence.controller";
 import { PresenceService } from "./presence.service";
 
 /** Steam is optional: without STEAM_WEB_API_KEY the service answers "disabled". */
-function steamSource(): SteamPresenceAdapter | null {
+export function steamSource(): SteamPresenceAdapter | null {
   const config = steamWebApiConfig();
   return config ? new SteamPresenceAdapter(steamGateway(), config) : null;
 }

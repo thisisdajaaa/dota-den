@@ -10,6 +10,7 @@ import { draftInsights } from "@/modules/drafts";
 import { emailDigest } from "@/modules/email";
 import { matchExtrasService, matchesService, matchSyncService } from "@/modules/matches";
 import { autoReviewService } from "@/modules/matches";
+import { sessionCompanionService } from "@/modules/sessions";
 import { BACKFILL_COOLDOWN_MS } from "@/modules/matches/domain/sync-policy";
 import { streamerAlerts as goLiveAlerts } from "@/modules/live";
 import { metaService } from "@/modules/meta";
@@ -72,6 +73,7 @@ export const jobsService = new JobsService({
   coachAutoReview: async (payload) => {
     await autoReviewService.run(payload);
   },
+  sessionCompanion: () => sessionCompanionService.run(),
   logger,
 });
 

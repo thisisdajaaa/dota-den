@@ -45,6 +45,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Pumili para sa akin: ang top five mo",
         body: "Sa totoong ranked draft, idagdag ang mga pick ng kalaban at makita ang limang pinakamagandang hero mo laban sa kanila, kasama ang record mo at bawat matchup (libre: ang pinakamaganda).",
       },
+      session: {
+        title: "Kasama sa session",
+        body: "Habang naglalaro ka, may notification pagkatapos ng bawat laro: ang resulta, ang record mo ngayong session at, kapag ipinapakita ng sarili mong history na mas madalas kang matalo pagkatapos ng sunod-sunod na talo, paalala na magpahinga muna.",
+      },
       sync: {
         title: "Priority sync",
         body: "Mas mabilis ma-import ang mahabang match history: mas maikling paghihintay at mas malalaking batch, at ipinapa-parse sa OpenDota ang pinakabago mong hindi pa na-parse na laro (hanggang 3 kada sync). Iisang OpenDota budget pa rin ang gamit ng lahat, kaya hindi bumabagal ang mga libreng player.",

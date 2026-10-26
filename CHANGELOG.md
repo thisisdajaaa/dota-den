@@ -7,6 +7,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 ## 2026-10-26
 
 - How you compare (Heroes): your last hits, kills + assists and deaths on each hero against players at your rank or the rank above, at the same game length (STRATZ), with your biggest gap to work on; Plus compares every hero you play
+- Plus: session companion: while Steam shows you in Dota, your new games are checked every few minutes and each one gets a notification with the result and your record this session; after a losing streak, a heads-up when your own history shows you win less after streaks like it (switch it off in notification settings)
 
 ## 2026-10-25
 

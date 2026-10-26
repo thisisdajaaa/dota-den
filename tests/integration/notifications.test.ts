@@ -84,6 +84,7 @@ describe("NotificationSettingsRepository", () => {
       patch_heroes: true,
       streamer_live: false,
       coach_review: true,
+      session_live: true,
     };
     await settings.savePrefs("u1", prefs, now);
     expect(await settings.prefs("u1")).toEqual(prefs);

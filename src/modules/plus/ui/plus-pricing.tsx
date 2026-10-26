@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Activity,
   BadgeCheck,
   Bell,
   Bot,
@@ -36,13 +37,24 @@ const FREE_KEYS = [
 ] as const;
 
 const PERKS: ReadonlyArray<{
-  key: "coach" | "compare" | "read" | "pick" | "sync" | "alerts" | "badge" | "limits" | "thanks";
+  key:
+    | "coach"
+    | "compare"
+    | "read"
+    | "pick"
+    | "session"
+    | "sync"
+    | "alerts"
+    | "badge"
+    | "limits"
+    | "thanks";
   icon: LucideIcon;
 }> = [
   { key: "coach", icon: Bot },
   { key: "compare", icon: Gauge },
   { key: "read", icon: FileText },
   { key: "pick", icon: Sparkles },
+  { key: "session", icon: Activity },
   { key: "sync", icon: Zap },
   { key: "alerts", icon: Bell },
   { key: "badge", icon: BadgeCheck },
