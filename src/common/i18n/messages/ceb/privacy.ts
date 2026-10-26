@@ -54,7 +54,7 @@ export const privacy: MessageTree<typeof en> = {
         body: "Tanan niini nakadugtong sa imong account ug apil sa download sa imong data:",
         items: {
           account:
-            "Ang imong account: ang imong Steam ID, ang imong publikong ngalan ug avatar sa Steam, ang imong settings (kinsa ang makakita sa imong profile, time zone, pinulongan) ug ang mga adlaw nga imong giablihan ang Dota Den.",
+            "Ang imong account: ang imong Steam ID, ang imong publikong ngalan ug avatar sa Steam, ang imong settings (kinsa ang makakita sa imong profile, time zone, pinulongan) ang mga adlaw nga imong giablihan ang Dota Den, ug pila ka higayon sa usa ka adlaw nimo gigamit ang matag Plus o AI nga feature (ihap lang, aron mahibal-an namo kung unsang mga feature ang angay ipabilin).",
           sessions:
             "Mga sign-in session: usa ka random nga token, nga naka-scramble (hashed) lang kung tipigan. Matapos kini kung mag-sign out ka, o human sa mga 30 ka adlaw nga wala ka mobisita.",
           matches:
@@ -145,7 +145,7 @@ export const privacy: MessageTree<typeof en> = {
           account:
             "Ang imong account ug ang imong gihimo: hangtod imo kining i-delete o ang imong account.",
           sessions: "Mga sign-in session: mga 30 ka adlaw human sa imong katapusang bisita.",
-          logs: "Mga lista sa gipadalang notification, email ug Discord post, ug mga billing notice: 90 ka adlaw.",
+          logs: "Mga lista sa gipadalang notification, email ug Discord post, ug mga billing notice: 90 ka adlaw. Ihap sa paggamit sa mga feature: 90 ka adlaw.",
           caches:
             "Naka-cache nga publikong data: mga draft room sa magkahigala 24 ka oras human sa katapusang lihok, mga player profile 30 ka adlaw, mga summary sa replay hangtod usa ka tuig.",
           backups: "Mga naka-encrypt nga backup: 30 ka adlaw, dayon papason na.",
