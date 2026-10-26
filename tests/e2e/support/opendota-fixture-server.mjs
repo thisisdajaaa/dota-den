@@ -816,6 +816,21 @@ function stratz(req, res, raw) {
   } catch {
     return send(400, { errors: [{ message: "Bad JSON" }] });
   }
+  // Per-minute averages per hero and rank: 6 last hits, 0.5 kills + assists and 0.2 deaths a
+  // minute (fixture players farm faster than that and die less).
+  if (String(body.query ?? "").includes("groupByTime")) {
+    const heroStats = {};
+    for (const m of String(body.query).matchAll(/h(\d+): stats/g))
+      heroStats[`h${m[1]}`] = Array.from({ length: 36 }, (_, t) => ({
+        time: t,
+        matchCount: 10000,
+        cs: 6 * t,
+        kills: 0.25 * t,
+        assists: 0.25 * t,
+        deaths: 0.2 * t,
+      }));
+    return send(200, { data: { heroStats } });
+  }
   if (String(body.query ?? "").includes("itemFullPurchase"))
     return send(200, stratzItems(Number(body.variables?.heroId)));
   if (String(body.query ?? "").includes("matchUp")) {

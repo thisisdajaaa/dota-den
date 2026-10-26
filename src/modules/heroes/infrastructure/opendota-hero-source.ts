@@ -1,8 +1,20 @@
 import { z } from "zod";
 import { err, ok } from "@/common/result";
 import type { GatewayResponse, ProviderGateway } from "@/common/providers/provider-gateway";
+import type { CompareGame } from "../domain/compare";
 import type { MatchupRow } from "../domain/hero-stats";
 import type { HeroGameExtras, PlayerHeroSource, SourceError, SourceResult } from "../heroes.ports";
+
+const n = z.number().nullable().optional();
+/** `/players/{id}/matches?date=…&project=…` rows for comparing stats. */
+const StatsRowSchema = z.object({
+  hero_id: z.number().int().positive(),
+  duration: z.number().int().min(0),
+  last_hits: n,
+  kills: n,
+  assists: n,
+  deaths: n,
+});
 
 export const OPENDOTA_BASE_URL = "https://api.opendota.com/api";
 /** Per-player hero data changes only when you play; half an hour is fresh enough. */
@@ -145,6 +157,34 @@ export class OpenDotaHeroSource implements PlayerHeroSource {
         kills: r.kills ?? null,
         deaths: r.deaths ?? null,
         assists: r.assists ?? null,
+      });
+    }
+    return ok(games);
+  }
+
+  /** Your public games of the last `days` days with the stats every game has (no parse needed). */
+  async recentStats(accountId32: number, days: number): SourceResult<CompareGame[]> {
+    const res = await this.gateway.getJson(
+      this.url(`/players/${accountId32}/matches`, {
+        date: days,
+        project: ["hero_id", "duration", "last_hits", "kills", "assists", "deaths"],
+      }),
+      { cacheTtlMs: HERO_CACHE_TTL_MS },
+    );
+    if (!res.ok) return err(toSourceError(res));
+    if (!Array.isArray(res.body)) return err({ type: "invalid_payload", cause: "expected array" });
+    const games: CompareGame[] = [];
+    for (const raw of res.body) {
+      const row = StatsRowSchema.safeParse(raw);
+      if (!row.success) continue;
+      const r = row.data;
+      games.push({
+        heroId: r.hero_id,
+        durationSec: r.duration,
+        lastHits: r.last_hits ?? null,
+        kills: r.kills ?? 0,
+        assists: r.assists ?? 0,
+        deaths: r.deaths ?? 0,
       });
     }
     return ok(games);

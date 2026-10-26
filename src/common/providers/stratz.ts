@@ -3,6 +3,7 @@ import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
 import { ProviderGateway } from "./provider-gateway";
 import { sharedGatewayOptions } from "./shared-gateway-options";
+import { StratzHeroCurves } from "./stratz-hero-curves";
 import { StratzHeroItems } from "./stratz-hero-items";
 import { StratzHeroMatchups } from "./stratz-hero-matchups";
 
@@ -25,6 +26,7 @@ const globalForGateway = globalThis as typeof globalThis & {
   __ddStratz?: ProviderGateway;
   __ddStratzMatchups?: StratzHeroMatchups;
   __ddStratzItems?: StratzHeroItems;
+  __ddStratzCurves?: StratzHeroCurves;
 };
 
 /**
@@ -73,4 +75,12 @@ export function stratzHeroItems(): StratzHeroItems | null {
   if (!config) return null;
   globalForGateway.__ddStratzItems ??= new StratzHeroItems(stratzGateway(), config);
   return globalForGateway.__ddStratzItems;
+}
+
+/** Shared STRATZ per-minute averages per hero and rank (parsed copies per instance), or null. */
+export function stratzHeroCurves(): StratzHeroCurves | null {
+  const config = stratzConfig();
+  if (!config) return null;
+  globalForGateway.__ddStratzCurves ??= new StratzHeroCurves(stratzGateway(), config);
+  return globalForGateway.__ddStratzCurves;
 }

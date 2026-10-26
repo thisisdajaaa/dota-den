@@ -37,6 +37,10 @@ export const plus = {
         title: "Unlimited AI coach",
         body: "A coach review of any of your parsed matches, as often as you like (free: one new review a week). It's written from that match's numbers only, and it can be wrong. Your newest ranked games are also reviewed automatically after each sync, with a notification when the review is ready.",
       },
+      compare: {
+        title: "How you compare, on every hero",
+        body: "Your last hits, kills + assists and deaths on each of your heroes against players at your rank (or the rank above), at the same game length, with your biggest gap to work on (free: your most played hero).",
+      },
       read: {
         title: "AI read of your battle report",
         body: "Pick any period on your battle report and get a few observations about it and one thing to focus on, written from that page's numbers only (each lists the numbers it uses).",

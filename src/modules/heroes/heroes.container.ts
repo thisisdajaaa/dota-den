@@ -1,11 +1,14 @@
 import "server-only";
 import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
+import { stratzHeroCurves } from "@/common/providers/stratz";
 import { ok } from "@/common/result";
 import { lazy } from "@/common/utils/lazy";
 import { matchExtrasService, matchQueries, matchesService } from "@/modules/matches";
 import { metaSource } from "@/modules/meta";
+import { plusService } from "@/modules/plus";
 import type { ItemCatalog } from "./heroes.ports";
+import { CompareService } from "./compare.service";
 import { HeroesService } from "./heroes.service";
 import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";
 
@@ -60,5 +63,21 @@ export const heroesService = lazy(() => {
         return new Map();
       }
     },
+  });
+});
+
+/** How you compare: your heroes against everyone's recent public games on them. */
+export const compareService = lazy(() => {
+  const source = new OpenDotaHeroSource(openDotaGateway(), openDotaConfig());
+  return new CompareService({
+    games: async (accountId32, days) => {
+      const res = await source.recentStats(accountId32, days);
+      return res.ok ? res.value : null;
+    },
+    rankTier: async (accountId32) =>
+      (await matchesService.playerProfile(accountId32))?.rankTier ?? null,
+    curves: async (heroIds, bracket) =>
+      (await stratzHeroCurves()?.forHeroes(heroIds, bracket)) ?? null,
+    isPlus: (userId) => plusService.isPlus(userId),
   });
 });

@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-26
+
+- How you compare (Heroes): your last hits, kills + assists and deaths on each hero against players at your rank or the rank above, at the same game length (STRATZ), with your biggest gap to work on; Plus compares every hero you play
+
 ## 2026-10-25
 
 - Discord (switched on once the Discord app is set up): link your Discord on the account page, and the Dota Den bot answers `/den me` (your week, form and heroes) and `/den leaderboard` (your server's ranked wins this week)

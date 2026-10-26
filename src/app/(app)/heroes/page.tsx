@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Swords } from "lucide-react";
+import { Gauge, Swords } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { getT } from "@/common/i18n/server";
@@ -47,13 +47,22 @@ export default async function HeroesPage() {
         }
         actions={
           rows.length > 0 && (
-            <Link
-              href="/heroes/matchups"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-card/60 px-3 py-1.5 text-sm font-medium text-gold hover:bg-gold/10 touch:min-h-11"
-            >
-              <Swords aria-hidden className="size-4" />
-              {t("heroes.own.link")}
-            </Link>
+            <>
+              <Link
+                href="/heroes/compare"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-card/60 px-3 py-1.5 text-sm font-medium text-gold hover:bg-gold/10 touch:min-h-11"
+              >
+                <Gauge aria-hidden className="size-4" />
+                {t("heroes.compare.link")}
+              </Link>
+              <Link
+                href="/heroes/matchups"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-card/60 px-3 py-1.5 text-sm font-medium text-gold hover:bg-gold/10 touch:min-h-11"
+              >
+                <Swords aria-hidden className="size-4" />
+                {t("heroes.own.link")}
+              </Link>
+            </>
           )
         }
       />

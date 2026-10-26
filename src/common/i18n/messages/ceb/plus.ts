@@ -34,6 +34,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Walay limit nga AI coach",
         body: "Coach review sa bisan unsang na-parse nimo nga duwa, bisan pila ka higayon (libre: usa ka bag-ong review kada semana). Gikan ra sa mga numero niadtong duwa kini isulat, ug mahimo kining masayop. Awtomatiko usab nga gi-review ang imong pinakabag-o nga ranked nga duwa human sa matag sync, ug adunay notification kung andam na ang review.",
       },
+      compare: {
+        title: "Unsaon ka ikumpara, sa matag hero",
+        body: "Imong last hits, kills + assists ug deaths sa matag hero batok sa mga player nga parehas nimo og rank (o mas taas), sa parehas nga gitas-on sa duwa, uban ang imong pinakadakong kulang (libre: imong labing kanunay nga hero).",
+      },
       read: {
         title: "AI read sa imong battle report",
         body: "Pagpili og bisan unsang panahon sa imong battle report ug makakuha og pipila ka obserbasyon ug usa ka angay tutokan, gisulat gikan lang sa mga numero sa maong page (nakalista ang mga numero nga gigamit).",

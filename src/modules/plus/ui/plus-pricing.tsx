@@ -8,6 +8,7 @@ import {
   Check,
   Clock,
   FileText,
+  Gauge,
   HeartHandshake,
   Layers,
   PauseCircle,
@@ -35,10 +36,11 @@ const FREE_KEYS = [
 ] as const;
 
 const PERKS: ReadonlyArray<{
-  key: "coach" | "read" | "pick" | "sync" | "alerts" | "badge" | "limits" | "thanks";
+  key: "coach" | "compare" | "read" | "pick" | "sync" | "alerts" | "badge" | "limits" | "thanks";
   icon: LucideIcon;
 }> = [
   { key: "coach", icon: Bot },
+  { key: "compare", icon: Gauge },
   { key: "read", icon: FileText },
   { key: "pick", icon: Sparkles },
   { key: "sync", icon: Zap },

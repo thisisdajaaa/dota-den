@@ -2,6 +2,60 @@ import type { MessageTree } from "../../translate";
 import type { heroes as en } from "../en/heroes";
 
 export const heroes: MessageTree<typeof en> = {
+  compare: {
+    metaTitle: "Unsaon ka ikumpara",
+    link: "Unsaon ka ikumpara",
+    back: "Imong mga hero",
+    kicker: "Imong mga hero",
+    title: "Unsaon ka ikumpara",
+    description:
+      "Imong mga duwa sa matag hero batok sa mga player nga parehas nimo og rank sa parehas nga hero, sa parehas nga gitas-on sa duwa: parehas ba kamo og farm, away ug pagpabiling buhi?",
+    against: "Ikumpara sa",
+    yourRank: "Imong rank",
+    rankAbove: "Ang rank nga mas taas",
+    summary: "Imong pinakadakong kulang ug imong pinakakusog",
+    workOn: "Pauswagon",
+    strength: "Imong labaw",
+    gap: {
+      lastHits: {
+        better: "{hero}: mas daghan og {pct}% ang imong last hits kaysa mga {rank} player",
+        worse: "{hero}: mas gamay og {pct}% ang imong last hits kaysa mga {rank} player",
+      },
+      fights: {
+        better: "{hero}: mas daghan og {pct}% ang imong kills + assists kaysa mga {rank} player",
+        worse: "{hero}: mas gamay og {pct}% ang imong kills + assists kaysa mga {rank} player",
+      },
+      deaths: {
+        better: "{hero}: mas gamay og {pct}% ang imong deaths kaysa mga {rank} player",
+        worse: "{hero}: mas daghan og {pct}% ang imong deaths kaysa mga {rank} player",
+      },
+    },
+    numbers: "Ikaw {yours} · sila {theirs} (matag duwa, parehas nga gitas-on)",
+    heroesTitle: "Batok sa mga {rank} player",
+    games: { one: "1 ka duwa", other: "{n} ka duwa" },
+    stats: { lastHits: "Last hits", fights: "Kills + assists", deaths: "Deaths" },
+    brackets: {
+      HERALD_GUARDIAN: "Herald–Guardian",
+      CRUSADER_ARCHON: "Crusader–Archon",
+      LEGEND_ANCIENT: "Legend–Ancient",
+      DIVINE_IMMORTAL: "Divine–Immortal",
+    },
+    locked: {
+      one: "Sa Plus, 1 pa ka hero nimo ang ikumpara.",
+      other: "Sa Plus, {n} pa ka hero nimo ang ikumpara.",
+    },
+    seePlus: "Tan-awa ang Plus",
+    method:
+      "Imong mga public game sa katapusang {days} ka adlaw (15 minutos o labaw; mga hero nga adunay 5+ ka duwa), batok sa average sa katapusang tibuok semana sa mga duwa niadtong rank sa STRATZ, gikuha sa gitas-on sa matag duwa nimo. Apil sa average sa rank ang ilang mga pildi, mao nga ang player nga kanunay modaog mas taas sa kills ug assists.",
+    status: {
+      unranked:
+        "Kinahanglan ang imong rank medal aron makakumpara: duwaa ang imong calibration games (o ipakita sa publiko ang imong rank sa Dota), dayon balik.",
+      unavailable:
+        "Dili available karon ang mga average sa rank. Sulayi pag-usab human sa pipila ka minuto.",
+      too_few:
+        "Pagdula og labing menos 5 ka duwa (15 minutos o labaw) sa usa ka hero sa katapusang 60 ka adlaw aron ikumpara kini.",
+    },
+  },
   title: "Mga hero",
   counts: {
     games: { one: "1 ka duwa", other: "{n} ka duwa" },

@@ -1,5 +1,58 @@
 /** UI copy for the heroes feature. */
 export const heroes = {
+  compare: {
+    metaTitle: "How you compare",
+    link: "How you compare",
+    back: "Your heroes",
+    kicker: "Your heroes",
+    title: "How you compare",
+    description:
+      "Your games on each hero against players at your rank on the same hero, at the same game length: are you farming, fighting and staying alive like they do?",
+    against: "Compare against",
+    yourRank: "Your rank",
+    rankAbove: "The rank above",
+    summary: "Your biggest gap and your biggest edge",
+    workOn: "Work on",
+    strength: "Your edge",
+    gap: {
+      lastHits: {
+        better: "{hero}: {pct}% more last hits than {rank} players",
+        worse: "{hero}: {pct}% fewer last hits than {rank} players",
+      },
+      fights: {
+        better: "{hero}: {pct}% more kills + assists than {rank} players",
+        worse: "{hero}: {pct}% fewer kills + assists than {rank} players",
+      },
+      deaths: {
+        better: "{hero}: {pct}% fewer deaths than {rank} players",
+        worse: "{hero}: {pct}% more deaths than {rank} players",
+      },
+    },
+    numbers: "You {yours} · them {theirs} (per game, same length)",
+    heroesTitle: "Against {rank} players",
+    games: { one: "1 game", other: "{n} games" },
+    stats: { lastHits: "Last hits", fights: "Kills + assists", deaths: "Deaths" },
+    brackets: {
+      HERALD_GUARDIAN: "Herald–Guardian",
+      CRUSADER_ARCHON: "Crusader–Archon",
+      LEGEND_ANCIENT: "Legend–Ancient",
+      DIVINE_IMMORTAL: "Divine–Immortal",
+    },
+    locked: {
+      one: "Plus compares 1 more of your heroes.",
+      other: "Plus compares {n} more of your heroes.",
+    },
+    seePlus: "See Plus",
+    method:
+      "Your public games of the last {days} days (15 minutes or longer; heroes with 5+ games), against the averages of the latest full week of games at that rank on STRATZ, taken at each of your games' lengths. The rank average includes their losses, so a player who wins a lot sits above it on kills and assists.",
+    status: {
+      unranked:
+        "Comparing needs your rank medal: play your calibration games (or show your rank publicly in Dota), then come back.",
+      unavailable: "Rank averages are unavailable right now. Try again in a few minutes.",
+      too_few:
+        "Play at least 5 games (15 minutes or longer) on a hero in the last 60 days to compare it.",
+    },
+  },
   title: "Heroes",
   counts: {
     games: { one: "1 game", other: "{n} games" },
