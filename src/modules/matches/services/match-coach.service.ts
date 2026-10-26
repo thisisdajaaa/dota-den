@@ -80,6 +80,8 @@ export class MatchCoachService {
       writer: CoachWriter | null;
       /** The global daily model-call budget, shared with the draft AI (ADR 0013/0014). */
       budget: { take(): Promise<boolean> };
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => Date;
       freeReviews?: number;
@@ -217,6 +219,7 @@ export class MatchCoachService {
         await this.deps.usage.confirm(hold, this.now());
         hold = null;
       }
+      await this.deps.used?.(user.id);
       this.deps.logger.info("coach_review_written", {
         matchId,
         accountId32: user.accountId32,

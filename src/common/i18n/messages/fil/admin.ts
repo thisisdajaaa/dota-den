@@ -60,6 +60,29 @@ export const admin: MessageTree<typeof en> = {
     ofUsers: { one: "sa {n} user", other: "sa {n} user" },
     reach: "Abot",
   },
+  usage: {
+    title: "Ano ang ginagamit",
+    definition:
+      "Mga bayad at AI na feature, binibilang bawat gamit (players: ilan ang gumamit). Nagsimula ang pagbilang noong 2026-10-26.",
+    parseRate: "Ranked games na may parsed replay",
+    parseRateDetail:
+      "{games} ranked games mula sa huling {days} araw (hindi kasama ang pinakabagong araw). Kailangan ng parsed replay ang coach, auto-review at item timings.",
+    caption: "Gamit bawat feature sa huling 7 at 30 araw",
+    feature: "Feature",
+    last7: "7 araw",
+    last30: "30 araw",
+    players: { one: "· {n} player", other: "· {n} players" },
+    unavailable: "Hindi ma-load.",
+    features: {
+      coach_review: "Mga AI coach review na naisulat (kasama ang auto)",
+      auto_review: "Mga auto post-game review",
+      period_read: "Mga AI read ng battle report",
+      pick_for_me: "Pick for me",
+      compare: "How you compare",
+      discord_command: "Mga utos sa Discord bot",
+      session_push: "Mga push ng session companion",
+    },
+  },
   users: {
     title: "Mga user",
     caption: "Lahat ng user, pinakabagong aktibo muna",

@@ -53,6 +53,8 @@ export class AutoReviewService {
       enqueue: (attempt: AutoReviewAttempt, delaySec: number) => Promise<void>;
       /** Push once per match; returns how many devices got it. */
       notify: (userId: string, matchId: string, news: AutoReviewNews) => Promise<number>;
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => Date;
     },
@@ -139,6 +141,7 @@ export class AutoReviewService {
       first: first?.title ?? "",
       points: result.review.points.length,
     });
+    await this.deps.used?.(a.userId);
     return "written";
   }
 

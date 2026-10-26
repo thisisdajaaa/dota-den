@@ -30,6 +30,8 @@ export class CompareService {
         bracket: RankBracket,
       ) => Promise<ReadonlyMap<number, readonly CurvePoint[]> | null>;
       isPlus: (userId: string) => Promise<boolean>;
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
     },
   ) {}
 
@@ -70,6 +72,7 @@ export class CompareService {
     if (!curves) return { status: "unavailable", ...base };
     const all = compareToRank(games, curves);
     if (all.heroes.length === 0) return { status: "too_few", ...base };
+    await this.deps.used?.(user.id);
     const shown = plus ? all.heroes : all.heroes.slice(0, FREE_COMPARE_HEROES);
     const visible = plus
       ? all

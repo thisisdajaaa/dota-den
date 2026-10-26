@@ -20,6 +20,7 @@ import {
 } from "./repositories/replay-reads.repository";
 import { BattleReportService } from "./services/battle-report.service";
 import { PeriodReadService } from "./services/period-read.service";
+import { usageService } from "@/modules/usage";
 
 export const replayReadsRepository = new ReplayReadsRepository(getDb);
 
@@ -58,6 +59,7 @@ export const periodReadService = lazy(() => {
     isPlus: (userId) => plusService.isPlus(userId),
     budget: sharedAiBudget(e.DRAFT_AI_BUDGET_PER_DAY),
     heroName: async (id) => (await matchesService.heroMap()).get(id)?.name ?? `Hero #${id}`,
+    used: (userId) => usageService.record("period_read", userId),
     logger,
   });
 });

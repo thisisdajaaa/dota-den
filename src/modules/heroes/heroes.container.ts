@@ -11,6 +11,7 @@ import type { ItemCatalog } from "./heroes.ports";
 import { CompareService } from "./compare.service";
 import { HeroesService } from "./heroes.service";
 import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";
+import { usageService } from "@/modules/usage";
 
 /** Hero pages: your imported games plus OpenDota's per-player hero data, wired together. */
 export const heroesService = lazy(() => {
@@ -79,5 +80,6 @@ export const compareService = lazy(() => {
     curves: async (heroIds, bracket) =>
       (await stratzHeroCurves()?.forHeroes(heroIds, bracket)) ?? null,
     isPlus: (userId) => plusService.isPlus(userId),
+    used: (userId) => usageService.record("compare", userId),
   });
 });

@@ -12,11 +12,18 @@ import type {
 import type { OpenDotaMatchesSource } from "../matches.ports";
 import { toFact } from "./match-sync.service";
 
+export interface ParseCounts {
+  games: number;
+  parsed: number;
+}
+
 /** What MatchesService needs from storage beyond the query port. */
 export interface MatchesStore {
   statsByAccount(
     accountIds: readonly number[],
   ): Promise<Map<number, { matches: number; lastSyncAt: Date | null; backfillComplete: boolean }>>;
+  /** These players' imported ranked games started in [since, until), and how many are parsed. */
+  rankedParseCounts(accountIds: readonly number[], since: Date, until: Date): Promise<ParseCounts>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>>;
   /** Marks these players' stored rows for a match as parsed (it was parsed after import). */
   markParsed(matchId: string, accountIds: readonly number[]): Promise<void>;
@@ -131,6 +138,11 @@ export class MatchesService {
   /** Admin overview: imported matches and sync state per account. */
   statsByAccount(accountIds: readonly number[]) {
     return this.deps.store.statsByAccount(accountIds);
+  }
+
+  /** Admin overview: how many recent ranked games have a parsed replay. */
+  rankedParseCounts(accountIds: readonly number[], since: Date, until: Date) {
+    return this.deps.store.rankedParseCounts(accountIds, since, until);
   }
 
   exportMyData(owner: DataOwner) {

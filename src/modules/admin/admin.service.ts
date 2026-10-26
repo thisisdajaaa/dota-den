@@ -7,12 +7,21 @@ import type {
   AdminOpsSource,
   AdminProfileSource,
   AdminStatsSource,
+  AdminUsageSource,
   AdminUserSource,
 } from "./admin.ports";
 import type { AdminOverviewDto } from "./dtos/responses/admin-overview.dto";
 
 /** Profiles are looked up on OpenDota: a few at a time. */
 const PROFILE_CONCURRENCY = 4;
+
+const DAY = 86_400_000;
+/**
+ * Parse rate: ranked games from the last two weeks, leaving out the newest day (OpenDota parses
+ * a replay within hours when it parses it at all, so a newer game says little yet).
+ */
+const PARSE_WINDOW_DAYS = 14;
+const PARSE_SETTLE_MS = DAY;
 
 /** Admins only (the caller checks the role): who uses Dota Den and how. */
 export class AdminService {
@@ -24,6 +33,7 @@ export class AdminService {
       ops: AdminOpsSource;
       activity: AdminActivitySource;
       optIns: AdminOptInSource;
+      usage: AdminUsageSource;
     },
   ) {}
 
@@ -47,6 +57,8 @@ export class AdminService {
       discordFeeds,
       alerts,
       opsReports,
+      usage,
+      parse,
     ] = await Promise.all([
       stats.matchStats(accountIds),
       stats.mmrEntryCounts(userIds),
@@ -64,6 +76,14 @@ export class AdminService {
       this.deps.optIns.discord().catch(() => null),
       ops.alerts(15).catch(() => null),
       ops.opsReports(10).catch(() => null),
+      this.deps.usage.summary().catch(() => null),
+      stats
+        .parseCounts(
+          accountIds,
+          new Date(now.getTime() - PARSE_WINDOW_DAYS * DAY),
+          new Date(now.getTime() - PARSE_SETTLE_MS),
+        )
+        .catch(() => null),
     ]);
     // Count current players only (a deleted account's row may linger briefly).
     const count = (ids: string[] | null) =>
@@ -103,6 +123,8 @@ export class AdminService {
         email: count(emailed),
         discord: count(discordFeeds),
       },
+      usage,
+      parseRate: parse && { ...parse, windowDays: PARSE_WINDOW_DAYS },
       users: rows,
       jobFailures,
       cronRuns,

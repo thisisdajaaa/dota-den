@@ -58,6 +58,29 @@ export const admin = {
     ofUsers: { one: "of {n} user", other: "of {n} users" },
     reach: "Reach",
   },
+  usage: {
+    title: "What gets used",
+    definition:
+      "Paid and AI features, counted once per use (players: how many used it). Counting started on 2026-10-26.",
+    parseRate: "Ranked games with a parsed replay",
+    parseRateDetail:
+      "{games} ranked games from the last {days} days (the newest day left out). The coach, auto-reviews and item timings need a parsed replay.",
+    caption: "Uses per feature over the last 7 and 30 days",
+    feature: "Feature",
+    last7: "7 days",
+    last30: "30 days",
+    players: { one: "· {n} player", other: "· {n} players" },
+    unavailable: "Couldn't be loaded.",
+    features: {
+      coach_review: "AI coach reviews written (auto included)",
+      auto_review: "Auto post-game reviews",
+      period_read: "Battle report AI reads",
+      pick_for_me: "Pick for me",
+      compare: "How you compare",
+      discord_command: "Discord bot commands",
+      session_push: "Session companion pushes",
+    },
+  },
   users: {
     title: "Users",
     caption: "Every user, most recently active first",

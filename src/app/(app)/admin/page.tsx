@@ -43,6 +43,8 @@ export default async function AdminPage() {
     totals,
     retention,
     optIns,
+    usage,
+    parseRate,
     users: rows,
     jobFailures: failures,
     errors,
@@ -372,6 +374,71 @@ export default async function AdminPage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">{t("admin.retention.unavailable")}</p>
+            )}
+          </section>
+
+          <section aria-labelledby="admin-usage" className="panel space-y-4 p-5">
+            <div>
+              <h2 id="admin-usage" className="text-lg font-semibold">
+                {t("admin.usage.title")}
+              </h2>
+              <p className="text-xs text-muted-foreground">{t("admin.usage.definition")}</p>
+            </div>
+            <div className="rounded-lg border border-white/[0.06] px-3 py-2 text-sm">
+              <p className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <span>{t("admin.usage.parseRate")}</span>
+                <span className="text-lg font-semibold tabular-nums">
+                  {parseRate === null ? "–" : <Share n={parseRate.parsed} of={parseRate.games} />}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {parseRate === null
+                  ? t("admin.usage.unavailable")
+                  : t("admin.usage.parseRateDetail", {
+                      games: parseRate.games,
+                      days: parseRate.windowDays,
+                    })}
+              </p>
+            </div>
+            {usage ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <caption className="sr-only">{t("admin.usage.caption")}</caption>
+                  <thead>
+                    <tr className="text-left text-[0.65rem] tracking-wider text-muted-foreground uppercase">
+                      <th className="py-2 pr-4 font-medium">{t("admin.usage.feature")}</th>
+                      <th className="px-3 py-2 text-right font-medium">{t("admin.usage.last7")}</th>
+                      <th className="py-2 pl-3 text-right font-medium">
+                        {t("admin.usage.last30")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usage.map((u) => (
+                      <tr key={u.feature} className="border-t border-white/[0.05]">
+                        <td className="py-2 pr-4">{t(`admin.usage.features.${u.feature}`)}</td>
+                        {[u.last7, u.last30].map((w, i) => (
+                          <td
+                            key={i}
+                            className={cn(
+                              "py-2 text-right whitespace-nowrap tabular-nums",
+                              i === 0 ? "px-3" : "pl-3",
+                              w.uses === 0 && "text-muted-foreground",
+                            )}
+                          >
+                            {w.uses}
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              {plural(t, "admin.usage.players", w.players)}
+                            </span>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("admin.usage.unavailable")}</p>
             )}
           </section>
 
