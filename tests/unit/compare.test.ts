@@ -105,9 +105,10 @@ describe("parseCurves", () => {
 
 describe("CompareService", () => {
   const games = [1, 2, 3].flatMap((h) => [25, 30, 35, 28, 32].map((m) => game(h, m)));
-  const service = (plus: boolean, tier: number | null = 74) =>
+  const service = (plus: boolean, tier: number | null = 74, openDotaDown = false) =>
     new CompareService({
-      games: async () => games,
+      games: async () => (openDotaDown ? null : games),
+      importedGames: async () => games.map((g) => ({ ...g, lastHits: null })),
       rankTier: async () => tier,
       curves: async (ids) => new Map(ids.map((id) => [id, curve])),
       isPlus: async () => plus,
@@ -128,5 +129,12 @@ describe("CompareService", () => {
     expect((await service(true, null).compare({ id: "u", accountId32: 1 })).status).toBe(
       "unranked",
     );
+  });
+
+  it("falls back to your imported games (no last hits) when OpenDota is down", async () => {
+    const down = await service(true, 74, true).compare({ id: "u", accountId32: 1 });
+    expect(down).toMatchObject({ status: "ok", fromImported: true });
+    expect(down.heroes[0].stats.map((s) => s.stat)).toEqual(["fights", "deaths"]);
+    expect((await service(true).compare({ id: "u", accountId32: 1 })).fromImported).toBe(false);
   });
 });

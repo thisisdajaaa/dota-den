@@ -58,6 +58,11 @@ export async function CompareSections({
 
   return (
     <div className="space-y-5">
+      {view.fromImported && (
+        <p role="status" className="panel border-gold/30 p-4 text-sm text-muted-foreground">
+          {t("heroes.compare.fromImported")}
+        </p>
+      )}
       {(view.weakest || view.strongest) && (
         <section aria-label={t("heroes.compare.summary")} className="grid gap-3 sm:grid-cols-2">
           {view.weakest && (

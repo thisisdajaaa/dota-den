@@ -75,6 +75,19 @@ export const compareService = lazy(() => {
       const res = await source.recentStats(accountId32, days);
       return res.ok ? res.value : null;
     },
+    importedGames: async (accountId32, days) => {
+      const since = Date.now() - days * 86_400_000;
+      return (await matchQueries.heroFacts(accountId32))
+        .filter((f) => f.startedAt.getTime() >= since)
+        .map((f) => ({
+          heroId: f.heroId,
+          durationSec: f.durationSec,
+          lastHits: null,
+          kills: f.kills,
+          assists: f.assists,
+          deaths: f.deaths,
+        }));
+    },
     rankTier: async (accountId32) =>
       (await matchesService.playerProfile(accountId32))?.rankTier ?? null,
     curves: async (heroIds, bracket) =>

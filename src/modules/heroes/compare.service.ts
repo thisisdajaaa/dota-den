@@ -24,6 +24,8 @@ export class CompareService {
   constructor(
     private readonly deps: {
       games: (accountId32: number, days: number) => Promise<CompareGame[] | null>;
+      /** Your imported games (no last hits): used when OpenDota can't answer. */
+      importedGames: (accountId32: number, days: number) => Promise<CompareGame[]>;
       rankTier: (accountId32: number) => Promise<number | null>;
       curves: (
         heroIds: readonly number[],
@@ -39,7 +41,7 @@ export class CompareService {
     user: { id: string; accountId32: number },
     target: "mine" | "next" = "mine",
   ): Promise<CompareView> {
-    const [games, tier, plus] = await Promise.all([
+    const [fresh, tier, plus] = await Promise.all([
       this.deps.games(user.accountId32, COMPARE_DAYS).catch(() => null),
       this.deps.rankTier(user.accountId32).catch(() => null),
       this.deps.isPlus(user.id).catch(() => false),
@@ -47,7 +49,13 @@ export class CompareService {
     const yourBracket = bracketOf(tier);
     const bracket = yourBracket && (target === "next" ? nextBracket(yourBracket) : yourBracket);
     const plan: CompareView["plan"] = plus ? "plus" : "free";
+    const games =
+      fresh ??
+      (bracket
+        ? await this.deps.importedGames(user.accountId32, COMPARE_DAYS).catch(() => null)
+        : null);
     const base = {
+      fromImported: fresh === null,
       windowDays: COMPARE_DAYS,
       yourBracket,
       bracket,
@@ -58,7 +66,7 @@ export class CompareService {
       strongest: null,
     };
     if (!bracket) return { status: "unranked", ...base };
-    if (!games) return { status: "unavailable", ...base };
+    if (!games) return { status: "no_games", ...base };
     // Rank curves only for the heroes that can be compared (most played first).
     const counts = new Map<number, number>();
     for (const g of games) counts.set(g.heroId, (counts.get(g.heroId) ?? 0) + 1);

@@ -47,11 +47,15 @@ export const heroes: MessageTree<typeof en> = {
     seePlus: "Tingnan ang Plus",
     method:
       "Ang mga public game mo sa huling {days} araw (15 minuto o higit pa; mga hero na may 5+ laro), laban sa average ng huling buong linggo ng mga laro sa rank na iyon sa STRATZ, kinuha sa haba ng bawat laro mo. Kasama sa average ng rank ang mga talo nila, kaya ang player na madalas manalo ay mas mataas sa kills at assists.",
+    fromImported:
+      "Hindi sumasagot ang OpenDota ngayon, kaya ang mga larong na-import na sa Dota Den ang ginamit. Walang last hits ang mga iyon, kaya kills + assists at deaths lang ang pinaghambing.",
     status: {
       unranked:
         "Kailangan ng rank medal mo para makapagkumpara: laruin ang calibration games mo (o ipakita nang public ang rank mo sa Dota), tapos bumalik.",
       unavailable:
         "Hindi available ngayon ang mga average ng rank. Subukan ulit pagkalipas ng ilang minuto.",
+      no_games:
+        "Hindi ma-load ang mga laro mo: hindi sumasagot ang OpenDota ngayon. Subukan ulit sa ilang minuto.",
       too_few:
         "Maglaro ng hindi bababa sa 5 laro (15 minuto o higit pa) sa isang hero sa huling 60 araw para makumpara ito.",
     },
