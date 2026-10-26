@@ -125,6 +125,7 @@ export const plus = {
     manageHint: "Opens the billing portal of our payment provider.",
     renews: "Renews on {date}",
     trial: "Trial",
+    staff: "Plus is on the house: you're an admin.",
     cancelled: "Cancelled. You keep Plus until {date}.",
     grace: "Your last payment failed. Update your card by {date} to keep Plus.",
     ended: "Your Plus subscription has ended.",

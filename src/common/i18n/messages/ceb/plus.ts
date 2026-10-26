@@ -121,6 +121,7 @@ export const plus: MessageTree<typeof en> = {
     manageHint: "Ablihan ang billing portal sa among payment provider.",
     renews: "Mo-renew sa {date}",
     trial: "Trial",
+    staff: "Libre ang Plus para nimo: admin ka.",
     cancelled: "Na-cancel na. Naa gihapon kay Plus hangtod {date}.",
     grace:
       "Napakyas ang imong katapusang bayad. I-update ang imong card sa dili pa {date} aron magpabilin ang Plus.",

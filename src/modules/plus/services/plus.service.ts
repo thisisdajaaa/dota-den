@@ -16,6 +16,8 @@ import type { PlanDto, PlusAdminCountsDto, PlusOfferDto } from "../dtos/response
 /** A pre-signed portal link is valid 24 hours from when the provider made it; keep a margin. */
 const PORTAL_LINK_MAX_AGE_MS = 23 * 3_600_000;
 
+const STAFF: Entitlement = { plus: true, reason: "staff", until: null };
+
 /**
  * Dota Den Plus: who has it, what it unlocks, and where to buy or manage it. Entitlements come
  * from stored subscription state only (written by verified webhooks), never from the browser.
@@ -31,6 +33,11 @@ export class PlusService {
       provider: BillingProvider | null;
       /** PLUS_ENABLED: false is the kill switch (everyone free, data kept). */
       enabled: () => boolean;
+      /**
+       * Admins have Plus without paying (testing and running the site), even while it isn't on
+       * sale. No supporter badge: they aren't supporters.
+       */
+      staff?: { has(userId: string): Promise<boolean>; userIds(): Promise<string[]> };
       logger: Pick<Logger, "warn">;
       now?: () => Date;
     },
@@ -65,7 +72,12 @@ export class PlusService {
     return subs.filter((s) => s.testMode === testMode);
   }
 
+  private async isStaff(userId: string): Promise<boolean> {
+    return (await this.deps.staff?.has(userId).catch(() => false)) ?? false;
+  }
+
   async entitlement(userId: string): Promise<Entitlement> {
+    if (await this.isStaff(userId)) return STAFF;
     if (!this.enabled) return entitlementFor([], this.now(), false);
     return entitlementFor(
       this.ours(await this.deps.subscriptions.forUser(userId)),
@@ -83,7 +95,6 @@ export class PlusService {
    * cap applies (never lower than today's).
    */
   async limit(userId: string, base: number): Promise<number> {
-    if (!this.enabled) return base;
     try {
       return limitFor(base, await this.isPlus(userId));
     } catch (error) {
@@ -109,8 +120,17 @@ export class PlusService {
     }
   }
 
-  /** Users with Plus right now. Cheap when there are none (one indexed query). */
+  /** Users with Plus right now (staff included). Cheap when there are none. */
   async plusUserIds(): Promise<string[]> {
+    const [paid, staff] = await Promise.all([
+      this.paidUserIds(),
+      this.deps.staff?.userIds().catch(() => []) ?? [],
+    ]);
+    return [...new Set([...paid, ...staff])];
+  }
+
+  /** Users with a subscription granting Plus right now (one indexed query). */
+  private async paidUserIds(): Promise<string[]> {
     if (!this.enabled) return [];
     const now = this.now();
     const subs = this.ours(await this.deps.subscriptions.possiblyEntitled());
@@ -123,10 +143,11 @@ export class PlusService {
     const subs = this.configured ? this.ours(await this.deps.subscriptions.forUser(userId)) : [];
     const now = this.now();
     const s = summarise(subs, now, this.enabled);
+    const entitlement = !s.entitlement.plus && (await this.isStaff(userId)) ? STAFF : s.entitlement;
     return {
-      plus: s.entitlement.plus,
-      reason: s.entitlement.reason,
-      until: s.entitlement.until?.toISOString() ?? null,
+      plus: entitlement.plus,
+      reason: entitlement.reason,
+      until: entitlement.until?.toISOString() ?? null,
       status: s.status,
       plan: s.plan,
       renewsAt: s.renewsAt?.toISOString() ?? null,
@@ -182,7 +203,7 @@ export class PlusService {
   async adminCounts(): Promise<PlusAdminCountsDto> {
     const [rows, entitled] = await Promise.all([
       this.deps.subscriptions.countsByStatus(this.deps.provider?.testMode ?? null),
-      this.configured ? this.plusUserIds() : Promise.resolve([]),
+      this.configured ? this.paidUserIds() : Promise.resolve([]),
     ]);
     const byStatus = new Map<string, number>();
     let unlinked = 0;

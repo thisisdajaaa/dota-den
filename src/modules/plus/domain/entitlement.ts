@@ -10,6 +10,7 @@
  * - `cancelled`: Plus until the end of the period already paid for (`ends_at`).
  * - `paused`, `unpaid`, `expired`: free.
  * - Kill switch (PLUS_ENABLED not "true"): everyone is free; stored data is kept.
+ * - Staff (admins): Plus without a subscription, whatever the above (decided by the service).
  */
 import type { Plan } from "./plans";
 import type { Subscription, SubscriptionStatus } from "./subscription";
@@ -20,7 +21,7 @@ export const PAST_DUE_GRACE_MS = 7 * 24 * 3_600_000;
 export const RENEWAL_SLACK_MS = 3 * 24 * 3_600_000;
 
 export type EntitlementReason =
-  "active" | "trial" | "grace" | "cancelled_until_period_end" | "none" | "disabled";
+  "active" | "trial" | "grace" | "cancelled_until_period_end" | "staff" | "none" | "disabled";
 
 export interface Entitlement {
   plus: boolean;
@@ -65,6 +66,7 @@ export function entitlementOf(sub: Entitling, now: Date): Entitlement {
 }
 
 const RANK: Record<EntitlementReason, number> = {
+  staff: 6,
   active: 5,
   trial: 4,
   cancelled_until_period_end: 3,

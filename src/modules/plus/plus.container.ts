@@ -45,6 +45,12 @@ export const plusService = lazy(
       events: webhookEventsRepository,
       provider: provider.current,
       enabled: () => env().PLUS_ENABLED,
+      staff: {
+        has: async (userId) =>
+          USER_ID_PATTERN.test(userId) &&
+          Boolean((await usersService.findByIds([userId]))[0]?.roles.includes("admin")),
+        userIds: async () => (await usersService.admins()).map((u) => u.id),
+      },
       logger,
     }),
 );
