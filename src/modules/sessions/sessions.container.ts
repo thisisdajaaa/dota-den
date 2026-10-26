@@ -22,6 +22,7 @@ import {
 } from "./repositories/sessions.repository";
 import { SessionsController } from "./sessions.controller";
 import { SessionService } from "./sessions.service";
+import { usageService } from "@/modules/usage";
 
 export const sessionNotesRepository = new SessionNotesRepository(getDb);
 export const sessionSettingsRepository = new SessionSettingsRepository(getDb);
@@ -138,6 +139,7 @@ export const sessionCompanionService = lazy(
           };
         });
       },
+      used: (userId) => usageService.record("session_push", userId),
       logger,
     }),
 );

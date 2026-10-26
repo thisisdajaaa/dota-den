@@ -37,6 +37,8 @@ export class SessionCompanionService {
       matches: (accountId32: number) => Promise<SessionMatch[]>;
       gapMinutes: (userId: string) => Promise<number>;
       notify: (userId: string, news: GameNews) => Promise<number>;
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => Date;
     },
@@ -94,7 +96,10 @@ export class SessionCompanionService {
     const news = gameNews(matches, gap, state.watermark, now);
     let announced = 0;
     for (const n of news) {
-      if ((await this.deps.notify(p.userId, n)) > 0) announced++;
+      if ((await this.deps.notify(p.userId, n)) > 0) {
+        announced++;
+        await this.deps.used?.(p.userId);
+      }
     }
     const newest = matches
       .filter((m) => m.startedAt.getTime() > state.watermark!.getTime())
