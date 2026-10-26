@@ -38,6 +38,7 @@ import { DraftRecordService } from "./services/draft-record.service";
 import { DraftRoomService } from "./services/draft-room.service";
 import { PickForMeService } from "./services/pick-for-me.service";
 import type { DraftHero } from "./ui/types";
+import { usageService } from "@/modules/usage";
 
 export const draftHistoryRepository = new DraftHistoryRepository(getDb);
 export const draftMetaCacheRepository = new DraftMetaCacheRepository(getDb);
@@ -208,6 +209,7 @@ export const pickForMeService = lazy(
       records: async () => (await stratzHeroMatchups()?.all()) ?? null,
       positionShares: () => metaService.positionShares(),
       isPlus: (userId) => plusService.isPlus(userId),
+      used: (userId) => usageService.record("pick_for_me", userId),
       logger,
     }),
 );

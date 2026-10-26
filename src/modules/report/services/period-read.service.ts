@@ -35,6 +35,8 @@ export class PeriodReadService {
       /** The global daily model-call budget (shared with the coach and the draft AI). */
       budget: { take(): Promise<boolean> };
       heroName: (heroId: number) => Promise<string>;
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => Date;
     },
@@ -151,6 +153,7 @@ export class PeriodReadService {
       createdAt: this.deps.now?.() ?? new Date(),
     };
     await this.deps.reads.save(read);
+    await this.deps.used?.(user.id);
     this.deps.logger.info("period_read_written", {
       from: view.from,
       to: view.to,

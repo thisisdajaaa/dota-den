@@ -8,6 +8,7 @@ import { AlertThrottleRepository } from "@/modules/alerts/repositories/alert-thr
 import { OpsReportsRepository } from "@/modules/alerts/repositories/ops-reports.repository";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
+import { UsageRepository } from "@/modules/usage/repositories/usage.repository";
 import { PracticeRepository } from "@/modules/practice/practice.repository";
 import { GroupsRepository } from "@/modules/groups/repositories/groups.repository";
 import { SharesRepository } from "@/modules/shares/repositories/shares.repository";
@@ -62,6 +63,7 @@ async function main(): Promise<void> {
   await new DraftMetaCacheRepository(async () => db).ensureIndexes();
   await new AnnotationsRepository(async () => db).ensureIndexes();
   await new GoalsRepository(async () => db).ensureIndexes();
+  await new UsageRepository(async () => db).ensureIndexes();
   await new PracticeRepository(async () => db).ensureIndexes();
   await new GroupsRepository(async () => db).ensureIndexes();
   await new SharesRepository(async () => db).ensureIndexes();

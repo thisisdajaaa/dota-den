@@ -1,4 +1,5 @@
 import type { ErrorGroup } from "@/modules/errors";
+import type { FeatureUsage } from "@/modules/usage";
 import type { AdminTotals } from "../../domain/overview";
 import type { Retention } from "../../domain/retention";
 import type {
@@ -32,6 +33,10 @@ export interface AdminOverviewDto {
   retention: Retention | null;
   /** Players who turned on each reminder; null when that count couldn't be loaded. */
   optIns: { notifications: number | null; email: number | null; discord: number | null };
+  /** Uses and players per paid or AI feature; null when the counters couldn't be loaded. */
+  usage: FeatureUsage[] | null;
+  /** Ranked games from the window (newest day left out) and how many have a parsed replay. */
+  parseRate: { games: number; parsed: number; windowDays: number } | null;
   /** Most recently active first. */
   users: AdminUserRowDto[];
   jobFailures: JobFailureView[];

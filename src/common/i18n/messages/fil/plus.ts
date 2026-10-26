@@ -11,6 +11,9 @@ export const plus: MessageTree<typeof en> = {
     title: "Dota Den Plus",
     kicker: "Suportahan ang Dota Den",
     lead: "Lahat ng libre ngayon ay mananatiling libre. Ang Plus ay paraan para mapanatiling tumatakbo ang Dota Den, may kaunting dagdag para sa mga player na tumutulong.",
+    staffTitle: "May Plus ka",
+    staffBody:
+      "Admin ka, kaya bukas para sa iyo ang lahat ng Plus feature kahit walang subscription.",
     comingSoonTitle: "Malapit na ang Plus",
     comingSoonBody:
       "Inihahanda pa namin ang bayaran. Wala pang binebenta, at walang gamit mo ngayon ang ila-lock sa likod nito.",
@@ -121,6 +124,7 @@ export const plus: MessageTree<typeof en> = {
     manageHint: "Bubuksan ang billing portal ng aming payment provider.",
     renews: "Magre-renew sa {date}",
     trial: "Trial",
+    staff: "Libre ang Plus para sa iyo: admin ka.",
     cancelled: "Na-cancel na. May Plus ka pa hanggang {date}.",
     grace:
       "Pumalya ang huli mong bayad. I-update ang card mo bago mag-{date} para manatili ang Plus.",

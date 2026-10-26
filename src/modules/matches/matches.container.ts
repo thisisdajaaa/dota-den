@@ -41,6 +41,7 @@ import { MatchCoachService } from "./services/match-coach.service";
 import { MatchExtrasService } from "./services/match-extras.service";
 import { MatchSyncService } from "./services/match-sync.service";
 import { MatchesService } from "./services/matches.service";
+import { usageService } from "@/modules/usage";
 
 export const matchFactsRepository = new MatchFactsRepository(getDb);
 export const syncStatesRepository = new SyncStatesRepository(getDb);
@@ -110,6 +111,7 @@ export const matchCoachService = lazy(() => {
         : null,
     // The same daily cap as the draft AI: one budget for every paid model call.
     budget: sharedAiBudget(e.DRAFT_AI_BUDGET_PER_DAY),
+    used: (userId) => usageService.record("coach_review", userId),
     logger,
   });
 });
@@ -158,6 +160,7 @@ export const autoReviewService = lazy(
           };
         });
       },
+      used: (userId) => usageService.record("auto_review", userId),
       logger,
     }),
 );

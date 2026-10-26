@@ -11,6 +11,7 @@ import type { ItemCatalog } from "./heroes.ports";
 import { CompareService } from "./compare.service";
 import { HeroesService } from "./heroes.service";
 import { OpenDotaHeroSource } from "./infrastructure/opendota-hero-source";
+import { usageService } from "@/modules/usage";
 
 /** Hero pages: your imported games plus OpenDota's per-player hero data, wired together. */
 export const heroesService = lazy(() => {
@@ -74,10 +75,24 @@ export const compareService = lazy(() => {
       const res = await source.recentStats(accountId32, days);
       return res.ok ? res.value : null;
     },
+    importedGames: async (accountId32, days) => {
+      const since = Date.now() - days * 86_400_000;
+      return (await matchQueries.heroFacts(accountId32))
+        .filter((f) => f.startedAt.getTime() >= since)
+        .map((f) => ({
+          heroId: f.heroId,
+          durationSec: f.durationSec,
+          lastHits: null,
+          kills: f.kills,
+          assists: f.assists,
+          deaths: f.deaths,
+        }));
+    },
     rankTier: async (accountId32) =>
       (await matchesService.playerProfile(accountId32))?.rankTier ?? null,
     curves: async (heroIds, bracket) =>
       (await stratzHeroCurves()?.forHeroes(heroIds, bracket)) ?? null,
     isPlus: (userId) => plusService.isPlus(userId),
+    used: (userId) => usageService.record("compare", userId),
   });
 });

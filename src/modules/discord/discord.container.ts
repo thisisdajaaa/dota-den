@@ -19,6 +19,7 @@ import { DiscordBotService } from "./services/discord-bot.service";
 import { DiscordFeedService } from "./services/discord-feed.service";
 import { DiscordLinkService } from "./services/discord-link.service";
 import { DiscordWebhookService } from "./services/discord-webhook.service";
+import { usageService } from "@/modules/usage";
 
 export const discordWebhooksRepository = new DiscordWebhooksRepository(getDb);
 export const discordPostLogRepository = new DiscordPostLogRepository(getDb);
@@ -119,6 +120,7 @@ export const discordBotService = lazy(
         ) as (key: string, vars?: Record<string, string | number>) => string;
       },
       appUrl: env().APP_URL.replace(/\/$/, ""),
+      used: (userId) => usageService.record("discord_command", userId),
       logger,
     }),
 );

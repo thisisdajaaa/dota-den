@@ -22,6 +22,7 @@ export function PlanCard({ plan, offer }: { plan: PlanDto; offer: PlusOfferDto }
   else if (plan.reason === "active" && plan.renewsAt)
     line = t("plus.card.renews", { date: day(plan.renewsAt) });
   else if (plan.reason === "trial") line = t("plus.card.trial");
+  else if (plan.reason === "staff") line = t("plus.card.staff");
   else if (!plan.plus && plan.status === "paused") line = t("plus.card.paused");
   else if (!plan.plus && plan.status) line = t("plus.card.ended");
 

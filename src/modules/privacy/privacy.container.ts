@@ -21,6 +21,7 @@ import { battleReportService, periodReadService } from "@/modules/report";
 import { followService } from "@/modules/players";
 import { sessionCompanionService, sessionService } from "@/modules/sessions";
 import { togetherService } from "@/modules/together";
+import { usageService } from "@/modules/usage";
 import { PrivacyController } from "./privacy.controller";
 import { PrivacyService } from "./privacy.service";
 
@@ -57,6 +58,8 @@ export const privacyService = lazy(
         emailService,
         // The local subscription record; billing records stay with the provider (ADR 0013).
         plusService,
+        // Per-day feature use counters (admin usage numbers).
+        usageService,
       ],
       identity: usersService,
       logger,

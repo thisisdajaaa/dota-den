@@ -15,7 +15,7 @@ import { LegalDocument, type LegalSection } from "@/components/legal-document";
  */
 
 /** When the texts last changed (shown on the page). Update with every edit. */
-export const PRIVACY_UPDATED = "2026-10-24";
+export const PRIVACY_UPDATED = "2026-10-26";
 
 const SECTIONS: readonly LegalSection[] = [
   { key: "summary" },

@@ -40,8 +40,9 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
     emailService.status(user.id),
     plusService.plan(user.id),
   ]);
-  // The plan card exists once Plus is configured, or for anyone with a subscription on record.
-  const showPlan = offer.status !== "off" || plan.status !== null;
+  // The plan card exists once Plus is configured, for anyone with a subscription on record,
+  // and for anyone with Plus (staff).
+  const showPlan = offer.status !== "off" || plan.status !== null || plan.plus;
   const shareLinks = shares.map((s) => ({
     slug: s._id,
     url: `/s/${s._id}`,

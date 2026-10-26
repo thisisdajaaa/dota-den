@@ -54,7 +54,7 @@ export const privacy: MessageTree<typeof en> = {
         body: "Lahat ng ito ay nakakabit sa account mo at kasama sa download ng data mo:",
         items: {
           account:
-            "Ang account mo: ang Steam ID mo, ang pampublikong pangalan at avatar mo sa Steam, ang settings mo (sino ang nakakakita ng profile mo, time zone, wika) at ang mga araw na binuksan mo ang Dota Den.",
+            "Ang account mo: ang Steam ID mo, ang pampublikong pangalan at avatar mo sa Steam, ang settings mo (sino ang nakakakita ng profile mo, time zone, wika) ang mga araw na binuksan mo ang Dota Den, at kung ilang beses sa isang araw mo ginamit ang bawat Plus o AI na feature (bilang lang, para malaman namin kung aling mga feature ang sulit panatilihin).",
           sessions:
             "Mga sign-in session: isang random na token, na naka-scramble (hashed) lang kapag itinatago. Natatapos ito kapag nag-sign out ka, o pagkalipas ng mga 30 araw na hindi ka bumibisita.",
           matches:
@@ -145,7 +145,7 @@ export const privacy: MessageTree<typeof en> = {
           account:
             "Ang account mo at ang mga ginawa mo: hanggang i-delete mo ang mga ito o ang account mo.",
           sessions: "Mga sign-in session: mga 30 araw pagkatapos ng huling bisita mo.",
-          logs: "Mga listahan ng ipinadalang notification, email at Discord post, at mga billing notice: 90 araw.",
+          logs: "Mga listahan ng ipinadalang notification, email at Discord post, at mga billing notice: 90 araw. Bilang ng paggamit ng mga feature: 90 araw.",
           caches:
             "Naka-cache na pampublikong data: mga draft room ng magkakaibigan 24 oras pagkatapos ng huling galaw, mga player profile 30 araw, mga buod ng replay hanggang isang taon.",
           backups: "Mga naka-encrypt na backup: 30 araw, tapos binubura na.",

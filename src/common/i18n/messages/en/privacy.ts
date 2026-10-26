@@ -55,7 +55,7 @@ export const privacy = {
         body: "Everything here is tied to your account and is in your data download:",
         items: {
           account:
-            "Your account: your Steam ID, your public Steam name and avatar, your settings (who can see your profile, time zone, language) and the days you opened Dota Den.",
+            "Your account: your Steam ID, your public Steam name and avatar, your settings (who can see your profile, time zone, language), the days you opened Dota Den, and how many times a day you used each Plus or AI feature (a count only, so we know which features are worth keeping).",
           sessions:
             "Sign-in sessions: a random token, stored only in scrambled (hashed) form. It ends when you sign out, or after about 30 days without a visit.",
           matches:
@@ -141,7 +141,7 @@ export const privacy = {
         items: {
           account: "Your account and what you created: until you delete them or your account.",
           sessions: "Sign-in sessions: about 30 days after your last visit.",
-          logs: "Lists of sent notifications, emails and Discord posts, and billing notices: 90 days.",
+          logs: "Lists of sent notifications, emails and Discord posts, and billing notices: 90 days. Feature use counts: 90 days.",
           caches:
             "Cached public data: friend draft rooms 24 hours after the last move, player profiles 30 days, replay summaries up to a year.",
           backups: "Encrypted backups: 30 days, then they're deleted.",

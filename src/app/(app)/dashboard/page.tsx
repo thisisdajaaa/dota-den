@@ -30,6 +30,7 @@ import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
 import { AchievementsSection } from "./achievements-section";
+import { CompareSection } from "./compare-section";
 import { FirstRunStatus, WhileYouWait, type FirstRunStage } from "./first-run";
 import { FriendsPlayingSection } from "./friends-playing-section";
 import { GoalsSection } from "./goals-section";
@@ -43,7 +44,7 @@ import { StandingSection } from "./standing-section";
 import { TeammatesSection } from "./teammates-section";
 
 /** Games in the recent matches card. */
-const RECENT_MATCHES = 12;
+const RECENT_MATCHES = 8;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -251,11 +252,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             />
           </section>
 
-          {/* The tall queue card beside the hero pool and recent form; the queue card
-              stretches to the column's height, so neither side leaves a hole. */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-3 lg:[&>section]:h-full">
+          {/* Queue split and recent form on the left, the (tall) hero pool and your gap against
+              your rank on the right: both columns about the same height, nothing stretched. */}
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
+            <div className="space-y-6 lg:col-span-3">
               <QueueSplitCard summary={summary} />
+              <FormStrip form={summary.form} heroes={heroes} />
             </div>
             <div className="space-y-6 lg:col-span-2">
               <HeroPoolCard
@@ -268,7 +270,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                   .filter((h) => h !== undefined)}
                 now={now.toISOString()}
               />
-              <FormStrip form={summary.form} heroes={heroes} />
+              <Suspense fallback={null}>
+                <CompareSection user={user} heroes={heroes} />
+              </Suspense>
             </div>
           </div>
         </>

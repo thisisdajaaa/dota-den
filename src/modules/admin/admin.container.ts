@@ -12,6 +12,7 @@ import { emailSubscriptionsRepository } from "@/modules/email";
 import { discordWebhooksRepository } from "@/modules/discord";
 import { AdminService } from "./admin.service";
 import { playersService } from "@/modules/players";
+import { usageService } from "@/modules/usage";
 
 export const adminService = new AdminService({
   users: { userRows: () => usersService.adminRows() },
@@ -20,6 +21,7 @@ export const adminService = new AdminService({
     mmrEntryCounts: (ids) => mmrEntriesRepository.countsByUser(ids),
     activityCounts: (ids) => activityRepository.countsByUser(ids),
     roomDraftCounts: (ids) => draftHistoryRepository.countsByUser(ids),
+    parseCounts: (ids, since, until) => matchesService.rankedParseCounts(ids, since, until),
   },
   profiles: { publicProfile: (id) => playersService.publicProfile(id) },
   activity: { activeDays: (ids) => usersService.activeDays(ids) },
@@ -28,6 +30,7 @@ export const adminService = new AdminService({
     email: async () => (await emailSubscriptionsRepository.confirmed()).map((s) => s.userId),
     discord: async () => (await discordWebhooksRepository.active()).map((f) => f.userId),
   },
+  usage: { summary: () => usageService.summary() },
   ops: {
     jobFailures: () => jobRunsRepository.recentFailures(),
     cronRuns: (limit) => cronRunsRepository.recent(limit),

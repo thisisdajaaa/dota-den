@@ -167,3 +167,11 @@ everyone is treated as free, webhooks keep the stored state current.
   (no badge) and is skipped entirely while Plus is off.
 - Out-of-order protection trusts the provider's `updated_at`; two events with the same timestamp
   are applied in arrival order.
+
+## Addendum (2026-10-26): staff Plus
+
+Admins (`ADMIN_STEAM_IDS`, the role set at sign-in) have Plus without a subscription, with the
+reason `staff`, also while Plus is off or not configured, so the owner can use and test every
+Plus feature in production without buying it. Staff aren't supporters (no badge) and aren't
+counted as paying players on the admin page. Removing someone from `ADMIN_STEAM_IDS` removes it
+at their next sign-in. Entitlement still never comes from the browser.

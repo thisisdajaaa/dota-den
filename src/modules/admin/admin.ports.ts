@@ -1,6 +1,7 @@
 import type { OpsReport, OwnerAlert } from "@/modules/alerts";
 import type { ErrorGroup } from "@/modules/errors";
 import type { CronRun, JobFailure } from "@/modules/jobs";
+import type { FeatureUsage } from "@/modules/usage";
 
 export interface AdminUserSource {
   /** Every user, with sign-in sessions counted. */
@@ -40,6 +41,17 @@ export interface AdminStatsSource {
     userIds: readonly string[],
   ): Promise<Map<string, { drafts: number; challenges: number }>>;
   roomDraftCounts(userIds: readonly string[]): Promise<Map<string, number>>;
+  /** These players' ranked games started in [since, until), and how many have a parsed replay. */
+  parseCounts(
+    accountIds: readonly number[],
+    since: Date,
+    until: Date,
+  ): Promise<{ games: number; parsed: number }>;
+}
+
+/** Uses of the paid and AI features. */
+export interface AdminUsageSource {
+  summary(): Promise<FeatureUsage[]>;
 }
 
 export interface AdminProfileSource {

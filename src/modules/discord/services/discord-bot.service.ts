@@ -34,6 +34,8 @@ export class DiscordBotService {
       /** A translator in this Dota Den user's language (English for strangers). */
       translator: (userId: string | null) => Promise<Translate>;
       appUrl: string;
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "warn">;
       now?: () => Date;
     },
@@ -54,6 +56,7 @@ export class DiscordBotService {
     if (!link) return say(t("discord.bot.notLinked", { url: `${this.deps.appUrl}/account` }), true);
     if (i.guild_id) await this.deps.links.rememberGuild(link.discordId, i.guild_id).catch(() => {});
     const now = this.deps.now?.() ?? new Date();
+    await this.deps.used?.(link.userId);
 
     if (command === "me") {
       const s = meSummary(await this.deps.games(link.accountId32), now);

@@ -14,6 +14,11 @@ export const heroes: MessageTree<typeof en> = {
     yourRank: "Imong rank",
     rankAbove: "Ang rank nga mas taas",
     summary: "Imong pinakadakong kulang ug imong pinakakusog",
+    teaser: {
+      kicker: "Batok sa imong rank",
+      title: "Asa ka kumpara sa {rank}",
+      link: "Tan-awa ang pagtandi sa matag hero",
+    },
     workOn: "Pauswagon",
     strength: "Imong labaw",
     gap: {
@@ -47,11 +52,15 @@ export const heroes: MessageTree<typeof en> = {
     seePlus: "Tan-awa ang Plus",
     method:
       "Imong mga public game sa katapusang {days} ka adlaw (15 minutos o labaw; mga hero nga adunay 5+ ka duwa), batok sa average sa katapusang tibuok semana sa mga duwa niadtong rank sa STRATZ, gikuha sa gitas-on sa matag duwa nimo. Apil sa average sa rank ang ilang mga pildi, mao nga ang player nga kanunay modaog mas taas sa kills ug assists.",
+    fromImported:
+      "Wala motubag ang OpenDota karon, mao nga ang mga dula nga na-import na sa Dota Den ang gigamit. Walay last hits kadto, mao nga kills + assists ug deaths ra ang gitandi.",
     status: {
       unranked:
         "Kinahanglan ang imong rank medal aron makakumpara: duwaa ang imong calibration games (o ipakita sa publiko ang imong rank sa Dota), dayon balik.",
       unavailable:
         "Dili available karon ang mga average sa rank. Sulayi pag-usab human sa pipila ka minuto.",
+      no_games:
+        "Dili ma-load ang imong mga dula: wala motubag ang OpenDota karon. Sulayi pag-usab sa pipila ka minuto.",
       too_few:
         "Pagdula og labing menos 5 ka duwa (15 minutos o labaw) sa usa ka hero sa katapusang 60 ka adlaw aron ikumpara kini.",
     },

@@ -58,6 +58,11 @@ export async function CompareSections({
 
   return (
     <div className="space-y-5">
+      {view.fromImported && (
+        <p role="status" className="panel border-gold/30 p-4 text-sm text-muted-foreground">
+          {t("heroes.compare.fromImported")}
+        </p>
+      )}
       {(view.weakest || view.strongest) && (
         <section aria-label={t("heroes.compare.summary")} className="grid gap-3 sm:grid-cols-2">
           {view.weakest && (
@@ -149,5 +154,67 @@ export async function CompareSections({
         {t("heroes.compare.method", { days: view.windowDays })}
       </p>
     </div>
+  );
+}
+
+/** The overview's short version: your biggest gap and edge against your rank, with a link. */
+export async function CompareTeaser({
+  view,
+  heroes,
+}: {
+  view: CompareView;
+  heroes: Map<number, HeroInfo>;
+}) {
+  const t = await getT();
+  const rows = [
+    view.weakest && { kind: "weak" as const, ...view.weakest },
+    view.strongest && { kind: "strong" as const, ...view.strongest },
+  ].filter((r) => r !== null);
+  if (view.status !== "ok" || rows.length === 0) return null;
+  const rank = view.bracket ? t(`heroes.compare.brackets.${view.bracket}`) : "";
+  return (
+    <section aria-labelledby="compare-teaser" className="panel space-y-4 p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <div>
+          <p className="kicker">{t("heroes.compare.teaser.kicker")}</p>
+          <h2 id="compare-teaser" className="text-lg font-semibold">
+            {t("heroes.compare.teaser.title", { rank })}
+          </h2>
+        </div>
+      </div>
+      <ul className="space-y-3">
+        {rows.map((r) => (
+          <li key={r.kind} className="flex items-center gap-3">
+            <HeroPortrait hero={heroes.get(r.heroId)} heroId={r.heroId} size="sm" />
+            <div className="min-w-0 text-sm">
+              <p
+                className={cn(
+                  "text-[0.65rem] font-semibold tracking-wider uppercase",
+                  r.kind === "weak" ? "text-loss" : "text-win",
+                )}
+              >
+                {t(r.kind === "weak" ? "heroes.compare.workOn" : "heroes.compare.strength")}
+              </p>
+              <p className="font-medium">
+                {t(`heroes.compare.gap.${r.stat.stat}.${r.stat.better ? "better" : "worse"}`, {
+                  hero: heroName(heroes.get(r.heroId), r.heroId),
+                  pct: Math.abs(r.stat.diffPct),
+                  rank,
+                })}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("heroes.compare.numbers", {
+                  yours: value(r.stat.stat, r.stat.yours),
+                  theirs: value(r.stat.stat, r.stat.theirs),
+                })}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <Link href="/heroes/compare" className="inline-block text-sm text-gold hover:underline">
+        {t("heroes.compare.teaser.link")}
+      </Link>
+    </section>
   );
 }

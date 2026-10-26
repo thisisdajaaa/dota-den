@@ -34,6 +34,8 @@ export class PickForMeService {
       records: () => Promise<ReadonlyMap<number, HeroRecords> | null>;
       positionShares: () => Promise<ReadonlyMap<number, Record<Position, number>> | null>;
       isPlus: (userId: string) => Promise<boolean>;
+      /** Counts a use (admin usage numbers); never fails. */
+      used?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "warn">;
     },
   ) {}
@@ -66,6 +68,7 @@ export class PickForMeService {
       PICKS_PLUS,
     );
     const shown = plus ? PICKS_PLUS : PICKS_FREE;
+    await this.deps.used?.(user.id);
     return {
       suggestions: all.slice(0, shown),
       locked: Math.max(0, all.length - shown),

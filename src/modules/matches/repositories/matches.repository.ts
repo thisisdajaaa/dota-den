@@ -726,6 +726,37 @@ export class MatchReadRepository implements MatchQueries {
     return out;
   }
 
+  async rankedParseCounts(
+    accountIds: readonly number[],
+    since: Date,
+    until: Date,
+  ): Promise<{ games: number; parsed: number }> {
+    const [row] = await (
+      await this.getDb()
+    )
+      .collection(MATCH_COLLECTIONS.facts)
+      .aggregate<{ games: number; parsed: number }>([
+        {
+          $match: {
+            accountId32: { $in: [...accountIds] },
+            startedAt: { $gte: since, $lt: until },
+            ranked: true,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            games: { $sum: 1 },
+            parsed: {
+              $sum: { $cond: [{ $eq: ["$provenance.parseStatus", "parsed"] }, 1, 0] },
+            },
+          },
+        },
+      ])
+      .toArray();
+    return { games: row?.games ?? 0, parsed: row?.parsed ?? 0 };
+  }
+
   /** Your imported matches and sync state, for "Download your data". */
   async exportForOwner(owner: DataOwner) {
     const db = await this.getDb();

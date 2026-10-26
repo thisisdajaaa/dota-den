@@ -12,6 +12,11 @@ export const heroes = {
     yourRank: "Your rank",
     rankAbove: "The rank above",
     summary: "Your biggest gap and your biggest edge",
+    teaser: {
+      kicker: "Against your rank",
+      title: "Where you stand vs {rank}",
+      link: "See how you compare on every hero",
+    },
     workOn: "Work on",
     strength: "Your edge",
     gap: {
@@ -45,10 +50,14 @@ export const heroes = {
     seePlus: "See Plus",
     method:
       "Your public games of the last {days} days (15 minutes or longer; heroes with 5+ games), against the averages of the latest full week of games at that rank on STRATZ, taken at each of your games' lengths. The rank average includes their losses, so a player who wins a lot sits above it on kills and assists.",
+    fromImported:
+      "OpenDota isn't answering right now, so this uses the games already imported into Dota Den. Those have no last hits, so only kills + assists and deaths are compared.",
     status: {
       unranked:
         "Comparing needs your rank medal: play your calibration games (or show your rank publicly in Dota), then come back.",
       unavailable: "Rank averages are unavailable right now. Try again in a few minutes.",
+      no_games:
+        "Your games couldn't be loaded: OpenDota isn't answering right now. Try again in a few minutes.",
       too_few:
         "Play at least 5 games (15 minutes or longer) on a hero in the last 60 days to compare it.",
     },

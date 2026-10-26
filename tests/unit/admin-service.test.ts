@@ -34,7 +34,12 @@ describe("AdminService", () => {
         mmrEntryCounts: async () => new Map([["a", 5]]),
         activityCounts: async () => new Map([["b", { drafts: 3, challenges: 7 }]]),
         roomDraftCounts: async () => new Map(),
+        parseCounts: async (ids, since, until) => {
+          expect([ids, until.getTime() - since.getTime()]).toEqual([[1, 2], 13 * 86_400_000]);
+          return { games: 20, parsed: 7 };
+        },
       },
+      usage: { summary: async () => [] },
       profiles: {
         publicProfile: async (id) =>
           id === 2
@@ -75,6 +80,8 @@ describe("AdminService", () => {
     expect(o.retention).toMatchObject({ active1: 1, active7: 2, returning: 2 });
     // Only current players count.
     expect(o.optIns).toEqual({ notifications: 1, email: 2, discord: 0 });
+    expect(o.parseRate).toEqual({ games: 20, parsed: 7, windowDays: 14 });
+    expect(o.usage).toEqual([]);
   });
 
   it("shows retention as unavailable when activity fails to load", async () => {
@@ -85,7 +92,9 @@ describe("AdminService", () => {
         mmrEntryCounts: async () => new Map(),
         activityCounts: async () => new Map(),
         roomDraftCounts: async () => new Map(),
+        parseCounts: async () => Promise.reject(new Error("db")),
       },
+      usage: { summary: async () => Promise.reject(new Error("db")) },
       profiles: { publicProfile: async () => null },
       ops: {
         jobFailures: async () => [],
@@ -104,5 +113,6 @@ describe("AdminService", () => {
     const o = await svc.overview(day(0));
     expect(o.retention).toBeNull();
     expect(o.optIns).toEqual({ notifications: null, email: null, discord: null });
+    expect([o.parseRate, o.usage]).toEqual([null, null]);
   });
 });

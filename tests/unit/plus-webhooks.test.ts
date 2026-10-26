@@ -498,4 +498,24 @@ describe("PlusService", () => {
     expect(await plus.deleteMyData(owner)).toEqual({ plusSubscriptions: 1, plusBillingEvents: 1 });
     expect(await plus.isPlus(USER)).toBe(false);
   });
+
+  it("gives admins Plus without a subscription, even while it isn't on sale", async () => {
+    const svc = new PlusService({
+      subscriptions: new MemorySubscriptions(),
+      events: new MemoryWebhookEvents(),
+      provider: null,
+      enabled: () => false,
+      staff: { has: async (id) => id === OTHER, userIds: async () => [OTHER] },
+      logger: { warn: vi.fn() },
+      now: () => NOW,
+    });
+    expect(await svc.isPlus(OTHER)).toBe(true);
+    expect(await svc.isPlus(USER)).toBe(false);
+    expect(await svc.limit(OTHER, 10)).toBe(20);
+    expect(await svc.plan(OTHER)).toMatchObject({ plus: true, reason: "staff", canManage: false });
+    expect(await svc.plusUserIds()).toEqual([OTHER]);
+    // Not a supporter, and not counted as a paying player.
+    expect(await svc.supporters([2])).toEqual(new Set());
+    expect((await svc.adminCounts()).entitled).toBe(0);
+  });
 });
