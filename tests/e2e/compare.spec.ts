@@ -21,8 +21,10 @@ test("how you compare: your heroes against players at your rank", async ({ page 
   ).toBeVisible();
   await expect(page.getByText(/against the averages of the latest full week/)).toBeVisible();
 
-  // "The rank above" is the same bracket at the top.
-  await page.getByRole("link", { name: "The rank above" }).click();
-  await expect(page).toHaveURL(/\/heroes\/compare\?vs=next$/);
+  // The top bracket has no rank above: no choice is offered, and ?vs=next shows the same.
+  await expect(page.getByText(/You're in the top bracket/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "The rank above" })).toHaveCount(0);
+  await page.goto("/heroes/compare?vs=next");
   await expect(page.getByRole("region", { name: "Against Divine–Immortal players" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "The rank above" })).toHaveCount(0);
 });

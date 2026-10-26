@@ -92,7 +92,19 @@ export class GroqClient {
         last = { type: "unavailable", cause: `status ${res.status}` };
         continue;
       }
-      if (!res.ok) return err({ type: "unavailable", cause: `status ${res.status}` });
+      if (!res.ok) {
+        // The provider's own reason (e.g. a blocked model or region) makes the log useful.
+        const reason = await res
+          .json()
+          .then((b: { error?: { message?: unknown } }) =>
+            typeof b?.error?.message === "string" ? b.error.message.slice(0, 160) : "",
+          )
+          .catch(() => "");
+        return err({
+          type: "unavailable",
+          cause: reason ? `status ${res.status}: ${reason}` : `status ${res.status}`,
+        });
+      }
       const parsed = CompletionSchema.safeParse(await res.json().catch(() => null));
       if (!parsed.success) return err({ type: "invalid_response", cause: "completion shape" });
       return ok(parsed.data.choices[0].message.content);

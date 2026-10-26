@@ -102,6 +102,7 @@ export class PeriodReadService {
 
     let problems: string[] = [];
     let points: ReadPoint[] | null = null;
+    let modelDown = false;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS && !points; attempt++) {
       if (!(await this.deps.budget.take()))
         throw new AppError("upstream_unavailable", "The coach is resting. Try again later.", {
@@ -113,7 +114,10 @@ export class PeriodReadService {
       );
       if (!reply.ok) {
         this.deps.logger.warn("period_read_model_unavailable", { cause: reply.error.cause });
-        if (reply.error.type === "unavailable") break;
+        if (reply.error.type === "unavailable") {
+          modelDown = true;
+          break;
+        }
         problems = ["The answer wasn't valid JSON."];
         continue;
       }
@@ -139,7 +143,7 @@ export class PeriodReadService {
     }
     if (!points)
       throw new AppError("upstream_unavailable", "The coach couldn't write this read.", {
-        reason: "failed",
+        reason: modelDown ? "unavailable" : "failed",
       });
     const read: StoredPeriodRead = {
       key,

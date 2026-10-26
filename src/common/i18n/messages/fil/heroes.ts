@@ -13,6 +13,8 @@ export const heroes: MessageTree<typeof en> = {
     against: "Ikumpara sa",
     yourRank: "Rank mo",
     rankAbove: "Ang rank na mas mataas",
+    topBracket:
+      "Nasa pinakamataas na bracket ka (Divine–Immortal), kaya walang mas mataas na rank na mapaghahambingan: pinagsasama ng STRATZ ang Divine at Immortal.",
     summary: "Ang pinakamalaking kulang mo at ang pinakamalakas mo",
     teaser: {
       kicker: "Laban sa rank mo",

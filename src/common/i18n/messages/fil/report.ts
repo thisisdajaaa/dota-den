@@ -15,6 +15,7 @@ export const report: MessageTree<typeof en> = {
     resting: "Nagpapahinga ang AI coach ngayong araw. Subukan ulit bukas.",
     failed:
       "Hindi nakasulat ang AI ng read na kayang patunayan ng mga numero mo. Subukan ulit mamaya.",
+    unavailable: "Hindi sumasagot ang AI service ngayon. Subukan ulit maya-maya.",
     offline: "Hindi maabot ang Dota Den ngayon.",
     basedOn: "Batay sa",
     kinds: { strength: "Maganda", improve: "Pagbutihin", focus: "Pagtuunan" },

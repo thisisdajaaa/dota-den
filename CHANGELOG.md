@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-26
 
+- How you compare: Divine and Immortal players (the top bracket) no longer see a "rank above" option that showed the same numbers
+- Battle report AI read: when the AI service itself fails, it says so instead of blaming your numbers; the provider's reason is logged
 - Admin: "Set up job schedules" creates the 5-minute QStash schedules (go-live alerts, session companion) from the server, without handling the QStash token locally
 - Overview: the queue card no longer stretches into an empty block; recent form sits under it, and a new "Where you stand" card beside your heroes shows your biggest gap and edge against your rank (How you compare); recent matches shows 8 games
 - How you compare: when OpenDota is down, your imported games are compared instead (kills + assists and deaths; last hits need OpenDota), and the message says which source failed

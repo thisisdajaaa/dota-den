@@ -11,6 +11,8 @@ export const heroes = {
     against: "Compare against",
     yourRank: "Your rank",
     rankAbove: "The rank above",
+    topBracket:
+      "You're in the top bracket (Divine–Immortal), so there's no rank above to compare with: STRATZ groups Divine and Immortal together.",
     summary: "Your biggest gap and your biggest edge",
     teaser: {
       kicker: "Against your rank",

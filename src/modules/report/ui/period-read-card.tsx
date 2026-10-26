@@ -66,9 +66,11 @@ export function PeriodReadCard({
           ? t("report.read.resting")
           : reason === "failed"
             ? t("report.read.failed")
-            : e instanceof ApiClientError
-              ? e.message
-              : t("report.read.offline"),
+            : reason === "unavailable"
+              ? t("report.read.unavailable")
+              : e instanceof ApiClientError
+                ? e.message
+                : t("report.read.offline"),
       );
     } finally {
       setBusy(false);
