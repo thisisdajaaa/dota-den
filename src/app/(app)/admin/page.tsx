@@ -13,6 +13,7 @@ import { displayName, PlayerAvatar } from "@/modules/players/ui/player-avatar";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import { RunSyncButton } from "./run-sync-button";
+import { SchedulesButton } from "./schedules-button";
 import { TestAlertButton } from "./test-alert-button";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -554,7 +555,10 @@ export default async function AdminPage() {
               </h2>
               <p className="text-xs text-muted-foreground">{t("admin.cron.body")}</p>
             </div>
-            <RunSyncButton />
+            <div className="flex flex-wrap items-start gap-3">
+              <RunSyncButton />
+              <SchedulesButton />
+            </div>
             {cronRuns === null ? (
               <p className="text-sm text-muted-foreground">{t("admin.cron.unavailable")}</p>
             ) : cronRuns.length === 0 ? (

@@ -19,6 +19,8 @@ import { notificationTriggers } from "@/modules/notifications";
 import { patchImportService } from "@/modules/patches";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
+import { setUpSchedules } from "./infrastructure/qstash-schedules";
+import type { ScheduleSet } from "./domain/schedules";
 import { JobsController } from "./jobs.controller";
 import type { JobQueue, MatchSyncPort } from "./jobs.ports";
 import { CronRunsRepository } from "./repositories/cron-runs.repository";
@@ -51,6 +53,19 @@ function jobQueue(): JobQueue {
       if (outcome.status === "failed") logger.warn("job_failed", { name, error: outcome.error });
     },
     schedule: (task) => afterResponse("inline_job", task),
+  });
+}
+
+/**
+ * Sets up the recurring QStash schedules for this deployment (admin page). Null when QStash
+ * isn't configured: jobs then run in-process and nothing is scheduled.
+ */
+export async function setUpJobSchedules(): Promise<ScheduleSet[] | null> {
+  const { QSTASH_TOKEN, QSTASH_URL, APP_URL, VERCEL_AUTOMATION_BYPASS_SECRET: bypass } = env();
+  if (!QSTASH_TOKEN) return null;
+  return setUpSchedules(new Client({ token: QSTASH_TOKEN, baseUrl: QSTASH_URL }), {
+    appUrl: APP_URL,
+    bypass,
   });
 }
 

@@ -5,6 +5,7 @@ export {
   jobRunsRepository,
   jobsController,
   jobsService,
+  setUpJobSchedules,
 } from "./jobs.container";
 export type { CronRun, JobFailure } from "./jobs.model";
 export type { MatchSyncRunDto } from "./dtos/responses/cron-run.dto";
