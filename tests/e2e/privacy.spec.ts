@@ -33,7 +33,7 @@ test("the privacy policy renders, linked from the footer, with the contact addre
   ])
     await expect(policy.getByRole("heading", { level: 2, name: heading })).toBeVisible();
   await expect(policy.getByText(/Groq runs our AI features/)).toBeVisible();
-  await expect(policy.getByText(/stay with Lemon Squeezy/)).toBeVisible();
+  await expect(policy.getByText(/stay with our payment provider/)).toBeVisible();
   await expect(policy.getByRole("link", { name: E2E_SUPPORT_EMAIL })).toHaveAttribute(
     "href",
     `mailto:${E2E_SUPPORT_EMAIL}`,
