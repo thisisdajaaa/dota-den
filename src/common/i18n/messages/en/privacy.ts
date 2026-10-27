@@ -44,7 +44,7 @@ export const privacy = {
     sections: {
       summary: {
         title: "The short version",
-        body: "Dota Den is an unofficial fan project for Dota 2 players. It isn't affiliated with or endorsed by Valve Corporation. We keep what's needed to show you your games and the tools you choose to use. There are no ads and no analytics or tracking cookies, we don't sell your data, and you can download or delete all of it yourself on the {account}.",
+        body: "Dota Den is independent software for Dota 2 players. It isn't affiliated with or endorsed by Valve Corporation. We keep what's needed to show you your games and the tools you choose to use. There are no ads and no analytics or tracking cookies, we don't sell your data, and you can download or delete all of it yourself on the {account}.",
       },
       signIn: {
         title: "Signing in with Steam",
@@ -85,7 +85,7 @@ export const privacy = {
             "Weekly email: your email address, whether you confirmed it and a list of what we sent. Nothing is sent until you confirm, and every email has an unsubscribe link.",
           discord:
             "Discord feed: the Discord webhook you paste (kept secret: never shown back to the browser or put in your download) and a list of matches we posted.",
-          plus: "Dota Den Plus: the plan, status and renewal dates of your subscription as our payment provider reports them, and a record of its billing notices. We never see or store your card details, name or billing address: those stay with Lemon Squeezy.",
+          plus: "Dota Den Plus: the plan, status and renewal dates of your subscription as our payment provider reports them, and a record of its billing notices. We never see or store your card details, name or billing address: those stay with our payment provider.",
         },
       },
       visibility: {
@@ -122,8 +122,8 @@ export const privacy = {
           steam:
             "Steam (Valve) handles sign-in and patch notes, and can tell us which of your Steam friends are in a game right now (if your friends list is public). Avatars load from Steam's image servers.",
           groq: "Groq runs our AI features: the AI draft captain and review, the AI match coach and reading MMR screenshots. It gets the draft, the facts of the match or the screenshot, not your Steam ID or name.",
-          lemonSqueezy:
-            "Lemon Squeezy sells Plus as merchant of record: it takes the payment, handles tax and receipts, and keeps your billing details under its own privacy policy.",
+          payments:
+            "Our payment provider sells Plus as merchant of record: it takes the payment, handles tax and receipts, and keeps your billing details under its own privacy policy.",
           resend: "Resend sends the weekly email, if you signed up for it.",
           push: "Your browser's push service (for example Google, Mozilla or Apple) delivers notifications, if you turned them on.",
           discord: "Discord receives the match posts for the webhook you connected, if any.",

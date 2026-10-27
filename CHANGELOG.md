@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-10-27
 
+- Plus page shows the monthly and yearly prices before Plus is on sale (with an "Opens soon" button), and the footer always links to it
+- Terms, refunds and privacy: Dota Den is described as independent software, and payments as "our payment provider" (merchant of record) instead of naming Lemon Squeezy, which declined the store
 - Fix: every AI feature (coach, auto-reviews, battle report read, AI draft captain) failed in production since 2026-10-15: the AI provider (Groq) refuses requests from Hong Kong, where functions ran. Functions now run in Singapore (`sin1`); the database stays in Hong Kong
 
 ## 2026-10-26

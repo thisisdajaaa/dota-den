@@ -17,17 +17,23 @@ test("without a payment provider, Plus is 'coming soon' and nothing can be bough
   await expect(
     page.getByRole("link", { name: /Get Plus|Sign in with Steam to get Plus/ }),
   ).toHaveCount(0);
-  await expect(page.getByText("₱299")).toHaveCount(0);
-  // The legal drafts are reachable from the footer.
-  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Terms" })).toHaveAttribute(
+  // The prices show (a payment provider reviews them), but the buttons can't be used.
+  await expect(page.getByRole("article", { name: "Monthly" })).toContainText("₱299");
+  await expect(page.getByRole("button", { name: "Opens soon" })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Opens soon" }).first()).toBeDisabled();
+  // Plus and the legal drafts are reachable from the footer.
+  const footer = page.getByRole("contentinfo");
+  await expect(footer.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+  await expect(footer.getByRole("link", { name: "Plus", exact: true })).toHaveAttribute(
     "href",
-    "/terms",
+    "/plus",
   );
 
   await page.goto(LOGIN);
   await page.goto("/account");
-  // Not listed in the navigation, and no plan card.
-  await expect(page.getByRole("link", { name: "Plus", exact: true })).toHaveCount(0);
+  // Not listed in the navigation (only the footer), and no plan card.
+  await expect(page.getByRole("link", { name: "Plus", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Plus" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Your plan" })).toHaveCount(0);
   expect(
     (await page.request.get("/api/v1/plus/checkout?plan=monthly", { maxRedirects: 0 })).status(),

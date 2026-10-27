@@ -2,8 +2,8 @@
  * Dota Den Plus: pricing page, plan card, badge, admin counts and the legal pages (ADR 0013).
  *
  * DRAFT (legal): the `terms` and `refunds` texts below are plain-language drafts for the owner
- * to review before Plus goes on sale. They are not legal advice. Check them against Lemon
- * Squeezy's own buyer terms and refund policy. The contact section under them comes from
+ * to review before Plus goes on sale. They are not legal advice. Check them against the payment
+ * provider's own buyer terms and refund policy. The contact section under them comes from
  * SUPPORT_EMAIL (common.legal.contact).
  */
 export const plus = {
@@ -79,6 +79,8 @@ export const plus = {
     monthly: "Monthly",
     yearly: "Yearly",
     perMonth: "per month",
+    plansTitle: "Plans",
+    opensSoon: "Opens soon",
     perYear: "per year",
     yearlySaving: "2 months free compared with paying monthly",
     subscribe: "Get Plus",
@@ -93,7 +95,7 @@ export const plus = {
       currency:
         "Prices are in Philippine pesos. The checkout may show them in your local currency, with sales tax or VAT added where it applies.",
       provider:
-        "Payments are handled by Lemon Squeezy, our merchant of record. They take the payment, charge any tax and send your receipt. Dota Den never sees your card.",
+        "Payments are handled by our payment provider, acting as merchant of record. They take the payment, charge any tax and send your receipt. Dota Den never sees your card.",
       cancel:
         "Cancel anytime in the billing portal. You keep Plus until the end of the period you paid for.",
     },
@@ -173,7 +175,7 @@ export const plus = {
     sections: {
       about: {
         title: "About Dota Den",
-        body: "Dota Den is an unofficial fan project for Dota 2 players. It isn't affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation.",
+        body: "Dota Den is independent software that helps Dota 2 players review their own games: match history, rank tracking, draft tools and AI coaching, built and run by its own developer. It isn't affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation.",
       },
       account: {
         title: "Your account",
@@ -189,7 +191,7 @@ export const plus = {
       },
       payments: {
         title: "Payments",
-        body: "Plus is sold by Lemon Squeezy, acting as merchant of record. They process the payment, charge any sales tax or VAT and issue receipts, and their buyer terms apply to the purchase.",
+        body: "Plus is sold by our payment provider, acting as merchant of record. They process the payment, charge any sales tax or VAT and issue receipts, and their buyer terms apply to the purchase.",
       },
       billing: {
         title: "Renewal and cancelling",
@@ -212,7 +214,7 @@ export const plus = {
     sections: {
       who: {
         title: "Who handles refunds",
-        body: "Plus is sold through Lemon Squeezy, our merchant of record. Refunds are issued by them, following their refund policy and the consumer law where you live.",
+        body: "Plus is sold through our payment provider, acting as merchant of record. Refunds are issued by them, following their refund policy and the consumer law where you live.",
       },
       cancel: {
         title: "Cancelling",
@@ -220,7 +222,7 @@ export const plus = {
       },
       request: {
         title: "Asking for a refund",
-        body: "If something went wrong (for example, you were charged twice, or Plus didn't work for you), ask within 14 days of the charge through the billing portal or by replying to your Lemon Squeezy receipt.",
+        body: "If something went wrong (for example, you were charged twice, or Plus didn't work for you), ask within 14 days of the charge through the billing portal or by replying to your payment receipt.",
       },
       after: {
         title: "After a refund",

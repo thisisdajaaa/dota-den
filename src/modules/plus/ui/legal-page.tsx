@@ -8,7 +8,7 @@ import { LegalDocument } from "@/components/legal-document";
  */
 
 /** When the texts last changed (shown on the page). Update with every edit. */
-export const LEGAL_UPDATED = "2026-10-24";
+export const LEGAL_UPDATED = "2026-10-27";
 
 const SECTIONS = {
   terms: ["about", "account", "data", "free", "payments", "billing", "changes", "warranty"],

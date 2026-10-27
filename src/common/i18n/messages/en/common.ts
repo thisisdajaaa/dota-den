@@ -47,7 +47,7 @@ export const common = {
     privacy: "Privacy",
     legal: "Legal",
     disclaimer:
-      "Dota Den is an unofficial fan project. It is not affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation. Match data is provided by OpenDota where available; patch notes link to their official source.",
+      "Dota Den is independent software for analysing your own Dota 2 games. It is not affiliated with or endorsed by Valve Corporation. Dota 2 is a registered trademark of Valve Corporation. Match data is provided by OpenDota where available; patch notes link to their official source.",
   },
   /** Shared by the legal pages (privacy, terms, refunds). */
   legal: {
@@ -57,7 +57,7 @@ export const common = {
       email:
         "Questions about this page or your data: email {email}. You can also download or delete your data yourself on the {account}.",
       fallback:
-        "Dota Den doesn't have a support inbox yet. You don't need to ask us to see or remove your data: you can download or delete all of it yourself on the {account}. For a payment or refund, reply to your Lemon Squeezy receipt.",
+        "Dota Den doesn't have a support inbox yet. You don't need to ask us to see or remove your data: you can download or delete all of it yourself on the {account}. For a payment or refund, reply to your payment receipt.",
     },
   },
   datePicker: {

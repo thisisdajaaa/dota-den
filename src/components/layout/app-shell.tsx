@@ -114,7 +114,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
           {children}
         </main>
-        <SiteFooter showPlus={onSale} />
+        <SiteFooter />
         {/* Room for the bottom tab bar, below the footer so it never covers it. */}
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] sm:hidden" />
         <MobileTabBar enabled={ENABLED} signedIn={false} />
@@ -198,7 +198,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         >
           {children}
         </main>
-        <SiteFooter showPlus={onSale} />
+        <SiteFooter />
         {/* Room for the bottom tab bar, below the footer so it never covers it. */}
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
       </div>

@@ -76,6 +76,8 @@ export const plus: MessageTree<typeof en> = {
     monthly: "Buwanan",
     yearly: "Taunan",
     perMonth: "kada buwan",
+    plansTitle: "Mga plan",
+    opensSoon: "Bubuksan na sa lalong madaling panahon",
     perYear: "kada taon",
     yearlySaving: "Libre ang 2 buwan kumpara sa buwanang bayad",
     subscribe: "Kumuha ng Plus",
@@ -90,7 +92,7 @@ export const plus: MessageTree<typeof en> = {
       currency:
         "Nasa Philippine peso ang mga presyo. Puwedeng ipakita ng checkout ito sa lokal mong pera, kasama ang sales tax o VAT kung mayroon.",
       provider:
-        "Ang Lemon Squeezy, ang aming merchant of record, ang humahawak ng bayad. Sila ang tumatanggap ng bayad, naniningil ng tax at nagpapadala ng resibo. Hindi nakikita ng Dota Den ang card mo.",
+        "Ang payment provider namin, bilang merchant of record, ang humahawak ng bayad. Sila ang tumatanggap ng bayad, naniningil ng tax at nagpapadala ng resibo. Hindi nakikita ng Dota Den ang card mo.",
       cancel:
         "Puwedeng mag-cancel kahit kailan sa billing portal. May Plus ka pa rin hanggang matapos ang period na binayaran mo.",
     },
@@ -171,7 +173,7 @@ export const plus: MessageTree<typeof en> = {
     sections: {
       about: {
         title: "Tungkol sa Dota Den",
-        body: "Ang Dota Den ay hindi opisyal na proyekto ng mga fan para sa mga Dota 2 player. Hindi ito kaugnay o inendorso ng Valve Corporation. Ang Dota 2 ay rehistradong trademark ng Valve Corporation.",
+        body: "Ang Dota Den ay independiyenteng software na tumutulong sa mga Dota 2 player na suriin ang sarili nilang mga laro: match history, pagsubaybay ng rank, draft tools at AI coaching, na ginawa at pinapatakbo ng sarili nitong developer. Hindi ito kaugnay o inendorso ng Valve Corporation. Ang Dota 2 ay rehistradong trademark ng Valve Corporation.",
       },
       account: {
         title: "Ang account mo",
@@ -187,7 +189,7 @@ export const plus: MessageTree<typeof en> = {
       },
       payments: {
         title: "Bayad",
-        body: "Ang Lemon Squeezy, bilang merchant of record, ang nagbebenta ng Plus. Sila ang nagpo-proseso ng bayad, naniningil ng sales tax o VAT at nagbibigay ng resibo, at ang kanilang buyer terms ang sinusunod sa pagbili.",
+        body: "Ang payment provider namin, bilang merchant of record, ang nagbebenta ng Plus. Sila ang nagpo-proseso ng bayad, naniningil ng sales tax o VAT at nagbibigay ng resibo, at ang kanilang buyer terms ang sinusunod sa pagbili.",
       },
       billing: {
         title: "Renewal at pag-cancel",
@@ -210,7 +212,7 @@ export const plus: MessageTree<typeof en> = {
     sections: {
       who: {
         title: "Sino ang humahawak ng refund",
-        body: "Ibinebenta ang Plus sa pamamagitan ng Lemon Squeezy, ang aming merchant of record. Sila ang nagbibigay ng refund, ayon sa kanilang refund policy at sa consumer law kung saan ka nakatira.",
+        body: "Ibinebenta ang Plus sa pamamagitan ng payment provider namin, bilang merchant of record. Sila ang nagbibigay ng refund, ayon sa kanilang refund policy at sa consumer law kung saan ka nakatira.",
       },
       cancel: {
         title: "Pag-cancel",
@@ -218,7 +220,7 @@ export const plus: MessageTree<typeof en> = {
       },
       request: {
         title: "Paghingi ng refund",
-        body: "Kung may nangyaring mali (halimbawa, nasingil ka nang dalawang beses, o hindi gumana ang Plus para sa iyo), humingi sa loob ng 14 na araw mula sa singil sa billing portal o sa pag-reply sa resibo mo mula sa Lemon Squeezy.",
+        body: "Kung may nangyaring mali (halimbawa, nasingil ka nang dalawang beses, o hindi gumana ang Plus para sa iyo), humingi sa loob ng 14 na araw mula sa singil sa billing portal o sa pag-reply sa resibo ng bayad mo.",
       },
       after: {
         title: "Pagkatapos ng refund",

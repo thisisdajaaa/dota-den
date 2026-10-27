@@ -5,7 +5,7 @@ import { useT } from "@/common/i18n/client";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { BrandMark } from "./brand-mark";
 
-export function SiteFooter({ showPlus = false }: { showPlus?: boolean }) {
+export function SiteFooter() {
   const t = useT();
   return (
     <footer className="mt-auto border-t border-white/[0.06]">
@@ -14,14 +14,12 @@ export function SiteFooter({ showPlus = false }: { showPlus?: boolean }) {
         <div className="max-w-3xl flex-1 space-y-2">
           <p className="leading-relaxed">{t("common.footer.disclaimer")}</p>
           <nav aria-label={t("common.footer.legal")} className="flex flex-wrap gap-x-4 gap-y-1">
-            {showPlus && (
-              <Link
-                href="/plus"
-                className="relative hover:text-foreground hover:underline touch:tap-area"
-              >
-                {t("common.nav.plus")}
-              </Link>
-            )}
+            <Link
+              href="/plus"
+              className="relative hover:text-foreground hover:underline touch:tap-area"
+            >
+              {t("common.nav.plus")}
+            </Link>
             <Link
               href="/terms"
               className="relative hover:text-foreground hover:underline touch:tap-area"

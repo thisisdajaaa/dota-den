@@ -22,7 +22,7 @@ import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { signInHref } from "@/modules/identity/domain/return-path";
-import { PLAN_PRICES, type Plan } from "../domain/plans";
+import { PLAN_PRICES, PLANS as PLAN_ORDER, type Plan } from "../domain/plans";
 import type { PlanDto, PlusOfferDto } from "../dtos/responses/plus.dto";
 import { PlusBadge } from "./plus-badge";
 
@@ -170,6 +170,20 @@ export function PlusPricing({
         </section>
       </div>
 
+      {!available && (
+        // Not on sale yet: still show what it will cost, without a way to buy.
+        <section aria-labelledby="plus-plans" className="space-y-4">
+          <h2 id="plus-plans" className="sr-only">
+            {t("plus.page.plansTitle")}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {PLAN_ORDER.map((p) => (
+              <PlanOption key={p} plan={p} signedIn={signedIn} featured={p === "yearly"} preview />
+            ))}
+          </div>
+        </section>
+      )}
+
       {available && (
         <section aria-labelledby="plus-plans" className="space-y-4">
           <h2 id="plus-plans" className="sr-only">
@@ -254,10 +268,13 @@ function PlanOption({
   plan,
   signedIn,
   featured,
+  preview = false,
 }: {
   plan: Plan;
   signedIn: boolean;
   featured: boolean;
+  /** Not on sale yet: the price, and a disabled button instead of a checkout. */
+  preview?: boolean;
 }) {
   const t = useT();
   const price = PLAN_PRICES[plan];
@@ -281,25 +298,33 @@ function PlanOption({
         </p>
         {plan === "yearly" && <p className="text-xs text-gold/90">{t("plus.page.yearlySaving")}</p>}
       </div>
-      <Button
-        asChild
-        size="lg"
-        variant={featured ? "default" : "outline"}
-        // Long translations wrap inside the button rather than run off the card.
-        className="mt-auto h-auto min-h-9 gap-2 py-2 text-center whitespace-normal"
-      >
-        {signedIn ? (
-          // Full navigation: the route redirects to the provider's hosted checkout.
-          <a href={`/api/v1/plus/checkout?plan=${plan}`}>
-            <Sparkles aria-hidden className="size-4" />
-            {plan === "monthly" ? t("plus.page.subscribeMonthly") : t("plus.page.subscribeYearly")}
-          </a>
-        ) : (
-          <a href={signInHref("/plus")}>
-            <SteamIcon className="size-4" /> {t("plus.page.signIn")}
-          </a>
-        )}
-      </Button>
+      {preview ? (
+        <Button size="lg" variant="outline" disabled className="mt-auto">
+          {t("plus.page.opensSoon")}
+        </Button>
+      ) : (
+        <Button
+          asChild
+          size="lg"
+          variant={featured ? "default" : "outline"}
+          // Long translations wrap inside the button rather than run off the card.
+          className="mt-auto h-auto min-h-9 gap-2 py-2 text-center whitespace-normal"
+        >
+          {signedIn ? (
+            // Full navigation: the route redirects to the provider's hosted checkout.
+            <a href={`/api/v1/plus/checkout?plan=${plan}`}>
+              <Sparkles aria-hidden className="size-4" />
+              {plan === "monthly"
+                ? t("plus.page.subscribeMonthly")
+                : t("plus.page.subscribeYearly")}
+            </a>
+          ) : (
+            <a href={signInHref("/plus")}>
+              <SteamIcon className="size-4" /> {t("plus.page.signIn")}
+            </a>
+          )}
+        </Button>
+      )}
     </article>
   );
 }
