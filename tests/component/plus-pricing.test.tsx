@@ -20,13 +20,14 @@ const freePlan: PlanDto = {
 };
 
 describe("PlusPricing", () => {
-  it("says 'coming soon' and offers no checkout when Plus isn't configured", () => {
+  it("says 'coming soon', shows the prices and offers no checkout when Plus isn't configured", () => {
     render(
       <PlusPricing offer={{ status: "off", plans: [] }} signedIn plan={null} limits={limits} />,
     );
     expect(screen.getByRole("heading", { name: "Plus is coming soon" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
-    expect(screen.queryByText("₱299")).not.toBeInTheDocument();
+    expect(screen.getByText("₱299")).toBeInTheDocument();
+    for (const b of screen.getAllByRole("button", { name: "Opens soon" })) expect(b).toBeDisabled();
     // Honest copy is there either way.
     expect(screen.getByRole("heading", { name: "Free for everyone, always" })).toBeInTheDocument();
   });
