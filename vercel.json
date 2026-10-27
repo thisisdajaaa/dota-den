@@ -13,5 +13,5 @@
   "git": {
     "deploymentEnabled": false
   },
-  "regions": ["hkg1"]
+  "regions": ["sin1"]
 }
