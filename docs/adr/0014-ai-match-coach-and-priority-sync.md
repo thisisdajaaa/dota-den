@@ -167,3 +167,11 @@ and the MMR change only when it's exact). The grounding check is shared with the
 keys, and a failed check is retried once with the problems. It's written only on request, on the
 shared daily AI budget, rate-limited per player, and kept 30 days per period, game count and
 language (`report_ai_reads`, exported and deleted with the player's data).
+
+## Addendum (2026-10-27): function region
+
+Groq refuses requests from Greater China, Hong Kong included (HTTP 403 "Forbidden"). Functions
+ran in `hkg1` from 2026-10-15 (next to the Hong Kong database), which broke every AI call in
+production. They now run in `sin1` (`vercel.json`); the Hobby plan allows one region for all
+functions. Don't move them back to `hkg1` while AI goes to Groq directly; the alternatives are a
+relay outside Hong Kong or per-function regions (Pro).

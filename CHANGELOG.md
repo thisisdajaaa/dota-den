@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-10-27
+
+- Fix: every AI feature (coach, auto-reviews, battle report read, AI draft captain) failed in production since 2026-10-15: the AI provider (Groq) refuses requests from Hong Kong, where functions ran. Functions now run in Singapore (`sin1`); the database stays in Hong Kong
+
 ## 2026-10-26
 
 - How you compare: Divine and Immortal players (the top bracket) no longer see a "rank above" option that showed the same numbers
