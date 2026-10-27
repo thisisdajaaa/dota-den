@@ -43,7 +43,7 @@ export const privacy: MessageTree<typeof en> = {
     sections: {
       summary: {
         title: "Ang maikling bersyon",
-        body: "Ang Dota Den ay hindi opisyal na proyekto ng mga fan para sa mga Dota 2 player. Hindi ito kaugnay o inendorso ng Valve Corporation. Itinatago lang namin ang kailangan para maipakita sa iyo ang mga laro mo at ang mga tool na pinili mong gamitin. Walang ads at walang analytics o tracking cookie, hindi namin ibinebenta ang data mo, at puwede mong i-download o i-delete lahat ng iyon mismo sa {account}.",
+        body: "Ang Dota Den ay independiyenteng software para sa mga Dota 2 player. Hindi ito kaugnay o inendorso ng Valve Corporation. Itinatago lang namin ang kailangan para maipakita sa iyo ang mga laro mo at ang mga tool na pinili mong gamitin. Walang ads at walang analytics o tracking cookie, hindi namin ibinebenta ang data mo, at puwede mong i-download o i-delete lahat ng iyon mismo sa {account}.",
       },
       signIn: {
         title: "Pag-sign in gamit ang Steam",
@@ -85,7 +85,7 @@ export const privacy: MessageTree<typeof en> = {
             "Lingguhang email: ang email address mo, kung nakumpirma mo ito at listahan ng mga ipinadala namin. Walang ipinapadala hangga't hindi mo kinukumpirma, at may unsubscribe link ang bawat email.",
           discord:
             "Discord feed: ang Discord webhook na ipinaste mo (sikreto ito: hindi ibinabalik sa browser o isinasama sa download mo) at listahan ng mga match na na-post namin.",
-          plus: "Dota Den Plus: ang plan, status at mga petsa ng renewal ng subscription mo ayon sa payment provider namin, at talaan ng mga billing notice nito. Hindi namin nakikita o itinatago ang detalye ng card mo, pangalan o billing address: nasa Lemon Squeezy ang mga iyon.",
+          plus: "Dota Den Plus: ang plan, status at mga petsa ng renewal ng subscription mo ayon sa payment provider namin, at talaan ng mga billing notice nito. Hindi namin nakikita o itinatago ang detalye ng card mo, pangalan o billing address: nasa payment provider namin ang mga iyon.",
         },
       },
       visibility: {
@@ -124,8 +124,8 @@ export const privacy: MessageTree<typeof en> = {
           steam:
             "Ang Steam (Valve) ang humahawak ng sign-in at patch notes, at puwede nitong sabihin sa amin kung sino sa mga kaibigan mo sa Steam ang nasa laro ngayon (kung pampubliko ang friends list mo). Galing sa image server ng Steam ang mga avatar.",
           groq: "Ang Groq ang nagpapatakbo ng mga AI feature namin: ang AI draft captain at review, ang AI match coach at ang pagbasa ng MMR screenshot. Ang draft, ang mga detalye ng match o ang screenshot ang natatanggap nito, hindi ang Steam ID o pangalan mo.",
-          lemonSqueezy:
-            "Ang Lemon Squeezy ang nagbebenta ng Plus bilang merchant of record: ito ang tumatanggap ng bayad, humahawak ng tax at resibo, at nag-iingat ng billing details mo ayon sa sarili nitong privacy policy.",
+          payments:
+            "Ang payment provider namin ang nagbebenta ng Plus bilang merchant of record: ito ang tumatanggap ng bayad, humahawak ng tax at resibo, at nag-iingat ng billing details mo ayon sa sarili nitong privacy policy.",
           resend: "Ang Resend ang nagpapadala ng lingguhang email, kung nag-sign up ka rito.",
           push: "Ang push service ng browser mo (halimbawa Google, Mozilla o Apple) ang naghahatid ng notifications, kung in-on mo ang mga ito.",
           discord:

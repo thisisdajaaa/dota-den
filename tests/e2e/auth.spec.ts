@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("guest sees the landing page and disclaimer", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("contentinfo")).toContainText("unofficial fan project");
+  await expect(page.getByRole("contentinfo")).toContainText("independent software");
   await expect(page.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
 });
 

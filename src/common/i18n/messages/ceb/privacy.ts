@@ -43,7 +43,7 @@ export const privacy: MessageTree<typeof en> = {
     sections: {
       summary: {
         title: "Ang mubo nga bersyon",
-        body: "Ang Dota Den kay dili opisyal nga proyekto sa mga fan para sa mga Dota 2 player. Dili kini konektado o gi-endorso sa Valve Corporation. Ang gikinahanglan lang aron ipakita kanimo ang imong mga duwa ug ang mga tool nga imong gipili ang among gitipigan. Walay ads ug walay analytics o tracking cookie, dili namo ibaligya ang imong data, ug mahimo nimong i-download o i-delete tanan niini mismo sa {account}.",
+        body: "Ang Dota Den kay independiyenteng software para sa mga Dota 2 player. Dili kini konektado o gi-endorso sa Valve Corporation. Ang gikinahanglan lang aron ipakita kanimo ang imong mga duwa ug ang mga tool nga imong gipili ang among gitipigan. Walay ads ug walay analytics o tracking cookie, dili namo ibaligya ang imong data, ug mahimo nimong i-download o i-delete tanan niini mismo sa {account}.",
       },
       signIn: {
         title: "Pag-sign in pinaagi sa Steam",
@@ -85,7 +85,7 @@ export const privacy: MessageTree<typeof en> = {
             "Senemanang email: ang imong email address, kung nakumpirma na nimo kini ug lista sa among gipadala. Walay ipadala hangtod imo kining kumpirmahon, ug ang matag email naay unsubscribe link.",
           discord:
             "Discord feed: ang Discord webhook nga imong gi-paste (sekreto kini: dili ibalik sa browser o iapil sa imong download) ug lista sa mga match nga among na-post.",
-          plus: "Dota Den Plus: ang plan, status ug mga petsa sa renewal sa imong subscription sumala sa among payment provider, ug rekord sa mga billing notice niini. Dili gyud namo makita o tipigan ang detalye sa imong card, ngalan o billing address: naa kana sa Lemon Squeezy.",
+          plus: "Dota Den Plus: ang plan, status ug mga petsa sa renewal sa imong subscription sumala sa among payment provider, ug rekord sa mga billing notice niini. Dili gyud namo makita o tipigan ang detalye sa imong card, ngalan o billing address: naa kana sa among payment provider.",
         },
       },
       visibility: {
@@ -124,8 +124,8 @@ export const privacy: MessageTree<typeof en> = {
           steam:
             "Ang Steam (Valve) ang nagdumala sa sign-in ug patch notes, ug mahimo kini mosulti kanamo kung kinsa sa imong mga higala sa Steam ang naa sa duwa karon (kung publiko ang imong friends list). Gikan sa image server sa Steam ang mga avatar.",
           groq: "Ang Groq ang nagpadagan sa among mga AI feature: ang AI draft captain ug review, ang AI match coach ug ang pagbasa sa MMR screenshot. Ang draft, ang mga detalye sa match o ang screenshot ang madawat niini, dili ang imong Steam ID o ngalan.",
-          lemonSqueezy:
-            "Ang Lemon Squeezy ang nagbaligya sa Plus isip merchant of record: kini ang modawat sa bayad, modumala sa tax ug resibo, ug motipig sa imong billing details sumala sa kaugalingon niining privacy policy.",
+          payments:
+            "Ang among payment provider ang nagbaligya sa Plus isip merchant of record: kini ang modawat sa bayad, modumala sa tax ug resibo, ug motipig sa imong billing details sumala sa kaugalingon niining privacy policy.",
           resend: "Ang Resend ang nagpadala sa senemanang email, kung nag-sign up ka niini.",
           push: "Ang push service sa imong browser (pananglitan Google, Mozilla o Apple) ang naghatod sa notifications, kung imo kining gi-on.",
           discord:

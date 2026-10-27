@@ -5,9 +5,9 @@ import { SiteFooter } from "@/components/layout/site-footer";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 
 describe("SiteFooter", () => {
-  it("shows the unofficial fan project disclaimer", () => {
+  it("says Dota Den is independent software, not affiliated with Valve", () => {
     render(<SiteFooter />);
-    expect(screen.getByRole("contentinfo")).toHaveTextContent(/unofficial fan project/i);
+    expect(screen.getByRole("contentinfo")).toHaveTextContent(/independent software/i);
     expect(screen.getByRole("contentinfo")).toHaveTextContent(
       /not affiliated with or endorsed by Valve/i,
     );
@@ -17,6 +17,7 @@ describe("SiteFooter", () => {
     render(<SiteFooter />);
     const legal = screen.getByRole("navigation", { name: "Legal" });
     for (const [name, href] of [
+      ["Plus", "/plus"],
       ["Terms", "/terms"],
       ["Refunds", "/refunds"],
       ["Privacy", "/privacy"],

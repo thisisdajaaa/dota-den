@@ -76,6 +76,8 @@ export const plus: MessageTree<typeof en> = {
     monthly: "Binulan",
     yearly: "Tinuig",
     perMonth: "matag bulan",
+    plansTitle: "Mga plan",
+    opensSoon: "Ablihan na sa dili madugay",
     perYear: "matag tuig",
     yearlySaving: "Libre ang 2 ka bulan kumpara sa binulan nga bayad",
     subscribe: "Pagkuha og Plus",
@@ -90,7 +92,7 @@ export const plus: MessageTree<typeof en> = {
       currency:
         "Naa sa Philippine peso ang mga presyo. Pwede kining ipakita sa checkout sa imong lokal nga kwarta, uban ang sales tax o VAT kung naa.",
       provider:
-        "Ang Lemon Squeezy, among merchant of record, ang modumala sa bayad. Sila ang modawat sa bayad, maningil og tax ug mopadala sa resibo. Dili makita sa Dota Den ang imong card.",
+        "Ang among payment provider, isip merchant of record, ang modumala sa bayad. Sila ang modawat sa bayad, maningil og tax ug mopadala sa resibo. Dili makita sa Dota Den ang imong card.",
       cancel:
         "Pwede mag-cancel bisan kanus-a sa billing portal. Naa gihapon kay Plus hangtod matapos ang period nga imong gibayran.",
     },
@@ -169,7 +171,7 @@ export const plus: MessageTree<typeof en> = {
     sections: {
       about: {
         title: "Mahitungod sa Dota Den",
-        body: "Ang Dota Den kay dili opisyal nga proyekto sa mga fan para sa mga Dota 2 player. Dili kini konektado o gi-endorso sa Valve Corporation. Ang Dota 2 kay rehistradong trademark sa Valve Corporation.",
+        body: "Ang Dota Den kay independiyenteng software nga motabang sa mga Dota 2 player sa pagsusi sa ilang kaugalingong mga duwa: match history, pagsubay sa rank, draft tools ug AI coaching, nga gihimo ug gipadagan sa kaugalingon niining developer. Dili kini konektado o gi-endorso sa Valve Corporation. Ang Dota 2 kay rehistradong trademark sa Valve Corporation.",
       },
       account: {
         title: "Imong account",
@@ -185,7 +187,7 @@ export const plus: MessageTree<typeof en> = {
       },
       payments: {
         title: "Bayad",
-        body: "Ang Lemon Squeezy, isip merchant of record, ang mobaligya sa Plus. Sila ang mo-proseso sa bayad, maningil og sales tax o VAT ug mohatag og resibo, ug ang ilang buyer terms ang sundon sa pagpalit.",
+        body: "Ang among payment provider, isip merchant of record, ang mobaligya sa Plus. Sila ang mo-proseso sa bayad, maningil og sales tax o VAT ug mohatag og resibo, ug ang ilang buyer terms ang sundon sa pagpalit.",
       },
       billing: {
         title: "Renewal ug pag-cancel",
@@ -208,7 +210,7 @@ export const plus: MessageTree<typeof en> = {
     sections: {
       who: {
         title: "Kinsa ang modumala sa refund",
-        body: "Gibaligya ang Plus pinaagi sa Lemon Squeezy, among merchant of record. Sila ang mohatag og refund, sumala sa ilang refund policy ug sa consumer law diin ka nagpuyo.",
+        body: "Gibaligya ang Plus pinaagi sa among payment provider, isip merchant of record. Sila ang mohatag og refund, sumala sa ilang refund policy ug sa consumer law diin ka nagpuyo.",
       },
       cancel: {
         title: "Pag-cancel",
@@ -216,7 +218,7 @@ export const plus: MessageTree<typeof en> = {
       },
       request: {
         title: "Pagpangayo og refund",
-        body: "Kung naay sayop nga nahitabo (pananglitan, kaduha ka nasingil, o wala molihok ang Plus para nimo), pangayo sulod sa 14 ka adlaw gikan sa singil pinaagi sa billing portal o sa pag-reply sa imong resibo gikan sa Lemon Squeezy.",
+        body: "Kung naay sayop nga nahitabo (pananglitan, kaduha ka nasingil, o wala molihok ang Plus para nimo), pangayo sulod sa 14 ka adlaw gikan sa singil pinaagi sa billing portal o sa pag-reply sa resibo sa imong bayad.",
       },
       after: {
         title: "Human sa refund",
