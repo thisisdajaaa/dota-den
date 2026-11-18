@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
 
+// Per request, not at build time: the build's APP_URL is localhost, so a static robots.txt
+// advertised http://localhost:3000 as the host and sitemap in production.
+export const dynamic = "force-dynamic";
+
 /**
  * Crawlers may read the public guides, meta, patches, draft and live pages. Player and match
  * pages are left out: each visit costs OpenDota calls, and crawlers walking every id used up
