@@ -116,6 +116,8 @@ export function StopLossCard({ initial }: { initial: StopLossSettings }) {
       <form
         className="space-y-4"
         aria-label={t("sessions.stopLoss.title")}
+        // Our own message names the rule and its range; the browser's popup would block it.
+        noValidate
         onSubmit={(e) => {
           e.preventDefault();
           void save();
