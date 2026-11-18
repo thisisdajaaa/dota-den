@@ -81,6 +81,7 @@ export const admin: MessageTree<typeof en> = {
       compare: "How you compare",
       discord_command: "Mga utos sa Discord bot",
       session_push: "Mga push ng session companion",
+      stop_loss_push: "Mga paalala ng stop-loss",
     },
   },
   users: {

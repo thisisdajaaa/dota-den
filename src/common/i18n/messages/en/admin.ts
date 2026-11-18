@@ -79,6 +79,7 @@ export const admin = {
       compare: "How you compare",
       discord_command: "Discord bot commands",
       session_push: "Session companion pushes",
+      stop_loss_push: "Stop-loss reminders",
     },
   },
   users: {

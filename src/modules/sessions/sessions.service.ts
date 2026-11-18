@@ -11,6 +11,7 @@ import {
 import { sessionMmr, type MmrObservation, type RankedGame } from "./domain/session-mmr";
 import { placeEarlierNotes, type EarlierNote, type SessionNote } from "./domain/session-note";
 import { currentLossStreak, tiltStats, tiltWarning } from "./domain/tilt";
+import { evaluateStopLoss, type StopLossSettings, type StopLossStatus } from "./domain/stop-loss";
 import type { SessionNoteInput } from "./schemas/sessions.schema";
 import type {
   MmrObservationSource,
@@ -57,7 +58,34 @@ export class SessionService<M extends SessionMatch = SessionMatch> {
     return this.deps.settings.setGap(owner.userId, gapMinutes, now);
   }
 
-  /** All sessions, newest first, plus what MMR attribution needs. */
+  stopLossSettings(owner: SessionOwner): Promise<StopLossSettings> {
+    return this.deps.settings.getStopLoss(owner.userId);
+  }
+
+  setStopLoss(owner: SessionOwner, settings: StopLossSettings, now = new Date()): Promise<void> {
+    return this.deps.settings.setStopLoss(owner.userId, settings, now);
+  }
+
+  /**
+   * Where an already loaded session stands against the player's stop-loss, and whether it's
+   * still going (a game now would extend it). `status` is null when the stop-loss is off.
+   */
+  async stopLoss(
+    owner: SessionOwner,
+    session: Pick<PlaySession, "endedAt" | "matches">,
+    now = new Date(),
+  ): Promise<{ settings: StopLossSettings; status: StopLossStatus | null; current: boolean }> {
+    const [settings, gapMinutes] = await Promise.all([
+      this.stopLossSettings(owner),
+      this.gap(owner),
+    ]);
+    return {
+      settings,
+      status: evaluateStopLoss(settings, session.matches),
+      current: now.getTime() - session.endedAt.getTime() <= gapMinutes * 60_000,
+    };
+  }
+
   /** Sessions with the player's gap (as the Sessions page shows them), ranked games only. */
   async rankedSessions(owner: SessionOwner): Promise<PlaySession<M>[]> {
     const gapMinutes = await this.gap(owner);

@@ -56,6 +56,12 @@ players already have.
 | —     | 7-day free trial                 | Try Plus before paying (Polar trials; entitlement already handles trials)               | —                                    | Planned               |
 | —     | Plus page order                  | AI perks first; go-live alerts and limits lower down                                    | —                                    | After the Polar merge |
 
+## Free features in progress
+
+| Feature   | What the player gets                                                                                                                                                                                                                                 | Builds on                         | Status    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | --------- |
+| Stop-loss | Limits you set yourself on the account page (losses in a session, losses in a row, games in a session). The overview's latest session shows "1 of 2 losses used" / "Limit reached", and a push reminds you once per limit per session while you play | Sessions, session companion, push | In review |
+
 ## Principles for new features
 
 - **Honest numbers.** Never invent MMR, party membership or win chances. Estimates are labelled;

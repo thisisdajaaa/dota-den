@@ -93,6 +93,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       // Plus priority sync: the page schedules the next chunk with the player's own cooldown.
       matchSyncService.policyFor(user.accountId32),
     ]);
+  // Optional: the stop-loss line on the latest session card (hidden if it can't be read).
+  const stopLoss = latestSession
+    ? await sessionService.stopLoss(owner, latestSession.session, now).catch(() => null)
+    : null;
   const { facts, recent, latestPatch } = view;
   const profile = quick.profile;
   // Medal history needs no typing: note the medal each visit (after the page is sent), from a
@@ -187,7 +191,12 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       </Suspense>
 
       {latestSession && (
-        <LatestSessionCard {...latestSession} heroes={heroes} timeZone={tz.timeZone} />
+        <LatestSessionCard
+          {...latestSession}
+          heroes={heroes}
+          timeZone={tz.timeZone}
+          stopLoss={stopLoss}
+        />
       )}
 
       <Suspense fallback={null}>

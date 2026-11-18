@@ -1,10 +1,12 @@
 /**
- * Session companion (pure, Plus): while a player is in Dota, each finished game is announced
+ * Session companion (pure): while a player is in Dota, each finished game is announced (Plus)
  * with their record in the current session and, when their own history backs it, a tilt
  * warning ("after 2 losses in a row you win 41% of the next game, 53% normally"). Only their
- * own imported results; the warning uses the same rule as the Sessions page.
+ * own imported results; the warning uses the same rule as the Sessions page. Anyone with a
+ * stop-loss set is also checked, for a reminder when a game reaches one of their limits.
  */
 import { groupSessions, type SessionMatch } from "./session";
+import { evaluateStopLoss, type StopLossSettings, type StopLossStatus } from "./stop-loss";
 import { tiltStats, tiltWarning, type TiltWarning } from "./tilt";
 
 /** A player counts as playing for this long after Steam last showed them in Dota. */
@@ -28,6 +30,8 @@ export interface GameNews {
   session: { wins: number; losses: number };
   /** Set when the player is on a losing streak their history says hurts them. */
   tilt: TiltWarning | null;
+  /** The player's own limits after this game (null: no stop-loss set). */
+  stopLoss: { sessionId: string; status: StopLossStatus } | null;
 }
 
 /**
@@ -39,6 +43,7 @@ export function gameNews(
   gapMinutes: number,
   watermark: Date,
   now: Date,
+  stopLoss: StopLossSettings | null = null,
 ): GameNews[] {
   const fresh = matches
     .filter(
@@ -70,8 +75,18 @@ export function gameNews(
         losses: upTo.filter((x) => x.result === "loss").length,
       },
       tilt: m.result === "loss" ? tiltWarning(stats, streak) : null,
+      stopLoss: sessionStopLoss(stopLoss, session?.id ?? `0:${m.matchId}`, upTo),
     };
   });
+}
+
+function sessionStopLoss(
+  settings: StopLossSettings | null,
+  sessionId: string,
+  upTo: readonly SessionMatch[],
+): GameNews["stopLoss"] {
+  const status = settings ? evaluateStopLoss(settings, upTo) : null;
+  return status ? { sessionId, status } : null;
 }
 
 export interface CompanionState {
