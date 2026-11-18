@@ -9,6 +9,8 @@ import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
 import type { ContestedView, OverviewView } from "../dtos/responses/meta.dto";
 import type { OverviewPool } from "../domain/meta-stats";
 import { POSITION_INFO } from "../domain/position";
+import { bracketLabel, type MetaBracket } from "../domain/rank-bracket";
+import { BracketSourceNote, EmptyMedalsNote } from "./bracket-notes";
 import { metaHref } from "./role-picker";
 import { Unavailable } from "./meta-section";
 import { formatDayRange, StratzAttribution } from "./stratz-attribution";
@@ -55,7 +57,25 @@ async function PoolHeroes({
                   {name}
                 </Link>
               )}
-              {h.atPosition && (
+              {h.bracket && (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    {t("meta.overview.winRate", { rate: formatPercent(h.bracket.rate) })}
+                  </p>
+                  <span className="max-w-16 min-w-6 flex-1">
+                    <WinRateBar rate={h.bracket.rate} />
+                  </span>
+                </div>
+              )}
+              {!compact && h.bracket && (
+                <p className="text-[0.7rem] text-muted-foreground tabular-nums">
+                  {t("meta.overview.bracketGames", {
+                    games: plural(t, "meta.counts.games", h.bracket.games),
+                    bracket: bracketLabel(h.bracket.bracket),
+                  })}
+                </p>
+              )}
+              {!h.bracket && h.atPosition && (
                 <div className="flex items-center gap-2">
                   <p className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                     {t("meta.overview.winRateAt", {
@@ -68,7 +88,7 @@ async function PoolHeroes({
                   </span>
                 </div>
               )}
-              {!compact && h.atPosition && (
+              {!compact && !h.bracket && h.atPosition && (
                 <p className="text-[0.7rem] text-muted-foreground tabular-nums">
                   {t("meta.overview.positionGames", {
                     games: plural(t, "meta.counts.games", h.atPosition.games),
@@ -103,9 +123,12 @@ async function PoolHeroes({
 export async function MetaOverviewCards({
   view,
   catalog,
+  linkBracket = null,
 }: {
   view: OverviewView;
   catalog: Map<number, HeroInfo>;
+  /** A bracket picked in the URL, kept in the "full ranking" links. */
+  linkBracket?: MetaBracket | null;
 }) {
   const t = await getT();
   return (
@@ -127,7 +150,11 @@ export async function MetaOverviewCards({
             <p className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-white/[0.06] pt-3 text-xs text-muted-foreground">
               {t("meta.overview.fullRanking")}
               {pool.positions.map((p) => (
-                <Link key={p} href={metaHref(p)} className="font-medium text-gold hover:underline">
+                <Link
+                  key={p}
+                  href={metaHref(p, linkBracket)}
+                  className="font-medium text-gold hover:underline"
+                >
                   {POSITION_INFO[p].short} · {POSITION_INFO[p].name}
                 </Link>
               ))}
@@ -142,6 +169,20 @@ export async function MetaOverviewCards({
 export async function MetaOverviewFootnote({ view, now }: { view: OverviewView; now: Date }) {
   const t = await getT();
   const ago = formatAgo(view.fetchedAt, now);
+  if (view.bracket)
+    return (
+      <div className="space-y-2">
+        <EmptyMedalsNote view={view.bracket} />
+        <p className="text-xs text-muted-foreground">
+          <BracketSourceNote
+            view={view.bracket}
+            window={view.positions?.window ?? null}
+            now={now}
+          />{" "}
+          {t("meta.overview.onceEach")}
+        </p>
+      </div>
+    );
   return (
     <p className="text-xs text-muted-foreground">
       {view.positions ? (

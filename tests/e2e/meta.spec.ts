@@ -7,6 +7,13 @@ test("guests pick a role and see ranked heroes, lane duos and patch info", async
   ).toBeVisible();
   // Guests have no derived role.
   await expect(page.getByRole("region", { name: "Your role" })).toHaveCount(0);
+  // Guests get the high-rank default, labelled as such.
+  const brackets = page.getByRole("region", { name: "Rank bracket" });
+  await expect(
+    brackets.getByRole("link", { name: "High ranks: Ancient–Immortal" }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(brackets).toContainText("Showing Ancient–Immortal.");
+  await expect(brackets).toContainText("These are high-rank games");
 
   // Real content before a role is picked: the best heroes per role group, placed by STRATZ
   // position stats (the fixture's fake STRATZ).
@@ -88,6 +95,59 @@ test("guests pick a role and see ranked heroes, lane duos and patch info", async
   );
 });
 
+test("guests pick a rank bracket and get a shareable, clearly labelled ranking", async ({
+  page,
+}) => {
+  await page.goto("/meta");
+  await page
+    .getByRole("navigation", { name: "Rank bracket" })
+    .getByRole("link", { name: "Herald–Guardian" })
+    .click();
+  await expect(page).toHaveURL(/\/meta\?bracket=herald-guardian$/);
+  await expect(page).toHaveTitle(/Meta: Herald–Guardian/);
+  const brackets = page.getByRole("region", { name: "Rank bracket" });
+  await expect(brackets).toContainText("Showing Herald–Guardian.");
+  await expect(brackets).toContainText("not from pro or high-rank games");
+
+  const overview = page.getByRole("region", { name: "Strongest heroes in Herald–Guardian" });
+  await expect(overview).toContainText(
+    /Herald–Guardian win rates: OpenDota public ranked games \([\d,]+ matches\)/,
+  );
+  await expect(overview).toContainText(
+    "Who plays each position comes from STRATZ Ancient–Immortal games",
+  );
+  const carries = page.getByRole("region", { name: "Top heroes: Carries" });
+  await expect(carries.getByRole("listitem").first()).toContainText(/\d+\.\d% win rate/);
+  await expect(carries.getByRole("listitem").first()).toContainText(
+    /[\d,]+ games in Herald–Guardian/,
+  );
+  await expect(carries.getByRole("link", { name: "Pos 1 · Safe lane carry" })).toHaveAttribute(
+    "href",
+    "/meta?pos=1&bracket=herald-guardian",
+  );
+
+  // The link is shareable: opening it directly shows the same bracket and position.
+  await page.goto("/meta?pos=1&bracket=herald-guardian");
+  const heroes = page.getByRole("region", { name: "Top heroes: Safe lane carry" });
+  await expect(heroes).toContainText("Herald–Guardian games");
+  await expect(heroes).toContainText("Pos 1, Herald–Guardian public games");
+  const rows = heroes.getByRole("listitem");
+  await expect(rows.first()).toContainText(
+    /\d+\.\d% win rate in Herald–Guardian · [\d,]+ games · picked in \d+\.\d% of matches/,
+  );
+  await expect(rows.first()).toContainText(/Plays Pos 1 in \d+% of its Ancient–Immortal games/);
+  await expect(heroes).toContainText("Tournament picks don't count in bracket rankings.");
+  await expect(heroes).not.toContainText("Tournaments:");
+  // Position tabs keep the bracket.
+  await expect(
+    page.getByRole("navigation", { name: "Position" }).getByRole("link", { name: /Mid/ }),
+  ).toHaveAttribute("href", "/meta?pos=2&bracket=herald-guardian");
+  // Pro data is still pro data, and says so.
+  await expect(page.getByRole("region", { name: "Strongest lane duos" })).toContainText(
+    "in pro matches",
+  );
+});
+
 test("signed-in users see the role derived from their recent lanes", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
   await page.goto("/meta");
@@ -106,6 +166,24 @@ test("signed-in users see the role derived from their recent lanes", async ({ pa
     "page",
   );
   await expect(page.getByRole("region", { name: "Top heroes: Safe lane carry" })).toBeVisible();
+
+  // The fixture player is Immortal: their bracket is the default, and the page says so.
+  const brackets = page.getByRole("region", { name: "Rank bracket" });
+  await expect(brackets).toContainText("Showing your bracket: Divine–Immortal.");
+  await expect(brackets.getByRole("link", { name: "Divine–Immortal (you)" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.getByRole("region", { name: "Top heroes: Safe lane carry" })).toContainText(
+    "Pos 1, Divine–Immortal public games",
+  );
+
+  // Picking another bracket overrides it, with a way back.
+  await page.goto("/meta?bracket=ancient-immortal");
+  await expect(brackets).toContainText("Showing Ancient–Immortal.");
+  await expect(
+    brackets.getByRole("link", { name: "Show your bracket (Divine–Immortal)" }),
+  ).toHaveAttribute("href", "/meta?bracket=divine-immortal");
 });
 
 test.describe("without a STRATZ token", () => {
@@ -127,5 +205,16 @@ test.describe("without a STRATZ token", () => {
       .getByRole("listitem");
     await expect(rows.first()).toContainText("win rate at high ranks");
     await expect(rows.first()).toContainText(/Safe lane: \d+\.\d% win rate · [\d,]+ games/);
+
+    // A bracket still works without STRATZ, placed by OpenDota lane data (and says so).
+    await page.goto("/meta?pos=1&bracket=crusader-archon");
+    const heroes = page.getByRole("region", { name: "Top heroes: Safe lane carry" });
+    await expect(heroes.getByRole("listitem").first()).toContainText(
+      /win rate in Crusader–Archon · [\d,]+ games/,
+    );
+    await expect(heroes).toContainText(
+      "Who plays each position comes from OpenDota lane data (public parsed games at all ranks)",
+    );
+    await expect(heroes.getByRole("link", { name: "STRATZ" })).toHaveCount(0);
   });
 });

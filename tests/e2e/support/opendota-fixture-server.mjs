@@ -616,6 +616,18 @@ function publicHeroStats() {
     const [p6, w6] = bracket(0);
     const [p7, w7] = bracket(1);
     const [p8, w8] = bracket(2);
+    // Herald (1) to Legend (5): a different order of strong heroes than at high ranks, so the
+    // Meta page's bracket picker visibly changes the ranking.
+    const lowRate = id < 100 ? 0.48 : 0.44 + ((id * 11) % 13) / 100;
+    const low = Object.fromEntries(
+      [1, 2, 3, 4, 5].flatMap((tier) => {
+        const pick = 3_000 + (id % 9) * 500 + tier * 1_000;
+        return [
+          [`${tier}_pick`, pick],
+          [`${tier}_win`, Math.round(pick * lowRate)],
+        ];
+      }),
+    );
     // 7 days of public picks: every 5th hero gains share, every 7th loses it, the rest are flat.
     const drift = id % 5 === 0 ? 0.06 : id % 7 === 0 ? -0.06 : 0;
     const pickTrend = Array.from({ length: 7 }, (_, d) =>
@@ -625,6 +637,7 @@ function publicHeroStats() {
       id,
       localized_name: HEROES[id].localized_name,
       roles: HEROES[id].roles,
+      ...low,
       "6_pick": p6,
       "6_win": w6,
       "7_pick": p7,

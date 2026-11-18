@@ -2,17 +2,27 @@ import Link from "next/link";
 import { SegmentedLinks } from "@/components/segmented-links";
 import { getT } from "@/common/i18n/server";
 import { POSITIONS, POSITION_INFO, type Position } from "../domain/position";
+import { metaUrl, type MetaBracket } from "../domain/rank-bracket";
 
-export const metaHref = (p: Position) => `/meta?pos=${p}`;
+/** A position's Meta page; keeps a bracket picked in the URL (null: the viewer's default). */
+export const metaHref = (p: Position, bracket: MetaBracket | null = null) => metaUrl(p, bracket);
 
 /** Tabs to switch position; the user's own position is marked. */
-export async function RoleTabs({ active, yours }: { active: Position; yours: Position | null }) {
+export async function RoleTabs({
+  active,
+  yours,
+  bracket = null,
+}: {
+  active: Position;
+  yours: Position | null;
+  bracket?: MetaBracket | null;
+}) {
   const t = await getT();
   return (
     <SegmentedLinks
       label={t("meta.roles.tabsLabel")}
       active={String(active)}
-      href={(v) => metaHref(Number(v) as Position)}
+      href={(v) => metaHref(Number(v) as Position, bracket)}
       options={POSITIONS.map((p) => ({
         value: String(p),
         label: `${POSITION_INFO[p].short} · ${POSITION_INFO[p].name}${p === yours ? ` ${t("meta.roles.you")}` : ""}`,
@@ -22,7 +32,7 @@ export async function RoleTabs({ active, yours }: { active: Position; yours: Pos
 }
 
 /** Big role picker for when we don't know the position yet. */
-export async function RolePicker() {
+export async function RolePicker({ bracket = null }: { bracket?: MetaBracket | null }) {
   const t = await getT();
   return (
     <nav
@@ -34,7 +44,7 @@ export async function RolePicker() {
         return (
           <Link
             key={p}
-            href={metaHref(p)}
+            href={metaHref(p, bracket)}
             className="panel group flex flex-col gap-1 p-4 transition-colors hover:bg-white/[0.03]"
           >
             <span className="font-display text-2xl font-bold text-gold">{p}</span>

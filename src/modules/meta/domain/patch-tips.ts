@@ -1,6 +1,7 @@
 import type { Patch } from "@/modules/patches/domain/patch";
 import type { RankedHero } from "./meta-stats";
 import { POSITION_INFO, type Position } from "./position";
+import { bracketLabel } from "./rank-bracket";
 
 /** A hero's entry in the latest patch, as plain lines of Valve's original wording. */
 export interface HeroPatchChange {
@@ -15,7 +16,8 @@ export interface LatestPatch {
   heroes: ReadonlyMap<number, HeroPatchChange>;
 }
 
-export type TipKind = "rising" | "falling" | "patch" | "contested" | "lane" | "position";
+export type TipKind =
+  "rising" | "falling" | "patch" | "contested" | "lane" | "position" | "bracket";
 
 export interface Tip {
   kind: TipKind;
@@ -65,8 +67,16 @@ export function tipsFor(hero: RankedHero, position: Position, patch: LatestPatch
       text: `Contested in tournaments: picked or banned in ${pct(hero.pro.contestRate)} of ${num(hero.pro.drafts)} pro drafts over the last ${hero.pro.windowDays} days`,
     });
   }
+  // Bracket rankings already need 1,000+ games in the bracket to list a hero.
+  if (hero.bracket && hero.bracket.rate >= STRONG_LANE_RATE) {
+    tips.push({
+      kind: "bracket",
+      text: `Wins ${pct(hero.bracket.rate)} of ${num(hero.bracket.games)} ${bracketLabel(hero.bracket.bracket)} games`,
+    });
+  }
   // Per-position stats (STRATZ) already need 1,000+ games at the position to rank a hero.
-  if (hero.atPosition && hero.atPosition.rate >= STRONG_LANE_RATE) {
+  // In a bracket ranking they're another bracket's games, so they aren't offered as a tip.
+  if (!hero.bracket && hero.atPosition && hero.atPosition.rate >= STRONG_LANE_RATE) {
     tips.push({
       kind: "position",
       text: `Wins ${pct(hero.atPosition.rate)} of ${num(hero.atPosition.games)} Ancient–Immortal games at ${POSITION_INFO[hero.atPosition.position].short}`,

@@ -12,6 +12,8 @@ import type { RankedHero } from "../domain/meta-stats";
 import { TREND_THRESHOLD } from "../domain/patch-tips";
 import { POSITION_INFO } from "../domain/position";
 import { MIN_POSITION_GAMES, MIN_POSITION_SHARE } from "../domain/position-stats";
+import { bracketLabel, MIN_BRACKET_GAMES } from "../domain/rank-bracket";
+import { BracketSourceNote, EmptyMedalsNote } from "./bracket-notes";
 import { MetaSection, Unavailable } from "./meta-section";
 import { formatDayRange, StratzAttribution } from "./stratz-attribution";
 
@@ -54,7 +56,104 @@ export async function TopHeroesCard({
   const lane = info.laneName.replace(/^./, (c) => c.toUpperCase());
   const { sources } = view;
   const positions = sources.positions.status === "ok" ? sources.positions : null;
+  const bracket = sources.bracket;
   const titleId = "meta-top-heroes";
+
+  if (bracket) {
+    const name = bracketLabel(bracket.bracket);
+    return (
+      <MetaSection
+        id={titleId}
+        kicker={t("meta.topHeroes.kickerBracket", { bracket: name })}
+        title={t("meta.topHeroes.title", { name: info.name })}
+        description={
+          <>
+            <span className="block font-medium text-foreground/90">
+              {t("meta.topHeroes.bracketScope", { pos: info.short, bracket: name })}
+            </span>
+            {t("meta.topHeroes.descriptionBracket", {
+              bracket: name,
+              games: MIN_BRACKET_GAMES.toLocaleString("en-US"),
+            })}
+          </>
+        }
+        footer={
+          <BracketSourceNote
+            view={bracket}
+            window={positions?.window ?? null}
+            now={now}
+            trendFetchedAt={sources.publicFetchedAt}
+          />
+        }
+      >
+        <EmptyMedalsNote view={bracket} />
+        {sources.lane === "unavailable" && (
+          <Unavailable>{t("meta.topHeroes.laneUnavailable")}</Unavailable>
+        )}
+        {view.heroes.length === 0 ? (
+          <Unavailable>{t("meta.topHeroes.notEnough")}</Unavailable>
+        ) : (
+          <ol className="divide-y divide-white/[0.04] border-t border-white/[0.06]">
+            {view.heroes.map((h, i) => {
+              const hero = catalog.get(h.heroId);
+              const b = h.bracket;
+              return (
+                <li key={h.heroId} className="flex gap-3 px-5 py-3">
+                  <span className="w-5 pt-2 text-right text-sm font-semibold text-gold tabular-nums">
+                    {i + 1}
+                  </span>
+                  <HeroPortrait hero={hero} heroId={h.heroId} size="md" />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/guides/${h.heroId}`}
+                        className="font-medium hover:text-gold hover:underline"
+                      >
+                        {heroName(hero, h.heroId)}
+                      </Link>
+                      <TrendBadge hero={h} t={t} />
+                    </div>
+                    {b && (
+                      <div className="flex items-center gap-3">
+                        <p className="text-xs text-muted-foreground">
+                          <span className="text-foreground">{formatPercent(b.rate)}</span>{" "}
+                          {t("meta.topHeroes.bracketRate", {
+                            bracket: name,
+                            games: games(b.games),
+                          })}
+                          {b.pickRate !== null &&
+                            ` · ${t("meta.topHeroes.bracketPickRate", { pct: formatPercent(b.pickRate) })}`}
+                        </p>
+                        <span className="hidden w-20 sm:block">
+                          <WinRateBar rate={b.rate} />
+                        </span>
+                      </div>
+                    )}
+                    {h.atPosition && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("meta.topHeroes.bracketPlacedAt", {
+                          share: pct(h.atPosition.share),
+                          pos: info.short,
+                        })}
+                      </p>
+                    )}
+                    {!h.atPosition && h.lane && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("meta.topHeroes.bracketPlacedLane", {
+                          share: pct(h.lane.share),
+                          lane: info.laneName,
+                        })}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </MetaSection>
+    );
+  }
 
   return (
     <MetaSection

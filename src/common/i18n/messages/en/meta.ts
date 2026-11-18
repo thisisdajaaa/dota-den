@@ -1,7 +1,9 @@
 /** UI copy for the meta feature. */
 export const meta = {
   title: "Meta",
+  titleBracket: "Meta: {bracket}",
   counts: {
+    matches: { one: "1 match", other: "{n} matches" },
     games: { one: "1 game", other: "{n} games" },
     otherGames: {
       one: "1 other game had no lane data and isn't counted.",
@@ -30,6 +32,8 @@ export const meta = {
     title: "What's strong right now",
     description:
       "The heroes and lane partners doing best for each role in recent high-rank games and tournaments, with this patch's changes.",
+    descriptionBracket:
+      "The heroes doing best for each role in {bracket} public games, with this patch's changes. Lane duos and tournament picks still come from pro matches.",
     guides: "Hero guides",
     pickRole: "Which role do you play?",
     loading: "Loading meta",
@@ -56,6 +60,29 @@ export const meta = {
     byPosition: "Games by position",
     positionGames: "{pos}: {games}",
   },
+  bracket: {
+    title: "Rank bracket",
+    label: "Rank bracket",
+    you: "(you)",
+    highRanks: "High ranks: {range}",
+    yours: "Showing your bracket: {bracket}.",
+    showing: "Showing {bracket}.",
+    defaultNote:
+      "These are high-rank games, like most stats sites show. The heroes that win at your medal can be different, so pick your bracket.",
+    note: "Win rates come from public ranked games at these medals only, not from pro or high-rank games.",
+    showYours: "Show your bracket ({bracket})",
+  },
+  bracketSource: {
+    rates: "{bracket} win rates: OpenDota public ranked games ({matches}), updated {ago}.",
+    placedPositions:
+      "Who plays each position comes from STRATZ Ancient–Immortal games, {range}, not from this bracket.",
+    placedLanes:
+      "Who plays each position comes from OpenDota lane data (public parsed games at all ranks) and hero roles, not from this bracket.",
+    trends: "Pick trends: OpenDota public games at all ranks.",
+    noPro: "Tournament picks don't count in bracket rankings.",
+    emptyMedals:
+      "OpenDota's data has no {empty} games right now, so these numbers are from {rest} games only.",
+  },
   roles: {
     tabsLabel: "Position",
     you: "(you)",
@@ -66,6 +93,14 @@ export const meta = {
   topHeroes: {
     kicker: "Right now",
     title: "Top heroes: {name}",
+    kickerBracket: "{bracket} games",
+    bracketScope: "{pos}, {bracket} public games",
+    descriptionBracket:
+      "Ranked by win rate in {bracket} games (all positions), with small samples pulled toward 50%. A hero needs {games} or more games in the bracket to be listed.",
+    bracketRate: "win rate in {bracket} · {games}",
+    bracketPickRate: "picked in {pct} of matches",
+    bracketPlacedAt: "Plays {pos} in {share} of its Ancient–Immortal games",
+    bracketPlacedLane: "{share} of its public games are in the {lane}",
     titleShort: "Top heroes",
     description:
       "Ranked by win rate at Ancient to Immortal and in this lane, with small samples pulled toward 50%, plus a small boost for heroes contested in tournaments.",
@@ -116,12 +151,18 @@ export const meta = {
       "Contested in tournaments: picked or banned in {pct} of {drafts} pro drafts over the last {days} days",
     lane: "Wins {pct} of {games} public games played in the {lane}",
     position: "Wins {pct} of {games} Ancient–Immortal games at {pos}",
+    bracket: "Wins {pct} of {games} {bracket} games",
   },
   overview: {
     kicker: "At a glance",
     title: "Strongest heroes right now",
     description:
       "The best heroes at Ancient to Immortal for each kind of role, placed by where they're actually played. Pick a role above for the full ranking with tournaments.",
+    titleBracket: "Strongest heroes in {bracket}",
+    descriptionBracket:
+      "The best heroes in {bracket} public games for each kind of role, placed by where they're actually played. Pick a role above for the full ranking.",
+    bracketGames: "{games} in {bracket}",
+    onceEach: "Each hero is listed once, in the role it's played most.",
     loading: "Loading the meta overview",
     pools: {
       carry: "Carries",

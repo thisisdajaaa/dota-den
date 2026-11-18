@@ -8,6 +8,7 @@ import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import type { RankedHero } from "../domain/meta-stats";
 import { tipsFor, type LatestPatch, type Tip, type TipKind } from "../domain/patch-tips";
 import { POSITION_INFO, type Position } from "../domain/position";
+import { bracketLabel } from "../domain/rank-bracket";
 import { MetaSection, Unavailable } from "./meta-section";
 
 const ICONS: Record<TipKind, typeof Swords> = {
@@ -17,6 +18,7 @@ const ICONS: Record<TipKind, typeof Swords> = {
   contested: Trophy,
   lane: Swords,
   position: Swords,
+  bracket: Swords,
 };
 
 export const TIP_HEROES = 5;
@@ -65,6 +67,14 @@ function tipText(
             pct: pct(hero.atPosition.rate),
             games: num(hero.atPosition.games),
             pos: POSITION_INFO[hero.atPosition.position].short,
+          })
+        : tip.text;
+    case "bracket":
+      return hero.bracket
+        ? t("meta.tips.bracket", {
+            pct: pct(hero.bracket.rate),
+            games: num(hero.bracket.games),
+            bracket: bracketLabel(hero.bracket.bracket),
           })
         : tip.text;
   }

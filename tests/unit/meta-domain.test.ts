@@ -371,6 +371,7 @@ describe("patch tips", () => {
       contestRate: 123 / 192,
     },
     trend: { change: 0.18, recentPicks: 3000, earlierPicks: 2500 },
+    bracket: null,
   };
   const patch: LatestPatch = {
     version: "7.41",
@@ -434,6 +435,7 @@ describe("meta overview", () => {
     laneKnown: share !== null,
     pro: null,
     trend: null,
+    bracket: null,
   });
 
   it("lists each hero once, in the pool where it plays most, best first", () => {
