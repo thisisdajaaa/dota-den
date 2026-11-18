@@ -2,12 +2,17 @@ import type { Logger } from "@/common/logging/logger";
 import type { DataOwner } from "@/common/privacy/user-data";
 import { DOTA_APP_ID, gameNews, shouldCheck, type GameNews } from "./domain/companion";
 import type { SessionMatch } from "./domain/session";
+import type { StopLossSettings } from "./domain/stop-loss";
 import type { CompanionStatePort } from "./sessions.ports";
 
 export interface CompanionPlayer {
   userId: string;
   accountId32: number;
   steamId64: string;
+  /** Plus with `session_live` on: every finished game is announced. */
+  live: boolean;
+  /** Their stop-loss when it's on and they want its reminders (free); null otherwise. */
+  stopLoss: StopLossSettings | null;
 }
 
 export interface CompanionRun {
@@ -18,17 +23,22 @@ export interface CompanionRun {
 }
 
 /**
- * The session companion (Plus): every few minutes, finds which members are in Dota (Steam
- * presence, one request per 100), syncs the new games of those who are (or just were), and
- * announces each finished game with the session record and, when their history backs it, a
- * tilt warning. Members who aren't playing cost nothing beyond the presence check.
+ * The session companion: every few minutes, finds which players are in Dota (Steam presence,
+ * one request per 100), syncs the new games of those who are (or just were), and announces
+ * each finished game with the session record and, when their history backs it, a tilt
+ * warning (Plus). Anyone with a stop-loss on (free) is reminded, once per rule per session,
+ * when a game reaches one of their limits; that reminder replaces the game's announcement.
+ * Players who aren't playing cost nothing beyond the presence check.
  */
 export class SessionCompanionService {
   private readonly now: () => Date;
 
   constructor(
     private readonly deps: {
-      /** Plus members with the `session_live` notification on and a device to send it to. */
+      /**
+       * Players with a device to notify and something to send: Plus members with the
+       * `session_live` notification on, and anyone with a stop-loss and `stop_loss` on.
+       */
       players: () => Promise<CompanionPlayer[]>;
       /** Steam presence: SteamID64 → the app id they're in (null: Steam didn't answer). */
       playing: (steamIds: readonly string[]) => Promise<Map<string, string | null> | null>;
@@ -37,8 +47,12 @@ export class SessionCompanionService {
       matches: (accountId32: number) => Promise<SessionMatch[]>;
       gapMinutes: (userId: string) => Promise<number>;
       notify: (userId: string, news: GameNews) => Promise<number>;
+      /** A stop-loss reminder for this game, at most once per rule per session. */
+      remind: (userId: string, news: GameNews) => Promise<number>;
       /** Counts a use (admin usage numbers); never fails. */
       used?: (userId: string) => Promise<void>;
+      /** Counts a stop-loss reminder sent (admin usage numbers); never fails. */
+      reminded?: (userId: string) => Promise<void>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => Date;
     },
@@ -93,10 +107,17 @@ export class SessionCompanionService {
       this.deps.matches(p.accountId32),
       this.deps.gapMinutes(p.userId),
     ]);
-    const news = gameNews(matches, gap, state.watermark, now);
+    const news = gameNews(matches, gap, state.watermark, now, p.stopLoss);
     let announced = 0;
     for (const n of news) {
-      if ((await this.deps.notify(p.userId, n)) > 0) {
+      if (n.stopLoss && n.stopLoss.status.reached.length > 0) {
+        if ((await this.deps.remind(p.userId, n)) > 0) {
+          announced++;
+          await this.deps.reminded?.(p.userId);
+          continue;
+        }
+      }
+      if (p.live && (await this.deps.notify(p.userId, n)) > 0) {
         announced++;
         await this.deps.used?.(p.userId);
       }

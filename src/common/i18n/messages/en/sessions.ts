@@ -159,6 +159,47 @@ export const sessions = {
     highest: "Highest K+A−D: {kills} + {assists} − {deaths} =",
     lowest: "Lowest K+A−D: {kills} + {assists} − {deaths} =",
   },
+  stopLoss: {
+    title: "Stop-loss",
+    description:
+      "Set your own limits for a play session. When a game reaches one, Dota Den tells you it's a good time to stop: on your overview's latest session, and with a notification if you've turned those on. Every game type counts, like your session record.",
+    enable: "Turn on my stop-loss",
+    off: "Off",
+    custom: "Custom",
+    customLabel: "{rule}: custom limit ({min} to {max})",
+    save: "Save stop-loss",
+    savedOn: "Stop-loss saved.",
+    savedOff: "Stop-loss turned off.",
+    failed: "Couldn't save your stop-loss. Try again.",
+    rangeError: "{rule}: pick a number from {min} to {max}.",
+    noRule: "Pick at least one limit, or turn the stop-loss off.",
+    rules: {
+      losses: {
+        label: "Losses in a session",
+        help: "Stop after this many losses in one session.",
+      },
+      streak: {
+        label: "Losses in a row",
+        help: "Stop after this many straight losses.",
+      },
+      games: {
+        label: "Games in a session",
+        help: "Stop after this many games, win or lose.",
+      },
+    },
+    status: {
+      region: "Stop-loss",
+      losses: { one: "{used} of 1 loss used", other: "{used} of {n} losses used" },
+      streak: { one: "{used} of 1 loss in a row", other: "{used} of {n} losses in a row" },
+      games: { one: "{used} of 1 game played", other: "{used} of {n} games played" },
+      reached: "Limit reached. Good time to stop.",
+      reachedPast: "You reached your limit in this session.",
+      fresh: "Your next session starts fresh.",
+      invite: "Want a nudge to stop before you tilt?",
+      setUp: "Set a stop-loss",
+      edit: "Change",
+    },
+  },
   notFound: {
     title: "Session not found",
     body: "We couldn't find this session in your match history. Changing the break length regroups your games, and very old games may not be imported, so this link may no longer point to a session.",

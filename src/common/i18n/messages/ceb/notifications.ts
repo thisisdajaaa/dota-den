@@ -56,6 +56,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Live session updates (Plus)",
       help: "Samtang makita ka sa Steam sa Dota: matag nahuman nga duwa uban ang imong record sa session, ug pahibalo kung ang imong kaugalingong history nag-ingon nga mas mahuyang ka kung sunod-sunod ang pildi.",
     },
+    stop_loss: {
+      label: "Naabot ang stop-loss",
+      help: "Samtang makita ka sa Steam sa Dota: kung maabot sa usa ka duwa ang stop-loss nga imong gibutang (Account → Stop-loss). Kausa matag limit matag session.",
+    },
     coach_review: {
       label: "AI review sa mga bag-ong ranked nga duwa (Plus)",
       help: "Kung adunay bag-ong ranked nga duwa nga makita ang sync, i-review sa AI coach ang pinakabag-o kung na-parse na ang replay, ug sultihan ka dinhi. Kung imong i-off kini, mohunong usab ang awtomatikong mga review.",
@@ -86,6 +90,24 @@ export const notifications: MessageTree<typeof en> = {
       body: "Nindot. Padayon lang.",
       bodyLoss: "Bawi sa sunod.",
       tilt: "{losses} ka sunod-sunod nga pildi. Human sa ingon niini nga streak, modaog ka og {after}% sa sunod nga duwa ({games} ka duwa), kumpara sa {baseline}% kasagaran. Basin mas bili ang mubo nga pahulay kaysa sa sunod nga queue.",
+    },
+    stopLoss: {
+      title: "Naabot ang stop-loss · {wins}–{losses} niini nga session",
+      losses: {
+        one: "Nagbutang ka og stop-loss nga 1 ka pildi. {used} na ang imong pildi niini nga session. Maayong panahon na nga mohunong.",
+        other:
+          "Nagbutang ka og stop-loss nga {n} ka pildi. {used} na ang imong pildi niini nga session. Maayong panahon na nga mohunong.",
+      },
+      streak: {
+        one: "Nagbutang ka og stop-loss nga 1 ka sunod-sunod nga pildi. {used} na ka sunod-sunod. Maayong panahon na nga mohunong.",
+        other:
+          "Nagbutang ka og stop-loss nga {n} ka sunod-sunod nga pildi. {used} na ka sunod-sunod. Maayong panahon na nga mohunong.",
+      },
+      games: {
+        one: "Nagbutang ka og limit nga 1 ka duwa matag session. {used} na ang imong nadula. Maayong panahon na nga mohunong.",
+        other:
+          "Nagbutang ka og limit nga {n} ka duwa matag session. {used} na ang imong nadula. Maayong panahon na nga mohunong.",
+      },
     },
     coachReview: {
       title: "Na-review na ang imong duwa sa {hero}",

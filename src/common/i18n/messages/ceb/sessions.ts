@@ -167,6 +167,53 @@ export const sessions: MessageTree<typeof en> = {
     highest: "Pinakataas nga K+A−D: {kills} + {assists} − {deaths} =",
     lowest: "Pinakaubos nga K+A−D: {kills} + {assists} − {deaths} =",
   },
+  stopLoss: {
+    title: "Stop-loss",
+    description:
+      "Ikaw ang magbutang sa imong limit sa usa ka play session. Kung maabot kini sa usa ka duwa, sultihan ka sa Dota Den nga maayong panahon na nga mohunong: sa pinakabag-ong session sa imong overview, ug sa notification kung naka-on kini. Ihap ang tanang klase sa duwa, sama sa record sa imong session.",
+    enable: "I-on ang akong stop-loss",
+    off: "Off",
+    custom: "Lain",
+    customLabel: "{rule}: kaugalingong limit ({min} hangtod {max})",
+    save: "I-save ang stop-loss",
+    savedOn: "Na-save ang stop-loss.",
+    savedOff: "Na-off ang stop-loss.",
+    failed: "Wala ma-save ang imong stop-loss. Sulayi pag-usab.",
+    rangeError: "{rule}: pagpili og numero gikan {min} hangtod {max}.",
+    noRule: "Pagpili bisan usa ka limit, o i-off ang stop-loss.",
+    rules: {
+      losses: {
+        label: "Pildi sa usa ka session",
+        help: "Mohunong human niining gidaghanon sa pildi sa usa ka session.",
+      },
+      streak: {
+        label: "Sunod-sunod nga pildi",
+        help: "Mohunong human niining gidaghanon sa sunod-sunod nga pildi.",
+      },
+      games: {
+        label: "Duwa sa usa ka session",
+        help: "Mohunong human niining gidaghanon sa duwa, daog man o pildi.",
+      },
+    },
+    status: {
+      region: "Stop-loss",
+      losses: {
+        one: "{used} sa 1 ka pildi ang nagamit",
+        other: "{used} sa {n} ka pildi ang nagamit",
+      },
+      streak: {
+        one: "{used} sa 1 ka sunod-sunod nga pildi",
+        other: "{used} sa {n} ka sunod-sunod nga pildi",
+      },
+      games: { one: "{used} sa 1 ka duwa ang nadula", other: "{used} sa {n} ka duwa ang nadula" },
+      reached: "Naabot na ang limit. Maayong panahon na nga mohunong.",
+      reachedPast: "Naabot nimo ang imong limit niini nga session.",
+      fresh: "Bag-o na usab ang imong sunod nga session.",
+      invite: "Gusto ka og pahinumdom nga mohunong sa dili pa ka ma-tilt?",
+      setUp: "Pagbutang og stop-loss",
+      edit: "Usba",
+    },
+  },
   notFound: {
     title: "Wala makit-an ang session",
     body: "Wala namo makit-an kini nga session sa imong match history. Kung usbon ang gitas-on sa break, mausab ang pag-grupo sa imong mga duwa, ug basin wala ma-import ang karaan kaayong mga duwa, mao nga basin dili na motudlo kini nga link sa usa ka session.",

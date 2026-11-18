@@ -53,6 +53,10 @@ export const notifications = {
       label: "Live session updates (Plus)",
       help: "While Steam shows you in Dota: each finished game with your session record, and a heads-up when your own history says you play worse on a losing streak.",
     },
+    stop_loss: {
+      label: "Stop-loss reached",
+      help: "While Steam shows you in Dota: when a game reaches a stop-loss you set (Account → Stop-loss). Once per limit per session.",
+    },
     coach_review: {
       label: "AI review of new ranked games (Plus)",
       help: "After a sync finds new ranked games, the AI coach reviews the newest once their replays are parsed, and tells you here. Turning this off stops the automatic reviews too.",
@@ -83,6 +87,23 @@ export const notifications = {
       body: "Nice. Keep it going.",
       bodyLoss: "Shake it off and reset before the next one.",
       tilt: "{losses} losses in a row. After a streak like this you win {after}% of the next game ({games} games), against {baseline}% normally. A short break might be worth more than the next queue.",
+    },
+    stopLoss: {
+      title: "Stop-loss reached · {wins}–{losses} this session",
+      losses: {
+        one: "You set a stop-loss of 1 loss. You're at {used} this session. Good time to stop.",
+        other:
+          "You set a stop-loss of {n} losses. You're at {used} this session. Good time to stop.",
+      },
+      streak: {
+        one: "You set a stop-loss of 1 loss in a row. That's {used} in a row. Good time to stop.",
+        other:
+          "You set a stop-loss of {n} losses in a row. That's {used} in a row. Good time to stop.",
+      },
+      games: {
+        one: "You set a limit of 1 game a session. That's {used} played. Good time to stop.",
+        other: "You set a limit of {n} games a session. That's {used} played. Good time to stop.",
+      },
     },
     coachReview: {
       title: "Your {hero} game is reviewed",

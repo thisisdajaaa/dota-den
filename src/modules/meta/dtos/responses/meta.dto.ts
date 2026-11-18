@@ -2,6 +2,23 @@ import { type DuoResult } from "../../domain/lane-duos";
 import { type OverviewPool, type ProDraftHero, type RankedHero } from "../../domain/meta-stats";
 import { type Position, type RoleDerivation } from "../../domain/position";
 import { type PositionStats } from "../../domain/position-stats";
+import { type Medal, type MetaBracket } from "../../domain/rank-bracket";
+
+/** A ranking made for a picked rank bracket (not the default Ancient–Immortal view). */
+export interface BracketView {
+  bracket: MetaBracket;
+  /** Matches in the bracket in OpenDota's hero stats (every hero's picks / 10). */
+  matches: number;
+  /** Medals of the bracket with no games in the data (shown, so the label isn't overstated). */
+  emptyMedals: readonly Medal[];
+  /** When OpenDota's hero stats were fetched. */
+  fetchedAt: Date;
+  /**
+   * What decided which heroes play the position: STRATZ position shares (Ancient–Immortal
+   * games only) or OpenDota lane data and hero roles (all public parsed games).
+   */
+  placedBy: "positions" | "lanes";
+}
 
 export interface TopHeroesView {
   position: Position;
@@ -21,7 +38,9 @@ export interface TopHeroesView {
     pro:
       | { status: "ok"; drafts: number; windowDays: number; fetchedAt: Date }
       | { status: "too_few"; drafts: number; windowDays: number; fetchedAt: Date }
-      | { status: "unavailable" };
+      | { status: "unavailable" }
+      /** Bracket rankings don't use tournament data. */
+      | { status: "not_used" };
     /**
      * STRATZ position stats: "ok" when they ranked this list; "unavailable" when STRATZ failed
      * and lane data was used; "off" when no STRATZ token is configured.
@@ -30,6 +49,8 @@ export interface TopHeroesView {
       | { status: "ok"; fetchedAt: Date; window: PositionStats["window"] }
       | { status: "unavailable" }
       | { status: "off" };
+    /** The rank bracket this list was ranked for; null for the default Ancient–Immortal. */
+    bracket: BracketView | null;
   };
 }
 
@@ -51,6 +72,8 @@ export interface OverviewView {
   fetchedAt: Date;
   /** The STRATZ window when heroes were placed by position stats; null when by lane data. */
   positions: { window: PositionStats["window"] } | null;
+  /** The rank bracket the pools were ranked for; null for the default Ancient–Immortal. */
+  bracket: BracketView | null;
 }
 
 export interface ContestedView {

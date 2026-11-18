@@ -1,4 +1,5 @@
 import type { SessionNote } from "./domain/session-note";
+import type { StopLossSettings } from "./domain/stop-loss";
 
 export const SESSIONS_SCHEMA_VERSION = 1;
 export const SESSION_COLLECTIONS = {
@@ -15,7 +16,12 @@ export interface SessionNoteDoc extends SessionNote {
 
 export interface SessionSettingsDoc {
   userId: string;
-  gapMinutes: number;
+  /** Missing when only a stop-loss was saved: the default gap applies. */
+  gapMinutes?: number;
+  /** The player's own limits. Missing (every document before stop-loss existed): off. */
+  stopLoss?: StopLossSettings;
+  /** Set with `stopLoss`: on with at least one rule (indexed, for the session companion). */
+  stopLossActive?: boolean;
   updatedAt: Date;
   schemaVersion: number;
 }

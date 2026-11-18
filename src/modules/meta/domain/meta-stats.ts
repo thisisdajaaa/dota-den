@@ -4,6 +4,7 @@
  */
 import { isSupportHero, POSITION_INFO, type Position } from "./position";
 import { positionCandidates, shareAt, type PositionStats } from "./position-stats";
+import type { Medal, MetaBracket } from "./rank-bracket";
 
 export interface WinCount {
   games: number;
@@ -15,6 +16,8 @@ export interface HeroPublicStats extends WinCount {
   heroId: number;
   /** Daily public picks across all ranks, oldest first (usually 7 days). */
   pickTrend: readonly number[];
+  /** Games and wins per medal (1 Herald … 8 Immortal), all positions; absent when unknown. */
+  medals?: Readonly<Partial<Record<Medal, WinCount>>>;
 }
 
 /** Win counts per lane role (1 safe, 2 mid, 3 off, 4 jungle) from public parsed games. */
@@ -112,6 +115,19 @@ export interface RankedHero {
   laneKnown: boolean;
   pro: (ProDraftHero & { drafts: number; windowDays: number; contestRate: number }) | null;
   trend: PickTrend | null;
+  /**
+   * The hero's record in a picked rank bracket (OpenDota, all positions), when the list was
+   * ranked for one; null in the default Ancient–Immortal view.
+   */
+  bracket:
+    | (WinCount & {
+        bracket: MetaBracket;
+        rate: number;
+        adjusted: number;
+        /** Share of the bracket's matches the hero was picked in; null when unknown. */
+        pickRate: number | null;
+      })
+    | null;
 }
 
 /** Virtual games for shrinking high-rank win rates (samples are usually tens of thousands). */
@@ -190,6 +206,7 @@ export function rankHeroes(
       laneKnown: c.lanes !== null,
       pro,
       trend,
+      bracket: null,
     });
   }
 
@@ -281,6 +298,7 @@ export function rankByPosition(
         laneKnown: false,
         pro,
         trend,
+        bracket: null,
       };
     })
     .sort((a, b) => b.score - a.score || a.heroId - b.heroId);

@@ -164,6 +164,50 @@ export const sessions: MessageTree<typeof en> = {
     highest: "Pinakamataas na K+A−D: {kills} + {assists} − {deaths} =",
     lowest: "Pinakamababang K+A−D: {kills} + {assists} − {deaths} =",
   },
+  stopLoss: {
+    title: "Stop-loss",
+    description:
+      "Ikaw ang magtakda ng limit mo sa isang play session. Kapag naabot ito ng isang laro, sasabihin ng Dota Den na magandang oras na para tumigil: sa pinakabagong session sa overview mo, at sa notification kung naka-on ang mga iyon. Bilang ang lahat ng uri ng laro, gaya ng record ng session mo.",
+    enable: "I-on ang stop-loss ko",
+    off: "Off",
+    custom: "Iba pa",
+    customLabel: "{rule}: sariling limit ({min} hanggang {max})",
+    save: "I-save ang stop-loss",
+    savedOn: "Na-save ang stop-loss.",
+    savedOff: "Na-off ang stop-loss.",
+    failed: "Hindi na-save ang stop-loss mo. Subukan ulit.",
+    rangeError: "{rule}: pumili ng numero mula {min} hanggang {max}.",
+    noRule: "Pumili ng kahit isang limit, o i-off ang stop-loss.",
+    rules: {
+      losses: {
+        label: "Talo sa isang session",
+        help: "Tumigil pagkatapos ng ganitong dami ng talo sa isang session.",
+      },
+      streak: {
+        label: "Sunod-sunod na talo",
+        help: "Tumigil pagkatapos ng ganitong dami ng sunod-sunod na talo.",
+      },
+      games: {
+        label: "Laro sa isang session",
+        help: "Tumigil pagkatapos ng ganitong dami ng laro, panalo man o talo.",
+      },
+    },
+    status: {
+      region: "Stop-loss",
+      losses: { one: "{used} sa 1 talo ang nagamit", other: "{used} sa {n} talo ang nagamit" },
+      streak: {
+        one: "{used} sa 1 sunod-sunod na talo",
+        other: "{used} sa {n} sunod-sunod na talo",
+      },
+      games: { one: "{used} sa 1 laro ang nalaro", other: "{used} sa {n} laro ang nalaro" },
+      reached: "Naabot na ang limit. Magandang oras na para tumigil.",
+      reachedPast: "Naabot mo ang limit mo sa session na ito.",
+      fresh: "Panibago ang susunod mong session.",
+      invite: "Gusto mo ng paalala na tumigil bago ka ma-tilt?",
+      setUp: "Magtakda ng stop-loss",
+      edit: "Baguhin",
+    },
+  },
   notFound: {
     title: "Hindi makita ang session",
     body: "Hindi namin makita ang session na ito sa match history mo. Kapag pinalitan ang haba ng break, nag-iiba ang pag-grupo ng mga laro mo, at baka hindi na-import ang napakalumang mga laro, kaya baka hindi na tumuturo sa isang session ang link na ito.",

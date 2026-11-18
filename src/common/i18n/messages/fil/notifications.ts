@@ -56,6 +56,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Live session updates (Plus)",
       help: "Habang nakikita ka ng Steam sa Dota: bawat tapos na laro kasama ang record mo sa session, at paalala kapag sinasabi ng sarili mong history na mas humihina ka kapag sunod-sunod ang talo.",
     },
+    stop_loss: {
+      label: "Naabot ang stop-loss",
+      help: "Habang nasa Dota ka ayon sa Steam: kapag naabot ng isang laro ang stop-loss na itinakda mo (Account → Stop-loss). Isang beses bawat limit bawat session.",
+    },
     coach_review: {
       label: "AI review ng mga bagong ranked game (Plus)",
       help: "Kapag may nakitang bagong ranked game ang sync, rerebyuhin ng AI coach ang pinakabago pag na-parse na ang replay, at sasabihan ka rito. Kapag pinatay ito, titigil din ang mga awtomatikong review.",
@@ -86,6 +90,24 @@ export const notifications: MessageTree<typeof en> = {
       body: "Ayos. Tuloy lang.",
       bodyLoss: "Bawi sa susunod.",
       tilt: "{losses} sunod-sunod na talo. Pagkatapos ng ganitong streak, nananalo ka ng {after}% sa susunod na laro ({games} laro), kumpara sa {baseline}% karaniwan. Baka mas sulit ang maikling pahinga kaysa sa susunod na queue.",
+    },
+    stopLoss: {
+      title: "Naabot ang stop-loss · {wins}–{losses} ngayong session",
+      losses: {
+        one: "Nagtakda ka ng stop-loss na 1 talo. {used} na ang talo mo ngayong session. Magandang oras na para tumigil.",
+        other:
+          "Nagtakda ka ng stop-loss na {n} talo. {used} na ang talo mo ngayong session. Magandang oras na para tumigil.",
+      },
+      streak: {
+        one: "Nagtakda ka ng stop-loss na 1 sunod-sunod na talo. {used} na sunod-sunod. Magandang oras na para tumigil.",
+        other:
+          "Nagtakda ka ng stop-loss na {n} sunod-sunod na talo. {used} na sunod-sunod. Magandang oras na para tumigil.",
+      },
+      games: {
+        one: "Nagtakda ka ng limit na 1 laro bawat session. {used} na ang nalaro mo. Magandang oras na para tumigil.",
+        other:
+          "Nagtakda ka ng limit na {n} laro bawat session. {used} na ang nalaro mo. Magandang oras na para tumigil.",
+      },
     },
     coachReview: {
       title: "Na-review na ang laro mo sa {hero}",

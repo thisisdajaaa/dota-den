@@ -3,7 +3,7 @@ import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { DEFAULT_LOCALE, isLocale } from "@/common/i18n/locales";
 import { englishMessages, MESSAGES, type Messages } from "@/common/i18n/messages";
-import { translator } from "@/common/i18n/translate";
+import { plural, translator, type Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import type { DashboardFact } from "@/modules/matches/domain/read-models";
@@ -15,6 +15,12 @@ import { plusService } from "@/modules/plus";
 import { steamSource } from "@/modules/presence";
 import { mmrJournalService } from "@/modules/mmr";
 import { SessionCompanionService } from "./companion.service";
+import {
+  isStopLossActive,
+  stopLossKey,
+  stopLossReminder,
+  type StopLossSettings,
+} from "./domain/stop-loss";
 import {
   CompanionStateRepository,
   SessionNotesRepository,
@@ -60,31 +66,48 @@ export const sessionService = lazy(
 
 export const sessionsController = new SessionsController({ service: sessionService });
 
+async function translatorFor(userId: string): Promise<Translator<Messages>> {
+  const [user] = await usersService.findByIds([userId]);
+  const language = user?.settings.language;
+  return translator<Messages>(
+    MESSAGES[isLocale(language) ? language : DEFAULT_LOCALE],
+    englishMessages,
+  );
+}
+
 export const companionStateRepository = new CompanionStateRepository(getDb);
 
 /**
- * The Plus session companion (`session-companion` job, every 5 minutes). Everything else is
- * reached when it runs: notifications, Plus and identity import this feature too.
+ * The session companion (`session-companion` job, every 5 minutes): Plus live updates and
+ * everyone's stop-loss reminders. Everything else is reached when it runs: notifications, Plus
+ * and identity import this feature too.
  */
 export const sessionCompanionService = lazy(
   () =>
     new SessionCompanionService({
       players: async () => {
         if (!notificationService.enabled) return [];
-        const [plus, subscribed] = await Promise.all([
+        const [plus, subscribed, stopLossIds] = await Promise.all([
           plusService.plusUserIds(),
           notificationService.subscribedUserIds(),
+          sessionSettingsRepository.stopLossUserIds(),
         ]);
         const withDevice = new Set(subscribed);
-        const ids: string[] = [];
-        for (const id of plus) {
-          if (withDevice.has(id) && (await notificationService.prefs(id)).session_live)
-            ids.push(id);
+        const plusIds = new Set(plus);
+        const wanted = new Map<string, { live: boolean; stopLoss: StopLossSettings | null }>();
+        for (const id of new Set([...plus, ...stopLossIds])) {
+          if (!withDevice.has(id)) continue;
+          const prefs = await notificationService.prefs(id);
+          const live = plusIds.has(id) && prefs.session_live;
+          const settings = prefs.stop_loss ? await sessionSettingsRepository.getStopLoss(id) : null;
+          const stopLoss = settings && isStopLossActive(settings) ? settings : null;
+          if (live || stopLoss) wanted.set(id, { live, stopLoss });
         }
-        return (await usersService.findByIds(ids)).map((u) => ({
+        return (await usersService.findByIds([...wanted.keys()])).map((u) => ({
           userId: u.id,
           accountId32: u.accountId32,
           steamId64: u.steamId64,
+          ...wanted.get(u.id)!,
         }));
       },
       playing: async (steamIds) => {
@@ -108,12 +131,7 @@ export const sessionCompanionService = lazy(
       gapMinutes: async (userId) =>
         (await sessionSettingsRepository.getGap(userId)) ?? env().SESSION_DEFAULT_GAP_MINUTES,
       notify: async (userId, news) => {
-        const [user] = await usersService.findByIds([userId]);
-        const language = user?.settings.language;
-        const t = translator<Messages>(
-          MESSAGES[isLocale(language) ? language : DEFAULT_LOCALE],
-          englishMessages,
-        );
+        const t = await translatorFor(userId);
         return notificationService.notifyOnce(userId, "session_live", news.matchId, async () => {
           const hero =
             (await matchesService.heroMap()).get(news.heroId)?.name ??
@@ -139,7 +157,35 @@ export const sessionCompanionService = lazy(
           };
         });
       },
+      remind: async (userId, news) => {
+        const stop = news.stopLoss;
+        if (!stop) return 0;
+        const t = await translatorFor(userId);
+        const keyed = new Map(stop.status.reached.map((r) => [stopLossKey(stop.sessionId, r), r]));
+        return notificationService.notifyOnceEach(
+          userId,
+          "stop_loss",
+          [...keyed.keys()],
+          async (freshKeys) => {
+            const fresh = new Set(freshKeys.map((k) => keyed.get(k)!));
+            const sent = new Set(stop.status.reached.filter((r) => !fresh.has(r)));
+            const reminder = stopLossReminder(stop.status, sent);
+            if (!reminder) return null;
+            const { rule, limit, used } = reminder.rule;
+            return {
+              title: t("notifications.push.stopLoss.title", {
+                wins: news.session.wins,
+                losses: news.session.losses,
+              }),
+              body: plural(t, `notifications.push.stopLoss.${rule}`, limit, { used }),
+              url: "/dashboard",
+              tag: `stop-loss-${stop.sessionId}`,
+            };
+          },
+        );
+      },
       used: (userId) => usageService.record("session_push", userId),
+      reminded: (userId) => usageService.record("stop_loss_push", userId),
       logger,
     }),
 );

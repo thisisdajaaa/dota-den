@@ -3,7 +3,9 @@ import type { meta as en } from "../en/meta";
 
 export const meta: MessageTree<typeof en> = {
   title: "Meta",
+  titleBracket: "Meta: {bracket}",
   counts: {
+    matches: { one: "1 ka match", other: "{n} ka match" },
     games: { one: "1 ka duwa", other: "{n} ka duwa" },
     otherGames: {
       one: "1 pa ka duwa ang walay lane data ug wala giihap.",
@@ -32,6 +34,8 @@ export const meta: MessageTree<typeof en> = {
     title: "Unsa ang kusog karon",
     description:
       "Ang mga hero ug lane partner nga labing maayo sa matag role sa bag-ong high-rank nga mga duwa ug tournament, uban ang mga kausaban niining patch.",
+    descriptionBracket:
+      "Ang mga hero nga labing maayo sa matag role sa mga public nga dula sa {bracket}, uban ang mga kausaban niini nga patch. Gikan gihapon sa mga pro match ang lane duos ug tournament picks.",
     guides: "Mga hero guide",
     pickRole: "Unsa nga role imong gidula?",
     loading: "Gi-load ang meta",
@@ -58,6 +62,30 @@ export const meta: MessageTree<typeof en> = {
     byPosition: "Mga duwa sumala sa position",
     positionGames: "{pos}: {games}",
   },
+  bracket: {
+    title: "Rank bracket",
+    label: "Rank bracket",
+    you: "(ikaw)",
+    highRanks: "Taas nga rank: {range}",
+    yours: "Gipakita ang imong bracket: {bracket}.",
+    showing: "Gipakita ang {bracket}.",
+    defaultNote:
+      "Mga high-rank nga dula kini, sama sa gipakita sa kadaghanan sa stats site. Lahi tingali ang mga hero nga modaog sa imong medal, busa pilia ang imong bracket.",
+    note: "Ang win rates gikan ra sa mga public nga ranked game niini nga mga medal, dili sa pro o high-rank nga dula.",
+    showYours: "Ipakita ang imong bracket ({bracket})",
+  },
+  bracketSource: {
+    rates:
+      "Win rates sa {bracket}: public nga ranked game sa OpenDota ({matches}), na-update {ago}.",
+    placedPositions:
+      "Kinsa ang nagdula sa matag posisyon gikan sa mga dula nga Ancient–Immortal sa STRATZ, {range}, dili gikan niini nga bracket.",
+    placedLanes:
+      "Kinsa ang nagdula sa matag posisyon gikan sa lane data sa OpenDota (public nga na-parse nga dula sa tanang rank) ug sa role sa hero, dili gikan niini nga bracket.",
+    trends: "Pick trends: public nga dula sa OpenDota sa tanang rank.",
+    noPro: "Dili giihap ang tournament picks sa bracket rankings.",
+    emptyMedals:
+      "Walay dula nga {empty} sa data sa OpenDota karon, busa gikan ra sa mga dula nga {rest} kini nga mga numero.",
+  },
   roles: {
     tabsLabel: "Position",
     you: "(ikaw)",
@@ -68,6 +96,14 @@ export const meta: MessageTree<typeof en> = {
   topHeroes: {
     kicker: "Karon",
     title: "Mga top hero: {name}",
+    kickerBracket: "Mga dula sa {bracket}",
+    bracketScope: "{pos}, public nga dula sa {bracket}",
+    descriptionBracket:
+      "Gi-ranggo sumala sa win rate sa mga dula sa {bracket} (tanang posisyon), nga ang gagmay nga sample gibira paingon sa 50%. Kinahanglan sa hero ang {games} o labaw pa nga dula sa bracket aron malista.",
+    bracketRate: "win rate sa {bracket} · {games}",
+    bracketPickRate: "gi-pick sa {pct} sa mga match",
+    bracketPlacedAt: "Gidula isip {pos} sa {share} sa iyang mga dula nga Ancient–Immortal",
+    bracketPlacedLane: "{share} sa iyang public nga dula anaa sa {lane}",
     titleShort: "Mga top hero",
     description:
       "Gihan-ay sumala sa win rate gikan Ancient hangtod Immortal ug niining lane, nga ang gagmay nga sample gibira paingon sa 50%, ug gamay nga dugang para sa mga hero nga gi-agawan sa tournaments.",
@@ -125,12 +161,18 @@ export const meta: MessageTree<typeof en> = {
       "Gi-agawan sa tournaments: na-pick o na-ban sa {pct} sa {drafts} ka pro draft sa milabay nga {days} ka adlaw",
     lane: "Modaog sa {pct} sa {games} ka public nga duwa sa {lane}",
     position: "Modaog sa {pct} sa {games} ka duwa nga Ancient–Immortal sa {pos}",
+    bracket: "Midaog sa {pct} sa {games} ka dula sa {bracket}",
   },
   overview: {
     kicker: "Dali nga tan-aw",
     title: "Pinakakusgan nga mga hero karon",
     description:
       "Ang labing maayong mga hero sa Ancient hangtod Immortal para sa matag klase sa role, sumala kung asa gyud sila gidula. Pili og role sa ibabaw para sa tibuok ranking nga adunay tournament.",
+    titleBracket: "Labing kusgan nga hero sa {bracket}",
+    descriptionBracket:
+      "Ang labing maayo nga mga hero sa public nga dula sa {bracket} para sa matag klase sa role, sumala kung asa gyud sila gidula. Pili og role sa ibabaw para sa tibuok ranking.",
+    bracketGames: "{games} sa {bracket}",
+    onceEach: "Kausa ra makita ang matag hero, sa role diin siya kanunay gidula.",
     loading: "Nag-load sa overview sa meta",
     pools: {
       carry: "Mga carry",

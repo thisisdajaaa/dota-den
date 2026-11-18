@@ -23,6 +23,8 @@ export class StratzGuideSource implements GuideSource {
   benchmarks = (heroId: number) => this.fallback.benchmarks(heroId);
   proGames = (heroId: number) => this.fallback.proGames(heroId);
   proNames = (accountIds: readonly number[]) => this.fallback.proNames(accountIds);
+  skillBuilds = (heroId: number) => this.fallback.skillBuilds?.(heroId) ?? Promise.resolve(null);
+  wardCells = () => this.fallback.wardCells?.() ?? Promise.resolve(null);
 
   async matchups(heroId: number): Promise<{ rows: MatchupRow[]; source: MatchupSource } | null> {
     const hero = await this.stratz.forHero(heroId).catch(() => null);

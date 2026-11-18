@@ -36,6 +36,8 @@ const nextConfig: NextConfig = {
         hostname: "www.opendota.com",
         pathname: "/assets/images/dota2/rank_icons/**",
       },
+      // The Dota map artwork OpenDota serves, under the ward spots.
+      { protocol: "https", hostname: "www.opendota.com", pathname: "/assets/images/dota2/map/**" },
     ],
   },
 };

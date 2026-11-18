@@ -10,6 +10,7 @@ import type { Messages } from "@/common/i18n/messages";
 import { plural, type Translator } from "@/common/i18n/translate";
 import { logger } from "@/common/logging/logger";
 import { getCurrentUser } from "@/modules/identity";
+import { playersService } from "@/modules/players";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { matchesService } from "@/modules/matches";
 import type { RoleView } from "@/modules/meta/dtos/responses/meta.dto";
@@ -21,6 +22,14 @@ import {
   POSITIONS,
   type Position,
 } from "@/modules/meta/domain/position";
+import {
+  bracketLabel,
+  chooseBracket,
+  DEFAULT_BRACKET,
+  parseBracket,
+  type MetaBracket,
+} from "@/modules/meta/domain/rank-bracket";
+import { BracketPicker } from "@/modules/meta/ui/bracket-picker";
 import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import { RolePicker, RoleTabs } from "@/modules/meta/ui/role-picker";
 import type { Result } from "@/common/result";
@@ -35,10 +44,27 @@ import {
   TopHeroesSection,
 } from "./sections";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  // ?pos= views are the same page filtered: one canonical URL for all of them.
-  return { title: t("meta.title"), alternates: { canonical: "/meta" } };
+export async function generateMetadata({ searchParams }: PageProps<"/meta">): Promise<Metadata> {
+  const [t, params] = await Promise.all([getT(), searchParams]);
+  const bracket = parseBracket(params.bracket);
+  // ?pos= and ?bracket= views are the same page filtered: one canonical URL for all of them.
+  return {
+    title:
+      bracket && bracket !== DEFAULT_BRACKET
+        ? t("meta.titleBracket", { bracket: bracketLabel(bracket) })
+        : t("meta.title"),
+    alternates: { canonical: "/meta" },
+  };
+}
+
+/** The viewer's rank medal (OpenDota rank tier), or null when unknown. Never throws. */
+async function viewerRankTier(accountId32: number): Promise<number | null> {
+  try {
+    return (await playersService.quickProfile(accountId32)).profile?.rankTier ?? null;
+  } catch (e) {
+    logger.warn("meta_rank_tier_failed", { error: e });
+    return null;
+  }
 }
 
 export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
@@ -48,6 +74,14 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
 
   const service = metaService;
   const user = await getCurrentUser({ tolerateErrors: true });
+  // The bracket in the link, else the signed-in viewer's own (from their rank medal), else
+  // the default Ancient–Immortal view. Links keep the bracket only when it was picked.
+  const choice = chooseBracket(
+    params.bracket,
+    user ? await viewerRankTier(user.accountId32) : null,
+  );
+  const bracket = choice.bracket;
+  const linkBracket = choice.reason === "url" ? bracket : null;
   // Your role needs your recent matches from OpenDota, which can be slow: start it now and
   // wait for it only inside the boundaries that show it.
   const role = user ? settle(service.userRole(user.accountId32), "role") : null;
@@ -63,7 +97,11 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
       <PageHeader
         kicker={t("meta.page.kicker")}
         title={t("meta.page.title")}
-        description={t("meta.page.description")}
+        description={
+          bracket === DEFAULT_BRACKET
+            ? t("meta.page.description")
+            : t("meta.page.descriptionBracket", { bracket: bracketLabel(bracket) })
+        }
         actions={
           <Button asChild variant="outline">
             <Link href="/guides">
@@ -76,6 +114,8 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
         <PatchLine patch={patch} />
       </Suspense>
 
+      <BracketPicker choice={choice} position={picked} />
+
       {role && (
         <Suspense fallback={<Skeleton className="h-24 rounded-2xl" />}>
           <YourRole role={role} t={t} />
@@ -84,20 +124,36 @@ export default async function MetaPage({ searchParams }: PageProps<"/meta">) {
 
       {picked !== null ? (
         <RoleSections
-          key={picked}
+          key={`${picked}:${bracket}`}
           position={picked}
           role={role}
           service={service}
           patch={patch}
           catalog={catalog}
+          bracket={bracket}
+          linkBracket={linkBracket}
           t={t}
         />
       ) : role ? (
         <Suspense fallback={<RoleSectionsSkeleton t={t} />}>
-          <YourRoleSections role={role} service={service} patch={patch} catalog={catalog} t={t} />
+          <YourRoleSections
+            role={role}
+            service={service}
+            patch={patch}
+            catalog={catalog}
+            bracket={bracket}
+            linkBracket={linkBracket}
+            t={t}
+          />
         </Suspense>
       ) : (
-        <PickRole t={t} service={service} catalog={catalog} />
+        <PickRole
+          t={t}
+          service={service}
+          catalog={catalog}
+          bracket={bracket}
+          linkBracket={linkBracket}
+        />
       )}
     </div>
   );
@@ -110,10 +166,14 @@ function PickRole({
   t,
   service,
   catalog,
+  bracket,
+  linkBracket,
 }: {
   t: Translator<Messages>;
   service: typeof metaService;
   catalog: Promise<Map<number, HeroInfo>>;
+  bracket: MetaBracket;
+  linkBracket: MetaBracket | null;
 }) {
   return (
     <>
@@ -121,9 +181,15 @@ function PickRole({
         <h2 id="pick-role" className="text-lg font-semibold">
           {t("meta.page.pickRole")}
         </h2>
-        <RolePicker />
+        <RolePicker bracket={linkBracket} />
       </section>
-      <Overview service={service} catalog={catalog} t={t} />
+      <Overview
+        service={service}
+        catalog={catalog}
+        bracket={bracket}
+        linkBracket={linkBracket}
+        t={t}
+      />
     </>
   );
 }
@@ -150,7 +216,16 @@ async function YourRoleSections({
 }) {
   const res = await role;
   const yours = res.ok ? res.value.derivation.position : null;
-  if (yours === null) return <PickRole t={rest.t} service={rest.service} catalog={rest.catalog} />;
+  if (yours === null)
+    return (
+      <PickRole
+        t={rest.t}
+        service={rest.service}
+        catalog={rest.catalog}
+        bracket={rest.bracket}
+        linkBracket={rest.linkBracket}
+      />
+    );
   return <RoleSections key={yours} position={yours} role={role} {...rest} />;
 }
 
@@ -158,12 +233,20 @@ async function YourRoleSections({
 async function PositionTabs({
   active,
   role,
+  bracket,
 }: {
   active: Position;
   role: Promise<RoleResult> | null;
+  bracket: MetaBracket | null;
 }) {
   const res = await role;
-  return <RoleTabs active={active} yours={res?.ok ? res.value.derivation.position : null} />;
+  return (
+    <RoleTabs
+      active={active}
+      yours={res?.ok ? res.value.derivation.position : null}
+      bracket={bracket}
+    />
+  );
 }
 
 function RoleSections({
@@ -172,6 +255,8 @@ function RoleSections({
   service,
   patch,
   catalog,
+  bracket,
+  linkBracket,
   t,
 }: {
   position: Position;
@@ -179,15 +264,18 @@ function RoleSections({
   service: typeof metaService;
   patch: ReturnType<typeof metaService.latestPatch>;
   catalog: Promise<Map<number, HeroInfo>>;
+  bracket: MetaBracket;
+  /** The bracket picked in the URL, kept in the position links. */
+  linkBracket: MetaBracket | null;
   t: Translator<Messages>;
 }) {
   // Started once and shared: the tips section reuses the hero ranking.
-  const heroes = settle(service.topHeroes(position), "top_heroes");
+  const heroes = settle(service.topHeroes(position, bracket), "top_heroes");
   const duos = settle(service.laneDuos(position), "lane_duos");
   return (
     <>
-      <Suspense fallback={<RoleTabs active={position} yours={null} />}>
-        <PositionTabs active={position} role={role} />
+      <Suspense fallback={<RoleTabs active={position} yours={null} bracket={linkBracket} />}>
+        <PositionTabs active={position} role={role} bracket={linkBracket} />
       </Suspense>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
@@ -212,26 +300,37 @@ function RoleSections({
 function Overview({
   service,
   catalog,
+  bracket,
+  linkBracket,
   t,
 }: {
   service: typeof metaService;
   catalog: Promise<Map<number, HeroInfo>>;
+  bracket: MetaBracket;
+  linkBracket: MetaBracket | null;
   t: Translator<Messages>;
 }) {
-  const overview = settle(service.overview(), "overview");
+  const overview = settle(service.overview(undefined, bracket), "overview");
+  const inBracket = bracket !== DEFAULT_BRACKET;
   const contested = settle(service.contested(), "contested");
   return (
     <section aria-labelledby="meta-overview" className="space-y-4">
       <div className="space-y-1">
         <p className="kicker">{t("meta.overview.kicker")}</p>
         <h2 id="meta-overview" className="text-lg font-semibold">
-          {t("meta.overview.title")}
+          {inBracket
+            ? t("meta.overview.titleBracket", { bracket: bracketLabel(bracket) })
+            : t("meta.overview.title")}
         </h2>
-        <p className="max-w-3xl text-sm text-muted-foreground">{t("meta.overview.description")}</p>
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          {inBracket
+            ? t("meta.overview.descriptionBracket", { bracket: bracketLabel(bracket) })
+            : t("meta.overview.description")}
+        </p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Suspense fallback={<OverviewSkeleton label={t("meta.overview.loading")} count={3} />}>
-          <OverviewSection overview={overview} catalog={catalog} />
+          <OverviewSection overview={overview} catalog={catalog} linkBracket={linkBracket} />
         </Suspense>
         <Suspense fallback={<OverviewSkeleton label={t("meta.overview.loading")} count={1} />}>
           <ContestedSection contested={contested} catalog={catalog} />

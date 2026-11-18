@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SessionCompanionService } from "@/modules/sessions/companion.service";
 import { gameNews, shouldCheck, type CompanionState } from "@/modules/sessions/domain/companion";
 import type { SessionMatch } from "@/modules/sessions/domain/session";
+import type { StopLossSettings } from "@/modules/sessions/domain/stop-loss";
 
 const NOW = new Date("2026-10-26T14:00:00Z");
 const min = (m: number) => new Date(NOW.getTime() - m * 60_000);
@@ -79,6 +80,9 @@ describe("SessionCompanionService", () => {
     inDota: boolean;
     state?: Partial<CompanionState>;
     matches?: SessionMatch[];
+    live?: boolean;
+    stopLoss?: StopLossSettings | null;
+    reminded?: number;
   }) {
     let state: CompanionState = {
       lastInGameAt: null,
@@ -88,8 +92,17 @@ describe("SessionCompanionService", () => {
     };
     const sync = vi.fn(async () => {});
     const notify = vi.fn(async () => 1);
+    const remind = vi.fn(async () => opts.reminded ?? 1);
     const svc = new SessionCompanionService({
-      players: async () => [{ userId: "u", accountId32: 7, steamId64: "76561197960265735" }],
+      players: async () => [
+        {
+          userId: "u",
+          accountId32: 7,
+          steamId64: "76561197960265735",
+          live: opts.live ?? true,
+          stopLoss: opts.stopLoss ?? null,
+        },
+      ],
       playing: async () => new Map([["76561197960265735", opts.inDota ? "570" : null]]),
       state: {
         get: async () => ({ ...state }),
@@ -101,10 +114,11 @@ describe("SessionCompanionService", () => {
       matches: async () => opts.matches ?? [],
       gapMinutes: async () => 60,
       notify,
+      remind,
       logger: { info: vi.fn(), warn: vi.fn() },
       now: () => NOW,
     });
-    return { svc, sync, notify, state: () => state };
+    return { svc, sync, notify, remind, state: () => state };
   }
 
   it("starts from now the first time, so nothing old is announced", async () => {
@@ -137,5 +151,62 @@ describe("SessionCompanionService", () => {
     });
     expect(await t.svc.run()).toMatchObject({ inDota: 0, checked: 0 });
     expect(t.sync).not.toHaveBeenCalled();
+  });
+
+  const twoLosses: StopLossSettings = {
+    enabled: true,
+    limits: { losses: 2, streak: null, games: null },
+  };
+
+  it("reminds a stop-loss instead of announcing the game that reached it", async () => {
+    const t = setup({
+      inDota: true,
+      state: { watermark: min(100) },
+      matches: [match("a", 120, "loss"), match("b", 80, "win"), match("c", 40, "loss")],
+      stopLoss: twoLosses,
+    });
+    expect(await t.svc.run()).toMatchObject({ announced: 2 });
+    expect(t.notify).toHaveBeenCalledTimes(1);
+    expect(t.notify).toHaveBeenCalledWith("u", expect.objectContaining({ matchId: "b" }));
+    expect(t.remind).toHaveBeenCalledTimes(1);
+    expect(t.remind).toHaveBeenCalledWith(
+      "u",
+      expect.objectContaining({
+        matchId: "c",
+        stopLoss: {
+          sessionId: "0:a",
+          status: {
+            rules: [{ rule: "losses", limit: 2, used: 2, reached: true }],
+            reached: ["losses"],
+          },
+        },
+      }),
+    );
+  });
+
+  it("checks a free player's stop-loss without announcing their games", async () => {
+    const t = setup({
+      inDota: true,
+      state: { watermark: min(100) },
+      matches: [match("a", 120, "loss"), match("b", 80, "win"), match("c", 40, "loss")],
+      live: false,
+      stopLoss: twoLosses,
+    });
+    expect(await t.svc.run()).toMatchObject({ announced: 1 });
+    expect(t.notify).not.toHaveBeenCalled();
+    expect(t.remind).toHaveBeenCalledTimes(1);
+  });
+
+  it("announces the game as usual when the reminder was already sent", async () => {
+    const t = setup({
+      inDota: true,
+      state: { watermark: min(60) },
+      matches: [match("a", 120, "loss"), match("b", 80, "loss"), match("c", 40, "loss")],
+      stopLoss: twoLosses,
+      reminded: 0,
+    });
+    expect(await t.svc.run()).toMatchObject({ announced: 1 });
+    expect(t.remind).toHaveBeenCalledTimes(1);
+    expect(t.notify).toHaveBeenCalledWith("u", expect.objectContaining({ matchId: "c" }));
   });
 });

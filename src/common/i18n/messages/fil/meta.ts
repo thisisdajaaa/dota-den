@@ -3,7 +3,9 @@ import type { meta as en } from "../en/meta";
 
 export const meta: MessageTree<typeof en> = {
   title: "Meta",
+  titleBracket: "Meta: {bracket}",
   counts: {
+    matches: { one: "1 match", other: "{n} match" },
     games: { one: "1 laro", other: "{n} laro" },
     otherGames: {
       one: "1 pang laro ang walang lane data at hindi binilang.",
@@ -32,6 +34,8 @@ export const meta: MessageTree<typeof en> = {
     title: "Ano ang malakas ngayon",
     description:
       "Ang mga hero at lane partner na pinakamagaling sa bawat role sa mga bagong high-rank na laro at tournament, kasama ang mga pagbabago sa patch na ito.",
+    descriptionBracket:
+      "Ang mga hero na pinakamagaling sa bawat role sa mga public na laro sa {bracket}, kasama ang mga pagbabago sa patch na ito. Galing pa rin sa mga pro match ang lane duos at tournament picks.",
     guides: "Mga hero guide",
     pickRole: "Anong role ang nilalaro mo?",
     loading: "Nilo-load ang meta",
@@ -58,6 +62,30 @@ export const meta: MessageTree<typeof en> = {
     byPosition: "Mga laro ayon sa position",
     positionGames: "{pos}: {games}",
   },
+  bracket: {
+    title: "Rank bracket",
+    label: "Rank bracket",
+    you: "(ikaw)",
+    highRanks: "Matataas na rank: {range}",
+    yours: "Ipinapakita ang bracket mo: {bracket}.",
+    showing: "Ipinapakita ang {bracket}.",
+    defaultNote:
+      "Mga high-rank na laro ito, gaya ng ipinapakita ng karamihan ng stats site. Puwedeng iba ang mga hero na nananalo sa medal mo, kaya piliin ang bracket mo.",
+    note: "Galing lang ang win rates sa mga public na ranked game sa mga medal na ito, hindi sa pro o high-rank na laro.",
+    showYours: "Ipakita ang bracket mo ({bracket})",
+  },
+  bracketSource: {
+    rates:
+      "Win rates sa {bracket}: public na ranked game sa OpenDota ({matches}), na-update {ago}.",
+    placedPositions:
+      "Kung sino ang naglalaro sa bawat posisyon ay galing sa mga larong Ancient–Immortal sa STRATZ, {range}, hindi sa bracket na ito.",
+    placedLanes:
+      "Kung sino ang naglalaro sa bawat posisyon ay galing sa lane data ng OpenDota (public na na-parse na laro sa lahat ng rank) at sa role ng hero, hindi sa bracket na ito.",
+    trends: "Pick trends: public na laro sa OpenDota sa lahat ng rank.",
+    noPro: "Hindi binibilang ang tournament picks sa bracket rankings.",
+    emptyMedals:
+      "Walang larong {empty} sa data ng OpenDota ngayon, kaya galing lang sa mga larong {rest} ang mga numerong ito.",
+  },
   roles: {
     tabsLabel: "Position",
     you: "(ikaw)",
@@ -68,6 +96,14 @@ export const meta: MessageTree<typeof en> = {
   topHeroes: {
     kicker: "Ngayon",
     title: "Mga top hero: {name}",
+    kickerBracket: "Mga larong {bracket}",
+    bracketScope: "{pos}, public na laro sa {bracket}",
+    descriptionBracket:
+      "Niranggo ayon sa win rate sa mga larong {bracket} (lahat ng posisyon), na hinihila papuntang 50% ang maliliit na sample. Kailangan ng hero ng {games} o higit pang laro sa bracket para mailista.",
+    bracketRate: "win rate sa {bracket} · {games}",
+    bracketPickRate: "na-pick sa {pct} ng mga match",
+    bracketPlacedAt: "Nilalaro bilang {pos} sa {share} ng mga larong Ancient–Immortal nito",
+    bracketPlacedLane: "{share} ng mga public na laro nito ay nasa {lane}",
     titleShort: "Mga top hero",
     description:
       "Niranggo ayon sa win rate mula Ancient hanggang Immortal at sa lane na ito, na hinihila papuntang 50% ang maliliit na sample, kasama ang kaunting dagdag para sa mga hero na pinag-aagawan sa tournaments.",
@@ -124,12 +160,19 @@ export const meta: MessageTree<typeof en> = {
       "Pinag-aagawan sa tournaments: na-pick o na-ban sa {pct} ng {drafts} pro draft sa nakaraang {days} araw",
     lane: "Panalo sa {pct} ng {games} public na laro sa {lane}",
     position: "Panalo sa {pct} ng {games} na larong Ancient–Immortal sa {pos}",
+    bracket: "Panalo sa {pct} ng {games} na larong {bracket}",
   },
   overview: {
     kicker: "Mabilisang tingin",
     title: "Pinakamalakas na hero ngayon",
     description:
       "Ang pinakamahuhusay na hero sa Ancient hanggang Immortal para sa bawat uri ng role, ayon sa kung saan talaga sila nilalaro. Pumili ng role sa itaas para sa buong ranking na may tournament.",
+    titleBracket: "Pinakamalakas na hero sa {bracket}",
+    descriptionBracket:
+      "Ang pinakamahuhusay na hero sa mga public na laro sa {bracket} para sa bawat uri ng role, ayon sa kung saan talaga sila nilalaro. Pumili ng role sa itaas para sa buong ranking.",
+    bracketGames: "{games} sa {bracket}",
+    onceEach:
+      "Isang beses lang lumalabas ang bawat hero, sa role kung saan siya pinakamadalas laruin.",
     loading: "Nilo-load ang overview ng meta",
     pools: {
       carry: "Mga carry",

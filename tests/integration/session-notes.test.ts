@@ -6,6 +6,7 @@ import {
   SessionSettingsRepository,
 } from "@/modules/sessions/repositories/sessions.repository";
 import { SESSION_COLLECTIONS } from "@/modules/sessions/sessions.model";
+import { STOP_LOSS_OFF } from "@/modules/sessions/domain/stop-loss";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -131,5 +132,56 @@ describe("SessionSettingsRepository", () => {
       .collection(SESSION_COLLECTIONS.settings)
       .insertOne({ userId: "odd", gapMinutes: 45, updatedAt: new Date(), schemaVersion: 1 });
     expect(await new SessionSettingsRepository(async () => db).getGap("odd")).toBeNull();
+  });
+
+  it("stores a stop-loss beside the gap, off until set, and finds who has one on", async () => {
+    const repo = new SessionSettingsRepository(async () => db);
+    const now = new Date();
+    // Migration-free: a user with no document, or one saved before stop-loss, is off.
+    expect(await repo.getStopLoss("sl-user")).toEqual(STOP_LOSS_OFF);
+    await repo.setGap("sl-user", 90, now);
+    expect(await repo.getStopLoss("sl-user")).toEqual(STOP_LOSS_OFF);
+
+    const twoLosses = { enabled: true, limits: { losses: 2, streak: null, games: 5 } };
+    await repo.setStopLoss("sl-user", twoLosses, now);
+    expect(await repo.getStopLoss("sl-user")).toEqual(twoLosses);
+    // The gap is untouched, and it is still one document per user.
+    expect(await repo.getGap("sl-user")).toBe(90);
+    expect(
+      await db.collection(SESSION_COLLECTIONS.settings).countDocuments({ userId: "sl-user" }),
+    ).toBe(1);
+
+    // Saving a stop-loss first works too (the default gap applies).
+    await repo.setStopLoss(
+      "sl-other",
+      { ...twoLosses, limits: { ...twoLosses.limits, games: null } },
+      now,
+    );
+    expect(await repo.getGap("sl-other")).toBeNull();
+    expect((await repo.stopLossUserIds()).sort()).toEqual(["sl-other", "sl-user"]);
+
+    // Off (or on with no rule) drops out of the companion's list but keeps the numbers.
+    await repo.setStopLoss("sl-other", { ...twoLosses, enabled: false }, now);
+    await repo.setStopLoss("sl-user", { enabled: true, limits: STOP_LOSS_OFF.limits }, now);
+    expect(await repo.stopLossUserIds()).toEqual([]);
+    expect((await repo.getStopLoss("sl-other")).limits.losses).toBe(2);
+
+    const indexes = await db.collection(SESSION_COLLECTIONS.settings).indexes();
+    expect(indexes.find((i) => i.name === "stop_loss_active")).toMatchObject({
+      partialFilterExpression: { stopLossActive: true },
+    });
+  });
+
+  it("reads an out-of-range stored stop-loss rule as off", async () => {
+    await db.collection(SESSION_COLLECTIONS.settings).insertOne({
+      userId: "sl-odd",
+      stopLoss: { enabled: true, limits: { losses: 99, streak: 3 } },
+      updatedAt: new Date(),
+      schemaVersion: 1,
+    });
+    expect(await new SessionSettingsRepository(async () => db).getStopLoss("sl-odd")).toEqual({
+      enabled: true,
+      limits: { losses: null, streak: 3, games: null },
+    });
   });
 });

@@ -13,6 +13,8 @@ import { NotificationsCard } from "@/modules/notifications/ui/notifications-card
 import { plusService } from "@/modules/plus";
 import { PlanCard } from "@/modules/plus/ui/plan-card";
 import { isJourneyRange } from "@/modules/mmr/domain/journey";
+import { sessionService } from "@/modules/sessions";
+import { StopLossCard } from "@/modules/sessions/ui/stop-loss-card";
 import { sharesService } from "@/modules/shares";
 import { SharedLinks } from "@/modules/shares/ui/shared-links";
 import { DeleteAccountForm } from "@/modules/privacy/ui/delete-account-form";
@@ -32,13 +34,14 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
   if (!user) return null;
   const t = await getT();
   const offer = plusService.offer();
-  const [notifications, shares, discord, discordLink, email, plan] = await Promise.all([
+  const [notifications, shares, discord, discordLink, email, plan, stopLoss] = await Promise.all([
     notificationService.status(user.id),
     sharesService.list(user.id),
     discordWebhookService.status(user.id),
     discordLinkService.status(user.id).catch(() => ({ enabled: false, linked: null })),
     emailService.status(user.id),
     plusService.plan(user.id),
+    sessionService.stopLossSettings({ userId: user.id, accountId32: user.accountId32 }),
   ]);
   // The plan card exists once Plus is configured, for anyone with a subscription on record,
   // and for anyone with Plus (staff).
@@ -86,6 +89,8 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
       />
 
       {showPlan && <PlanCard plan={plan} offer={offer} />}
+
+      <StopLossCard initial={stopLoss} />
 
       <NotificationsCard
         publicKey={vapidPublicKey()}

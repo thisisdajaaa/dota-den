@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { GAP_OPTIONS, isGapMinutes, type GapMinutes } from "../domain/session";
 import { GOAL_MAX, GOAL_MET_VALUES, NOTE_MAX } from "../domain/session-note";
+import { STOP_LOSS_RANGES, type StopLossRule } from "../domain/stop-loss";
 
 /**
  * PUT /api/v1/sessions/[sessionId]/notes. Shared by the browser form (instant feedback)
@@ -46,3 +47,29 @@ export const SessionGapInputSchema = z
   .strict();
 
 export type SessionGapInput = z.output<typeof SessionGapInputSchema>;
+
+const limit = (rule: StopLossRule, what: string) => {
+  const { min, max } = STOP_LOSS_RANGES[rule];
+  const message = `Pick ${min} to ${max} ${what}`;
+  return z.number({ error: message }).int(message).min(min, message).max(max, message).nullable();
+};
+
+/** PUT /api/v1/me/settings/stop-loss. Null turns a rule off. */
+export const StopLossInputSchema = z
+  .object({
+    enabled: z.boolean({ error: "Say whether the stop-loss is on" }),
+    limits: z
+      .object({
+        losses: limit("losses", "losses"),
+        streak: limit("streak", "losses in a row"),
+        games: limit("games", "games"),
+      })
+      .strict(),
+  })
+  .strict()
+  .refine((v) => !v.enabled || Object.values(v.limits).some((l) => l !== null), {
+    path: ["limits"],
+    message: "Set at least one limit, or turn the stop-loss off",
+  });
+
+export type StopLossInput = z.output<typeof StopLossInputSchema>;

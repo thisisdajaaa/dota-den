@@ -21,6 +21,8 @@ export interface ItemRecord {
   wins: number;
   /** The minute by which half of its purchases were made; null for starting items. */
   minute: number | null;
+  /** The minute by which a quarter of its purchases were made (a fast timing); null at the start. */
+  fastMinute?: number | null;
 }
 
 /** A hero's latest full week at one position in Legend–Immortal pubs. */
@@ -76,15 +78,21 @@ ${POSITION_IDS.map(
   }
 }`;
 
-/** The minute by which half of an item's purchases were made (rows are per-minute counts). */
-function medianMinute(rows: readonly { time: number; matchCount: number }[]): number | null {
+/**
+ * The minute by which `share` of an item's purchases were made (rows are per-minute counts):
+ * 0.5 is the typical timing, 0.25 a fast one.
+ */
+function minuteAt(
+  rows: readonly { time: number; matchCount: number }[],
+  share: number,
+): number | null {
   const sorted = [...rows].sort((a, b) => a.time - b.time);
   const total = sorted.reduce((n, r) => n + r.matchCount, 0);
   if (total === 0) return null;
   let seen = 0;
   for (const r of sorted) {
     seen += r.matchCount;
-    if (seen * 2 >= total) return r.time;
+    if (seen >= total * share) return r.time;
   }
   return sorted[sorted.length - 1].time;
 }
@@ -111,7 +119,8 @@ export function parseItems(body: unknown): PositionBuild[] | null {
       itemId,
       games: rows.reduce((n, r) => n + r.matchCount, 0),
       wins: rows.reduce((n, r) => n + r.winCount, 0),
-      minute: medianMinute(rows),
+      minute: minuteAt(rows, 0.5),
+      fastMinute: minuteAt(rows, 0.25),
     }));
     const starting = start.data
       .filter((r) => r.instance === 0 && r.wasGiven !== true)

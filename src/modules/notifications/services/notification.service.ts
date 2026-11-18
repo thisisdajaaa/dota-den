@@ -113,6 +113,42 @@ export class NotificationService {
     return delivered;
   }
 
+  /**
+   * Like `notifyOnce`, for news that covers several keys at once (a stop-loss reminder covers
+   * every rule the same game reached). Each key is claimed separately; `build` gets the keys
+   * not sent before and runs only when there is at least one. Nothing delivered releases them.
+   */
+  async notifyOnceEach(
+    userId: string,
+    kind: NotificationKind,
+    keys: readonly string[],
+    build: (fresh: string[]) => Promise<NotificationMessage | null>,
+  ): Promise<number> {
+    if (!this.enabled || keys.length === 0) return 0;
+    if (!(await this.prefs(userId))[kind]) return 0;
+    const now = this.now();
+    const fresh: string[] = [];
+    for (const key of keys) {
+      if (await this.deps.log.claim(userId, kind, key, now)) fresh.push(key);
+    }
+    if (fresh.length === 0) return 0;
+    const release = () => Promise.all(fresh.map((key) => this.deps.log.release(userId, kind, key)));
+    let message: NotificationMessage | null;
+    try {
+      message = await build(fresh);
+    } catch (error) {
+      await release();
+      throw error;
+    }
+    const delivered = message ? await this.deliver(userId, message) : 0;
+    if (delivered === 0) await release();
+    else
+      await Promise.all(
+        fresh.map((key) => this.deps.log.recordDelivered(userId, kind, key, delivered)),
+      );
+    return delivered;
+  }
+
   async exportMyData(owner: DataOwner) {
     const [devices, settings, sent] = await Promise.all([
       this.deps.subscriptions.exportForOwner(owner),
