@@ -58,6 +58,63 @@ export const guides: MessageTree<typeof en> = {
       late: "Late game",
     },
   },
+  build: {
+    description:
+      "{hero} sa {position}, sama sa in-game guide: ang sinugdanang items sa mga Legend hangtod Immortal, dayon ang items nga gibuhat sa kadaghanan sumala sa han-ay, uban ang tinuod nga timing gikan sa katapusang tibuok semana sa mga duwa (STRATZ). Ang situational kay mga item nga gamay ra ang mipalit.",
+    steps: {
+      start: "Sinugdanang items",
+      early: "Early game",
+      core: "Core build",
+      situational: "Situational",
+    },
+    hints: {
+      start: "Gipalit sa wala pa ang horn",
+      early: "Unang 10 ka minuto",
+      core: "Sumala sa han-ay sa pagpalit · kasagarang minuto",
+      situational: "Gamay ra ang mipalit; depende sa duwa",
+    },
+    timings: {
+      title: "Timing sa items",
+      item: "Item",
+      fast: "Paspas",
+      typical: "Kasagaran",
+      win: "Daog",
+      note: "Paspas: usa sa upat ka player ang naa nay ingon niini sa maong minuto. Kasagaran: katunga. Mas taas ang win rate sa late items kay ang tag-as nga duwa nga maayo ang dagan ang makaabot niini.",
+    },
+  },
+  skills: {
+    kicker: "Mga pro game",
+    title: "Skill build ug talents",
+    description:
+      "Ang skill nga gikuha sa kadaghanan sa pro sa matag level ni {hero}, gikan sa {n} ka bag-ong pro game nga adunay narekord nga skill order (OpenDota).",
+    unavailable: "Kulang ang bag-ong pro game niini nga hero aron ipakita ang skill build.",
+    ability: "Ability",
+    talent: "Talent",
+    talents: "Mga talent",
+    talentNote:
+      "Unsa ka kanunay gikuha sa mga pro ang matag kilid sa laray. Mausab ang numero sa talent matag patch, mao nga ang duwa ang magpakita sa eksaktong kantidad.",
+  },
+  wards: {
+    kicker: "Support",
+    title: "Mga ward spot",
+    description:
+      "Asa gibutang ang mga ward sa katapusang {n} ka pro game, sumala sa kilid ug oras. Mas dako nga tuldok, mas kanunay gigamit; ang numero ang ranggo sa spot.",
+    mapAlt: "Mapa sa Dota 2 nga adunay labing gigamit nga ward spot",
+    spotTitle: "Spot {rank}: {n} ka ward",
+    none: "Walay kasagarang spot alang niini nga pili.",
+    note: "Gikan sa mga parsed pro game sa OpenDota. Gihiusa ang mga spot sa gamay nga grid, mao nga ang usa ka tuldok mahimong maglangkob sa pipila ka duol nga cliff.",
+    link: "Mapa sa ward spots",
+    linkHint: "Asa magbutang og observer ug sentry ang mga pro, sumala sa kilid ug oras",
+    kinds: { label: "Klase sa ward", observer: "Observer", sentry: "Sentry" },
+    sides: { label: "Kilid", radiant: "Radiant", dire: "Dire" },
+    phases: { label: "Oras", early: "0–10 min", mid: "10–25 min", late: "25+ min" },
+    page: {
+      title: "Mga ward spot",
+      description:
+        "Asa magbutang og observer ug sentry ward ang mga pro, sumala sa kilid ug oras sa duwa, gikan sa mga bag-ong pro game.",
+      kicker: "Mga guide",
+    },
+  },
   bench: {
     kicker: "Mga benchmark",
     title: "Unsay hitsura sa kusgan nga dula",

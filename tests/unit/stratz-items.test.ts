@@ -69,6 +69,7 @@ describe("parseItems", () => {
       games: 300,
       wins: 150,
       minute: 2,
+      fastMinute: 1,
     });
     expect(pos1.items.find((i) => i.itemId === 116)?.minute).toBe(27);
     // Starting items the player bought themself; a teammate's handout doesn't count.
@@ -100,7 +101,7 @@ describe("pub item builds", () => {
     );
     expect(phases.start.map((i) => i.itemId)).toEqual([44]);
     expect(phases.early).toEqual([
-      { itemId: 36, count: 300, relative: 1, winRate: 0.5, minute: 2 },
+      { itemId: 36, count: 300, relative: 1, winRate: 0.5, minute: 2, fastMinute: 1 },
     ]);
     expect(phases.mid.map((i) => i.itemId)).toEqual([1]);
     expect(phases.mid[0].winRate).toBeCloseTo(0.55, 2);

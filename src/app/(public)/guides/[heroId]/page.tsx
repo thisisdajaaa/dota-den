@@ -7,6 +7,8 @@ import { getT } from "@/common/i18n/server";
 import { guideService } from "@/modules/guides";
 import { isBuildFiller } from "@/modules/guides/domain/hero-guide";
 import { Benchmarks, Counters, ItemBuilds, ProGames } from "@/modules/guides/ui/guide-sections";
+import { SkillBuildCard, WardMap } from "@/modules/guides/ui/build-sections";
+import { isWardKind, isWardPhase, isWardSide } from "@/modules/guides/domain/ward-spots";
 import { matchesService } from "@/modules/matches";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
 
@@ -34,7 +36,7 @@ export default async function HeroGuidePage({
   searchParams,
 }: PageProps<"/guides/[heroId]">) {
   const { heroId: raw } = await params;
-  const { pos } = await searchParams;
+  const { pos, ws, wp, wk } = await searchParams;
   const position = typeof pos === "string" && /^[1-5]$/.test(pos) ? Number(pos) : undefined;
   if (!HERO_ID.test(raw)) notFound();
   const heroId = Number(raw);
@@ -49,6 +51,18 @@ export default async function HeroGuidePage({
     position,
   });
   const name = hero?.name ?? t("guides.hero.fallbackName", { id: heroId });
+  // Ward spots belong on support guides: the build is for pos 4/5, or the hero is a support.
+  const supportBuild =
+    guide.itemSource.source === "pubs"
+      ? guide.itemSource.position >= 4
+      : (hero?.roles ?? []).includes("Support");
+  const wards = supportBuild ? await guideService.wardCells() : null;
+  const wardView = {
+    side: isWardSide(ws) ? ws : "radiant",
+    phase: isWardPhase(wp) ? wp : "early",
+    kind: isWardKind(wk) ? wk : "observer",
+  } as const;
+  const posParam = guide.itemSource.source === "pubs" ? `pos=${guide.itemSource.position}&` : "";
 
   return (
     <div className="space-y-6">
@@ -69,11 +83,23 @@ export default async function HeroGuidePage({
 
       <ItemBuilds
         items={guide.items}
+        build={guide.build}
         itemSource={guide.itemSource}
         itemMap={items}
         heroId={heroId}
         heroLabel={name}
       />
+      <SkillBuildCard skills={guide.skills} heroLabel={name} />
+      {supportBuild && (
+        <WardMap
+          data={wards}
+          {...wardView}
+          compact
+          hrefFor={(v) =>
+            `/guides/${heroId}?${posParam}ws=${v.side}&wp=${v.phase}&wk=${v.kind}#guide-wards`
+          }
+        />
+      )}
       <Counters counters={guide.counters} heroes={heroes} heroLabel={name} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Benchmarks benchmarks={guide.benchmarks} />

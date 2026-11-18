@@ -18,6 +18,10 @@ export interface ItemPick {
   winRate?: number;
   /** Pubs only: the minute by which half of its purchases were made. */
   minute?: number;
+  /** Pubs only: the minute by which a quarter of its purchases were made (a fast timing). */
+  fastMinute?: number;
+  /** Pubs only: share of the position's games that bought it. */
+  share?: number;
 }
 
 export type Position = 1 | 2 | 3 | 4 | 5;
@@ -28,6 +32,7 @@ export interface PubItem {
   games: number;
   wins: number;
   minute: number | null;
+  fastMinute?: number | null;
 }
 
 /** A hero's pub games at one position, with what was bought. */
@@ -94,6 +99,7 @@ export function pubPhases(
       relative: r.games / most,
       winRate: r.wins / r.games,
       ...(r.minute === null ? {} : { minute: r.minute }),
+      ...(r.fastMinute === null || r.fastMinute === undefined ? {} : { fastMinute: r.fastMinute }),
     }));
   };
   const timed = build.items.filter((i) => i.minute !== null && !exclude(i.itemId));
@@ -102,6 +108,76 @@ export function pubPhases(
     early: pick(timed.filter((i) => i.minute! < EARLY_UNTIL)),
     mid: pick(timed.filter((i) => i.minute! >= EARLY_UNTIL && i.minute! < MID_UNTIL)),
     late: pick(timed.filter((i) => i.minute! >= MID_UNTIL)),
+  };
+}
+
+/** The in-game guide's sections: what to start with, then the build in the order it's bought. */
+export const BUILD_STEPS = ["start", "early", "core", "situational"] as const;
+export type BuildStep = (typeof BUILD_STEPS)[number];
+
+/** An item counts as part of the core build when at least this share of games buy it… */
+export const CORE_SHARE = 0.25;
+/** …and as an early item at this share (cheap items are bought in fewer games). */
+const EARLY_SHARE = 0.15;
+/** Situational items: bought in at least this share of games, but below the core. */
+const SITUATIONAL_SHARE = 0.04;
+
+/**
+ * A position's build laid out like the in-game guides: starting items, early items, the core
+ * items in the order they're typically bought (with their timings), then situational items
+ * (bought in fewer games, best win rate first among those with enough games). All from what
+ * players actually bought; nothing is suggested that the data doesn't show.
+ */
+export function buildPath(
+  build: PubBuild,
+  exclude: (itemId: number) => boolean,
+): Record<BuildStep, ItemPick[]> {
+  const games = Math.max(1, build.games);
+  const toPick = (r: PubItem, most: number): ItemPick => ({
+    itemId: r.itemId,
+    count: r.games,
+    relative: r.games / most,
+    winRate: r.wins / r.games,
+    share: r.games / games,
+    ...(r.minute === null ? {} : { minute: r.minute }),
+    ...(r.fastMinute === null || r.fastMinute === undefined ? {} : { fastMinute: r.fastMinute }),
+  });
+  const valid = (r: PubItem) => r.games > 0 && r.wins <= r.games;
+  const start = [...build.starting]
+    .filter((r) => valid(r) && r.games / games >= MIN_ITEM_SHARE)
+    .sort((a, b) => b.games - a.games || a.itemId - b.itemId)
+    .slice(0, 6);
+  const timed = build.items.filter((r) => valid(r) && r.minute !== null && !exclude(r.itemId));
+  const byMinute = (a: PubItem, b: PubItem) =>
+    a.minute! - b.minute! || b.games - a.games || a.itemId - b.itemId;
+  const early = timed
+    .filter((r) => r.minute! < EARLY_UNTIL && r.games / games >= EARLY_SHARE)
+    .sort((a, b) => b.games - a.games)
+    .slice(0, 4)
+    .sort(byMinute);
+  const core = timed
+    .filter((r) => r.minute! >= EARLY_UNTIL && r.games / games >= CORE_SHARE)
+    .sort((a, b) => b.games - a.games)
+    .slice(0, 6)
+    .sort(byMinute);
+  const used = new Set([...early, ...core].map((r) => r.itemId));
+  const situational = timed
+    .filter(
+      (r) =>
+        !used.has(r.itemId) &&
+        r.minute! >= EARLY_UNTIL &&
+        r.games / games >= SITUATIONAL_SHARE &&
+        r.games / games < CORE_SHARE,
+    )
+    .sort((a, b) => b.games - a.games || a.itemId - b.itemId)
+    .slice(0, 8)
+    .sort(byMinute);
+  const most = (rows: PubItem[]) => Math.max(1, ...rows.map((r) => r.games));
+  return {
+    start: start.map((r) => toPick(r, most(start))),
+    early: early.map((r) => toPick(r, most(early))),
+    core: core.map((r) => toPick(r, most(core))),
+    situational: situational.map((r) => toPick(r, most(situational))),
   };
 }
 

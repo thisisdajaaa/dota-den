@@ -53,6 +53,63 @@ export const guides = {
       late: "Late game",
     },
   },
+  build: {
+    description:
+      "{hero} at {position}, laid out like the in-game guides: what Legend to Immortal players started with, then the items most of them built in the order they built them, with real timings from the last full week of games (STRATZ). Situational items are ones fewer players bought.",
+    steps: {
+      start: "Starting items",
+      early: "Early game",
+      core: "Core build",
+      situational: "Situational",
+    },
+    hints: {
+      start: "Bought before the horn",
+      early: "First 10 minutes",
+      core: "In the order they're bought · typical minute",
+      situational: "Fewer players buy these; pick by the game",
+    },
+    timings: {
+      title: "Item timings",
+      item: "Item",
+      fast: "Fast",
+      typical: "Typical",
+      win: "Win",
+      note: "Fast: a quarter of players had it by then. Typical: half did. Win rates are higher for late items partly because long games that go well reach them.",
+    },
+  },
+  skills: {
+    kicker: "Pro games",
+    title: "Skill build and talents",
+    description:
+      "The skill most pros took at each level on {hero}, from {n} recent pro games with a recorded skill order (OpenDota).",
+    unavailable: "Not enough recent pro games on this hero to show a skill build.",
+    ability: "Ability",
+    talent: "Talent",
+    talents: "Talents",
+    talentNote:
+      "How often pros took each side of the row. Talent numbers change with patches, so the game shows the exact values.",
+  },
+  wards: {
+    kicker: "Support",
+    title: "Ward spots",
+    description:
+      "Where wards were placed in the last {n} pro games, by side and time. Bigger dots were used more; numbers rank the spots.",
+    mapAlt: "Dota 2 map with the most used ward spots",
+    spotTitle: "Spot {rank}: {n} wards",
+    none: "No common spots for this choice.",
+    note: "From OpenDota's parsed pro games. Spots are grouped on a small grid, so a dot can cover a few nearby cliffs.",
+    link: "Ward spots map",
+    linkHint: "Where pros place observers and sentries, by side and time",
+    kinds: { label: "Ward type", observer: "Observer", sentry: "Sentry" },
+    sides: { label: "Side", radiant: "Radiant", dire: "Dire" },
+    phases: { label: "Time", early: "0–10 min", mid: "10–25 min", late: "25+ min" },
+    page: {
+      title: "Ward spots",
+      description:
+        "Where pros place observer and sentry wards, by side and game time, from recent pro games.",
+      kicker: "Guides",
+    },
+  },
   bench: {
     kicker: "Benchmarks",
     title: "What strong games look like",

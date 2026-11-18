@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight, Eye } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getT } from "@/common/i18n/server";
 import { matchesService } from "@/modules/matches";
@@ -38,6 +40,17 @@ export default async function GuidesPage() {
         title={t("guides.index.title")}
         description={t("guides.index.description")}
       />
+      <Link
+        href="/guides/wards"
+        className="panel flex items-center gap-3 p-4 transition-colors hover:border-gold/40"
+      >
+        <Eye aria-hidden className="size-5 shrink-0 text-gold" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">{t("guides.wards.link")}</span>
+          <span className="block text-sm text-muted-foreground">{t("guides.wards.linkHint")}</span>
+        </span>
+        <ChevronRight aria-hidden className="size-4 text-muted-foreground" />
+      </Link>
       {heroes.length === 0 ? (
         <p className="panel p-5 text-sm text-muted-foreground">
           {t("guides.index.heroesUnavailable")}
