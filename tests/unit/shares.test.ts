@@ -97,6 +97,8 @@ function setup() {
       session: async (_o, id) => (id === "1:100" ? session : null),
       week: async () => week(5),
       journey: async (_o, range) => toJourneyShare(journey(range === "3m" ? "3m" : "all")),
+      streak: async () => null,
+      match: async () => null,
       playerName: vi.fn(async () => "DAJA"),
     },
   });
@@ -136,6 +138,8 @@ describe("SharesService", () => {
               matches: [],
             }),
           ),
+        streak: async () => null,
+        match: async () => null,
         playerName: async () => null,
       },
     });
@@ -225,6 +229,8 @@ describe("SharesService", () => {
               matches: [],
             }),
           ),
+        streak: async () => null,
+        match: async () => null,
         playerName: async () => null,
       },
     });

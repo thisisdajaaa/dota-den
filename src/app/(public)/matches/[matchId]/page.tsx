@@ -26,6 +26,7 @@ import { LaningCard } from "@/modules/matches/ui/laning-card";
 import { WardMapCard } from "@/modules/matches/ui/ward-map-card";
 import { PerformanceCard } from "@/modules/matches/ui/performance-card";
 import { Scoreboard } from "@/modules/matches/ui/scoreboard";
+import { ShareButton } from "@/modules/shares/ui/share-button";
 
 const MATCH_ID = /^\d{1,20}$/;
 
@@ -215,6 +216,8 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
               {me.kills}/{me.deaths}/{me.assists}
             </p>
           )}
+          {/* Your own game: a card of your line in it (nobody else's). */}
+          {me && viewer && <ShareButton target={{ kind: "match", ref: match.matchId }} />}
         </div>
       </section>
 

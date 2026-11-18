@@ -6,6 +6,8 @@ export const CreateShareSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("session"), ref: z.string().regex(SESSION_ID_PATTERN) }).strict(),
   z.object({ kind: z.literal("week") }).strict(),
   z.object({ kind: z.literal("journey"), range: z.enum(JOURNEY_SHARE_RANGES) }).strict(),
+  z.object({ kind: z.literal("streak") }).strict(),
+  z.object({ kind: z.literal("match"), ref: z.string().regex(/^\d{1,20}$/) }).strict(),
 ]);
 
 export const ShareSlugParams = z.object({ slug: z.string().regex(SLUG_PATTERN) });

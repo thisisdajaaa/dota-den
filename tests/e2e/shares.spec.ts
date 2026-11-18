@@ -44,11 +44,10 @@ test("share a session: public page with preview, then remove the link", async ({
 
   await page.goto("/account");
   const links = page.getByRole("region", { name: "Shared links" });
-  await links
-    .getByRole("button", { name: /Remove link/ })
-    .first()
-    .click();
-  await expect(links.getByText("You haven't shared anything yet.")).toBeVisible();
+  // Other specs share links from the same fixture account in parallel: act on this one only.
+  const row = links.getByRole("listitem").filter({ has: page.locator(`a[href$="/s/${slug}"]`) });
+  await row.getByRole("button", { name: /Remove link/ }).click();
+  await expect(row).toHaveCount(0);
   await guest.goto(`/s/${slug}`);
   await expect(guest.getByRole("heading", { name: "This link doesn't work" })).toBeVisible();
   expect((await guest.request.get(`/og/share/${slug}`)).status()).toBe(404);

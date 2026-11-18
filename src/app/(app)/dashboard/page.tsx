@@ -37,6 +37,7 @@ import { GoalsSection } from "./goals-section";
 import { LanesSection, LanesSkeleton } from "./lanes-section";
 import { MmrPromptSection } from "./mmr-prompt-section";
 import { PracticeSection } from "./practice-section";
+import { StreakSection } from "./streak-section";
 import { TiltSection } from "./tilt-section";
 import { WeeklyRecapSection } from "./weekly-recap-section";
 import { PatchDigestSection, PatchDigestSkeleton } from "./patch-digest-section";
@@ -201,6 +202,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <Suspense fallback={null}>
         <TiltSection user={user} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <StreakSection user={user} />
       </Suspense>
 
       <Suspense fallback={null}>

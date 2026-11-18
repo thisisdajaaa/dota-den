@@ -59,9 +59,10 @@ players already have.
 
 ## Free features in progress
 
-| Feature   | What the player gets                                                                                                                                                                                                                                 | Builds on                         | Status    |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | --------- |
-| Stop-loss | Limits you set yourself on the account page (losses in a session, losses in a row, games in a session). The overview's latest session shows "1 of 2 losses used" / "Limit reached", and a push reminds you once per limit per session while you play | Sessions, session companion, push | In review |
+| Feature            | What the player gets                                                                                                                                                                                                                                                                                                                          | Builds on                                        | Status    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------- |
+| Stop-loss          | Limits you set yourself on the account page (losses in a session, losses in a row, games in a session). The overview's latest session shows "1 of 2 losses used" / "Limit reached", and a push reminds you once per limit per session while you play                                                                                          | Sessions, session companion, push                | In review |
+| Share cards (free) | Share cards in English, Filipino or Bisaya for a win streak (3+), a session recap, a standout game and the weekly recap: a 1200×630 link preview and a 1080×1080 square post, each with the Dota Den wordmark and dota-den.com. Share opens copy link, download image and Facebook (sharer link, no SDK); previews follow the link's `?lang=` | Share links, OG images, sessions, imported games | In review |
 
 ## Principles for new features
 
