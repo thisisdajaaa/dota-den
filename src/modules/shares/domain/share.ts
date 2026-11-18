@@ -3,7 +3,7 @@
  * games, notes and MMR never leak through an old link. MMR is never part of a share.
  */
 
-export type ShareKind = "session" | "week" | "journey";
+export type ShareKind = "session" | "week" | "journey" | "streak" | "match";
 
 export interface ShareHero {
   heroId: number;
@@ -83,9 +83,49 @@ export interface JourneyShare {
   heroes: ShareHero[];
 }
 
-export type ShareSnapshot = SessionShare | WeekShare | JourneyShare;
+/** The current win streak: consecutive wins up to the newest imported game. */
+export interface StreakShare {
+  kind: "streak";
+  /** Wins in a row (all of `games`). */
+  games: number;
+  wins: number;
+  losses: 0;
+  /** First and last game of the streak. */
+  from: Date;
+  to: Date;
+  /** Most played in the streak first, at most MAX_HEROES. */
+  heroes: ShareHero[];
+  kills: number;
+  deaths: number;
+  assists: number;
+}
+
+/** One of the player's own games: only their own line (no other player is named). */
+export interface MatchShare {
+  kind: "match";
+  matchId: string;
+  startedAt: Date;
+  durationSec: number;
+  heroId: number;
+  result: "win" | "loss";
+  games: 1;
+  wins: 0 | 1;
+  losses: 0 | 1;
+  kills: number;
+  deaths: number;
+  assists: number;
+  /** null when the upstream didn't report it (unparsed replays). */
+  heroDamage: number | null;
+  goldPerMin: number | null;
+  lastHits: number | null;
+}
+
+export type ShareSnapshot = SessionShare | WeekShare | JourneyShare | StreakShare | MatchShare;
 
 export const MAX_HEROES = 5;
+
+/** A win streak is worth a card from this many wins in a row. */
+export const MIN_STREAK = 3;
 
 /** Share links: 12 characters from a 62-letter alphabet (~71 bits, not guessable). */
 export const SLUG_PATTERN = /^[A-Za-z0-9]{12}$/;
@@ -96,7 +136,97 @@ export function winRate(s: { games: number; wins: number }): number | null {
 
 /** Nothing to show: a share needs at least one game (a journey, at least one medal). */
 export function isEmpty(s: ShareSnapshot): boolean {
-  return s.kind === "journey" ? s.medals.length === 0 : s.games === 0;
+  if (s.kind === "journey") return s.medals.length === 0;
+  if (s.kind === "streak") return s.games < MIN_STREAK;
+  return s.games === 0;
+}
+
+/** What a streak is read from: imported games (any order). */
+export interface StreakGameIn {
+  matchId: string;
+  startedAt: Date;
+  heroId: number;
+  result: "win" | "loss";
+  kills: number;
+  deaths: number;
+  assists: number;
+}
+
+const byPlayed = (a: ShareHero, b: ShareHero) => b.games - a.games || a.heroId - b.heroId;
+
+/**
+ * The wins in a row up to the newest game, as a share (null without any win). `ref` is the
+ * streak's first match, so sharing a growing streak again refreshes the same link.
+ */
+export function toStreakShare(
+  games: readonly StreakGameIn[],
+): { share: StreakShare; ref: string } | null {
+  const newestFirst = [...games].sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+  const end = newestFirst.findIndex((g) => g.result !== "win");
+  const run = end === -1 ? newestFirst : newestFirst.slice(0, end);
+  if (run.length === 0) return null;
+  const heroes = new Map<number, ShareHero>();
+  for (const g of run) {
+    const h = heroes.get(g.heroId) ?? { heroId: g.heroId, games: 0, wins: 0 };
+    h.games += 1;
+    h.wins += 1;
+    heroes.set(g.heroId, h);
+  }
+  const first = run[run.length - 1];
+  const sum = (k: "kills" | "deaths" | "assists") => run.reduce((n, g) => n + g[k], 0);
+  return {
+    ref: first.matchId,
+    share: {
+      kind: "streak",
+      games: run.length,
+      wins: run.length,
+      losses: 0,
+      from: first.startedAt,
+      to: run[0].startedAt,
+      heroes: [...heroes.values()].sort(byPlayed).slice(0, MAX_HEROES),
+      kills: sum("kills"),
+      deaths: sum("deaths"),
+      assists: sum("assists"),
+    },
+  };
+}
+
+/** What a match share is built from: the match and the owner's own line in it. */
+export interface MatchShareIn {
+  match: { matchId: string; startedAt: Date; durationSec: number; radiantWin: boolean };
+  me: {
+    side: "radiant" | "dire";
+    heroId: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    heroDamage: number | null;
+    goldPerMin: number;
+    lastHits: number;
+  };
+}
+
+/** The owner's own game. Fields are copied one by one: no other player's line comes along. */
+export function toMatchShare({ match, me }: MatchShareIn): MatchShare {
+  const won = (me.side === "radiant") === match.radiantWin;
+  return {
+    kind: "match",
+    matchId: match.matchId,
+    startedAt: match.startedAt,
+    durationSec: match.durationSec,
+    heroId: me.heroId,
+    result: won ? "win" : "loss",
+    games: 1,
+    wins: won ? 1 : 0,
+    losses: won ? 0 : 1,
+    kills: me.kills,
+    deaths: me.deaths,
+    assists: me.assists,
+    heroDamage: me.heroDamage,
+    // 0 GPM / last hits means the upstream had nothing: unknown, not a real zero.
+    goldPerMin: me.goldPerMin > 0 ? me.goldPerMin : null,
+    lastHits: me.lastHits > 0 ? me.lastHits : null,
+  };
 }
 
 /** What a journey share is built from (the rank journey, structurally). */

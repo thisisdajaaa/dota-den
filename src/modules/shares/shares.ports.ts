@@ -2,8 +2,10 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import type {
   JourneyShare,
   JourneyShareRange,
+  MatchShare,
   SessionShare,
   ShareKind,
+  StreakShare,
   WeekShare,
 } from "./domain/share";
 import type { ShareDocument } from "./shares.model";
@@ -29,10 +31,16 @@ export interface ShareSources {
   week(owner: DataOwner, timeZone: string): Promise<WeekShare>;
   /** The owner's rank journey over a range, by medal only. */
   journey(owner: DataOwner, range: JourneyShareRange): Promise<JourneyShare>;
+  /** The owner's current win streak (newest imported games); null without a win. */
+  streak(owner: DataOwner, now: Date): Promise<{ share: StreakShare; ref: string } | null>;
+  /** The owner's own line in a match, or null when they didn't play it (or it can't be read). */
+  match(owner: DataOwner, matchId: string): Promise<MatchShare | null>;
   playerName(accountId32: number): Promise<string | null>;
 }
 
 export type ShareRequest =
   | { kind: Extract<ShareKind, "session">; ref: string }
   | { kind: "week" }
-  | { kind: "journey"; range: JourneyShareRange };
+  | { kind: "journey"; range: JourneyShareRange }
+  | { kind: "streak" }
+  | { kind: "match"; ref: string };

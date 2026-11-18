@@ -9,11 +9,12 @@ const medalName = (tier: number) => {
   return r ? rankLabel(r) : String(tier);
 };
 
-/** The headline and subtitle of a shared session, week or journey, in the viewer's language. */
+/** The headline and subtitle of a shared session, week, streak, game or journey, in the viewer's language. */
 export function shareHeadline(
   t: Translator<Messages>,
   s: ShareSnapshot,
   playerName: string | null,
+  heroName: (heroId: number) => string = String,
 ) {
   const record = t("shares.record", { wins: s.wins, losses: s.losses });
   const who = playerName ?? t("shares.aPlayer");
@@ -31,6 +32,16 @@ export function shareHeadline(
           : plural(t, "shares.games", s.games),
     };
   }
+  if (s.kind === "streak")
+    return {
+      title: t("shares.streak.title", { who, n: s.games }),
+      games: plural(t, "shares.games", s.games),
+    };
+  if (s.kind === "match")
+    return {
+      title: t("shares.match.title", { who, hero: heroName(s.heroId) }),
+      games: `${t(`shares.match.${s.result}`)} · ${s.kills}/${s.deaths}/${s.assists}`,
+    };
   return {
     title:
       s.kind === "session"

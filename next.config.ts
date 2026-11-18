@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   // Lets E2E runs use a separate build directory from a developer's `next dev`.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   poweredByHeader: false,
+  // Share cards read the site's fonts from disk (src/components/og/og-fonts.ts).
+  outputFileTracingIncludes: {
+    "/og/share/*": [
+      "./node_modules/geist/dist/fonts/geist-sans/Geist-Regular.ttf",
+      "./node_modules/geist/dist/fonts/geist-sans/Geist-Bold.ttf",
+      "./src/app/fonts/cinzel-latin-700.ttf",
+    ],
+  },
   // Security headers on every response (src/common/http/security-headers.ts).
   async headers() {
     return [
