@@ -17,6 +17,7 @@ test("without a payment provider, Plus is 'coming soon' and nothing can be bough
   await expect(
     page.getByRole("link", { name: /Get Plus|Sign in with Steam to get Plus/ }),
   ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Get Plus/ })).toHaveCount(0);
   // The prices show (a payment provider reviews them), but the buttons can't be used.
   await expect(page.getByRole("article", { name: "Monthly" })).toContainText("₱299");
   await expect(page.getByRole("button", { name: "Opens soon" })).toHaveCount(2);
@@ -36,7 +37,12 @@ test("without a payment provider, Plus is 'coming soon' and nothing can be bough
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "Plus" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Your plan" })).toHaveCount(0);
   expect(
-    (await page.request.get("/api/v1/plus/checkout?plan=monthly", { maxRedirects: 0 })).status(),
+    (
+      await page.request.post("/api/v1/plus/checkout", {
+        data: { plan: "monthly" },
+        headers: { origin: PLAIN_URL },
+      })
+    ).status(),
   ).toBe(404);
 });
 

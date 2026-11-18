@@ -22,6 +22,7 @@ const { PlusService } = await import("@/modules/plus/services/plus.service");
 const { BillingWebhookService } = await import("@/modules/plus/services/billing-webhook.service");
 const { LemonSqueezyProvider } =
   await import("@/modules/plus/infrastructure/lemon-squeezy-provider");
+const { PolarProvider } = await import("@/modules/plus/infrastructure/polar-provider");
 const { lsSubscriptionEvent, MemorySubscriptions, MemoryWebhookEvents } =
   await import("../support/plus-fakes");
 
@@ -58,37 +59,89 @@ const get = (path: string, user?: string) =>
     headers: user ? { cookie: `session=${user}` } : {},
   });
 
+const checkout = (body: unknown, user?: string, origin: string | null = ORIGIN) =>
+  new NextRequest(`${ORIGIN}/api/v1/plus/checkout`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: {
+      "content-type": "application/json",
+      ...(origin ? { origin } : {}),
+      ...(user ? { cookie: `session=${user}` } : {}),
+    },
+  });
+
 const post = (body: string, headers: Record<string, string>) =>
   new NextRequest(`${ORIGIN}/api/v1/plus/webhook`, { method: "POST", body, headers });
 
 describe("PlusController", () => {
-  it("checkout needs a signed-in player and a valid plan", async () => {
+  it("checkout needs a signed-in, same-origin player and a valid plan", async () => {
     const { controller } = setup();
-    expect((await controller.checkout(get("/api/v1/plus/checkout?plan=monthly"))).status).toBe(401);
+    expect((await controller.checkout(checkout({ plan: "monthly" }))).status).toBe(401);
+    // Another site can't start a checkout for a signed-in player.
     expect(
-      (await controller.checkout(get("/api/v1/plus/checkout?plan=forever", USER))).status,
-    ).toBe(400);
+      (await controller.checkout(checkout({ plan: "monthly" }, USER, "https://evil.example")))
+        .status,
+    ).toBe(403);
+    expect((await controller.checkout(checkout({ plan: "monthly" }, USER, null))).status).toBe(403);
+    expect((await controller.checkout(checkout({ plan: "forever" }, USER))).status).toBe(400);
     // Not offered (no yearly link set up).
-    expect((await controller.checkout(get("/api/v1/plus/checkout?plan=yearly", USER))).status).toBe(
-      404,
-    );
+    expect((await controller.checkout(checkout({ plan: "yearly" }, USER))).status).toBe(404);
   });
 
-  it("checkout redirects to the provider with the user id attached on the server", async () => {
+  it("checkout answers the provider's URL with the user id attached on the server", async () => {
     const { controller } = setup();
-    const res = await controller.checkout(get("/api/v1/plus/checkout?plan=monthly", USER));
-    expect(res.status).toBe(303);
-    const to = new URL(res.headers.get("location")!);
+    const res = await controller.checkout(checkout({ plan: "monthly" }, USER));
+    expect(res.status).toBe(200);
+    const to = new URL((await res.json()).data.url);
     expect(to.host).toBe("dd.lemonsqueezy.com");
     expect(to.searchParams.get("checkout[custom][user_id]")).toBe(USER);
     expect(res.headers.get("cache-control")).toContain("no-store");
   });
 
+  it("with Polar, creates the checkout with the buyer's IP and maps a provider failure to 503", async () => {
+    const createCheckout = vi.fn(async (_body: Record<string, unknown>) => ({
+      id: "chk_1",
+      url: "https://buy.polar.sh/polar_c_1",
+    }));
+    const provider = new PolarProvider({
+      webhookSecret: "whsec_dGVzdC1zZWNyZXQtMDAwMDAwMDAwMDAw",
+      productIds: { monthly: "e7751461-934e-4bbc-befa-2593e1e56dd2" },
+      organizationSlug: "dota-den",
+      server: "production",
+      appUrl: ORIGIN,
+      api: { createCheckout, createCustomerSession: vi.fn() },
+    });
+    const subscriptions = new MemorySubscriptions();
+    const events = new MemoryWebhookEvents();
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const controller = new PlusController({
+      plus: new PlusService({ subscriptions, events, provider, enabled: () => true, logger }),
+      webhooks: new BillingWebhookService({
+        provider,
+        subscriptions,
+        events,
+        users: { byId: async () => null },
+        logger,
+      }),
+    });
+    const req = checkout({ plan: "monthly" }, USER);
+    req.headers.set("x-forwarded-for", "203.0.113.5, 10.0.0.1");
+    const res = await controller.checkout(req);
+    expect(res.status).toBe(200);
+    expect((await res.json()).data).toEqual({ url: "https://buy.polar.sh/polar_c_1" });
+    expect(createCheckout.mock.calls[0][0]).toMatchObject({
+      external_customer_id: USER,
+      customer_ip_address: "203.0.113.5",
+    });
+    createCheckout.mockRejectedValueOnce(new Error("down"));
+    const failed = await controller.checkout(checkout({ plan: "monthly" }, USER));
+    expect(failed.status).toBe(503);
+    expect((await failed.json()).code).toBe("upstream_unavailable");
+  });
+
   it("checkout is 404 when Plus isn't configured", async () => {
     const { controller } = setup(false);
-    expect(
-      (await controller.checkout(get("/api/v1/plus/checkout?plan=monthly", USER))).status,
-    ).toBe(404);
+    expect((await controller.checkout(checkout({ plan: "monthly" }, USER))).status).toBe(404);
   });
 
   it("status and portal need a signed-in player", async () => {

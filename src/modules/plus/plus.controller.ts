@@ -4,7 +4,7 @@ import { ValidationError } from "@/common/errors/app-error";
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser } from "@/modules/identity";
-import { CheckoutQuerySchema } from "./schemas/plus.schema";
+import { CheckoutBodySchema } from "./schemas/plus.schema";
 import type { BillingWebhookService } from "./services/billing-webhook.service";
 import type { PlusService } from "./services/plus.service";
 
@@ -22,19 +22,23 @@ export class PlusController {
   );
 
   /**
-   * GET /api/v1/plus/checkout?plan=…: sends a signed-in player to the provider's checkout with
-   * their user id attached (the only way a purchase is linked to an account). 404 when Plus
-   * isn't on sale, 409 when they already have it.
+   * POST /api/v1/plus/checkout {plan}: the provider's checkout for a signed-in player, with
+   * their user id attached on the server (the only way a purchase is linked to an account).
+   * Same-origin only: with Polar it creates a checkout session at the provider, so another
+   * site mustn't be able to start one. Answers `{url}`; the page then navigates there. 404
+   * when Plus isn't on sale, 409 when they already have it, 503 when the provider is down.
    */
   checkout = handler(
     {
       guard: requireUser,
       rateLimit: { name: "plus:checkout", limit: 20, windowMs: 60_000 },
-      query: CheckoutQuerySchema,
+      body: CheckoutBodySchema,
     },
-    async ({ user, query }) => {
-      const url = await this.deps.plus.checkoutUrl(user.id, query.plan);
-      return withNoStore(NextResponse.redirect(url, 303));
+    async ({ req, user, body }) => {
+      const url = await this.deps.plus.checkoutUrl(user.id, body.plan, { ip: clientIp(req) });
+      return ServiceResponse.success({ url }, "Checkout ready").withHeaders({
+        "cache-control": "private, no-store",
+      });
     },
   );
 
@@ -68,6 +72,11 @@ export class PlusController {
       return ServiceResponse.success(result, "Webhook received");
     },
   );
+}
+
+/** The buyer's IP as our host saw it (Vercel sets x-forwarded-for), when there is one. */
+function clientIp(req: Request): string | null {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
 }
 
 function withNoStore(res: NextResponse): NextResponse {

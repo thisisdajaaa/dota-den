@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -18,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
+import { ApiClientError, apiRequest } from "@/common/http/api-client";
 import { useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import { SteamIcon } from "@/components/icons/steam-icon";
@@ -221,9 +223,17 @@ export function PlusPricing({
 
       <section aria-label={t("plus.page.faqTitle")} className="grid gap-6 lg:grid-cols-2">
         <ul className="panel space-y-3 p-6 text-sm text-muted-foreground">
-          <li>{t("plus.page.notes.provider")}</li>
+          <li>
+            {offer.provider === "polar"
+              ? t("plus.page.notes.providerPolar")
+              : t("plus.page.notes.provider")}
+          </li>
           <li>{t("plus.page.notes.cancel")}</li>
-          <li>{t("plus.page.notes.currency")}</li>
+          <li>
+            {offer.provider === "polar"
+              ? t("plus.page.notes.currencyPolar")
+              : t("plus.page.notes.currency")}
+          </li>
           <li>
             <LegalLinks />
           </li>
@@ -302,30 +312,80 @@ function PlanOption({
         <Button size="lg" variant="outline" disabled className="mt-auto">
           {t("plus.page.opensSoon")}
         </Button>
+      ) : signedIn ? (
+        <CheckoutButton plan={plan} featured={featured} />
       ) : (
         <Button
           asChild
           size="lg"
           variant={featured ? "default" : "outline"}
-          // Long translations wrap inside the button rather than run off the card.
-          className="mt-auto h-auto min-h-9 gap-2 py-2 text-center whitespace-normal"
+          className={PLAN_BUTTON_CLASS}
         >
-          {signedIn ? (
-            // Full navigation: the route redirects to the provider's hosted checkout.
-            <a href={`/api/v1/plus/checkout?plan=${plan}`}>
-              <Sparkles aria-hidden className="size-4" />
-              {plan === "monthly"
-                ? t("plus.page.subscribeMonthly")
-                : t("plus.page.subscribeYearly")}
-            </a>
-          ) : (
-            <a href={signInHref("/plus")}>
-              <SteamIcon className="size-4" /> {t("plus.page.signIn")}
-            </a>
-          )}
+          <a href={signInHref("/plus")}>
+            <SteamIcon className="size-4" /> {t("plus.page.signIn")}
+          </a>
         </Button>
       )}
     </article>
+  );
+}
+
+// Long translations wrap inside the button rather than run off the card.
+const PLAN_BUTTON_CLASS = "mt-auto h-auto min-h-9 gap-2 py-2 text-center whitespace-normal";
+
+/** Errors the server answers when starting a checkout, as messages in the player's language. */
+function checkoutError(e: unknown): CheckoutErrorKey {
+  if (!(e instanceof ApiClientError)) return "network";
+  if (e.status === 409) return "hasPlus";
+  if (e.status === 404) return "unavailable";
+  if (e.status === 429) return "tooMany";
+  if (e.status === 401) return "signIn";
+  return "down";
+}
+type CheckoutErrorKey = "network" | "hasPlus" | "unavailable" | "tooMany" | "signIn" | "down";
+
+/**
+ * Starts a checkout: asks our server (same-origin POST) to create it with the signed-in
+ * player's id attached, then navigates to the provider's hosted checkout. A failure stays on
+ * the page with a message, nothing is charged.
+ */
+function CheckoutButton({ plan, featured }: { plan: Plan; featured: boolean }) {
+  const t = useT();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<CheckoutErrorKey | null>(null);
+  const start = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      const { url } = await apiRequest<{ url: string }>("/api/v1/plus/checkout", {
+        body: { plan },
+      });
+      window.location.assign(url);
+    } catch (e) {
+      setError(checkoutError(e));
+      setPending(false);
+    }
+  };
+  return (
+    <div className="mt-auto space-y-2">
+      <Button
+        type="button"
+        size="lg"
+        variant={featured ? "default" : "outline"}
+        className={cn(PLAN_BUTTON_CLASS, "w-full")}
+        disabled={pending}
+        aria-busy={pending}
+        onClick={start}
+      >
+        <Sparkles aria-hidden className="size-4" />
+        {plan === "monthly" ? t("plus.page.subscribeMonthly") : t("plus.page.subscribeYearly")}
+      </Button>
+      {error && (
+        <p role="alert" className="text-sm text-loss">
+          {t(`plus.page.checkoutError.${error}`)}
+        </p>
+      )}
+    </div>
   );
 }
 

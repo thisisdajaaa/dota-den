@@ -35,14 +35,27 @@ export interface BillingProvider {
   readonly name: BillingProviderName;
   /** True when the raw body is signed with our webhook secret. Never throws. */
   verify(body: string, header: (name: string) => string | null): boolean;
-  /** A verified body as an event; null when it isn't one we understand. */
-  parse(body: string): BillingEvent | null;
-  /** Plans that have a checkout link set up, in display order. */
+  /**
+   * A verified body as an event; null when it isn't one we understand. `header` gives the
+   * delivery's headers (Polar's `webhook-id` is the event id).
+   */
+  parse(body: string, header?: (name: string) => string | null): BillingEvent | null;
+  /** Plans that can be bought, in display order. */
   readonly plans: readonly Plan[];
-  /** The hosted checkout for a plan, carrying our user id so the webhook can link it. */
-  checkoutUrl(plan: Plan, userId: string): string | null;
-  /** The provider's generic customer portal (sign-in by email link), when known. */
+  /**
+   * The hosted checkout for a plan, carrying our user id so the webhook can link it. May call
+   * the provider (Polar creates a checkout session); throws an AppError the player can read
+   * when that fails, null when the plan isn't offered. `context.ip` is the buyer's IP (Polar
+   * uses it for country and tax when the session is made on our server).
+   */
+  checkoutUrl(plan: Plan, userId: string, context?: { ip?: string | null }): Promise<string | null>;
+  /** The provider's generic customer portal (sign-in by email), when known. */
   readonly portalUrl: string | null;
+  /**
+   * A signed-in portal link for one of the provider's customers, made on demand (Polar's
+   * customer sessions). Optional; null or a failure falls back to `portalUrl`.
+   */
+  customerPortalUrl?(customerId: string): Promise<string | null>;
   /** Whether this deployment takes test-mode events (and ignores live ones). */
   readonly testMode: boolean;
 }

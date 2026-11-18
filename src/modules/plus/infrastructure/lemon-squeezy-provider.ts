@@ -67,7 +67,8 @@ export class LemonSqueezyProvider implements BillingProvider {
     });
   }
 
-  checkoutUrl(plan: Plan, userId: string): string | null {
+  /** The variant's checkout link with our user id as custom data (no API call). */
+  async checkoutUrl(plan: Plan, userId: string): Promise<string | null> {
     const link = this.config.checkoutUrls[plan];
     if (!link || !USER_ID_PATTERN.test(userId)) return null;
     const url = new URL(link);

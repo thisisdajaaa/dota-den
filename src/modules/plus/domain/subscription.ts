@@ -20,7 +20,8 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 export const isSubscriptionStatus = (v: unknown): v is SubscriptionStatus =>
   typeof v === "string" && (SUBSCRIPTION_STATUSES as readonly string[]).includes(v);
 
-export type BillingProviderName = "lemonsqueezy";
+export const BILLING_PROVIDERS = ["lemonsqueezy", "polar"] as const;
+export type BillingProviderName = (typeof BILLING_PROVIDERS)[number];
 
 /** What one webhook says about a subscription (already verified and parsed). */
 export interface SubscriptionSnapshot {
@@ -31,12 +32,13 @@ export interface SubscriptionSnapshot {
   userId: string | null;
   status: SubscriptionStatus;
   plan: Plan | null;
+  /** The provider's product or variant id (Lemon Squeezy variant, Polar product). */
   variantId: string | null;
   customerId: string | null;
   renewsAt: Date | null;
   endsAt: Date | null;
   trialEndsAt: Date | null;
-  /** The provider's `updated_at`: orders events that arrive out of order. */
+  /** The provider's `updated_at` (Polar: `modified_at`): orders events that arrive out of order. */
   providerUpdatedAt: Date;
   testMode: boolean;
   /** A pre-signed customer portal link (Lemon Squeezy: valid 24 hours), if the event had one. */

@@ -124,6 +124,8 @@ export const privacy = {
           groq: "Groq runs our AI features: the AI draft captain and review, the AI match coach and reading MMR screenshots. It gets the draft, the facts of the match or the screenshot, not your Steam ID or name.",
           payments:
             "Our payment provider sells Plus as merchant of record: it takes the payment, handles tax and receipts, and keeps your billing details under its own privacy policy.",
+          paymentsPolar:
+            "Polar (polar.sh) sells Plus as merchant of record: it takes the payment, handles tax and receipts, and keeps your billing details under its own privacy policy. We send it your Dota Den user id (to link the purchase to your account) and, when you start a checkout, your IP address (for your country and tax).",
           resend: "Resend sends the weekly email, if you signed up for it.",
           push: "Your browser's push service (for example Google, Mozilla or Apple) delivers notifications, if you turned them on.",
           discord: "Discord receives the match posts for the webhook you connected, if any.",
