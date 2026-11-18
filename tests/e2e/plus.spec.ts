@@ -11,11 +11,18 @@ const endpoint = (name: string) => `https://127.0.0.1:9/push/e2e-plus-${name}`;
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
-/** Our user id, read from the checkout redirect (the only place it leaves the server). */
+/** Starts a checkout like the page does (same-origin POST); answers the response. */
+const startCheckout = (page: Page, plan: "monthly" | "yearly", origin?: string | null) =>
+  page.request.post("/api/v1/plus/checkout", {
+    data: { plan },
+    headers: origin === null ? {} : { origin: origin ?? new URL(page.url()).origin },
+  });
+
+/** Our user id, read from the checkout URL (the only place it leaves the server). */
 async function checkoutUserId(page: Page): Promise<string> {
-  const res = await page.request.get("/api/v1/plus/checkout?plan=monthly", { maxRedirects: 0 });
-  expect(res.status()).toBe(303);
-  const to = new URL(res.headers().location);
+  const res = await startCheckout(page, "monthly");
+  expect(res.status()).toBe(200);
+  const to = new URL((await res.json()).data.url);
   expect(to.origin).toBe("https://dota-den-e2e.lemonsqueezy.com");
   const id = to.searchParams.get("checkout[custom][user_id]");
   expect(id).toMatch(/^[a-f0-9]{24}$/);
@@ -49,10 +56,17 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   const monthly = page.getByRole("article", { name: "Monthly" });
   await expect(monthly).toContainText("₱299");
   await expect(page.getByRole("article", { name: "Yearly" })).toContainText("₱2,990");
-  await expect(monthly.getByRole("link", { name: /Get Plus monthly/ })).toHaveAttribute(
-    "href",
-    "/api/v1/plus/checkout?plan=monthly",
+  await expect(monthly.getByRole("button", { name: /Get Plus monthly/ })).toBeEnabled();
+  // The button starts the checkout on our server, then opens the provider's page.
+  await page.route("https://dota-den-e2e.lemonsqueezy.com/**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: "<title>Fake checkout</title>" }),
   );
+  await monthly.getByRole("button", { name: /Get Plus monthly/ }).click();
+  await expect(page).toHaveURL(/dota-den-e2e\.lemonsqueezy\.com\/buy\/monthly-variant/);
+  await page.goto("/plus");
+  // Another site can't start a checkout for a signed-in player.
+  expect((await startCheckout(page, "monthly", "https://evil.example")).status()).toBe(403);
+  expect((await startCheckout(page, "monthly", null)).status()).toBe(403);
   // Listed in the navigation while it's on sale.
   await expect(
     page.getByRole("navigation", { name: "Main" }).first().getByRole("link", { name: "Plus" }),
@@ -111,12 +125,10 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   expect(portal.status()).toBe(303);
   expect(portal.headers().location).toContain("https://dota-den-e2e.lemonsqueezy.com/billing");
   // Already subscribed: no second checkout.
-  expect(
-    (await page.request.get("/api/v1/plus/checkout?plan=yearly", { maxRedirects: 0 })).status(),
-  ).toBe(409);
+  expect((await startCheckout(page, "yearly")).status()).toBe(409);
   await page.goto("/plus");
   await expect(page.getByText("You have Plus. Thank you!")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Get Plus/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Get Plus/ })).toHaveCount(0);
 
   // Cancelled: Plus stays until the end of the paid period.
   const periodEnd = new Date(now + 20 * DAY);

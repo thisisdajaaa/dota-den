@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { env } from "@/common/config/env";
 import { getT } from "@/common/i18n/server";
+import { plusService } from "@/modules/plus";
 import { LegalPage } from "@/modules/plus/ui/legal-page";
 
 // DRAFT for the owner to review before Plus goes on sale (see src/modules/plus/ui/legal-page.tsx).
@@ -11,5 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <LegalPage doc="refunds" supportEmail={env().SUPPORT_EMAIL ?? null} />;
+  return (
+    <LegalPage
+      doc="refunds"
+      supportEmail={env().SUPPORT_EMAIL ?? null}
+      provider={plusService.providerName}
+    />
+  );
 }

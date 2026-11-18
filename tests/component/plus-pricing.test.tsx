@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { PlanDto } from "@/modules/plus/dtos/responses/plus.dto";
 import { PlanCard } from "@/modules/plus/ui/plan-card";
@@ -22,10 +22,15 @@ const freePlan: PlanDto = {
 describe("PlusPricing", () => {
   it("says 'coming soon', shows the prices and offers no checkout when Plus isn't configured", () => {
     render(
-      <PlusPricing offer={{ status: "off", plans: [] }} signedIn plan={null} limits={limits} />,
+      <PlusPricing
+        offer={{ status: "off", plans: [], provider: null }}
+        signedIn
+        plan={null}
+        limits={limits}
+      />,
     );
     expect(screen.getByRole("heading", { name: "Plus is coming soon" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /get plus/i })).not.toBeInTheDocument();
     expect(screen.getByText("₱299")).toBeInTheDocument();
     for (const b of screen.getAllByRole("button", { name: "Opens soon" })) expect(b).toBeDisabled();
     // Honest copy is there either way.
@@ -34,7 +39,12 @@ describe("PlusPricing", () => {
 
   it("lists the AI coach (unlimited vs one a week free) and priority sync, honestly", () => {
     render(
-      <PlusPricing offer={{ status: "off", plans: [] }} signedIn plan={null} limits={limits} />,
+      <PlusPricing
+        offer={{ status: "off", plans: [], provider: null }}
+        signedIn
+        plan={null}
+        limits={limits}
+      />,
     );
     expect(screen.getByText("Unlimited AI coach")).toBeVisible();
     expect(screen.getByText(/free: one new review a week/)).toBeVisible();
@@ -54,16 +64,21 @@ describe("PlusPricing", () => {
 
   it("says new subscriptions are paused under the kill switch", () => {
     render(
-      <PlusPricing offer={{ status: "paused", plans: [] }} signedIn plan={null} limits={limits} />,
+      <PlusPricing
+        offer={{ status: "paused", plans: [], provider: "lemonsqueezy" }}
+        signedIn
+        plan={null}
+        limits={limits}
+      />,
     );
     expect(screen.getByRole("heading", { name: "New subscriptions are paused" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /get plus/i })).not.toBeInTheDocument();
   });
 
-  it("shows both plans with checkout links through our server route", () => {
+  it("shows both plans with checkout buttons through our server route", () => {
     render(
       <PlusPricing
-        offer={{ status: "available", plans: ["monthly", "yearly"] }}
+        offer={{ status: "available", plans: ["monthly", "yearly"], provider: "lemonsqueezy" }}
         signedIn
         plan={freePlan}
         limits={limits}
@@ -71,10 +86,7 @@ describe("PlusPricing", () => {
     );
     const monthly = screen.getByRole("article", { name: "Monthly" });
     expect(within(monthly).getByText("₱299")).toBeVisible();
-    expect(within(monthly).getByRole("link", { name: /get plus monthly/i })).toHaveAttribute(
-      "href",
-      "/api/v1/plus/checkout?plan=monthly",
-    );
+    expect(within(monthly).getByRole("button", { name: /get plus monthly/i })).toBeEnabled();
     const yearly = screen.getByRole("article", { name: "Yearly" });
     expect(within(yearly).getByText("₱2,990")).toBeVisible();
     expect(screen.getByText(/local currency/i)).toBeVisible();
@@ -88,10 +100,105 @@ describe("PlusPricing", () => {
     );
   });
 
+  it("starts a checkout with a same-origin POST, then goes to the provider's page", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            message: "Checkout ready",
+            data: { url: "https://buy.polar.sh/polar_c_1" },
+            statusCode: 200,
+          }),
+          { status: 200 },
+        ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    try {
+      render(
+        <PlusPricing
+          offer={{ status: "available", plans: ["yearly"], provider: "polar" }}
+          signedIn
+          plan={freePlan}
+          limits={limits}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /get plus yearly/i }));
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("https://buy.polar.sh/polar_c_1"));
+      const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe("/api/v1/plus/checkout");
+      expect(init.method).toBe("POST");
+      expect(JSON.parse(String(init.body))).toEqual({ plan: "yearly" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("stays on the page with a friendly message when the checkout can't start", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              message: "down",
+              data: null,
+              statusCode: 503,
+              code: "upstream_unavailable",
+            }),
+            { status: 503 },
+          ),
+      ),
+    );
+    try {
+      render(
+        <PlusPricing
+          offer={{ status: "available", plans: ["monthly"], provider: "polar" }}
+          signedIn
+          plan={freePlan}
+          limits={limits}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /get plus monthly/i }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(/Nothing was charged/);
+      expect(screen.getByRole("button", { name: /get plus monthly/i })).toBeEnabled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("names Polar as the merchant of record when it's the provider", () => {
+    const { unmount } = render(
+      <PlusPricing
+        offer={{ status: "available", plans: ["monthly"], provider: "polar" }}
+        signedIn
+        plan={freePlan}
+        limits={limits}
+      />,
+    );
+    expect(
+      screen.getByText(/handled by Polar \(polar\.sh\), acting as merchant of record/),
+    ).toBeVisible();
+    unmount();
+    render(
+      <PlusPricing
+        offer={{ status: "available", plans: ["monthly"], provider: "lemonsqueezy" }}
+        signedIn
+        plan={freePlan}
+        limits={limits}
+      />,
+    );
+    expect(screen.getByText(/handled by our payment provider/)).toBeVisible();
+    expect(screen.queryByText(/Polar/)).not.toBeInTheDocument();
+  });
+
   it("asks guests to sign in first and tells subscribers they have it", () => {
     const { unmount } = render(
       <PlusPricing
-        offer={{ status: "available", plans: ["monthly"] }}
+        offer={{ status: "available", plans: ["monthly"], provider: "lemonsqueezy" }}
         signedIn={false}
         plan={null}
         limits={limits}
@@ -104,20 +211,20 @@ describe("PlusPricing", () => {
     unmount();
     render(
       <PlusPricing
-        offer={{ status: "available", plans: ["monthly"] }}
+        offer={{ status: "available", plans: ["monthly"], provider: "lemonsqueezy" }}
         signedIn
         plan={{ ...freePlan, plus: true, reason: "active", status: "active" }}
         limits={limits}
       />,
     );
     expect(screen.getByText(/You have Plus/)).toBeVisible();
-    expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /get plus/i })).not.toBeInTheDocument();
   });
 
   it("sends a player whose subscription still bills to their account, not to a second checkout", () => {
     render(
       <PlusPricing
-        offer={{ status: "available", plans: ["monthly", "yearly"] }}
+        offer={{ status: "available", plans: ["monthly", "yearly"], provider: "lemonsqueezy" }}
         signedIn
         plan={{ ...freePlan, reason: "none", status: "paused", stillBills: true }}
         limits={limits}
@@ -128,12 +235,16 @@ describe("PlusPricing", () => {
       "href",
       "/account#plan",
     );
-    expect(screen.queryByRole("link", { name: /get plus/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /get plus/i })).not.toBeInTheDocument();
   });
 });
 
 describe("PlanCard", () => {
-  const offer = { status: "available" as const, plans: ["monthly" as const] };
+  const offer = {
+    status: "available" as const,
+    plans: ["monthly" as const],
+    provider: "lemonsqueezy" as const,
+  };
 
   it("shows the free plan with a link to Plus", () => {
     render(<PlanCard plan={freePlan} offer={offer} />);

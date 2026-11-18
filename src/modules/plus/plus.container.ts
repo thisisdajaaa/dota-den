@@ -7,6 +7,8 @@ import { ownerAlerts } from "@/modules/alerts";
 import { usersService } from "@/modules/identity";
 import { USER_ID_PATTERN } from "./domain/plans";
 import { LemonSqueezyProvider } from "./infrastructure/lemon-squeezy-provider";
+import { PolarApiClient } from "./infrastructure/polar-api-client";
+import { PolarProvider } from "./infrastructure/polar-provider";
 import { PlusController } from "./plus.controller";
 import type { BillingProvider } from "./plus.ports";
 import { SubscriptionsRepository } from "./repositories/subscriptions.repository";
@@ -20,6 +22,21 @@ export const webhookEventsRepository = new WebhookEventsRepository(getDb);
 /** The configured payment provider, or null: without it Plus doesn't exist (ADR 0013). */
 function billingProvider(): BillingProvider | null {
   const e = env();
+  if (e.BILLING_PROVIDER === "polar") {
+    if (!e.POLAR_WEBHOOK_SECRET || !e.POLAR_ACCESS_TOKEN) return null;
+    return new PolarProvider({
+      webhookSecret: e.POLAR_WEBHOOK_SECRET,
+      productIds: { monthly: e.POLAR_PRODUCT_ID_MONTHLY, yearly: e.POLAR_PRODUCT_ID_YEARLY },
+      organizationSlug: e.POLAR_ORGANIZATION_SLUG,
+      server: e.POLAR_SERVER,
+      appUrl: e.APP_URL,
+      api: new PolarApiClient({
+        accessToken: e.POLAR_ACCESS_TOKEN,
+        server: e.POLAR_SERVER,
+        baseUrl: e.POLAR_API_BASE_URL,
+      }),
+    });
+  }
   if (e.BILLING_PROVIDER !== "lemonsqueezy" || !e.LEMONSQUEEZY_WEBHOOK_SECRET) return null;
   return new LemonSqueezyProvider({
     webhookSecret: e.LEMONSQUEEZY_WEBHOOK_SECRET,

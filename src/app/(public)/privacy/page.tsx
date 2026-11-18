@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { env } from "@/common/config/env";
 import { getT } from "@/common/i18n/server";
+import { plusService } from "@/modules/plus";
 import { PrivacyPolicy } from "@/modules/privacy/ui/privacy-policy";
 
 // DRAFT for the owner to review (see src/modules/privacy/ui/privacy-policy.tsx). Not legal advice.
@@ -15,5 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <PrivacyPolicy supportEmail={env().SUPPORT_EMAIL ?? null} />;
+  return (
+    <PrivacyPolicy
+      supportEmail={env().SUPPORT_EMAIL ?? null}
+      paymentProvider={plusService.providerName}
+    />
+  );
 }

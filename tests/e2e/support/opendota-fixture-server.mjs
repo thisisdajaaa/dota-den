@@ -1536,6 +1536,54 @@ function resend(req, res, url) {
   return false;
 }
 
+// Fake Polar API (POLAR_API_BASE_URL): checkout and customer portal sessions, shaped like
+// Polar's 2026-10 responses. It checks what a real call needs (token, pinned version, body)
+// and records each request so tests can read what the app sent (GET /polar/calls).
+const polarCalls = [];
+
+function polar(req, res, url) {
+  const json = (status, body) => {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(JSON.stringify(body));
+  };
+  if (url.pathname === "/polar/calls" && req.method === "GET") {
+    json(200, polarCalls);
+    return true;
+  }
+  const routes = ["/polar/v1/checkouts/", "/polar/v1/customer-sessions/"];
+  if (!routes.includes(url.pathname) || req.method !== "POST") return false;
+  let raw = "";
+  req.on("data", (chunk) => (raw += chunk));
+  req.on("end", () => {
+    if (!/^Bearer .+/.test(req.headers.authorization ?? ""))
+      return json(401, { error: "Unauthorized" });
+    if (req.headers["polar-version"] !== "2026-10") return json(404, { detail: "Not Found" });
+    const body = JSON.parse(raw || "{}");
+    polarCalls.push({ path: url.pathname, body });
+    const n = polarCalls.length;
+    if (url.pathname === "/polar/v1/checkouts/") {
+      if (!Array.isArray(body.products) || body.products.length === 0)
+        return json(422, { detail: [{ loc: ["body", "products"], msg: "Field required" }] });
+      const user = encodeURIComponent(String(body.metadata?.user_id ?? ""));
+      return json(201, {
+        id: `chk_e2e_${n}`,
+        status: "open",
+        url: `https://sandbox.polar.sh/checkout/polar_c_e2e_${n}?e2e_user=${user}`,
+        client_secret: `polar_c_e2e_${n}`,
+        metadata: body.metadata ?? {},
+        external_customer_id: body.external_customer_id ?? null,
+      });
+    }
+    json(201, {
+      id: `cs_e2e_${n}`,
+      token: `polar_cst_e2e_${n}`,
+      customer_id: body.customer_id,
+      customer_portal_url: `https://sandbox.polar.sh/dota-den-e2e/portal?customer_session_token=polar_cst_e2e_${n}`,
+    });
+  });
+  return true;
+}
+
 const TINY_PNG =
   "iVBORw0KGgoAAAANSUhEUgAAACAAAAASCAIAAAC1qksFAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAJ0lEQVQ4jWOoiLKhKWIYtSBqNIhsRlNRxWhGsxktKipGS9Mo2lY4ALK6X59aY36mAAAAAElFTkSuQmCC";
 
@@ -1574,6 +1622,7 @@ createServer((req, res) => {
     return res.end(JSON.stringify(steam.body));
   }
   if (url.pathname.startsWith("/resend/") && resend(req, res, url) !== false) return;
+  if (url.pathname.startsWith("/polar/") && polar(req, res, url) !== false) return;
   if (url.pathname === "/stratz/graphql" && req.method === "POST") {
     let raw = "";
     req.on("data", (chunk) => (raw += chunk));

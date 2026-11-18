@@ -71,7 +71,7 @@ export class BillingWebhookService {
       this.deps.logger.warn("billing_webhook_rejected", { reason: "bad_signature" });
       throw new UnauthorizedError("Invalid webhook signature");
     }
-    const event = provider.parse(req.body);
+    const event = provider.parse(req.body, req.header);
     if (!event) throw new ValidationError("Invalid webhook event");
 
     const now = this.now();

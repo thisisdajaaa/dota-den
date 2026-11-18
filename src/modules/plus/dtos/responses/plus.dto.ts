@@ -1,6 +1,6 @@
 import type { EntitlementReason } from "../../domain/entitlement";
 import type { Plan } from "../../domain/plans";
-import type { SubscriptionStatus } from "../../domain/subscription";
+import type { BillingProviderName, SubscriptionStatus } from "../../domain/subscription";
 
 /**
  * Whether Plus can be bought here: "off" (not configured: the pricing page says "coming soon"
@@ -10,6 +10,8 @@ import type { SubscriptionStatus } from "../../domain/subscription";
 export interface PlusOfferDto {
   status: "off" | "paused" | "available";
   plans: Plan[];
+  /** The configured payment provider (named on the page and the legal pages), or null. */
+  provider: BillingProviderName | null;
 }
 
 /** The account page's "Your plan" card and GET /api/v1/me/plus. */

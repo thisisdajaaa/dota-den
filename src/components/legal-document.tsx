@@ -7,11 +7,14 @@ import { PageHeader } from "@/components/page-header";
 /**
  * One legal page (terms, refund policy, privacy policy): title, last-updated date, its
  * sections and a contact section. Texts are messages under `<prefix>.sections.<key>`: a
- * `title`, a `body` and, for sections listed with `items`, one `items.<item>` line each.
+ * `title`, a `body` (or the variant the section names) and, for sections listed with
+ * `items`, one `items.<item>` line each.
  * `{account}` in a text becomes a link to the Account page.
  */
 export interface LegalSection {
   key: string;
+  /** The text under the section to use instead of `body` (e.g. one naming the provider). */
+  body?: string;
   items?: readonly string[];
 }
 
@@ -64,13 +67,13 @@ export async function LegalDocument({
         description={text("updated", { date })}
       />
       <div className="panel space-y-6 p-6 sm:p-8">
-        {sections.map(({ key, items }) => (
+        {sections.map(({ key, body = "body", items }) => (
           <section key={key} aria-labelledby={`${id}-${key}`} className="space-y-1.5">
             <h2 id={`${id}-${key}`} className="font-semibold">
               {text(`sections.${key}.title`)}
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {withAccountLink(text(`sections.${key}.body`), accountLabel)}
+              {withAccountLink(text(`sections.${key}.${body}`), accountLabel)}
             </p>
             {items && (
               <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-muted-foreground marker:text-gold/60">

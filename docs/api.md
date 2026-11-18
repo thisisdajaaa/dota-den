@@ -57,12 +57,12 @@ All routes live under `src/app/api`. Responses are JSON.
 Dota Den Plus (ADR 0013). Until a payment provider is configured, checkout, portal and webhook answer 404 and
 every plan is free.
 
-| Method & path                | Auth                               | Body → response                                                                                                           |
-| ---------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/me/plus`        | signed in                          | Your plan: `{plus, reason, until, status, plan, renewsAt, endsAt, canManage, stillBills}`                                 |
-| `GET /api/v1/plus/checkout`  | signed in, 20/min per user         | `?plan=monthly\|yearly` → 303 to the provider's checkout with your user id as custom data; 409 when you already have Plus |
-| `GET /api/v1/me/plus/portal` | signed in, 20/min per user         | 303 to the provider's billing portal (manage, update card, cancel); 404 without a subscription                            |
-| `POST /api/v1/plus/webhook`  | provider signature (`X-Signature`) | Lemon Squeezy events; 401 on a bad signature, `{outcome}` (`applied`, `duplicate`, `stale`, `unlinked`, `ignored`, …)     |
+| Method & path                | Auth                                    | Body → response                                                                                                                                                                                                                   |
+| ---------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/me/plus`        | signed in                               | Your plan: `{plus, reason, until, status, plan, renewsAt, endsAt, canManage, stillBills}`                                                                                                                                         |
+| `POST /api/v1/plus/checkout` | signed in, same-origin, 20/min per user | `{plan: "monthly"\|"yearly"}` → `{url}` of the provider's checkout with your user id attached on the server (Polar: a checkout session); 404 when not on sale, 409 when you already have Plus, 503 when the provider is down      |
+| `GET /api/v1/me/plus/portal` | signed in, 20/min per user              | 303 to the provider's billing portal (manage, update card, cancel); 404 without a subscription                                                                                                                                    |
+| `POST /api/v1/plus/webhook`  | provider signature                      | Polar (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature`) or Lemon Squeezy (`X-Signature`) events; 401 on a bad or old signature, `{outcome}` (`applied`, `duplicate`, `stale`, `unlinked`, `ignored`, …) |
 
 ## Groups
 

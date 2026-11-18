@@ -223,7 +223,7 @@ const EnvSchema = z
 
     // ---- Dota Den Plus (ADR 0013). All optional: unset, Plus doesn't exist. -------------
     /** The payment provider (merchant of record). Unset: no pricing, no webhook (404). */
-    BILLING_PROVIDER: z.enum(["lemonsqueezy"]).optional(),
+    BILLING_PROVIDER: z.enum(["lemonsqueezy", "polar"]).optional(),
     /** Kill switch. Only "true" grants Plus; anything else treats everyone as free (data kept). */
     PLUS_ENABLED: booleanFlag,
     /** Lemon Squeezy webhook signing secret (Settings → Webhooks). Required with the provider. */
@@ -246,6 +246,23 @@ const EnvSchema = z
       .optional(),
     /** "true" on a deployment that takes test-mode purchases (and ignores live ones). */
     LEMONSQUEEZY_TEST_MODE: booleanFlag,
+    /** Polar organization access token (Settings → Developers): creates checkout and portal sessions. */
+    POLAR_ACCESS_TOKEN: z.string().trim().min(16).max(500).optional(),
+    /** Polar webhook endpoint secret (`whsec_…`, Settings → Webhooks). Required with Polar. */
+    POLAR_WEBHOOK_SECRET: z.string().trim().min(16).max(200).optional(),
+    /** Polar product ids per plan (UUIDs). A plan without one isn't offered. */
+    POLAR_PRODUCT_ID_MONTHLY: z.uuid().optional(),
+    POLAR_PRODUCT_ID_YEARLY: z.uuid().optional(),
+    /** The organization's slug: its customer portal is https://polar.sh/<slug>/portal. */
+    POLAR_ORGANIZATION_SLUG: z
+      .string()
+      .trim()
+      .regex(/^[a-z0-9][a-z0-9-]{0,63}$/, "POLAR_ORGANIZATION_SLUG must be a Polar slug")
+      .default("dota-den"),
+    /** "sandbox" on a deployment that takes sandbox purchases (and ignores live ones). */
+    POLAR_SERVER: z.enum(["production", "sandbox"]).default("production"),
+    /** Overrides Polar's API base URL (tests point it at a local fake). Normally unset. */
+    POLAR_API_BASE_URL: z.url().optional(),
     // ---- end Dota Den Plus ------------------------------------------------------------
 
     // ---- Redis and background jobs (Upstash, ADR 0008). All optional. -----------------
@@ -304,6 +321,31 @@ const EnvSchema = z
         path: ["LEMONSQUEEZY_WEBHOOK_SECRET"],
         message: "BILLING_PROVIDER=lemonsqueezy needs LEMONSQUEEZY_WEBHOOK_SECRET",
       });
+    }
+    if (env.BILLING_PROVIDER === "polar") {
+      if (!env.POLAR_WEBHOOK_SECRET)
+        ctx.addIssue({
+          code: "custom",
+          path: ["POLAR_WEBHOOK_SECRET"],
+          message:
+            "BILLING_PROVIDER=polar needs POLAR_WEBHOOK_SECRET (the webhook endpoint's whsec_… secret)",
+        });
+      if (!env.POLAR_ACCESS_TOKEN)
+        ctx.addIssue({
+          code: "custom",
+          path: ["POLAR_ACCESS_TOKEN"],
+          message:
+            "BILLING_PROVIDER=polar needs POLAR_ACCESS_TOKEN (an organization access token) to create checkouts",
+        });
+      if (
+        env.POLAR_PRODUCT_ID_MONTHLY &&
+        env.POLAR_PRODUCT_ID_MONTHLY === env.POLAR_PRODUCT_ID_YEARLY
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["POLAR_PRODUCT_ID_YEARLY"],
+          message: "Set POLAR_PRODUCT_ID_MONTHLY and POLAR_PRODUCT_ID_YEARLY to different products",
+        });
     }
     if (env.QSTASH_TOKEN && !env.QSTASH_CURRENT_SIGNING_KEY) {
       ctx.addIssue({

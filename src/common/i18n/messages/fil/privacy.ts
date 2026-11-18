@@ -126,6 +126,8 @@ export const privacy: MessageTree<typeof en> = {
           groq: "Ang Groq ang nagpapatakbo ng mga AI feature namin: ang AI draft captain at review, ang AI match coach at ang pagbasa ng MMR screenshot. Ang draft, ang mga detalye ng match o ang screenshot ang natatanggap nito, hindi ang Steam ID o pangalan mo.",
           payments:
             "Ang payment provider namin ang nagbebenta ng Plus bilang merchant of record: ito ang tumatanggap ng bayad, humahawak ng tax at resibo, at nag-iingat ng billing details mo ayon sa sarili nitong privacy policy.",
+          paymentsPolar:
+            "Ang Polar (polar.sh) ang nagbebenta ng Plus bilang merchant of record: ito ang tumatanggap ng bayad, humahawak ng tax at resibo, at nag-iingat ng billing details mo ayon sa sarili nitong privacy policy. Ipinapadala namin dito ang Dota Den user id mo (para maiugnay ang bayad sa account mo) at, kapag nagsimula ka ng checkout, ang IP address mo (para sa bansa at tax mo).",
           resend: "Ang Resend ang nagpapadala ng lingguhang email, kung nag-sign up ka rito.",
           push: "Ang push service ng browser mo (halimbawa Google, Mozilla o Apple) ang naghahatid ng notifications, kung in-on mo ang mga ito.",
           discord:

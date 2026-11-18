@@ -19,6 +19,7 @@
     "db:indexes": "MONGODB_TIMEOUT_MS=0 node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ensure-indexes.ts",
     "jobs:schedules": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/qstash-schedules.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:integration",
+    "plus:polar-provision": "node --import tsx scripts/polar-provision.ts",
     "draft:calibrate": "node --env-file-if-exists=.env.local --import tsx scripts/calibrate-draft.ts",
     "test:e2e:isolation": "scripts/e2e-isolation.sh"
   },

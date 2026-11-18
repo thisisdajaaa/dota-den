@@ -96,6 +96,10 @@ export const plus = {
         "Prices are in Philippine pesos. The checkout may show them in your local currency, with sales tax or VAT added where it applies.",
       provider:
         "Payments are handled by our payment provider, acting as merchant of record. They take the payment, charge any tax and send your receipt. Dota Den never sees your card.",
+      providerPolar:
+        "Payments are handled by Polar (polar.sh), acting as merchant of record. Polar takes the payment, charges any tax and sends your receipt. Dota Den never sees your card.",
+      currencyPolar:
+        "Prices are in Philippine pesos. The checkout shows any sales tax or VAT that applies where you live before you pay.",
       cancel:
         "Cancel anytime in the billing portal. You keep Plus until the end of the period you paid for.",
     },
@@ -118,6 +122,15 @@ export const plus = {
     termsLink: "terms",
     refundsLink: "refund policy",
     privacyLink: "privacy policy",
+    checkoutError: {
+      network: "Couldn't reach Dota Den. Check your connection and try again.",
+      hasPlus:
+        "You already have Plus, or a subscription that's still billing. Manage it from your account page.",
+      unavailable: "Plus can't be bought here right now.",
+      tooMany: "Too many tries. Wait a minute and try again.",
+      signIn: "Your session ended. Sign in again to get Plus.",
+      down: "The checkout isn't available right now. Nothing was charged; try again in a few minutes.",
+    },
   },
   card: {
     title: "Your plan",
@@ -192,6 +205,8 @@ export const plus = {
       payments: {
         title: "Payments",
         body: "Plus is sold by our payment provider, acting as merchant of record. They process the payment, charge any sales tax or VAT and issue receipts, and their buyer terms apply to the purchase.",
+        polar:
+          "Plus is sold by Polar (polar.sh), acting as merchant of record. Polar processes the payment, charges any sales tax or VAT and issues receipts, and Polar's buyer terms apply to the purchase.",
       },
       billing: {
         title: "Renewal and cancelling",
@@ -215,6 +230,8 @@ export const plus = {
       who: {
         title: "Who handles refunds",
         body: "Plus is sold through our payment provider, acting as merchant of record. Refunds are issued by them, following their refund policy and the consumer law where you live.",
+        polar:
+          "Plus is sold through Polar (polar.sh), acting as merchant of record. Refunds are paid out by Polar: we decide on refund requests under this policy, and Polar may also refund a payment on its own within 60 days of purchase, for example to prevent a chargeback. The consumer law where you live applies too.",
       },
       cancel: {
         title: "Cancelling",
@@ -223,6 +240,8 @@ export const plus = {
       request: {
         title: "Asking for a refund",
         body: "If something went wrong (for example, you were charged twice, or Plus didn't work for you), ask within 14 days of the charge through the billing portal or by replying to your payment receipt.",
+        polar:
+          "If something went wrong (for example, you were charged twice, or Plus didn't work for you), ask within 14 days of the charge using the contact details below. Your receipts and subscription are in Polar's customer portal, linked from the {account}.",
       },
       after: {
         title: "After a refund",

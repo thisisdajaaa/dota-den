@@ -93,6 +93,10 @@ export const plus: MessageTree<typeof en> = {
         "Naa sa Philippine peso ang mga presyo. Pwede kining ipakita sa checkout sa imong lokal nga kwarta, uban ang sales tax o VAT kung naa.",
       provider:
         "Ang among payment provider, isip merchant of record, ang modumala sa bayad. Sila ang modawat sa bayad, maningil og tax ug mopadala sa resibo. Dili makita sa Dota Den ang imong card.",
+      providerPolar:
+        "Ang Polar (polar.sh), isip merchant of record, ang modumala sa bayad. Ang Polar ang modawat sa bayad, maningil og tax ug mopadala sa resibo. Dili makita sa Dota Den ang imong card.",
+      currencyPolar:
+        "Naa sa Philippine pesos ang mga presyo. Ipakita sa checkout ang sales tax o VAT nga singilon diin ka nagpuyo sa dili pa ka mobayad.",
       cancel:
         "Pwede mag-cancel bisan kanus-a sa billing portal. Naa gihapon kay Plus hangtod matapos ang period nga imong gibayran.",
     },
@@ -114,6 +118,15 @@ export const plus: MessageTree<typeof en> = {
     termsLink: "mga termino",
     refundsLink: "palisiya sa refund",
     privacyLink: "palisiya sa privacy",
+    checkoutError: {
+      network: "Dili maabot ang Dota Den. Susiha ang imong koneksyon ug sulayi pag-usab.",
+      hasPlus:
+        "Naa na kay Plus, o subscription nga naningil pa. Dumalaha kini sa imong account page.",
+      unavailable: "Dili pa mapalit ang Plus diri karon.",
+      tooMany: "Sobra ka daghang sulay. Paghulat og usa ka minuto ug sulayi pag-usab.",
+      signIn: "Nahuman ang imong session. Pag-sign in pag-usab aron makakuha og Plus.",
+      down: "Dili available ang checkout karon. Walay nasingil; sulayi pag-usab human sa pipila ka minuto.",
+    },
   },
   card: {
     title: "Imong plan",
@@ -188,6 +201,8 @@ export const plus: MessageTree<typeof en> = {
       payments: {
         title: "Bayad",
         body: "Ang among payment provider, isip merchant of record, ang mobaligya sa Plus. Sila ang mo-proseso sa bayad, maningil og sales tax o VAT ug mohatag og resibo, ug ang ilang buyer terms ang sundon sa pagpalit.",
+        polar:
+          "Ang Polar (polar.sh), isip merchant of record, ang mobaligya sa Plus. Ang Polar ang mo-proseso sa bayad, maningil og sales tax o VAT ug mohatag og resibo, ug ang buyer terms sa Polar ang sundon sa pagpalit.",
       },
       billing: {
         title: "Renewal ug pag-cancel",
@@ -211,6 +226,8 @@ export const plus: MessageTree<typeof en> = {
       who: {
         title: "Kinsa ang modumala sa refund",
         body: "Gibaligya ang Plus pinaagi sa among payment provider, isip merchant of record. Sila ang mohatag og refund, sumala sa ilang refund policy ug sa consumer law diin ka nagpuyo.",
+        polar:
+          "Gibaligya ang Plus pinaagi sa Polar (polar.sh), isip merchant of record. Ang Polar ang mobalik sa kwarta: kami ang modesisyon sa mga hangyo nga refund sumala niini nga policy, ug mahimo usab nga mo-refund ang Polar sa kaugalingon niini sulod sa 60 ka adlaw gikan sa pagpalit, pananglitan aron malikayan ang chargeback. Sundon usab ang consumer law diin ka nagpuyo.",
       },
       cancel: {
         title: "Pag-cancel",
@@ -219,6 +236,8 @@ export const plus: MessageTree<typeof en> = {
       request: {
         title: "Pagpangayo og refund",
         body: "Kung naay sayop nga nahitabo (pananglitan, kaduha ka nasingil, o wala molihok ang Plus para nimo), pangayo sulod sa 14 ka adlaw gikan sa singil pinaagi sa billing portal o sa pag-reply sa resibo sa imong bayad.",
+        polar:
+          "Kung naay sayop (pananglitan, kaduha ka nasingil, o wala molihok ang Plus para nimo), pangayo sulod sa 14 ka adlaw gikan sa singil gamit ang contact sa ubos. Naa sa customer portal sa Polar ang imong mga resibo ug subscription, nga naka-link sa {account}.",
       },
       after: {
         title: "Human sa refund",

@@ -9,7 +9,7 @@ import {
   type Entitlement,
 } from "../domain/entitlement";
 import { limitFor, type Plan } from "../domain/plans";
-import type { Subscription } from "../domain/subscription";
+import type { BillingProviderName, Subscription } from "../domain/subscription";
 import type { BillingProvider, SubscriptionsPort, WebhookEventsPort } from "../plus.ports";
 import type { PlanDto, PlusAdminCountsDto, PlusOfferDto } from "../dtos/responses/plus.dto";
 
@@ -45,6 +45,11 @@ export class PlusService {
     this.now = deps.now ?? (() => new Date());
   }
 
+  /** The configured payment provider's name (the legal pages name it), or null. */
+  get providerName(): BillingProviderName | null {
+    return this.deps.provider?.name ?? null;
+  }
+
   get configured(): boolean {
     return this.deps.provider !== null;
   }
@@ -56,9 +61,11 @@ export class PlusService {
 
   offer(): PlusOfferDto {
     const provider = this.deps.provider;
-    if (!provider || provider.plans.length === 0) return { status: "off", plans: [] };
-    if (!this.enabled) return { status: "paused", plans: [] };
-    return { status: "available", plans: [...provider.plans] };
+    const name = provider?.name ?? null;
+    if (!provider || provider.plans.length === 0)
+      return { status: "off", plans: [], provider: name };
+    if (!this.enabled) return { status: "paused", plans: [], provider: name };
+    return { status: "available", plans: [...provider.plans], provider: name };
   }
 
   /**
@@ -162,7 +169,11 @@ export class PlusService {
    * it, and while a subscription of theirs can still charge (a failed renewal being retried,
    * paused, unpaid): a second purchase then could bill them twice.
    */
-  async checkoutUrl(userId: string, plan: Plan): Promise<string> {
+  async checkoutUrl(
+    userId: string,
+    plan: Plan,
+    context: { ip?: string | null } = {},
+  ): Promise<string> {
     const provider = this.deps.provider;
     if (!this.enabled || !provider || !provider.plans.includes(plan))
       throw new NotFoundError("Plus isn't available here yet.");
@@ -173,22 +184,42 @@ export class PlusService {
         "You still have a Plus subscription. Update your payment or resume it from your account page.",
         { reason: "still_billing" },
       );
-    const url = provider.checkoutUrl(plan, userId);
+    const url = await provider.checkoutUrl(plan, userId, context);
     if (!url) throw new NotFoundError("Plus isn't available here yet.");
     return url;
   }
 
   /**
-   * Where this player manages billing (update card, cancel): the pre-signed link from the
-   * latest webhook while it's fresh, else the store's portal (sign-in by email link). Works
-   * with the kill switch on, so nobody is ever stuck paying.
+   * Where this player manages billing (update card, cancel): a signed-in portal link made on
+   * demand when the provider offers one (Polar), else the pre-signed link from the latest
+   * webhook while it's fresh (Lemon Squeezy), else the store's portal (sign-in by email).
+   * Works with the kill switch on, so nobody is ever stuck paying.
    */
   async portalUrl(userId: string): Promise<string> {
     if (!this.configured) throw new NotFoundError("No subscription");
     const subs = this.ours(await this.deps.subscriptions.forUser(userId));
-    const url = subs.length > 0 ? this.portalFor(subs, this.now()) : null;
+    if (subs.length === 0) throw new NotFoundError("No subscription");
+    const session = await this.sessionPortal(subs);
+    const url = session ?? this.portalFor(subs, this.now());
     if (!url) throw new NotFoundError("No subscription");
     return url;
+  }
+
+  /** A provider-made portal session for the most recent subscription's customer, if any. */
+  private async sessionPortal(subs: readonly Subscription[]): Promise<string | null> {
+    const provider = this.deps.provider;
+    if (!provider?.customerPortalUrl) return null;
+    const latest = [...subs]
+      .filter((s) => s.provider === provider.name && s.customerId)
+      .sort((a, b) => b.providerUpdatedAt.getTime() - a.providerUpdatedAt.getTime())[0];
+    if (!latest) return null;
+    try {
+      return await provider.customerPortalUrl(latest.customerId!);
+    } catch (error) {
+      // The generic portal (sign-in by email code) still works.
+      this.deps.logger.warn("plus_portal_session_failed", { error });
+      return null;
+    }
   }
 
   private portalFor(subs: readonly Subscription[], now: Date): string | null {

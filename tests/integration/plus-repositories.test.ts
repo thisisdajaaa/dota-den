@@ -1,9 +1,13 @@
+import { createHmac } from "node:crypto";
 import type { Db } from "mongodb";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Subscription } from "@/modules/plus/domain/subscription";
+import { PolarProvider } from "@/modules/plus/infrastructure/polar-provider";
 import { PLUS_COLLECTIONS } from "@/modules/plus/plus.model";
 import { SubscriptionsRepository } from "@/modules/plus/repositories/subscriptions.repository";
 import { WebhookEventsRepository } from "@/modules/plus/repositories/webhook-events.repository";
+import { BillingWebhookService } from "@/modules/plus/services/billing-webhook.service";
+import { polarSubscriptionEvent } from "../support/plus-fakes";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -188,5 +192,78 @@ describe("WebhookEventsRepository (Mongo)", () => {
     const owner = { userId: "gone", accountId32: 1 };
     expect(await repo.exportForOwner(owner)).toHaveLength(1);
     expect(await repo.deleteForOwner(owner)).toBe(1);
+  });
+});
+
+describe("Polar webhooks through the Mongo repositories", () => {
+  it("stores a Polar subscription by its id, keyed events by webhook-id, and moves forward", async () => {
+    const key = Buffer.from("polar-integration-key-0000000001");
+    const now = new Date("2026-10-23T12:30:00Z");
+    const ts = String(Math.floor(now.getTime() / 1000));
+    const user = "c".repeat(24);
+    const subId = "7e7e7e7e-0000-4000-8000-000000000001";
+    const webhooks = new BillingWebhookService({
+      provider: new PolarProvider({
+        webhookSecret: `whsec_${key.toString("base64")}`,
+        productIds: { monthly: "e7751461-934e-4bbc-befa-2593e1e56dd2" },
+        organizationSlug: "dota-den",
+        server: "production",
+        appUrl: "https://www.dota-den.com",
+        api: { createCheckout: vi.fn(), createCustomerSession: vi.fn() },
+        now: () => now,
+      }),
+      subscriptions: new SubscriptionsRepository(async () => db),
+      events: new WebhookEventsRepository(async () => db),
+      users: { byId: async (id) => (id === user ? { id, accountId32: 42 } : null) },
+      logger: { info: vi.fn(), warn: vi.fn() },
+      now: () => now,
+    });
+    const deliver = (body: string, id: string) => {
+      const sig = createHmac("sha256", key).update(`${id}.${ts}.${body}`).digest("base64");
+      const h: Record<string, string> = {
+        "webhook-id": id,
+        "webhook-timestamp": ts,
+        "webhook-signature": `v1,${sig}`,
+      };
+      return webhooks.receive({ body, header: (n) => h[n] ?? null });
+    };
+
+    const created = polarSubscriptionEvent({ id: subId, userId: user });
+    expect(await deliver(created, "msg_int_1")).toEqual({ outcome: "applied" });
+    expect(await deliver(created, "msg_int_1")).toEqual({ outcome: "duplicate" });
+    const canceled = polarSubscriptionEvent({
+      type: "subscription.canceled",
+      id: subId,
+      userId: user,
+      cancelAtPeriodEnd: true,
+      endsAt: "2026-11-23T12:00:00.000000Z",
+      modifiedAt: "2026-10-23T12:10:00.000000Z",
+    });
+    expect(await deliver(canceled, "msg_int_2")).toEqual({ outcome: "applied" });
+    const late = polarSubscriptionEvent({
+      type: "subscription.updated",
+      id: subId,
+      userId: user,
+      modifiedAt: "2026-10-23T12:05:00.000000Z",
+    });
+    expect(await deliver(late, "msg_int_3")).toEqual({ outcome: "stale" });
+
+    const stored = await db
+      .collection(PLUS_COLLECTIONS.subscriptions)
+      .findOne({ _id: `polar:${subId}` as never });
+    expect(stored).toMatchObject({
+      provider: "polar",
+      userId: user,
+      accountId32: 42,
+      status: "cancelled",
+      plan: "monthly",
+      endsAt: at("2026-11-23T12:00:00Z"),
+      testMode: false,
+    });
+    expect(JSON.stringify(stored)).not.toContain("buyer@example.com");
+    const event = await db
+      .collection(PLUS_COLLECTIONS.webhookEvents)
+      .findOne({ _id: "polar:msg_int_2" as never });
+    expect(event).toMatchObject({ provider: "polar", outcome: "applied", userId: user });
   });
 });
