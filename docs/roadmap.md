@@ -44,17 +44,18 @@ words, our data supplies every number, and a checker rejects anything it can't b
 Order agreed with the owner. Free stays free: each item adds depth or speed on top of what free
 players already have.
 
-| Order | Feature                          | What the player gets                                                                    | Free keeps                           | Status                |
-| ----- | -------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------ | --------------------- |
-| 0     | Payments on Polar                | Checkout, billing portal and webhooks on Polar (merchant of record); Plus on sale       | Everything                           | In progress           |
-| 1     | Monday AI weekly report          | The battle report's AI read for last week, as a push (and email once Resend is set)     | The battle report, weekly push recap | Planned               |
-| 2     | Faster hero coaching             | Item timings and lane results for your whole recent history right away                  | 10 analysed games a day              | Planned               |
-| 3     | Build check vs high-rank         | Your item timings against Legend–Immortal players on the same hero, with one suggestion | Your own timings                     | Planned (was P3)      |
-| 4     | Draft post-mortem for real games | Why a ranked draft won or lost: lanes, counters, timing                                 | Draft read on match pages            | Planned (was P3)      |
-| 5     | Deeper stats                     | Splits by patch, position, time of day, lane partner and game length; deeper matchups   | Overviews and matchups               | Planned (was P3)      |
-| 6     | Discord AI commands              | `/den coach`, `/den pick` and weekly reports to a server                                | `/den me`, `/den leaderboard`        | Planned               |
-| —     | 7-day free trial                 | Try Plus before paying (Polar trials; entitlement already handles trials)               | —                                    | Planned               |
-| —     | Plus page order                  | AI perks first; go-live alerts and limits lower down                                    | —                                    | After the Polar merge |
+| Order | Feature                          | What the player gets                                                                                                                   | Free keeps                           | Status                |
+| ----- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------- |
+| 0     | Payments on Polar                | Checkout, billing portal and webhooks on Polar (merchant of record); Plus on sale                                                      | Everything                           | In progress           |
+| 1     | Monday AI weekly report          | The battle report's AI read for last week, as a push (and email once Resend is set)                                                    | The battle report, weekly push recap | Planned               |
+| 2     | Faster hero coaching             | Item timings and lane results for your whole recent history right away                                                                 | 10 analysed games a day              | Planned               |
+| 3     | Build check vs high-rank         | Your item timings against Legend–Immortal players on the same hero, with one suggestion                                                | Your own timings                     | Planned (was P3)      |
+| 4     | Draft post-mortem for real games | Why a ranked draft won or lost: lanes, counters, timing                                                                                | Draft read on match pages            | Planned (was P3)      |
+| 5     | Deeper stats                     | Splits by patch, position, time of day, lane partner and game length; deeper matchups                                                  | Overviews and matchups               | Planned (was P3)      |
+| 6     | Discord AI commands              | `/den coach`, `/den pick` and weekly reports to a server                                                                               | `/den me`, `/den leaderboard`        | Planned               |
+| —     | 7-day free trial                 | Try Plus before paying (Polar trials; entitlement already handles trials)                                                              | —                                    | Planned               |
+| —     | Plus page order                  | AI perks first; go-live alerts and limits lower down                                                                                   | —                                    | After the Polar merge |
+| —     | Meta for your bracket (free)     | A rank-bracket picker on the Meta page (Herald–Guardian … Divine–Immortal, `?bracket=`), defaulting to your own bracket when signed in | Free for everyone, not Plus          | In review             |
 
 ## Principles for new features
 

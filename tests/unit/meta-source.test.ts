@@ -88,11 +88,16 @@ function sourceWith(
 }
 
 describe("OpenDotaMetaSource", () => {
-  it("combines brackets 6-8 and keeps the pick trend", async () => {
+  it("combines brackets 6-8, keeps the pick trend and each medal's record", async () => {
     const { source } = sourceWith(() => ({
       body: [
         {
           id: 1,
+          "1_pick": 40,
+          "1_win": 22,
+          // More wins than picks: a broken count is left out, never used.
+          "2_pick": 5,
+          "2_win": 9,
           "6_pick": 100,
           "6_win": 50,
           "7_pick": 50,
@@ -105,7 +110,17 @@ describe("OpenDotaMetaSource", () => {
     }));
     const res = await source.heroStats();
     expect(res.ok && res.value.value).toEqual([
-      { heroId: 1, games: 150, wins: 80, pickTrend: [1, 2, 3, 4, 5, 6, 7] },
+      {
+        heroId: 1,
+        games: 150,
+        wins: 80,
+        pickTrend: [1, 2, 3, 4, 5, 6, 7],
+        medals: {
+          1: { games: 40, wins: 22 },
+          6: { games: 100, wins: 50 },
+          7: { games: 50, wins: 30 },
+        },
+      },
     ]);
   });
 

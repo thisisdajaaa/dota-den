@@ -12,6 +12,7 @@ import type {
 } from "@/modules/meta/dtos/responses/meta.dto";
 import type { LatestPatchResult, MetaSourceError as SourceError } from "@/modules/meta";
 import type { Position } from "@/modules/meta/domain/position";
+import type { MetaBracket } from "@/modules/meta/domain/rank-bracket";
 import { LaneDuosCard } from "@/modules/meta/ui/lane-duos-card";
 import {
   ContestedCard,
@@ -159,9 +160,11 @@ export async function PatchLine({ patch }: { patch: Promise<LatestPatchResult> }
 export async function OverviewSection({
   overview,
   catalog,
+  linkBracket,
 }: {
   overview: Promise<Loaded<OverviewView>>;
   catalog: Promise<Map<number, HeroInfo>>;
+  linkBracket: MetaBracket | null;
 }) {
   const [res, cat, t] = await Promise.all([overview, catalog, getT()]);
   if (!res.ok)
@@ -170,7 +173,7 @@ export async function OverviewSection({
         <Unavailable>{unavailableCopy(t, res.error, "heroStats")}</Unavailable>
       </div>
     );
-  return <MetaOverviewCards view={res.value} catalog={cat} />;
+  return <MetaOverviewCards view={res.value} catalog={cat} linkBracket={linkBracket} />;
 }
 
 export async function OverviewFootnote({ overview }: { overview: Promise<Loaded<OverviewView>> }) {

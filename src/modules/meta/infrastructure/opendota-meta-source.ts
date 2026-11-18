@@ -4,6 +4,7 @@ import type { GatewayResponse, ProviderGateway } from "@/common/providers/provid
 import type { DuoRow } from "../domain/lane-duos";
 import type { HeroPublicStats, LaneStats, ProDrafts, WinCount } from "../domain/meta-stats";
 import type { LaneGame } from "../domain/position";
+import { MEDALS, type Medal } from "../domain/rank-bracket";
 import type {
   Fetched,
   MetaStatsSource,
@@ -39,19 +40,43 @@ export const PRO_DUOS_SQL = `SELECT a.hero_id h1, b.hero_id h2, a.lane_role, cou
 // Postgres counts (bigint) may arrive as strings; accept both, reject anything else.
 const count = z.coerce.number().int().min(0);
 const trend = z.array(z.number().min(0)).optional();
+const medalCount = z.number().min(0).optional();
 
 export const HeroStatsSchema = z.array(
   z.object({
     id: z.number().int().positive(),
-    "6_pick": z.number().min(0).optional(),
-    "6_win": z.number().min(0).optional(),
-    "7_pick": z.number().min(0).optional(),
-    "7_win": z.number().min(0).optional(),
-    "8_pick": z.number().min(0).optional(),
-    "8_win": z.number().min(0).optional(),
+    // Picks and wins per medal: 1 Herald … 8 Immortal.
+    "1_pick": medalCount,
+    "1_win": medalCount,
+    "2_pick": medalCount,
+    "2_win": medalCount,
+    "3_pick": medalCount,
+    "3_win": medalCount,
+    "4_pick": medalCount,
+    "4_win": medalCount,
+    "5_pick": medalCount,
+    "5_win": medalCount,
+    "6_pick": medalCount,
+    "6_win": medalCount,
+    "7_pick": medalCount,
+    "7_win": medalCount,
+    "8_pick": medalCount,
+    "8_win": medalCount,
     pub_pick_trend: trend,
   }),
 );
+type HeroStatsRow = z.infer<typeof HeroStatsSchema>[number];
+
+/** Per-medal games and wins; a medal with no picks (or more wins than picks) is left out. */
+function medalsOf(h: HeroStatsRow): Partial<Record<Medal, WinCount>> {
+  const out: Partial<Record<Medal, WinCount>> = {};
+  for (const m of MEDALS) {
+    const games = h[`${m}_pick`] ?? 0;
+    const wins = h[`${m}_win`] ?? 0;
+    if (games > 0 && wins <= games) out[m] = { games, wins };
+  }
+  return out;
+}
 
 export const LaneRolesSchema = z.array(
   z.object({
@@ -253,6 +278,7 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
           games: (h["6_pick"] ?? 0) + (h["7_pick"] ?? 0) + (h["8_pick"] ?? 0),
           wins: (h["6_win"] ?? 0) + (h["7_win"] ?? 0) + (h["8_win"] ?? 0),
           pickTrend: h.pub_pick_trend ?? [],
+          medals: medalsOf(h),
         })),
       );
     });

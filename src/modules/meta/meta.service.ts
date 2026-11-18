@@ -1,7 +1,7 @@
 import type { Logger } from "@/common/logging/logger";
 import { mapLimit } from "@/common/utils/map-limit";
 import { heroPatchChanges } from "./domain/patch-tips";
-import { err, ok, type Result } from "@/common/result";
+import { err, ok, type Ok, type Result } from "@/common/result";
 import { duosForPosition } from "./domain/lane-duos";
 import {
   laneCandidates,
@@ -17,6 +17,14 @@ import {
   type RankedHero,
 } from "./domain/meta-stats";
 import { deriveRole, POSITIONS, type Position } from "./domain/position";
+import {
+  asPublicStats,
+  bracketStats,
+  DEFAULT_BRACKET,
+  rankInBracket,
+  type BracketStats,
+  type MetaBracket,
+} from "./domain/rank-bracket";
 import type { PositionStats } from "./domain/position-stats";
 import type {
   Fetched,
@@ -29,6 +37,7 @@ import type {
 } from "./meta.ports";
 import type { LatestPatchResult, LatestPatchSource } from "./meta.ports";
 import type {
+  BracketView,
   ContestedView,
   DuosView,
   OverviewView,
@@ -48,6 +57,12 @@ export const LANE_DEADLINE_MS = 12_000;
 
 const TIMEOUT = Symbol("timeout");
 
+/** One position's ranking: the view (top 10) and every hero that qualified. */
+interface Ranking {
+  view: TopHeroesView;
+  all: RankedHero[];
+}
+
 /** Resolve to the promise's value, or TIMEOUT after `ms` (the promise keeps running and warms caches). */
 async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | typeof TIMEOUT> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -62,10 +77,12 @@ async function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | typeof TI
 }
 
 /** Tournament data to rank with, and how to describe it (too few drafts are shown, not used). */
-function proUse(proRes: Result<Fetched<ProDrafts>, SourceError> | typeof TIMEOUT): {
+function proUse(proRes: Result<Fetched<ProDrafts>, SourceError> | typeof TIMEOUT | null): {
   pro: ProDrafts | null;
   proSource: TopHeroesView["sources"]["pro"];
 } {
+  // A bracket ranking doesn't use tournament data at all.
+  if (proRes === null) return { pro: null, proSource: { status: "not_used" } };
   if (proRes === TIMEOUT || !proRes.ok) return { pro: null, proSource: { status: "unavailable" } };
   const p = proRes.value.value;
   const fetchedAt = proRes.value.fetchedAt;
@@ -149,8 +166,15 @@ export class MetaService {
     return { status: "unavailable" };
   }
 
-  async topHeroes(position: Position): Promise<Result<TopHeroesView, SourceError>> {
-    const res = await this.rank(position);
+  /**
+   * The top heroes for a position in a rank bracket. The default bracket (Ancient–Immortal)
+   * is the high-rank ranking; any other is re-ranked by OpenDota's per-medal win counts.
+   */
+  async topHeroes(
+    position: Position,
+    bracket: MetaBracket = DEFAULT_BRACKET,
+  ): Promise<Result<TopHeroesView, SourceError>> {
+    const res = await this.rank(position, bracket);
     return res.ok ? ok(res.value.view) : res;
   }
 
@@ -160,14 +184,37 @@ export class MetaService {
    */
   private async rank(
     position: Position,
+    bracket: MetaBracket = DEFAULT_BRACKET,
   ): Promise<Result<{ view: TopHeroesView; all: RankedHero[] }, SourceError>> {
     const { stats } = this.deps;
     // Start the tournament query and public stats right away; they run alongside the rest.
-    const proPromise = stats.proDrafts();
+    // A bracket ranking needs no tournament data (pros say little about a Herald game).
+    const inBracket = bracket !== DEFAULT_BRACKET;
+    const proPromise = inBracket ? null : stats.proDrafts();
     const pubPromise = stats.heroStats();
+    let brackets: { stats: BracketStats; view: BracketView } | null = null;
+    if (inBracket) {
+      // Bracket win rates only exist in OpenDota's hero stats: without them, nothing to show.
+      const pub = await pubPromise;
+      if (!pub.ok) return pub;
+      const b = bracketStats(pub.value.value, bracket);
+      if (b.heroes.size === 0) return err({ type: "invalid_payload", cause: "no bracket stats" });
+      brackets = {
+        stats: b,
+        view: {
+          bracket,
+          matches: b.matches,
+          emptyMedals: b.emptyMedals,
+          fetchedAt: pub.value.fetchedAt,
+          placedBy: "lanes",
+        },
+      };
+    }
     const positions = await this.positionStats();
-    if (positions.status === "ok")
-      return this.rankFromPositions(position, positions.value, pubPromise, proPromise);
+    if (positions.status === "ok") {
+      const res = await this.rankFromPositions(position, positions.value, pubPromise, proPromise);
+      return brackets ? this.inBracket(res, brackets, "positions") : res;
+    }
 
     const heroes = await this.deps.heroes();
     if (heroes.length === 0) return err({ type: "unavailable", cause: "hero catalog" });
@@ -177,11 +224,17 @@ export class MetaService {
     if (publicStats.length === 0) return err({ type: "invalid_payload", cause: "no hero stats" });
     const byId = new Map(publicStats.map((s) => [s.heroId, s]));
 
-    const ids = laneCandidates(position, heroes, byId, LANE_CANDIDATES);
+    // In a bracket, check the lanes of the heroes doing best in that bracket.
+    const ids = laneCandidates(
+      position,
+      heroes,
+      brackets ? asPublicStats(brackets.stats) : byId,
+      LANE_CANDIDATES,
+    );
     const lanesPromise = mapLimit(ids, LANE_CONCURRENCY, (id) => stats.laneRoles(id));
     const [laneResults, proRes] = await Promise.all([
       withDeadline(lanesPromise, LANE_DEADLINE_MS),
-      withDeadline(proPromise, PRO_DEADLINE_MS),
+      proPromise && withDeadline(proPromise, PRO_DEADLINE_MS),
     ]);
 
     const lanes = new Map<number, LaneStats>();
@@ -226,10 +279,33 @@ export class MetaService {
           : null,
         pro: proSource,
         positions: { status: positions.status },
+        bracket: null,
       },
     };
     // Lane mode keeps today's overview: built from each position's top 10.
+    if (brackets) {
+      const res = this.inBracket(ok({ view, all: ranked }), brackets, "lanes");
+      return ok({ view: res.value.view, all: res.value.view.heroes });
+    }
     return ok({ view, all: view.heroes });
+  }
+
+  /** Re-rank a position's placed heroes by their record in the bracket. */
+  private inBracket(
+    res: Ok<Ranking>,
+    brackets: { stats: BracketStats; view: BracketView },
+    placedBy: BracketView["placedBy"],
+  ): Ok<Ranking> {
+    const all = rankInBracket(res.value.all, brackets.stats);
+    return ok({
+      view: {
+        ...res.value.view,
+        heroes: all.slice(0, TOP_HEROES),
+        checked: res.value.all.length,
+        sources: { ...res.value.view.sources, bracket: { ...brackets.view, placedBy } },
+      },
+      all,
+    });
   }
 
   /**
@@ -240,11 +316,11 @@ export class MetaService {
     position: Position,
     positions: Fetched<PositionStats>,
     pubPromise: SourceResult<HeroPublicStats[]>,
-    proPromise: SourceResult<ProDrafts>,
-  ): Promise<Result<{ view: TopHeroesView; all: RankedHero[] }, SourceError>> {
+    proPromise: SourceResult<ProDrafts> | null,
+  ): Promise<Ok<Ranking>> {
     const [pub, proRes] = await Promise.all([
       pubPromise.catch(() => null),
-      withDeadline(proPromise, PRO_DEADLINE_MS),
+      proPromise && withDeadline(proPromise, PRO_DEADLINE_MS),
     ]);
     const publicStats = pub?.ok ? pub.value.value : [];
     const { pro, proSource } = proUse(proRes);
@@ -267,6 +343,7 @@ export class MetaService {
           fetchedAt: positions.fetchedAt,
           window: positions.value.window,
         },
+        bracket: null,
       },
     };
     return ok({ view, all: ranked });
@@ -277,18 +354,23 @@ export class MetaService {
    * where it's actually played (role tags call Outworld Devourer a carry; lane data says mid).
    * Lane data is cached per hero for a day and warmed by the daily job, so this is cache reads.
    */
-  async overview(limit = OVERVIEW_HEROES): Promise<Result<OverviewView, SourceError>> {
-    const results = await Promise.all(POSITIONS.map((p) => this.rank(p)));
+  async overview(
+    limit = OVERVIEW_HEROES,
+    bracket: MetaBracket = DEFAULT_BRACKET,
+  ): Promise<Result<OverviewView, SourceError>> {
+    const results = await Promise.all(POSITIONS.map((p) => this.rank(p, bracket)));
     const positions = await this.positionStats();
     const byPosition = new Map<Position, RankedHero[]>();
     let fetchedAt: Date | null = null;
     let fromPositions: Extract<TopHeroesView["sources"]["positions"], { status: "ok" }> | null =
       null;
     let ranked = 0;
+    let inBracket: BracketView | null = null;
     for (const [i, p] of POSITIONS.entries()) {
       const r = results[i];
       if (!r.ok) continue;
       ranked++;
+      inBracket ??= r.value.view.sources.bracket;
       byPosition.set(p, r.value.all);
       const src = r.value.view.sources.positions;
       if (src.status === "ok") fromPositions ??= src;
@@ -301,6 +383,7 @@ export class MetaService {
       pools: overviewPools(byPosition, limit, shares),
       fetchedAt,
       positions: shares && fromPositions ? { window: fromPositions.window } : null,
+      bracket: inBracket,
     });
   }
 
