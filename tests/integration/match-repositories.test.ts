@@ -133,7 +133,7 @@ describe("SyncStatesRepository", () => {
     expect((await repo.acquire(43, opts(t0))).type).toBe("acquired");
     await repo.release(43, {
       lastSyncAt: t0,
-      newestStartedAt: null,
+      newestStartedAt: new Date("2026-09-28T00:00:00Z"),
       backfillOffset: 0,
       backfillComplete: true,
       historyRefreshRequestedAt: null,
@@ -166,6 +166,30 @@ describe("SyncStatesRepository", () => {
       retryAt: new Date(t0.getTime() + 30_000),
     });
     expect((await repo.acquire(45, opts(new Date(t0.getTime() + 30_001)))).type).toBe("acquired");
+  });
+
+  it("uses the shorter cooldown while nothing is imported yet", async () => {
+    const repo = new SyncStatesRepository(async () => db);
+    const t0 = new Date("2026-09-29T00:00:00Z");
+    await repo.acquire(46, opts(t0));
+    await repo.release(46, {
+      lastSyncAt: t0,
+      newestStartedAt: null,
+      backfillOffset: 0,
+      backfillComplete: true,
+      historyRefreshRequestedAt: t0,
+      historyFirstRequestedAt: t0,
+      rescannedAt: null,
+      lineupBackfillOffset: 0,
+      lineupBackfillComplete: true,
+    });
+    expect(await repo.acquire(46, opts(new Date(t0.getTime() + 10_000)))).toEqual({
+      type: "cooldown",
+      retryAt: new Date(t0.getTime() + 30_000),
+    });
+    const again = await repo.acquire(46, opts(new Date(t0.getTime() + 30_001)));
+    expect(again.type).toBe("acquired");
+    expect(again.type === "acquired" && again.state.historyFirstRequestedAt).toEqual(t0);
   });
 
   it("recovers from an expired lock and from abandon", async () => {

@@ -39,8 +39,12 @@ export const HISTORY_PAGE_SIZE = 500;
 export const HISTORY_PAGE_CALL = { timeoutMs: 20_000, maxRetries: 1, isolated: true } as const;
 /** Least time a page call gets, even right at a sync's deadline. */
 export const MIN_PAGE_TIMEOUT_MS = 5_000;
-/** While nothing is imported: how often we may ask the upstream to refetch the history. */
-export const HISTORY_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
+/**
+ * While nothing is imported: how often we may ask the upstream to refetch the history. Short,
+ * because the usual cause is match data that was private when we first asked: once the player
+ * makes it public, the next request is what finds their games.
+ */
+export const HISTORY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 /**
  * Once matches exist: re-request periodically anyway. The upstream's copy of a history is
  * often incomplete (it only has matches it happened to collect) until it's asked.
@@ -99,7 +103,7 @@ export class MatchSyncService {
     policy: SyncPolicy = FREE_SYNC_POLICY,
   ): boolean {
     if (!state?.lastSyncAt) return true;
-    const cooldown = cooldownFor(state.backfillComplete, policy);
+    const cooldown = cooldownFor(state.backfillComplete, policy, state.newestStartedAt === null);
     return now.getTime() - state.lastSyncAt.getTime() >= cooldown;
   }
 
@@ -292,6 +296,10 @@ export class MatchSyncService {
           summary.historyRefreshRequested = true;
         }
       }
+      const historyFirstRequestedAt =
+        state.historyFirstRequestedAt ??
+        state.historyRefreshRequestedAt ??
+        historyRefreshRequestedAt;
 
       await this.deps.syncState.release(accountId32, {
         lastSyncAt: this.now(),
@@ -299,6 +307,7 @@ export class MatchSyncService {
         backfillOffset,
         backfillComplete: summary.backfillComplete,
         historyRefreshRequestedAt,
+        historyFirstRequestedAt,
         rescannedAt: rescan ? this.now() : state.rescannedAt,
         lineupBackfillOffset: summary.lineupsComplete ? 0 : lineupOffset,
         lineupBackfillComplete: summary.lineupsComplete,

@@ -190,9 +190,14 @@ export class SyncStatesRepository implements SyncStatesPort {
             {
               $or: [
                 { lastSyncAt: null },
-                { backfillComplete: true, lastSyncAt: { $lte: before(cooldownMs) } },
                 {
-                  backfillComplete: { $ne: true },
+                  backfillComplete: true,
+                  newestStartedAt: { $ne: null },
+                  lastSyncAt: { $lte: before(cooldownMs) },
+                },
+                // Still importing, or nothing imported yet: the short cooldown.
+                {
+                  $or: [{ backfillComplete: { $ne: true } }, { newestStartedAt: null }],
                   lastSyncAt: { $lte: before(backfillCooldownMs) },
                 },
               ],
@@ -207,6 +212,7 @@ export class SyncStatesRepository implements SyncStatesPort {
             backfillOffset: 0,
             backfillComplete: false,
             historyRefreshRequestedAt: null,
+            historyFirstRequestedAt: null,
             rescannedAt: null,
             lineupBackfillOffset: 0,
             lineupBackfillComplete: false,
@@ -222,7 +228,10 @@ export class SyncStatesRepository implements SyncStatesPort {
       const existing = await (await this.col()).findOne({ accountId32 });
       if (existing?.lockedUntil && existing.lockedUntil > now) return { type: "locked" };
       if (existing?.lastSyncAt) {
-        const wait = existing.backfillComplete ? cooldownMs : backfillCooldownMs;
+        const wait =
+          existing.backfillComplete && existing.newestStartedAt !== null
+            ? cooldownMs
+            : backfillCooldownMs;
         return { type: "cooldown", retryAt: new Date(existing.lastSyncAt.getTime() + wait) };
       }
       return { type: "locked" };
@@ -265,6 +274,7 @@ function toState(doc: SyncStateDoc): SyncState {
     backfillComplete: doc.backfillComplete,
     // Older documents predate this field.
     historyRefreshRequestedAt: doc.historyRefreshRequestedAt ?? null,
+    historyFirstRequestedAt: doc.historyFirstRequestedAt ?? null,
     rescannedAt: doc.rescannedAt ?? null,
     lineupBackfillOffset: doc.lineupBackfillOffset ?? 0,
     lineupBackfillComplete: doc.lineupBackfillComplete ?? false,
