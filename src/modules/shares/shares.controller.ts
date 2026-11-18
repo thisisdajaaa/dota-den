@@ -23,7 +23,10 @@ export class SharesController {
     };
   }
 
-  /** POST /api/v1/me/shares: a link to a session, this week or a rank journey (refreshed if it exists). */
+  /**
+   * POST /api/v1/me/shares: a link to a session, this week, the current win streak, one of your
+   * games or a rank journey (refreshed if it exists).
+   */
   create = handler(
     {
       guard: requireUser,
@@ -40,7 +43,7 @@ export class SharesController {
       if (!result.ok) {
         if (result.error.type === "empty")
           throw new ValidationError("There's nothing to share yet.");
-        throw new NotFoundError("Session not found");
+        throw new NotFoundError(body.kind === "match" ? "Match not found" : "Session not found");
       }
       return ServiceResponse.success(this.toDto(result.value), "Share link ready");
     },

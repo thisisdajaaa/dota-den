@@ -4,6 +4,7 @@ import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
 import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { HeroPortrait } from "@/modules/matches/ui/hero-portrait";
+import { ShareButton } from "@/modules/shares/ui/share-button";
 import type { PlaySession } from "../domain/session";
 import { formatSpan, sessionTimeLabels } from "../domain/session-labels";
 import type { SessionMmr } from "../domain/session-mmr";
@@ -63,6 +64,7 @@ export async function LatestSessionCard({
           >
             {t("sessions.latest.openRecap")} <ChevronRight aria-hidden className="size-4" />
           </Link>
+          <ShareButton target={{ kind: "session", ref: session.id }} />
         </div>
       </div>
       {stopLoss && <StopLossLine {...stopLoss} />}

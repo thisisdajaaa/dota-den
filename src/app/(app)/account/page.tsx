@@ -61,7 +61,11 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
           ? t("shares.account.journeyLabel", {
               range: isJourneyRange(s.ref) ? t(`mmr.journey.ranges.${s.ref}`) : s.ref,
             })
-          : t("shares.account.weekLabel", { date: s.ref }),
+          : s.kind === "streak"
+            ? t("shares.account.streakLabel", { n: s.snapshot.games })
+            : s.kind === "match"
+              ? t("shares.account.matchLabel", { id: s.ref })
+              : t("shares.account.weekLabel", { date: s.ref }),
   }));
   const downloads = [
     {

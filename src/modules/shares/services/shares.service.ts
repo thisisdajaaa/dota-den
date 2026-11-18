@@ -1,5 +1,5 @@
 import type { DataOwner } from "@/common/privacy/user-data";
-import { isEmpty, SLUG_PATTERN, type ShareSnapshot } from "../domain/share";
+import { isEmpty, MIN_STREAK, SLUG_PATTERN, type ShareSnapshot } from "../domain/share";
 import type { ShareDocument } from "../shares.model";
 import type { ShareRequest, ShareSources, SharesRepositoryPort } from "../shares.ports";
 
@@ -32,6 +32,15 @@ export class SharesService {
     } else if (request.kind === "journey") {
       snapshot = await this.deps.sources.journey(owner, request.range);
       ref = request.range;
+    } else if (request.kind === "match") {
+      snapshot = await this.deps.sources.match(owner, request.ref);
+      ref = request.ref;
+    } else if (request.kind === "streak") {
+      const streak = await this.deps.sources.streak(owner, this.now());
+      // No win yet is "nothing to share", like a streak too short for a card.
+      if (!streak) return { ok: false, error: { type: "empty" } };
+      snapshot = streak.share;
+      ref = streak.ref;
     } else {
       const week = await this.deps.sources.week(owner, timeZone);
       snapshot = week;
@@ -46,6 +55,12 @@ export class SharesService {
       this.now(),
     );
     return { ok: true, value: doc };
+  }
+
+  /** The owner's current win streak when it's long enough for a card (the dashboard's prompt). */
+  async currentStreak(owner: DataOwner): Promise<number | null> {
+    const streak = await this.deps.sources.streak(owner, this.now());
+    return streak && streak.share.games >= MIN_STREAK ? streak.share.games : null;
   }
 
   /** The public view of a link; null for anything that isn't a live link. */

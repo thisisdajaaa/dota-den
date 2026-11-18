@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getT } from "@/common/i18n/server";
+import Image from "next/image";
+import { isLocale, type Locale } from "@/common/i18n/locales";
+import { englishMessages, MESSAGES } from "@/common/i18n/messages";
+import { getLocale, getT } from "@/common/i18n/server";
+import { translator } from "@/common/i18n/translate";
 import { PageHeader } from "@/components/page-header";
 import { StatTile } from "@/components/stat-tile";
 import { Button } from "@/components/ui/button";
@@ -17,27 +21,59 @@ import { JourneyChart } from "@/modules/mmr/ui/journey-chart";
 import { JourneyStretchCard } from "@/modules/mmr/ui/journey-stretch-card";
 import { winRate, type JourneyShareStretch, type ShareHero } from "@/modules/shares/domain/share";
 import { shareHeadline } from "@/modules/shares/ui/share-text";
+import { shareCardText } from "@/modules/shares/ui/share-card-text";
+import { formatDuration } from "@/modules/matches/ui/format";
 
-export async function generateMetadata({ params }: PageProps<"/s/[slug]">): Promise<Metadata> {
+/** The card's language: the link's `?lang=`, else the viewer's. */
+async function cardLocale(searchParams: Promise<Record<string, string | string[] | undefined>>) {
+  const { lang } = await searchParams;
+  return isLocale(lang) ? lang : getLocale();
+}
+
+/** The card image for a share, in a language (`?v=` changes when the owner shares again). */
+const cardUrl = (slug: string, updatedAt: Date, locale: Locale, format?: "square") =>
+  `/og/share/${slug}?v=${updatedAt.getTime()}&lang=${locale}${format ? `&format=${format}` : ""}`;
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps<"/s/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const share = await sharesService.view(slug);
   // Shared on purpose, but not something to put in search results.
   const robots = { index: false, follow: false };
   if (!share) return { robots };
-  const t = await getT();
-  const { title, games } = shareHeadline(t, share.snapshot, share.playerName);
-  // ?v= changes when the owner shares again, so previews pick up the new snapshot.
+  // Previews (Facebook, Messenger, Discord) are in the language the link was shared in.
+  const [locale, heroes] = await Promise.all([cardLocale(searchParams), matchesService.heroMap()]);
+  const t = translator(MESSAGES[locale], englishMessages);
+  const card = shareCardText(t, share.snapshot, {
+    playerName: share.playerName,
+    heroName: (id) => heroName(heroes.get(id), id),
+  });
+  const { games } = shareHeadline(t, share.snapshot, share.playerName, (id) =>
+    heroName(heroes.get(id), id),
+  );
+  const description = card.sub ?? games;
   const images = [
-    { url: `/og/share/${slug}?v=${share.updatedAt.getTime()}`, width: 1200, height: 630 },
+    { url: cardUrl(slug, share.updatedAt, locale), width: 1200, height: 630, alt: card.title },
   ];
   return {
-    title,
-    description: games,
+    title: card.title,
+    description,
     robots,
-    openGraph: { title, description: games, images },
-    twitter: { card: "summary_large_image", title, description: games, images },
+    openGraph: {
+      title: card.title,
+      description,
+      images,
+      url: `/s/${slug}?lang=${locale}`,
+      locale: OG_LOCALES[locale],
+    },
+    twitter: { card: "summary_large_image", title: card.title, description, images },
   };
 }
+
+/** Open Graph locale tags. */
+const OG_LOCALES: Record<Locale, string> = { en: "en_US", fil: "fil_PH", ceb: "ceb_PH" };
 
 const dateRange = (from: Date, to: Date) => {
   const fmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -50,24 +86,48 @@ const medalName = (tier: number) => {
 };
 
 /**
- * A session, a week or a rank journey a player chose to share. Only the snapshot they shared is
- * shown; a journey is by medal only (never MMR).
+ * A session, week, win streak, game or rank journey a player chose to share. Only the snapshot
+ * they shared is shown; a journey is by medal only (never MMR), a game only the player's own line.
  */
-export default async function SharePage({ params }: PageProps<"/s/[slug]">) {
+export default async function SharePage({ params, searchParams }: PageProps<"/s/[slug]">) {
   const { slug } = await params;
   const share = await sharesService.view(slug);
   if (!share) notFound();
-  const [t, heroes] = await Promise.all([getT(), matchesService.heroMap()]);
+  const [t, heroes, locale] = await Promise.all([
+    getT(),
+    matchesService.heroMap(),
+    cardLocale(searchParams),
+  ]);
   const s = share.snapshot;
-  const { title, games } = shareHeadline(t, s, share.playerName);
+  const nameOf = (id: number) => heroName(heroes.get(id), id);
+  const { title, games } = shareHeadline(t, s, share.playerName, nameOf);
+  const shortDay = (d: Date) =>
+    new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(d);
   const kicker =
     s.kind === "session"
       ? t("shares.session.kicker", { date: dateRange(s.startedAt, s.endedAt) })
       : s.kind === "journey"
         ? t("shares.journey.kicker", { date: dateRange(s.from, s.to) })
-        : t("shares.week.kicker", {
-            date: dateRange(new Date(`${s.from}T12:00:00Z`), new Date(`${s.to}T12:00:00Z`)),
-          });
+        : s.kind === "streak"
+          ? t("shares.streak.kicker", { date: dateRange(s.from, s.to) })
+          : s.kind === "match"
+            ? t("shares.match.kicker", { id: s.matchId, date: shortDay(s.startedAt) })
+            : t("shares.week.kicker", {
+                date: dateRange(new Date(`${s.from}T12:00:00Z`), new Date(`${s.to}T12:00:00Z`)),
+              });
+
+  // The card itself, as it was shared (the link's language).
+  const card = (
+    <Image
+      src={cardUrl(slug, share.updatedAt, locale)}
+      alt={t("shares.card.alt", { title })}
+      width={1200}
+      height={630}
+      unoptimized
+      priority
+      className="w-full rounded-xl border border-white/[0.06]"
+    />
+  );
 
   const cta = (
     <section className="panel flex flex-wrap items-center justify-between gap-3 p-5">
@@ -94,12 +154,53 @@ export default async function SharePage({ params }: PageProps<"/s/[slug]">) {
   );
 
   const heroList =
-    s.kind === "session" || s.kind === "journey"
+    s.kind === "session" || s.kind === "journey" || s.kind === "streak"
       ? s.heroes.map((h) => heroRow(t("shares.played"), h))
-      : [
-          ...(s.mostPlayed ? [heroRow(t("shares.week.mostPlayed"), s.mostPlayed)] : []),
-          ...(s.best ? [heroRow(t("shares.week.best"), s.best)] : []),
-        ];
+      : s.kind === "week"
+        ? [
+            ...(s.mostPlayed ? [heroRow(t("shares.week.mostPlayed"), s.mostPlayed)] : []),
+            ...(s.best ? [heroRow(t("shares.week.best"), s.best)] : []),
+          ]
+        : [];
+
+  if (s.kind === "match") {
+    return (
+      <div className="space-y-6">
+        <PageHeader kicker={kicker} title={title} description={games} />
+        {card}
+        <section aria-label={t("shares.summary")} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile
+            label={t("shares.match.result")}
+            value={t(`shares.match.${s.result}`)}
+            tone={s.result === "win" ? "win" : "loss"}
+            detail={nameOf(s.heroId)}
+          />
+          <StatTile
+            label={t("shares.card.stat.kda")}
+            value={`${s.kills}/${s.deaths}/${s.assists}`}
+          />
+          <StatTile
+            label={t("shares.card.stat.heroDamage")}
+            value={s.heroDamage === null ? "—" : s.heroDamage.toLocaleString("en-US")}
+          />
+          <StatTile
+            label={t("shares.card.stat.duration")}
+            value={formatDuration(s.durationSec)}
+            detail={s.goldPerMin === null ? undefined : `${s.goldPerMin} GPM`}
+          />
+        </section>
+        <p>
+          <Link
+            href={`/matches/${s.matchId}`}
+            className="text-sm font-medium text-gold hover:underline"
+          >
+            {t("shares.match.open")}
+          </Link>
+        </p>
+        {cta}
+      </div>
+    );
+  }
 
   if (s.kind === "journey") {
     const day = new Intl.DateTimeFormat("en-US", {
@@ -122,6 +223,7 @@ export default async function SharePage({ params }: PageProps<"/s/[slug]">) {
     return (
       <div className="space-y-6">
         <PageHeader kicker={kicker} title={title} description={games} />
+        {card}
         <section aria-label={t("shares.summary")} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile
             label={t("mmr.journey.medalPeak")}
@@ -228,6 +330,7 @@ export default async function SharePage({ params }: PageProps<"/s/[slug]">) {
   return (
     <div className="space-y-6">
       <PageHeader kicker={kicker} title={title} description={games} />
+      {card}
       <section aria-label={t("shares.summary")} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label={t("shares.wins")} value={String(s.wins)} />
         <StatTile label={t("shares.losses")} value={String(s.losses)} />
