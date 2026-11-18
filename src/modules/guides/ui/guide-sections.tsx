@@ -18,6 +18,8 @@ import {
   type Phase,
   type ProGame,
 } from "../domain/hero-guide";
+import type { BuildStep } from "../domain/hero-guide";
+import { BuildPath } from "./build-sections";
 
 function Unavailable({ text }: { text: string }) {
   return <p className="text-sm text-muted-foreground">{text}</p>;
@@ -25,12 +27,14 @@ function Unavailable({ text }: { text: string }) {
 
 export async function ItemBuilds({
   items,
+  build,
   itemSource,
   itemMap,
   heroId,
   heroLabel,
 }: {
   items: Record<Phase, ItemPick[]> | null;
+  build?: Record<BuildStep, ItemPick[]> | null;
   itemSource: ItemSource;
   itemMap: Map<number, ItemInfo>;
   heroId: number;
@@ -47,12 +51,17 @@ export async function ItemBuilds({
           {t(`guides.items.title.${itemSource.source}`)}
         </h2>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          {pubs
-            ? t("guides.items.description.pubs", {
+          {pubs && build
+            ? t("guides.build.description", {
                 hero: heroLabel,
                 position: t("guides.items.position", { n: pubs.position }),
               })
-            : t("guides.items.description.pro")}
+            : pubs
+              ? t("guides.items.description.pubs", {
+                  hero: heroLabel,
+                  position: t("guides.items.position", { n: pubs.position }),
+                })
+              : t("guides.items.description.pro")}
         </p>
       </div>
       {pubs && pubs.positions.length > 1 && (
@@ -79,8 +88,12 @@ export async function ItemBuilds({
           })}
         </nav>
       )}
-      {pubs && items && <p className="text-xs text-muted-foreground">{t("guides.items.legend")}</p>}
-      {!items ? (
+      {pubs && items && !build && (
+        <p className="text-xs text-muted-foreground">{t("guides.items.legend")}</p>
+      )}
+      {build ? (
+        <BuildPath build={build} itemMap={itemMap} />
+      ) : !items ? (
         <Unavailable text={t("guides.unavailable")} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

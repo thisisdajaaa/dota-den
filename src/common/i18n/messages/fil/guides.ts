@@ -58,6 +58,63 @@ export const guides: MessageTree<typeof en> = {
       late: "Late game",
     },
   },
+  build: {
+    description:
+      "{hero} sa {position}, gaya ng in-game guide: ang panimulang items ng mga Legend hanggang Immortal, tapos ang items na binuo ng karamihan ayon sa pagkakasunod, kasama ang totoong timing mula sa huling buong linggo ng laro (STRATZ). Ang situational ay mga item na mas kaunti ang bumibili.",
+    steps: {
+      start: "Panimulang items",
+      early: "Early game",
+      core: "Core build",
+      situational: "Situational",
+    },
+    hints: {
+      start: "Binili bago ang horn",
+      early: "Unang 10 minuto",
+      core: "Ayon sa pagkakasunod ng pagbili · karaniwang minuto",
+      situational: "Mas kaunti ang bumibili; depende sa laro",
+    },
+    timings: {
+      title: "Timing ng items",
+      item: "Item",
+      fast: "Mabilis",
+      typical: "Karaniwan",
+      win: "Panalo",
+      note: "Mabilis: ikaapat ng mga player ang mayroon na nito pagsapit ng minutong iyon. Karaniwan: kalahati. Mas mataas ang win rate ng late items dahil umaabot dito ang mahahabang larong maganda ang takbo.",
+    },
+  },
+  skills: {
+    kicker: "Mga pro game",
+    title: "Skill build at talents",
+    description:
+      "Ang skill na kinuha ng karamihan ng pro sa bawat level ni {hero}, mula sa {n} bagong pro game na may naitalang skill order (OpenDota).",
+    unavailable: "Kulang ang bagong pro game sa hero na ito para magpakita ng skill build.",
+    ability: "Ability",
+    talent: "Talent",
+    talents: "Mga talent",
+    talentNote:
+      "Gaano kadalas kinuha ng mga pro ang bawat panig ng hilera. Nagbabago ang numero ng talent kada patch, kaya ang laro ang nagpapakita ng eksaktong halaga.",
+  },
+  wards: {
+    kicker: "Support",
+    title: "Mga ward spot",
+    description:
+      "Kung saan naglagay ng ward sa huling {n} pro game, ayon sa panig at oras. Mas malaking tuldok, mas madalas gamitin; ang numero ang ranggo ng spot.",
+    mapAlt: "Mapa ng Dota 2 na may pinakaginagamit na ward spot",
+    spotTitle: "Spot {rank}: {n} ward",
+    none: "Walang karaniwang spot para sa pinili.",
+    note: "Mula sa mga parsed pro game ng OpenDota. Pinagsasama ang mga spot sa maliit na grid, kaya puwedeng sakop ng isang tuldok ang ilang malapit na cliff.",
+    link: "Mapa ng ward spots",
+    linkHint: "Kung saan naglalagay ng observer at sentry ang mga pro, ayon sa panig at oras",
+    kinds: { label: "Uri ng ward", observer: "Observer", sentry: "Sentry" },
+    sides: { label: "Panig", radiant: "Radiant", dire: "Dire" },
+    phases: { label: "Oras", early: "0–10 min", mid: "10–25 min", late: "25+ min" },
+    page: {
+      title: "Mga ward spot",
+      description:
+        "Kung saan naglalagay ng observer at sentry ward ang mga pro, ayon sa panig at oras ng laro, mula sa mga bagong pro game.",
+      kicker: "Mga guide",
+    },
+  },
   bench: {
     kicker: "Mga benchmark",
     title: "Ano ang itsura ng malakas na laro",

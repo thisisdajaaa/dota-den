@@ -17,6 +17,7 @@ describe("buildSitemap", () => {
       "https://example.com/",
       "https://example.com/meta",
       "https://example.com/guides",
+      "https://example.com/guides/wards",
       "https://example.com/patches",
       "https://example.com/draft",
       "https://example.com/draft/challenges",
@@ -44,7 +45,7 @@ describe("buildSitemap", () => {
 
   it("still lists the public pages when the hero catalog and patches are unavailable", () => {
     expect(buildSitemap({ baseUrl: "https://example.com", heroIds: [], patches: [] })).toHaveLength(
-      11,
+      12,
     );
   });
 });

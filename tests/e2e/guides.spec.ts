@@ -29,11 +29,17 @@ test("hero guides show pro builds, benchmarks and pro games", async ({ page }) =
   await expect(early).toContainText("Magic Wand");
   await expect(early).not.toContainText("Tango");
   await expect(early).not.toContainText("Boots of Speed");
-  const mid = items.getByRole("group", { name: "Mid game" });
-  await expect(mid).toContainText("Battle Fury");
-  await expect(mid).toContainText("15 min");
-  await expect(mid).toContainText("55%");
-  await expect(items.getByRole("group", { name: "Late game" })).toContainText("Black King Bar");
+  // The core build in buying order with its typical minute; rarer items are situational.
+  const core = items.getByRole("group", { name: "Core build" });
+  await expect(core).toContainText("Battle Fury");
+  await expect(core).toContainText("15′");
+  const situational = items.getByRole("group", { name: "Situational" });
+  await expect(situational).toContainText("Power Treads");
+  await expect(situational).toContainText("Black King Bar");
+  // Timings: fast and typical minute, with the win rate of the games that built it.
+  const timings = items.getByRole("table", { name: "Item timings" });
+  await expect(timings.getByRole("row", { name: /Battle Fury/ })).toContainText("15 min");
+  await expect(timings.getByRole("row", { name: /Battle Fury/ })).toContainText("55%");
   // Another position the hero is played in: its own build.
   const positions = items.getByRole("navigation", { name: "Positions" });
   await expect(positions.getByRole("link", { name: /Pos 1/ })).toHaveAttribute(

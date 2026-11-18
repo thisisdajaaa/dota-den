@@ -1,15 +1,19 @@
 import {
+  buildPath,
   counters,
   PHASES,
   pickBenchmarks,
   playedPositions,
   pubPhases,
   topItems,
+  type BuildStep,
   type ItemPick,
   type ItemSource,
   type Phase,
   type PubBuild,
 } from "./domain/hero-guide";
+import { skillBuild } from "./domain/skill-build";
+import type { WardCell } from "./domain/ward-spots";
 import type { GuideSource } from "./guides.ports";
 import type { HeroGuide } from "./dtos/responses/hero-guide.dto";
 
@@ -30,11 +34,12 @@ export class GuideService {
     const { source } = this.deps;
     const builds = await (source.itemBuilds?.(heroId) ?? Promise.resolve(null)).catch(() => null);
     const pub = builds ? pubItems(builds, opts.isFiller ?? isConsumable, opts.position) : null;
-    const [pop, bench, allGames, matchups] = await Promise.all([
+    const [pop, bench, allGames, matchups, skills] = await Promise.all([
       pub ? Promise.resolve(null) : source.itemPopularity(heroId).catch(() => null),
       source.benchmarks(heroId).catch(() => null),
       source.proGames(heroId).catch(() => null),
       source.matchups(heroId).catch(() => null),
+      (source.skillBuilds?.(heroId) ?? Promise.resolve(null)).catch(() => null),
     ]);
     const games = allGames?.slice(0, PRO_GAMES_SHOWN) ?? null;
     const ids = (games ?? []).flatMap((g) => (g.accountId32 ? [g.accountId32] : []));
@@ -52,7 +57,9 @@ export class GuideService {
     return {
       heroId,
       items,
+      build: pub?.build ?? null,
       itemSource: pub?.itemSource ?? { source: "pro" },
+      skills: skills ? skillBuild(skills.builds, skills) : null,
       benchmarks: bench ? pickBenchmarks(bench) : null,
       proGames: games
         ? games.map((g) => ({
@@ -63,6 +70,11 @@ export class GuideService {
         : null,
       counters: matchups ? { ...counters(matchups.rows), source: matchups.source } : null,
     };
+  }
+
+  /** Where wards went in recent pro games; null when the source can't say. */
+  async wardCells(): Promise<{ cells: WardCell[]; games: number } | null> {
+    return (await this.deps.source.wardCells?.().catch(() => null)) ?? null;
   }
 
   /**
@@ -93,13 +105,18 @@ function pubItems(
   builds: readonly PubBuild[],
   exclude: (itemId: number) => boolean,
   asked: number | undefined,
-): { items: Record<Phase, ItemPick[]>; itemSource: ItemSource } | null {
+): {
+  items: Record<Phase, ItemPick[]>;
+  build: Record<BuildStep, ItemPick[]>;
+  itemSource: ItemSource;
+} | null {
   const positions = playedPositions(builds);
   const chosen = positions.find((p) => p.position === asked) ?? positions[0];
   const build = chosen && builds.find((b) => b.position === chosen.position);
   if (!chosen || !build) return null;
   return {
     items: pubPhases(build, exclude),
+    build: buildPath(build, exclude),
     itemSource: { source: "pubs", position: chosen.position, positions },
   };
 }

@@ -764,7 +764,7 @@ function stratzItems(heroId) {
       ...minutes(36, 1, 4, 300 * scale, 0.51),
       ...minutes(29, 2, 4, 400 * scale, 0.5),
       ...minutes(63, 8, 12, 250 * scale, 0.52),
-      ...minutes(145, 13, 17, 300 * scale, 0.55),
+      ...minutes(145, 13, 17, 500 * scale, 0.55),
       ...minutes(116, 24, 30, 120 * scale, 0.61),
     ],
     start: [
