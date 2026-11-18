@@ -125,7 +125,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         stale={MatchSyncService.isStale(sync, now, syncPolicy)}
         backfillComplete={sync?.backfillComplete ?? false}
         backfillCooldownMs={syncPolicy.backfillCooldownMs}
-        recheckMs={SYNC_COOLDOWN_MS}
+        // No games yet: check as often as an import does, so they show up soon after arriving.
+        recheckMs={hasAnyMatches ? SYNC_COOLDOWN_MS : syncPolicy.backfillCooldownMs}
         awaitingHistory={!hasAnyMatches}
         lastSyncedLabel={sync?.lastSyncAt ? formatAgo(sync.lastSyncAt, now) : null}
       />
@@ -140,12 +141,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   if (!hasAnyMatches) {
     // First run: only what helps while the history arrives. Panels that would read 0 or —
     // (stats, lanes, teammates, standings, achievements) wait until there are games.
+    // OpenDota says it couldn't read the history from Steam: almost always "Expose Public
+    // Match Data" is off, so say that and how to fix it rather than "waiting".
+    const firstAsked = sync?.historyFirstRequestedAt ?? sync?.historyRefreshRequestedAt ?? null;
     const stage: FirstRunStage = !sync?.lastSyncAt
       ? "first_sync"
-      : sync.historyRefreshRequestedAt &&
-          now.getTime() - sync.historyRefreshRequestedAt.getTime() < 2 * 3_600_000
-        ? "fetching"
-        : "no_public_data";
+      : profile?.matchHistory === "limited"
+        ? "private"
+        : firstAsked && now.getTime() - firstAsked.getTime() < 2 * 3_600_000
+          ? "fetching"
+          : "no_public_data";
     return (
       <div className="space-y-6">
         {banner}

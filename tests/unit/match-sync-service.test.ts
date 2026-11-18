@@ -141,7 +141,10 @@ class MemorySyncState implements SyncStatesPort {
       lockedUntil: null,
     };
     if (this.state.lockedUntil && this.state.lockedUntil > now) return { type: "locked" };
-    const wait = this.state.backfillComplete ? cooldownMs : backfillCooldownMs;
+    const wait =
+      this.state.backfillComplete && this.state.newestStartedAt !== null
+        ? cooldownMs
+        : backfillCooldownMs;
     if (this.state.lastSyncAt && now.getTime() - this.state.lastSyncAt.getTime() < wait) {
       return { type: "cooldown", retryAt: new Date(this.state.lastSyncAt.getTime() + wait) };
     }
@@ -247,10 +250,10 @@ describe("MatchSyncService", () => {
 
   it("reports staleness against the applicable cooldown", () => {
     const now = new Date("2026-09-29T12:00:00Z");
-    const at = (msAgo: number, backfillComplete: boolean) => ({
+    const at = (msAgo: number, backfillComplete: boolean, empty = false) => ({
       accountId32: ACCOUNT,
       lastSyncAt: new Date(now.getTime() - msAgo),
-      newestStartedAt: null,
+      newestStartedAt: empty ? null : new Date("2026-09-28T00:00:00Z"),
       backfillOffset: 0,
       backfillComplete,
       historyRefreshRequestedAt: null,
@@ -262,9 +265,11 @@ describe("MatchSyncService", () => {
     expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, false), now)).toBe(true);
     expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, true), now)).toBe(false);
     expect(MatchSyncService.isStale(at(SYNC_COOLDOWN_MS, true), now)).toBe(true);
+    // Nothing imported yet: the short cooldown, so a newly public history shows up quickly.
+    expect(MatchSyncService.isStale(at(BACKFILL_COOLDOWN_MS + 1, true, true), now)).toBe(true);
   });
 
-  it("asks the upstream to fetch history on first sync and while still empty, at most every 6h", async () => {
+  it("asks the upstream to fetch history on first sync and while still empty, at most every 15 minutes", async () => {
     const ctx = setup(0);
     const first = await ctx.service.sync(ACCOUNT);
     expect(first.ok && first.value.historyRefreshRequested).toBe(true);
@@ -276,13 +281,18 @@ describe("MatchSyncService", () => {
     expect(second.ok && second.value.historyRefreshRequested).toBe(false);
     expect(ctx.upstream.refreshRequests).toBe(1);
 
-    // Still empty after 6h: ask again.
+    // Still empty after the interval (e.g. the player just made their data public): ask again.
     ctx.advance(HISTORY_REFRESH_INTERVAL_MS);
     await ctx.service.sync(ACCOUNT);
     expect(ctx.upstream.refreshRequests).toBe(2);
+    // The first request time is kept, so the dashboard can tell how long we've been waiting.
+    const state = await ctx.syncState.get();
+    expect(state?.historyFirstRequestedAt?.getTime()).toBeLessThan(
+      state!.historyRefreshRequestedAt!.getTime(),
+    );
   });
 
-  it("re-requests weekly (not every 6h) once matches exist", async () => {
+  it("re-requests weekly (not every 15 minutes) once matches exist", async () => {
     const ctx = setup(5);
     await ctx.service.sync(ACCOUNT); // first sync: one request
     ctx.advance(HISTORY_REFRESH_INTERVAL_MS + 1);

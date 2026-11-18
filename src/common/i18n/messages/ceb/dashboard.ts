@@ -29,12 +29,24 @@ export const dashboard: MessageTree<typeof en> = {
       title: "Gikuha sa OpenDota ang imong kasaysayan sa duwa",
       body: "Gihangyo namo ang OpenDota nga kuhaon ang imong mga duwa gikan sa Steam. Kasagaran pipila ka minuto ra, usahay mas dugay kung daghan kag duwa. Pwede nimo biyaan nga abri kini nga page: kusog ra kini mosusi pag-usab.",
     },
+    private: {
+      title: "Morag private ang imong match data",
+      body: "Dili mabasa sa OpenDota ang imong match history gikan sa Steam. Kasagaran pasabot kini nga naka-off ang “Expose Public Match Data” sa Dota 2. I-on kini ug kusog ra mogawas dinhi ang imong mga duwa.",
+    },
     no_public_data: {
       title: "Wala pay nakit-ang public nga duwa",
-      body: "Wala pa gihapoy duwa ang OpenDota para niini nga account. Sa Dota 2, adto sa Settings → Options → Social ug i-on ang “Expose Public Match Data”. Gihangyo namo ang OpenDota nga kuhaon pag-usab ang imong kasaysayan matag pipila ka oras, ug makuha usab niini ang mga duwa nga imong dulaon sugod karon.",
+      body: "Wala pa gihapoy duwa ang OpenDota para niini nga account. Siguroha nga public ang imong match data (mga lakang sa ubos). Samtang wala pa, gihangyo namo ang OpenDota nga kuhaon pag-usab ang imong kasaysayan matag 15 ka minuto, ug mogawas ang bag-ong mga duwa pipila ka minuto human kini mahuman.",
     },
   },
   firstRun: {
+    fix: {
+      title: "Unsaon pag-ayo",
+      expose:
+        "Sa Dota 2, ablihi ang Settings → Options → Social ug i-tick ang “Expose Public Match Data”.",
+      restart: "I-restart ang Dota 2 aron ma-save ang setting.",
+      play: "Pagdula og usa ka match, bisan unsang mode. Mogawas kini dinhi pipila ka minuto human kini mahuman, ug mosunod ang mga daan nga duwa.",
+      auto: "Biyai nga abri kini nga page: mosusi kini pag-usab matag 30 segundos. Dili kinahanglan i-refresh.",
+    },
     status: {
       kicker: "Gikuha ang imong mga duwa",
       stepsLabel: "Dagan sa import",

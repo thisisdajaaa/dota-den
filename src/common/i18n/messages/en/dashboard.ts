@@ -27,12 +27,23 @@ export const dashboard = {
       title: "OpenDota is fetching your match history",
       body: "We've asked OpenDota to pull your games from Steam. This usually takes a few minutes, sometimes longer for big histories. You can leave this page open: it checks again automatically.",
     },
+    private: {
+      title: "Your match data looks private",
+      body: "OpenDota couldn't read your match history from Steam. That almost always means “Expose Public Match Data” is off in Dota 2. Turn it on and your games show up here by themselves.",
+    },
     no_public_data: {
       title: "No public matches found yet",
-      body: "OpenDota still has no games for this account. In Dota 2, go to Settings → Options → Social and turn on “Expose Public Match Data”. We ask OpenDota to re-fetch your history every few hours, and it also picks up games you play from now on.",
+      body: "OpenDota still has no games for this account. Check that your match data is public (steps below). While it's empty we ask OpenDota to re-fetch your history every 15 minutes, and new games show up a few minutes after they end.",
     },
   },
   firstRun: {
+    fix: {
+      title: "How to fix it",
+      expose: "In Dota 2, open Settings → Options → Social and tick “Expose Public Match Data”.",
+      restart: "Restart Dota 2 so the setting is saved.",
+      play: "Play one match, any mode. It shows up here a few minutes after it ends, and older games follow.",
+      auto: "Keep this page open: it checks again every 30 seconds. No need to refresh.",
+    },
     status: {
       kicker: "Getting your games",
       stepsLabel: "Import progress",

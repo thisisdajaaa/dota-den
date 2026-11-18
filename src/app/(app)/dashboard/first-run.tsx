@@ -13,7 +13,7 @@ import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
 import { formatAgo } from "@/modules/matches/ui/format";
 
-export type FirstRunStage = "first_sync" | "fetching" | "no_public_data";
+export type FirstRunStage = "first_sync" | "fetching" | "private" | "no_public_data";
 
 type StepState = "done" | "current" | "warn" | "todo";
 
@@ -33,6 +33,7 @@ export async function FirstRunStatus({
   now: Date;
 }) {
   const t = await getT();
+  const needsFix = stage === "private" || stage === "no_public_data";
   const steps: Array<{ key: string; state: StepState; title: string; detail?: string }> = [
     { key: "signedIn", state: "done", title: t("dashboard.firstRun.status.signedIn") },
     {
@@ -45,12 +46,12 @@ export async function FirstRunStatus({
     },
     {
       key: "arrive",
-      state: !requestedAt ? "todo" : stage === "no_public_data" ? "warn" : "current",
+      state: !requestedAt ? "todo" : needsFix ? "warn" : "current",
       title: t("dashboard.firstRun.status.arrive"),
       detail: !requestedAt
         ? undefined
         : [
-            stage === "no_public_data"
+            needsFix
               ? t("dashboard.firstRun.status.arriveNone")
               : t("dashboard.firstRun.status.arriveWaiting"),
             lastSyncAt &&
@@ -97,6 +98,17 @@ export async function FirstRunStatus({
           </li>
         ))}
       </ol>
+      {needsFix && (
+        <div className="space-y-2 rounded-lg border border-gold/30 bg-gold/5 p-4">
+          <h3 className="text-sm font-semibold">{t("dashboard.firstRun.fix.title")}</h3>
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm">
+            <li>{t("dashboard.firstRun.fix.expose")}</li>
+            <li>{t("dashboard.firstRun.fix.restart")}</li>
+            <li>{t("dashboard.firstRun.fix.play")}</li>
+          </ol>
+          <p className="text-xs text-muted-foreground">{t("dashboard.firstRun.fix.auto")}</p>
+        </div>
+      )}
     </section>
   );
 }

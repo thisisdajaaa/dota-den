@@ -96,6 +96,11 @@ export interface SyncState {
   backfillComplete: boolean;
   /** Last time we asked the upstream to refetch this player's history. */
   historyRefreshRequestedAt: Date | null;
+  /**
+   * The first time we asked (optional: older documents and tests predate it). While nothing is
+   * imported we re-ask often, so the latest request alone can't say how long we've waited.
+   */
+  historyFirstRequestedAt?: Date | null;
   /** When the last full re-walk after a refresh request started. */
   rescannedAt: Date | null;
   /** Lineup backfill: next upstream offset to re-read older games' lineups from. */
