@@ -3,6 +3,7 @@ import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import type { Db } from "mongodb";
 import { isGapMinutes, type GapMinutes } from "../domain/session";
 import type { SessionNote } from "../domain/session-note";
+import { isStopLossActive, normalizeStopLoss, type StopLossSettings } from "../domain/stop-loss";
 import {
   SESSION_COLLECTIONS,
   SESSIONS_SCHEMA_VERSION as SCHEMA_VERSION,
@@ -126,22 +127,58 @@ export class SessionSettingsRepository implements SessionSettingsPort, PersonalD
   }
 
   async setGap(userId: string, gapMinutes: GapMinutes, now: Date): Promise<void> {
+    await this.save(userId, { gapMinutes, updatedAt: now });
+  }
+
+  async getStopLoss(userId: string): Promise<StopLossSettings> {
+    const doc = await (await this.col()).findOne({ userId }, { projection: { stopLoss: 1 } });
+    return normalizeStopLoss(doc?.stopLoss);
+  }
+
+  async setStopLoss(userId: string, settings: StopLossSettings, now: Date): Promise<void> {
+    const stopLoss = normalizeStopLoss(settings);
+    await this.save(userId, {
+      stopLoss,
+      stopLossActive: isStopLossActive(stopLoss),
+      updatedAt: now,
+    });
+  }
+
+  async stopLossUserIds(): Promise<string[]> {
+    const docs = await (
+      await this.col()
+    )
+      .find({ stopLossActive: true }, { projection: { _id: 0, userId: 1 } })
+      .toArray();
+    return docs.map((d) => d.userId);
+  }
+
+  /** Upsert one user's settings; two concurrent first saves retry as an update. */
+  private async save(userId: string, set: Partial<SessionSettingsDoc>): Promise<void> {
     try {
       await (
         await this.col()
       ).updateOne(
         { userId },
-        { $set: { gapMinutes, updatedAt: now, schemaVersion: SCHEMA_VERSION } },
+        { $set: { ...set, schemaVersion: SCHEMA_VERSION } },
         { upsert: true },
       );
     } catch (e) {
       if (!isDuplicateKey(e)) throw e;
-      await (await this.col()).updateOne({ userId }, { $set: { gapMinutes, updatedAt: now } });
+      await (await this.col()).updateOne({ userId }, { $set: set });
     }
   }
 
   async ensureIndexes(): Promise<void> {
-    await (await this.col()).createIndex({ userId: 1 }, { unique: true, name: "uniq_user" });
+    const col = await this.col();
+    await Promise.all([
+      col.createIndex({ userId: 1 }, { unique: true, name: "uniq_user" }),
+      // Only the few players with a stop-loss on are indexed.
+      col.createIndex(
+        { stopLossActive: 1 },
+        { name: "stop_loss_active", partialFilterExpression: { stopLossActive: true } },
+      ),
+    ]);
   }
 
   async exportForOwner(owner: DataOwner) {

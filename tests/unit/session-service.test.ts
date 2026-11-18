@@ -3,6 +3,11 @@ import type { SessionNotesPort, SessionSettingsPort } from "@/modules/sessions/s
 import { SessionService } from "@/modules/sessions/sessions.service";
 import type { GapMinutes, SessionMatch } from "@/modules/sessions/domain/session";
 import type { SessionNote } from "@/modules/sessions/domain/session-note";
+import {
+  isStopLossActive,
+  STOP_LOSS_OFF,
+  type StopLossSettings,
+} from "@/modules/sessions/domain/stop-loss";
 
 const DAY = 86_400_000;
 const T0 = Date.parse("2026-09-01T18:00:00Z");
@@ -26,6 +31,7 @@ function match(i: number, startMs: number): SessionMatch {
 function build(matches: SessionMatch[]) {
   const notes = new Map<string, SessionNote>();
   let gap: GapMinutes | null = null;
+  let stopLoss: StopLossSettings = STOP_LOSS_OFF;
   const noteRepo: SessionNotesPort = {
     async upsert(n) {
       notes.set(`${n.userId}|${n.sessionId}`, n);
@@ -49,6 +55,15 @@ function build(matches: SessionMatch[]) {
     },
     async setGap(_u, g) {
       gap = g;
+    },
+    async getStopLoss() {
+      return stopLoss;
+    },
+    async setStopLoss(_u, s) {
+      stopLoss = s;
+    },
+    async stopLossUserIds() {
+      return isStopLossActive(stopLoss) ? ["u"] : [];
     },
   };
   const service = new SessionService({
@@ -120,5 +135,27 @@ describe("SessionService", () => {
     await service.setGap(me, 60);
     expect((await service.list(me, 1)).earlierNotes).toEqual([]);
     expect((await service.detail(me, bId))?.note?.note).toBe("calm");
+  });
+
+  it("reports the latest session against the player's stop-loss, and whether it's going", async () => {
+    // Three games an hour apart: loss, win, loss (match() alternates by index).
+    const games = [match(2, T0), match(3, T0 + 3_600_000), match(4, T0 + 7_200_000)];
+    const { service } = build(games);
+    const latest = (await service.latest(me))!;
+    const during = new Date(T0 + 7_200_000 + 1800_000 + 10 * 60_000);
+    expect(await service.stopLoss(me, latest.session, during)).toMatchObject({
+      settings: STOP_LOSS_OFF,
+      status: null,
+      current: true,
+    });
+    await service.setStopLoss(me, { enabled: true, limits: { losses: 2, streak: null, games: 5 } });
+    const res = await service.stopLoss(me, latest.session, during);
+    expect(res.status?.rules).toEqual([
+      { rule: "losses", limit: 2, used: 2, reached: true },
+      { rule: "games", limit: 5, used: 3, reached: false },
+    ]);
+    // After a break longer than the gap the session is over.
+    const later = new Date(during.getTime() + 2 * 3_600_000);
+    expect((await service.stopLoss(me, latest.session, later)).current).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 /**
- * Feature usage (pure): how often each paid or AI feature is actually used, and by how many
+ * Feature usage (pure): how often each paid or AI feature (and the free stop-loss reminder,
+ * a marketing hook) is actually used, and by how many
  * players, so the admin page shows what's worth building on. One counter per player, feature
  * and UTC day; nothing about what was asked or shown.
  */
@@ -12,6 +13,7 @@ export const FEATURES = [
   "compare",
   "discord_command",
   "session_push",
+  "stop_loss_push",
 ] as const;
 export type Feature = (typeof FEATURES)[number];
 

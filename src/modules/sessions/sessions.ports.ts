@@ -3,6 +3,7 @@ import type { GapMinutes, SessionMatch } from "./domain/session";
 import type { CompanionState } from "./domain/companion";
 import type { MmrObservation } from "./domain/session-mmr";
 import type { SessionNote } from "./domain/session-note";
+import type { StopLossSettings } from "./domain/stop-loss";
 
 export interface SessionOwner {
   userId: string;
@@ -33,6 +34,11 @@ export interface SessionNotesPort {
 export interface SessionSettingsPort {
   getGap(userId: string): Promise<GapMinutes | null>;
   setGap(userId: string, gapMinutes: GapMinutes, now: Date): Promise<void>;
+  /** Off (`STOP_LOSS_OFF`) when never saved. */
+  getStopLoss(userId: string): Promise<StopLossSettings>;
+  setStopLoss(userId: string, settings: StopLossSettings, now: Date): Promise<void>;
+  /** Users with a stop-loss turned on (the session companion checks them while they play). */
+  stopLossUserIds(): Promise<string[]>;
 }
 
 /** A store of the player's own data, for "Download your data" and account deletion. */

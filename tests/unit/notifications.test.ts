@@ -167,6 +167,42 @@ describe("NotificationService", () => {
     expect(log.size).toBe(0);
   });
 
+  it("claims each key once and builds only from the keys not sent before", async () => {
+    const { service, sent, log } = fakes();
+    const build = vi.fn(async (fresh: string[]) => ({ ...message, body: fresh.join(",") }));
+    expect(await service.notifyOnceEach("u1", "stop_loss", ["s1:losses"], build)).toBe(1);
+    // Same session, a second rule reached later: only that rule is new.
+    expect(await service.notifyOnceEach("u1", "stop_loss", ["s1:losses", "s1:streak"], build)).toBe(
+      1,
+    );
+    expect(sent.map((s) => s.message.body)).toEqual(["s1:losses", "s1:streak"]);
+    // Nothing new: nothing built or sent.
+    build.mockClear();
+    expect(await service.notifyOnceEach("u1", "stop_loss", ["s1:losses", "s1:streak"], build)).toBe(
+      0,
+    );
+    expect(build).not.toHaveBeenCalled();
+    expect(log.size).toBe(2);
+  });
+
+  it("releases every claimed key when nothing was delivered or nothing to say", async () => {
+    const gone = fakes({ sender: { send: async () => ({ ok: false, gone: false }) } });
+    expect(
+      await gone.service.notifyOnceEach("u1", "stop_loss", ["a", "b"], async () => message),
+    ).toBe(0);
+    expect(gone.log.size).toBe(0);
+    const quiet = fakes();
+    expect(await quiet.service.notifyOnceEach("u1", "stop_loss", ["a"], async () => null)).toBe(0);
+    expect(quiet.log.size).toBe(0);
+  });
+
+  it("skips stop-loss reminders when the player turned them off", async () => {
+    const { service, prefs, sent } = fakes();
+    prefs.set("u1", { ...DEFAULT_PREFS, stop_loss: false });
+    expect(await service.notifyOnceEach("u1", "stop_loss", ["a"], async () => message)).toBe(0);
+    expect(sent).toHaveLength(0);
+  });
+
   it("is off when there are no push keys", async () => {
     const { service, sent } = fakes({ sender: null });
     expect(service.enabled).toBe(false);
@@ -343,6 +379,7 @@ it("gives settings saved before a kind existed that kind's default (Plus kinds o
     streamer_live: true,
     coach_review: true,
     session_live: true,
+    stop_loss: true,
   });
   expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
 });
@@ -356,6 +393,7 @@ it("has a default for every kind", () => {
     "streamer_live",
     "coach_review",
     "session_live",
+    "stop_loss",
   ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });

@@ -6,7 +6,11 @@ import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser } from "@/modules/identity";
 import { sessionIdFromParam } from "./domain/session";
 import { toSessionNoteDto } from "./dtos/responses/session-note.dto";
-import { SessionGapInputSchema, SessionNoteInputSchema } from "./schemas/sessions.schema";
+import {
+  SessionGapInputSchema,
+  SessionNoteInputSchema,
+  StopLossInputSchema,
+} from "./schemas/sessions.schema";
 import type { DashboardFact } from "@/modules/matches/domain/read-models";
 import type { SessionService } from "./sessions.service";
 
@@ -14,6 +18,8 @@ import type { SessionService } from "./sessions.service";
 const NOTE_SAVES_PER_MINUTE = 30;
 /** Gap setting changes allowed per user per minute. */
 const GAP_CHANGES_PER_MINUTE = 20;
+/** Stop-loss changes allowed per user per minute. */
+const STOP_LOSS_CHANGES_PER_MINUTE = 20;
 const NO_STORE = { "cache-control": "private, no-store" };
 
 const SessionParamsSchema = z.object({ sessionId: z.string().max(64) });
@@ -42,6 +48,27 @@ export class SessionsController {
         body.gapMinutes,
       );
       return ServiceResponse.success({ gapMinutes: body.gapMinutes }, "Session break saved");
+    },
+  );
+
+  /** GET /api/v1/me/settings/stop-loss: the limits you set for your sessions. */
+  getStopLoss = handler({ guard: requireUser }, async ({ user }) =>
+    ServiceResponse.success(
+      await this.deps.service.stopLossSettings({ userId: user.id, accountId32: user.accountId32 }),
+    ).withHeaders(NO_STORE),
+  );
+
+  /** PUT /api/v1/me/settings/stop-loss: turn your stop-loss on or off and set its limits. */
+  setStopLoss = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "stop-loss", limit: STOP_LOSS_CHANGES_PER_MINUTE, windowMs: 60_000 },
+      body: StopLossInputSchema,
+      invalidMessage: "Check your stop-loss limits",
+    },
+    async ({ user, body }) => {
+      await this.deps.service.setStopLoss({ userId: user.id, accountId32: user.accountId32 }, body);
+      return ServiceResponse.success(body, "Stop-loss saved");
     },
   );
 

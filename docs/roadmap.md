@@ -57,6 +57,12 @@ players already have.
 | —     | Plus page order                  | AI perks first; go-live alerts and limits lower down                                                                                   | —                                    | After the Polar merge |
 | —     | Meta for your bracket (free)     | A rank-bracket picker on the Meta page (Herald–Guardian … Divine–Immortal, `?bracket=`), defaulting to your own bracket when signed in | Free for everyone, not Plus          | In review             |
 
+## Free features in progress
+
+| Feature   | What the player gets                                                                                                                                                                                                                                 | Builds on                         | Status    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | --------- |
+| Stop-loss | Limits you set yourself on the account page (losses in a session, losses in a row, games in a session). The overview's latest session shows "1 of 2 losses used" / "Limit reached", and a push reminds you once per limit per session while you play | Sessions, session companion, push | In review |
+
 ## Principles for new features
 
 - **Honest numbers.** Never invent MMR, party membership or win chances. Estimates are labelled;
