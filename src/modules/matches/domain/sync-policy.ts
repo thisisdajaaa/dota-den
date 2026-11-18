@@ -39,9 +39,13 @@ export function policyFor(isPlus: boolean): SyncPolicy {
   return isPlus ? PLUS_SYNC_POLICY : FREE_SYNC_POLICY;
 }
 
-/** The cooldown that applies to a sync state: shorter while history is still importing. */
-export function cooldownFor(backfillComplete: boolean, policy: SyncPolicy): number {
-  return backfillComplete ? policy.cooldownMs : policy.backfillCooldownMs;
+/**
+ * The cooldown that applies to a sync state: shorter while history is still importing, and
+ * while nothing is imported yet (a new player watching an empty dashboard right after making
+ * their match data public shouldn't wait five minutes per check).
+ */
+export function cooldownFor(backfillComplete: boolean, policy: SyncPolicy, empty = false): number {
+  return backfillComplete && !empty ? policy.cooldownMs : policy.backfillCooldownMs;
 }
 
 /** Auto parse requests for Plus (ADR 0014): newest unparsed games per sync, at most. */

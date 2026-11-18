@@ -29,12 +29,24 @@ export const dashboard: MessageTree<typeof en> = {
       title: "Kinukuha ng OpenDota ang kasaysayan ng laro mo",
       body: "Hiniling namin sa OpenDota na kunin ang mga laro mo mula sa Steam. Kadalasan ilang minuto lang ito, minsan mas matagal kung marami kang laro. Puwede mong iwanang bukas ang page na ito: kusa itong titingin ulit.",
     },
+    private: {
+      title: "Mukhang private ang match data mo",
+      body: "Hindi mabasa ng OpenDota ang match history mo mula sa Steam. Halos palaging ibig sabihin nito na naka-off ang “Expose Public Match Data” sa Dota 2. I-on ito at kusang lalabas dito ang mga laro mo.",
+    },
     no_public_data: {
       title: "Wala pang nakitang public na laro",
-      body: "Wala pa ring laro ang OpenDota para sa account na ito. Sa Dota 2, pumunta sa Settings → Options → Social at i-on ang “Expose Public Match Data”. Hinihiling namin sa OpenDota na kunin ulit ang kasaysayan mo kada ilang oras, at makukuha rin nito ang mga larong lalaruin mo mula ngayon.",
+      body: "Wala pa ring laro ang OpenDota para sa account na ito. Tiyaking public ang match data mo (mga hakbang sa ibaba). Habang wala pa, hinihiling namin sa OpenDota na kunin ulit ang kasaysayan mo kada 15 minuto, at lalabas ang mga bagong laro ilang minuto matapos ang mga ito.",
     },
   },
   firstRun: {
+    fix: {
+      title: "Paano ito ayusin",
+      expose:
+        "Sa Dota 2, buksan ang Settings → Options → Social at i-tick ang “Expose Public Match Data”.",
+      restart: "I-restart ang Dota 2 para ma-save ang setting.",
+      play: "Maglaro ng isang match, kahit anong mode. Lalabas ito dito ilang minuto matapos ito, at susunod ang mga lumang laro.",
+      auto: "Iwanang bukas ang page na ito: tumitingin ito ulit kada 30 segundo. Hindi kailangang i-refresh.",
+    },
     status: {
       kicker: "Kinukuha ang mga laro mo",
       stepsLabel: "Takbo ng import",
