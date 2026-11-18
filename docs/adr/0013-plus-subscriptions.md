@@ -1,6 +1,6 @@
 # ADR 0013: Dota Den Plus subscriptions
 
-- Status: Accepted (Phase 0: built, off until configured)
+- Status: Accepted (Phase 0: built, off until configured; Polar adapter added 2026-11-18)
 - Date: 2026-10-23
 
 ## Context
@@ -175,3 +175,108 @@ reason `staff`, also while Plus is off or not configured, so the owner can use a
 Plus feature in production without buying it. Staff aren't supporters (no badge) and aren't
 counted as paying players on the admin page. Removing someone from `ADMIN_STEAM_IDS` removes it
 at their next sign-in. Entitlement still never comes from the browser.
+
+## Addendum (2026-11-18): Polar as the payment provider
+
+Lemon Squeezy declined the store (2026-10-27), so the legal pages stopped naming it. The owner
+then signed up to **Polar** (polar.sh) as an individual in the Philippines (organization slug
+`dota-den`, default currency PHP). Polar is also a merchant of record, so the decision above
+stands: a second adapter, `PolarProvider`, behind the same `BillingProvider` port.
+`BILLING_PROVIDER=polar` selects it; the Lemon Squeezy adapter stays and still works. Polar's
+account review was pending when this was built, so `PLUS_ENABLED` stays off until it passes.
+
+### Verified provider facts (Polar docs and OpenAPI schema, API version 2026-10, read 2026-11-18)
+
+- **API**: `https://api.polar.sh/v1` (sandbox: `https://sandbox-api.polar.sh/v1`, isolated, with its
+  own tokens, products and secrets), `Authorization: Bearer <organization access token>`.
+  Date-based versions: requests are pinned with `Polar-Version: 2026-10` and the webhook endpoint
+  with `api_version: "2026-10"`. A version is supported about nine months (Next, Current,
+  Deprecated); a removed one answers 404. **2026-10 becomes Deprecated in January 2027 and is
+  removed in April 2027**, so `POLAR_API_VERSION` (and the endpoint's `api_version`) must be
+  moved to the next version before then; check the changes to `Subscription`, `Checkout` and
+  `CustomerSession`.
+- **Webhooks** ([delivery](https://polar.sh/docs/integrate/webhooks/delivery)): Standard
+  Webhooks. Headers `webhook-id`, `webhook-timestamp` (Unix seconds) and `webhook-signature`
+  (space-separated `v1,<base64>`); the HMAC-SHA256 is over `${id}.${timestamp}.${body}`.
+  **Key encoding depends on the secret's age**: secrets generated on or after 2026-09-08 00:00 UTC
+  are Standard Webhooks (the base64 after `whsec_` is the key); older ones are "Polar HMAC" (the
+  key is the UTF-8 bytes of the whole `whsec_…` string). Polar's SDKs try both, and so do we; the
+  endpoint's `uses_standard_webhook_signature` says which applies. Failed deliveries are retried
+  up to 10 times with exponential backoff, a delivery times out after 10 s, and an endpoint is
+  disabled after 10 consecutive failures. Redirects count as failures (the URL must be the final
+  one: `https://www.dota-den.com/...`, not the apex that redirects).
+- **Payload**: `{type, timestamp, api_version, data}`. `Subscription.status` is one of
+  `incomplete`, `incomplete_expired`, `trialing`, `active`, `past_due`, `canceled`, `unpaid`,
+  `paused`; it also has `current_period_end`, `cancel_at_period_end`, `ends_at`, `ended_at`,
+  `trial_end`, `modified_at`, `customer_id`, `product_id`, `metadata`, `customer.external_id` and
+  `product.metadata`. **No test-mode flag**: sandbox is a separate server with separate secrets.
+- **Event sequences** ([events](https://polar.sh/docs/integrate/webhooks/events)): an end-of-period
+  cancellation sends `subscription.updated` + `subscription.canceled` with status still `active`
+  and `cancel_at_period_end: true`; at the period end `subscription.updated` +
+  `subscription.revoked` with status `canceled`. Renewals send `subscription.cycled`,
+  `subscription.updated`, then `order.created`/`order.paid`. A failed renewal moves to `past_due`
+  and is retried after 2, 7, 14 and 21 days, then revoked (`unpaid`).
+- **Checkout** ([checkout API](https://polar.sh/docs/features/checkout/session)):
+  `POST /v1/checkouts/` with `products`, `metadata` (copied to the resulting subscription and
+  orders), `external_customer_id` (the Polar customer gets it as `external_id`), `success_url`,
+  `return_url` and `customer_ip_address` (a session made on a server otherwise gets the server's
+  country for currency and tax). The answer's `url` is the hosted checkout.
+- **Customer portal** ([navigate customers](https://polar.sh/docs/features/customer-portal/navigate-customers)):
+  `https://polar.sh/<org>/portal` (sign-in by an emailed code), or a pre-authenticated link from
+  `POST /v1/customer-sessions/` (`customer_id`, `return_url`) → `customer_portal_url`, short-lived,
+  to be made at click time and never stored.
+- **Refunds** ([refunds](https://polar.sh/docs/features/refunds)): issued by the merchant (us)
+  from the dashboard; refunding a subscription order doesn't end the subscription. Polar may
+  refund on its own within 60 days of purchase to prevent a chargeback (cancelling the
+  subscription). Payment fees aren't returned.
+
+### How the adapter maps it
+
+- **Linking a purchase to a user.** Checkout now goes through the API, so the port's
+  `checkoutUrl(plan, userId, {ip})` is **async** (Lemon Squeezy's still just builds the link). The
+  endpoint became `POST /api/v1/plus/checkout {plan}` → `{url}`: signed in and **same-origin**
+  (it creates state at the provider, so another site mustn't be able to start one); the page
+  navigates to the URL. Our user id goes in **both** `metadata.user_id` (what we link by) and
+  `external_customer_id` (fallback, and reconciliation in Polar's dashboard). The buyer's IP from
+  `x-forwarded-for` is passed as `customer_ip_address`. An API failure or timeout (8 s) becomes a
+  503 with a message saying nothing was charged; the button shows it in the player's language.
+- **Status mapping** (Polar → ours): `active` → `active`; `trialing` → `on_trial`; either with
+  `cancel_at_period_end` (or an `ends_at`) → `cancelled` until `ends_at` (else the period end);
+  `canceled` (revoked) → `expired` (or `cancelled` until `ends_at` if it names a future end without
+  `ended_at`); `past_due` → `past_due` (our 7-day grace); `unpaid` → `unpaid`; `paused` → `paused`;
+  `incomplete_expired` → `expired`; `incomplete` (never paid) and unknown statuses aren't stored
+  (recorded as `other`). `renewsAt` is `current_period_end` while it renews.
+- **Ordering and idempotency.** `providerUpdatedAt` is `modified_at` (else `created_at`); the
+  event id is `polar:<webhook-id>` (stable across Polar's retries; the body hash as a fallback),
+  so `parse` now receives the headers too.
+- **Signature.** Timestamps more than 5 minutes from now, either way, are refused; any one valid
+  `v1` signature among several is accepted; constant-time compares on decoded bytes.
+- **Plans.** By `product_id` against `POLAR_PRODUCT_ID_*`, else `product.metadata.plan`.
+- **Test mode.** `POLAR_SERVER=sandbox` deployments are test mode; a verified event comes from the
+  server whose secret signed it, so it takes that server's mode.
+- **Portal.** `GET /api/v1/me/plus/portal` makes a customer session for the latest subscription's
+  `customer_id` (new optional port method `customerPortalUrl`); on failure it falls back to
+  `https://polar.sh/dota-den/portal`.
+- **Refunds.** `order.refunded` raises the owner alert, as before; refunds don't end Plus by
+  themselves (the owner cancels in the dashboard if needed).
+- **Events subscribed** (`POLAR_WEBHOOK_EVENTS`): `subscription.created`, `.updated`, `.active`,
+  `.canceled`, `.uncanceled`, `.revoked`, `.past_due`, `.paused`, `.resumed` and `order.refunded`.
+- **Provisioning.** `npm run plus:polar-provision` (dry run unless `-- --apply`) finds the products
+  by `metadata.plan` or name and the endpoint by URL, creates what's missing (₱299/month and
+  ₱2,990/year as fixed PHP prices, `metadata.plan`), adds missing events to an existing endpoint,
+  and prints only ids. A new endpoint's secret goes to `POLAR_WEBHOOK_SECRET_FILE` (mode 600) or
+  is read in the dashboard.
+- **Privacy and legal.** We send Polar our user id and the buyer's IP (the privacy policy says so
+  when Polar is configured). With `BILLING_PROVIDER=polar`, `/plus`, `/terms`, `/refunds` and
+  `/privacy` name Polar as the merchant of record, and the refund policy says Polar pays refunds
+  out, we decide on requests, and Polar may refund on its own within 60 days. Otherwise they keep
+  saying "our payment provider".
+
+### To confirm with the live account
+
+The behaviour above is from the docs and the schema; these need a sandbox (or the first live)
+purchase: that `metadata` and `customer.external_id` arrive on `subscription.*` events as
+documented; that the account's webhook secret is the Standard Webhooks kind; that a buyer whose
+email already belongs to a Polar customer can still check out with a new `external_customer_id`;
+the checkout URL's host; and where replies to Polar's receipt emails go (the contact fallback on
+the legal pages tells buyers to reply to their receipt).

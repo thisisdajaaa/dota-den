@@ -85,12 +85,12 @@ function provider(over: Partial<ConstructorParameters<typeof LemonSqueezyProvide
 }
 
 describe("LemonSqueezyProvider", () => {
-  it("adds our user id as checkout custom data", () => {
-    const url = new URL(provider().checkoutUrl("yearly", USER)!);
+  it("adds our user id as checkout custom data", async () => {
+    const url = new URL((await provider().checkoutUrl("yearly", USER))!);
     expect(url.origin + url.pathname).toBe("https://dd.lemonsqueezy.com/buy/yearly-uuid");
     expect(url.searchParams.get("checkout[custom][user_id]")).toBe(USER);
     expect(url.searchParams.get("media")).toBe("0");
-    expect(provider().checkoutUrl("monthly", "not-an-id")).toBeNull();
+    expect(await provider().checkoutUrl("monthly", "not-an-id")).toBeNull();
     expect(provider({ checkoutUrls: { monthly: "https://x.test/m" } }).plans).toEqual(["monthly"]);
   });
 
@@ -412,7 +412,7 @@ describe("PlusService", () => {
       enabled: () => true,
       logger,
     });
-    expect(off.offer()).toEqual({ status: "off", plans: [] });
+    expect(off.offer()).toEqual({ status: "off", plans: [], provider: null });
     let enabled = true;
     const svc = new PlusService({
       subscriptions,
@@ -422,7 +422,11 @@ describe("PlusService", () => {
       logger,
       now: () => NOW,
     });
-    expect(svc.offer()).toEqual({ status: "available", plans: ["monthly", "yearly"] });
+    expect(svc.offer()).toEqual({
+      status: "available",
+      plans: ["monthly", "yearly"],
+      provider: "lemonsqueezy",
+    });
     const webhooks = new BillingWebhookService({
       provider: provider(),
       subscriptions,

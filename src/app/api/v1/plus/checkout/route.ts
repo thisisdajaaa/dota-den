@@ -1,4 +1,4 @@
 import { plusController } from "@/modules/plus";
 
-/** Redirects a signed-in player to the provider's checkout for ?plan=monthly|yearly. */
-export const GET = plusController.checkout;
+/** Starts a checkout for {plan} (signed in, same-origin): answers the provider's checkout URL. */
+export const POST = plusController.checkout;

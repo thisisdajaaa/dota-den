@@ -4,6 +4,67 @@ import type { WebhookEventOutcome } from "@/modules/plus/plus.model";
 import type { SubscriptionsPort, WebhookEventsPort } from "@/modules/plus/plus.ports";
 import { POSSIBLY_ENTITLED } from "@/modules/plus/domain/entitlement";
 
+/** A Polar subscription webhook body, shaped like the 2026-10 OpenAPI schema (`Subscription`). */
+export function polarSubscriptionEvent(
+  opts: {
+    type?: string;
+    id?: string;
+    status?: string;
+    userId?: string | null;
+    externalId?: string | null;
+    modifiedAt?: string | null;
+    periodEnd?: string;
+    cancelAtPeriodEnd?: boolean;
+    endsAt?: string | null;
+    endedAt?: string | null;
+    productId?: string;
+    productPlan?: string;
+  } = {},
+): string {
+  const userId = opts.userId === undefined ? "a".repeat(24) : opts.userId;
+  return JSON.stringify({
+    type: opts.type ?? "subscription.created",
+    timestamp: "2026-10-23T12:00:00.000000Z",
+    api_version: "2026-10",
+    data: {
+      created_at: "2026-10-23T12:00:00.000000Z",
+      modified_at: opts.modifiedAt === undefined ? "2026-10-23T12:00:00.000000Z" : opts.modifiedAt,
+      id: opts.id ?? "5c7c1f2e-0d8f-4f3f-9a54-0a9b6b1c2d3e",
+      amount: 29900,
+      currency: "php",
+      recurring_interval: "month",
+      recurring_interval_count: 1,
+      status: opts.status ?? "active",
+      current_period_start: "2026-10-23T12:00:00.000000Z",
+      current_period_end: opts.periodEnd ?? "2026-11-23T12:00:00.000000Z",
+      trial_start: null,
+      trial_end: null,
+      cancel_at_period_end: opts.cancelAtPeriodEnd ?? false,
+      canceled_at: null,
+      started_at: "2026-10-23T12:00:00.000000Z",
+      ends_at: opts.endsAt ?? null,
+      ended_at: opts.endedAt ?? null,
+      customer_id: "9d1b8c4e-3a2f-4e5d-8c7b-6a5f4e3d2c1b",
+      product_id: opts.productId ?? "e7751461-934e-4bbc-befa-2593e1e56dd2",
+      discount_id: null,
+      checkout_id: "1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b",
+      metadata: userId === null ? {} : { user_id: userId, plan: "monthly" },
+      customer: {
+        id: "9d1b8c4e-3a2f-4e5d-8c7b-6a5f4e3d2c1b",
+        external_id: opts.externalId ?? null,
+        email: "buyer@example.com",
+        name: "Some Buyer",
+        billing_address: { country: "PH" },
+      },
+      product: {
+        id: opts.productId ?? "e7751461-934e-4bbc-befa-2593e1e56dd2",
+        name: "Dota Den Plus (monthly)",
+        metadata: { plan: opts.productPlan ?? "monthly" },
+      },
+    },
+  });
+}
+
 /** A Lemon Squeezy subscription webhook body, shaped like the documented payloads. */
 export function lsSubscriptionEvent(
   opts: {

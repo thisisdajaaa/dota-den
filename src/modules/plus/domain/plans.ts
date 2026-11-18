@@ -10,9 +10,9 @@ export const isPlan = (v: unknown): v is Plan =>
   typeof v === "string" && (PLANS as readonly string[]).includes(v);
 
 /**
- * Display prices in Philippine pesos, the store's currency (keep in step with the Lemon
- * Squeezy variants). The checkout may show them in the buyer's local currency (with tax), so
- * these are the reference prices only.
+ * Display prices in Philippine pesos, the store's currency (keep in step with the provider's
+ * products: scripts/polar-provision.ts creates Polar's from these). The checkout may show them
+ * in the buyer's local currency (with tax), so these are the reference prices only.
  */
 export const PLAN_PRICES: Record<Plan, { amount: string; currency: "PHP" }> = {
   monthly: { amount: "₱299", currency: "PHP" },

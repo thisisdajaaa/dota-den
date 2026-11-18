@@ -15,7 +15,7 @@ import { LegalDocument, type LegalSection } from "@/components/legal-document";
  */
 
 /** When the texts last changed (shown on the page). Update with every edit. */
-export const PRIVACY_UPDATED = "2026-10-27";
+export const PRIVACY_UPDATED = "2026-11-18";
 
 const SECTIONS: readonly LegalSection[] = [
   { key: "summary" },
@@ -63,14 +63,32 @@ const SECTIONS: readonly LegalSection[] = [
   { key: "changes" },
 ];
 
-/** The privacy policy (/privacy). */
-export function PrivacyPolicy({ supportEmail }: { supportEmail: string | null }) {
+/**
+ * The privacy policy (/privacy). With Polar as the payment provider, the services list names
+ * it (and what we send it) instead of "our payment provider".
+ */
+export function PrivacyPolicy({
+  supportEmail,
+  paymentProvider = null,
+}: {
+  supportEmail: string | null;
+  /** BILLING_PROVIDER: "polar" names Polar. */
+  paymentProvider?: string | null;
+}) {
+  const sections =
+    paymentProvider === "polar"
+      ? SECTIONS.map((s) =>
+          s.key === "services"
+            ? { ...s, items: s.items!.map((i) => (i === "payments" ? "paymentsPolar" : i)) }
+            : s,
+        )
+      : SECTIONS;
   return (
     <LegalDocument
       id="privacy"
       prefix="privacy.policy"
       updated={PRIVACY_UPDATED}
-      sections={SECTIONS}
+      sections={sections}
       supportEmail={supportEmail}
     />
   );

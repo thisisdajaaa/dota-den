@@ -93,6 +93,10 @@ export const plus: MessageTree<typeof en> = {
         "Nasa Philippine peso ang mga presyo. Puwedeng ipakita ng checkout ito sa lokal mong pera, kasama ang sales tax o VAT kung mayroon.",
       provider:
         "Ang payment provider namin, bilang merchant of record, ang humahawak ng bayad. Sila ang tumatanggap ng bayad, naniningil ng tax at nagpapadala ng resibo. Hindi nakikita ng Dota Den ang card mo.",
+      providerPolar:
+        "Ang Polar (polar.sh), bilang merchant of record, ang humahawak ng bayad. Ang Polar ang tumatanggap ng bayad, naniningil ng tax at nagpapadala ng resibo. Hindi nakikita ng Dota Den ang card mo.",
+      currencyPolar:
+        "Nasa Philippine pesos ang mga presyo. Ipinapakita ng checkout ang sales tax o VAT na sinisingil kung saan ka nakatira bago ka magbayad.",
       cancel:
         "Puwedeng mag-cancel kahit kailan sa billing portal. May Plus ka pa rin hanggang matapos ang period na binayaran mo.",
     },
@@ -115,6 +119,15 @@ export const plus: MessageTree<typeof en> = {
     termsLink: "mga tuntunin",
     refundsLink: "patakaran sa refund",
     privacyLink: "patakaran sa privacy",
+    checkoutError: {
+      network: "Hindi maabot ang Dota Den. Tingnan ang koneksyon mo at subukan ulit.",
+      hasPlus:
+        "May Plus ka na, o subscription na naniningil pa. Pamahalaan ito sa account page mo.",
+      unavailable: "Hindi pa mabibili ang Plus dito ngayon.",
+      tooMany: "Masyadong maraming subok. Maghintay ng isang minuto at subukan ulit.",
+      signIn: "Natapos ang session mo. Mag-sign in ulit para makakuha ng Plus.",
+      down: "Hindi available ang checkout ngayon. Walang nasingil; subukan ulit pagkalipas ng ilang minuto.",
+    },
   },
   card: {
     title: "Ang plan mo",
@@ -190,6 +203,8 @@ export const plus: MessageTree<typeof en> = {
       payments: {
         title: "Bayad",
         body: "Ang payment provider namin, bilang merchant of record, ang nagbebenta ng Plus. Sila ang nagpo-proseso ng bayad, naniningil ng sales tax o VAT at nagbibigay ng resibo, at ang kanilang buyer terms ang sinusunod sa pagbili.",
+        polar:
+          "Ang Polar (polar.sh), bilang merchant of record, ang nagbebenta ng Plus. Ang Polar ang nagpo-proseso ng bayad, naniningil ng sales tax o VAT at nagbibigay ng resibo, at ang buyer terms ng Polar ang sinusunod sa pagbili.",
       },
       billing: {
         title: "Renewal at pag-cancel",
@@ -213,6 +228,8 @@ export const plus: MessageTree<typeof en> = {
       who: {
         title: "Sino ang humahawak ng refund",
         body: "Ibinebenta ang Plus sa pamamagitan ng payment provider namin, bilang merchant of record. Sila ang nagbibigay ng refund, ayon sa kanilang refund policy at sa consumer law kung saan ka nakatira.",
+        polar:
+          "Ibinebenta ang Plus sa pamamagitan ng Polar (polar.sh), bilang merchant of record. Ang Polar ang nagbabalik ng pera: kami ang nagpapasya sa mga hiling na refund ayon sa policy na ito, at puwede ring mag-refund ang Polar nang kusa sa loob ng 60 araw mula sa pagbili, halimbawa para maiwasan ang chargeback. Sinusunod din ang consumer law kung saan ka nakatira.",
       },
       cancel: {
         title: "Pag-cancel",
@@ -221,6 +238,8 @@ export const plus: MessageTree<typeof en> = {
       request: {
         title: "Paghingi ng refund",
         body: "Kung may nangyaring mali (halimbawa, nasingil ka nang dalawang beses, o hindi gumana ang Plus para sa iyo), humingi sa loob ng 14 na araw mula sa singil sa billing portal o sa pag-reply sa resibo ng bayad mo.",
+        polar:
+          "Kung may nagkamali (halimbawa, dalawang beses kang nasingil, o hindi gumana ang Plus para sa iyo), humiling sa loob ng 14 na araw mula sa singil gamit ang contact sa ibaba. Nasa customer portal ng Polar ang mga resibo at subscription mo, na naka-link sa {account}.",
       },
       after: {
         title: "Pagkatapos ng refund",

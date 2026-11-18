@@ -110,4 +110,57 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...base, SESSION_DEFAULT_GAP_MINUTES: "45" })).toThrow();
     expect(() => parseEnv({ ...base, DRAFT_AI_REVIEW_ENABLED: "yes" })).toThrow();
   });
+  describe("Polar (BILLING_PROVIDER=polar)", () => {
+    const polar = {
+      ...base,
+      BILLING_PROVIDER: "polar",
+      POLAR_ACCESS_TOKEN: "polar_oat_test_0000000000000000",
+      POLAR_WEBHOOK_SECRET: "whsec_dGVzdC1zZWNyZXQtMDAwMDAwMDAwMDAw",
+    };
+
+    it("defaults the organization slug and server", () => {
+      const env = parseEnv(polar);
+      expect(env.POLAR_ORGANIZATION_SLUG).toBe("dota-den");
+      expect(env.POLAR_SERVER).toBe("production");
+      expect(env.POLAR_PRODUCT_ID_MONTHLY).toBeUndefined();
+    });
+
+    it("needs the webhook secret and the access token", () => {
+      expect(() => parseEnv({ ...polar, POLAR_WEBHOOK_SECRET: "" })).toThrow(
+        /POLAR_WEBHOOK_SECRET: BILLING_PROVIDER=polar needs POLAR_WEBHOOK_SECRET/,
+      );
+      expect(() => parseEnv({ ...polar, POLAR_ACCESS_TOKEN: "" })).toThrow(
+        /POLAR_ACCESS_TOKEN: BILLING_PROVIDER=polar needs POLAR_ACCESS_TOKEN/,
+      );
+      // Unused without the provider.
+      expect(() => parseEnv({ ...base, POLAR_SERVER: "sandbox" })).not.toThrow();
+    });
+
+    it("checks product ids, server and slug", () => {
+      const monthly = "e7751461-934e-4bbc-befa-2593e1e56dd2";
+      expect(
+        parseEnv({ ...polar, POLAR_PRODUCT_ID_MONTHLY: monthly, POLAR_SERVER: "sandbox" }),
+      ).toMatchObject({ POLAR_PRODUCT_ID_MONTHLY: monthly, POLAR_SERVER: "sandbox" });
+      expect(() => parseEnv({ ...polar, POLAR_PRODUCT_ID_MONTHLY: "123" })).toThrow(
+        /POLAR_PRODUCT_ID_MONTHLY/,
+      );
+      expect(() =>
+        parseEnv({ ...polar, POLAR_PRODUCT_ID_MONTHLY: monthly, POLAR_PRODUCT_ID_YEARLY: monthly }),
+      ).toThrow(/different products/);
+      expect(() => parseEnv({ ...polar, POLAR_SERVER: "live" })).toThrow(/POLAR_SERVER/);
+      expect(() => parseEnv({ ...polar, POLAR_ORGANIZATION_SLUG: "Dota Den" })).toThrow(
+        /POLAR_ORGANIZATION_SLUG/,
+      );
+    });
+
+    it("never puts a secret value in the error", () => {
+      const secret = "polar_oat_leak_check_value_0001";
+      try {
+        parseEnv({ ...polar, POLAR_ACCESS_TOKEN: secret, POLAR_SERVER: "nope" });
+        expect.unreachable();
+      } catch (e) {
+        expect(String(e)).not.toContain(secret);
+      }
+    });
+  });
 });

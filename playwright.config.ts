@@ -1,7 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 import webpush from "web-push";
 import { E2E_CRON_SECRET } from "./tests/e2e/support/cron";
-import { E2E_PLUS_CHECKOUT, E2E_PLUS_WEBHOOK_SECRET } from "./tests/e2e/support/plus-webhook";
+import {
+  E2E_PLUS_CHECKOUT,
+  E2E_PLUS_WEBHOOK_SECRET,
+  E2E_POLAR_PRODUCTS,
+  E2E_POLAR_WEBHOOK_SECRET,
+} from "./tests/e2e/support/plus-webhook";
 import { E2E_RESEND_WEBHOOK_SECRET } from "./tests/e2e/support/resend-webhook";
 import { E2E_SUPPORT_EMAIL } from "./tests/e2e/support/legal";
 
@@ -14,8 +19,53 @@ const DB_NAME = process.env.E2E_DB_NAME ?? "dota_den_e2e";
 // A second app server with Plus left unconfigured (the default for a fresh deployment).
 const PLAIN_PORT = Number(process.env.E2E_PLAIN_PORT ?? PORT + 2);
 process.env.E2E_PLAIN_URL = `http://localhost:${PLAIN_PORT}`;
+// A third app server with Polar as the payment provider (the main one runs Lemon Squeezy).
+const POLAR_PORT = Number(process.env.E2E_POLAR_PORT ?? PORT + 4);
+process.env.E2E_POLAR_URL = `http://localhost:${POLAR_PORT}`;
 // Throwaway Web Push keys so the notifications section is on in tests (nothing is committed).
 const vapid = webpush.generateVAPIDKeys();
+
+/** The second server's environment: nothing optional configured (a fresh deployment). */
+const PLAIN_ENV: Record<string, string> = {
+  MONGODB_URI: process.env.MONGODB_TEST_URI ?? "mongodb://127.0.0.1:27017",
+  MONGODB_DB_NAME: DB_NAME,
+  AUTH_TEST_MODE: "true",
+  OPENDOTA_BASE_URL: `${fixtureURL}/api`,
+  VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
+  IMAGE_SOURCE_BASE_URL: `${fixtureURL}/images`,
+  GROQ_API_KEY: "",
+  MATCH_COACH_API_KEY: "",
+  UPSTASH_REDIS_REST_URL: "",
+  UPSTASH_REDIS_REST_TOKEN: "",
+  QSTASH_TOKEN: "",
+  QSTASH_CURRENT_SIGNING_KEY: "",
+  QSTASH_NEXT_SIGNING_KEY: "",
+  TWITCH_CLIENT_ID: "",
+  TWITCH_CLIENT_SECRET: "",
+  KICK_CLIENT_ID: "",
+  KICK_CLIENT_SECRET: "",
+  STEAM_WEB_API_KEY: "",
+  // No STRATZ: the Meta page places heroes by OpenDota lane data, as before.
+  STRATZ_API_TOKEN: "",
+  STRATZ_API_BASE_URL: "",
+  VAPID_PUBLIC_KEY: "",
+  VAPID_PRIVATE_KEY: "",
+  RESEND_API_KEY: "",
+  EMAIL_FROM: "",
+  RESEND_WEBHOOK_SECRET: "",
+  ADMIN_ALERT_WEBHOOK_URL: "",
+  SUPPORT_EMAIL: "",
+  BILLING_PROVIDER: "",
+  PLUS_ENABLED: "",
+  LEMONSQUEEZY_WEBHOOK_SECRET: "",
+  LEMONSQUEEZY_CHECKOUT_URL_MONTHLY: "",
+  LEMONSQUEEZY_CHECKOUT_URL_YEARLY: "",
+  POLAR_ACCESS_TOKEN: "",
+  POLAR_WEBHOOK_SECRET: "",
+  POLAR_PRODUCT_ID_MONTHLY: "",
+  POLAR_PRODUCT_ID_YEARLY: "",
+  POLAR_API_BASE_URL: "",
+};
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -107,6 +157,9 @@ export default defineConfig({
         LEMONSQUEEZY_VARIANT_ID_MONTHLY: "501",
         LEMONSQUEEZY_VARIANT_ID_YEARLY: "502",
         LEMONSQUEEZY_TEST_MODE: "false",
+        POLAR_ACCESS_TOKEN: "",
+        POLAR_WEBHOOK_SECRET: "",
+        POLAR_API_BASE_URL: "",
       },
     },
     {
@@ -116,41 +169,32 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: {
+        ...PLAIN_ENV,
         APP_URL: `http://localhost:${PLAIN_PORT}`,
-        MONGODB_URI: process.env.MONGODB_TEST_URI ?? "mongodb://127.0.0.1:27017",
-        MONGODB_DB_NAME: DB_NAME,
-        AUTH_TEST_MODE: "true",
         NEXT_DIST_DIR: ".next-e2e-plain",
-        OPENDOTA_BASE_URL: `${fixtureURL}/api`,
-        VALVE_DATAFEED_BASE_URL: `${fixtureURL}/datafeed`,
-        IMAGE_SOURCE_BASE_URL: `${fixtureURL}/images`,
-        GROQ_API_KEY: "",
-        MATCH_COACH_API_KEY: "",
-        UPSTASH_REDIS_REST_URL: "",
-        UPSTASH_REDIS_REST_TOKEN: "",
-        QSTASH_TOKEN: "",
-        QSTASH_CURRENT_SIGNING_KEY: "",
-        QSTASH_NEXT_SIGNING_KEY: "",
-        TWITCH_CLIENT_ID: "",
-        TWITCH_CLIENT_SECRET: "",
-        KICK_CLIENT_ID: "",
-        KICK_CLIENT_SECRET: "",
-        STEAM_WEB_API_KEY: "",
-        // No STRATZ: the Meta page places heroes by OpenDota lane data, as before.
-        STRATZ_API_TOKEN: "",
-        STRATZ_API_BASE_URL: "",
-        VAPID_PUBLIC_KEY: "",
-        VAPID_PRIVATE_KEY: "",
-        RESEND_API_KEY: "",
-        EMAIL_FROM: "",
-        RESEND_WEBHOOK_SECRET: "",
-        ADMIN_ALERT_WEBHOOK_URL: "",
-        SUPPORT_EMAIL: "",
-        BILLING_PROVIDER: "",
-        PLUS_ENABLED: "",
-        LEMONSQUEEZY_WEBHOOK_SECRET: "",
-        LEMONSQUEEZY_CHECKOUT_URL_MONTHLY: "",
-        LEMONSQUEEZY_CHECKOUT_URL_YEARLY: "",
+      },
+    },
+    {
+      // Plus with Polar (ADR 0013, Polar addendum): a fake Polar API on the fixture server,
+      // webhooks signed with a test secret. Only the Plus specs for Polar use it.
+      command: `npx next dev --port ${POLAR_PORT}`,
+      url: `http://localhost:${POLAR_PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        ...PLAIN_ENV,
+        APP_URL: `http://localhost:${POLAR_PORT}`,
+        NEXT_DIST_DIR: ".next-e2e-polar",
+        SUPPORT_EMAIL: E2E_SUPPORT_EMAIL,
+        BILLING_PROVIDER: "polar",
+        PLUS_ENABLED: "true",
+        POLAR_ACCESS_TOKEN: "polar_oat_e2e_fixture_token_0001",
+        POLAR_WEBHOOK_SECRET: E2E_POLAR_WEBHOOK_SECRET,
+        POLAR_PRODUCT_ID_MONTHLY: E2E_POLAR_PRODUCTS.monthly,
+        POLAR_PRODUCT_ID_YEARLY: E2E_POLAR_PRODUCTS.yearly,
+        POLAR_ORGANIZATION_SLUG: "dota-den-e2e",
+        POLAR_SERVER: "sandbox",
+        POLAR_API_BASE_URL: `${fixtureURL}/polar`,
       },
     },
   ],

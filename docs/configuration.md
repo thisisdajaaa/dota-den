@@ -154,13 +154,29 @@ button renders, `POST /api/v1/plus/webhook` answers 404 and everyone is free. Th
 
 | Variable                                                                | Default | Meaning                                                                                                                                        |
 | ----------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BILLING_PROVIDER`                                                      | unset   | `lemonsqueezy`. Needs `LEMONSQUEEZY_WEBHOOK_SECRET`                                                                                            |
+| `BILLING_PROVIDER`                                                      | unset   | `polar` (needs `POLAR_ACCESS_TOKEN` and `POLAR_WEBHOOK_SECRET`) or `lemonsqueezy` (needs `LEMONSQUEEZY_WEBHOOK_SECRET`)                        |
 | `PLUS_ENABLED`                                                          | unset   | Kill switch: only `true` grants Plus and offers checkout. Anything else treats everyone as free; stored subscriptions and webhooks are kept    |
 | `LEMONSQUEEZY_WEBHOOK_SECRET`                                           | unset   | The webhook's signing secret (Lemon Squeezy → Settings → Webhooks). Webhooks are verified with it (HMAC-SHA256 of the raw body, `X-Signature`) |
 | `LEMONSQUEEZY_CHECKOUT_URL_MONTHLY`, `LEMONSQUEEZY_CHECKOUT_URL_YEARLY` | unset   | Each variant's checkout (share) link, `https://<store>.lemonsqueezy.com/buy/<id>`. A plan without one isn't offered                            |
 | `LEMONSQUEEZY_STORE_URL`                                                | unset   | The store, for the generic billing portal (`<store>/billing`); defaults to the checkout links' origin                                          |
 | `LEMONSQUEEZY_VARIANT_ID_MONTHLY`, `LEMONSQUEEZY_VARIANT_ID_YEARLY`     | unset   | Numeric variant ids, so the account page can say "Monthly" or "Yearly"                                                                         |
 | `LEMONSQUEEZY_TEST_MODE`                                                | `false` | `true` on a deployment that takes test-mode purchases; it then ignores live ones (and the other way round)                                     |
+
+With `BILLING_PROVIDER=polar` (ADR 0013, Polar addendum):
+
+| Variable                                              | Default      | What it does                                                                                                                                                                       |
+| ----------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POLAR_ACCESS_TOKEN`                                  | unset        | Organization access token (Polar → Settings → Developers). Required: checkouts and signed-in portal links are created through the API with it. Never sent to the browser or logged |
+| `POLAR_WEBHOOK_SECRET`                                | unset        | The webhook endpoint's `whsec_…` secret (Polar → Settings → Webhooks). Required. Webhooks are verified with it (Standard Webhooks, both of Polar's key schemes)                    |
+| `POLAR_PRODUCT_ID_MONTHLY`, `POLAR_PRODUCT_ID_YEARLY` | unset        | Product ids (UUIDs). A plan without one isn't offered; they must differ                                                                                                            |
+| `POLAR_ORGANIZATION_SLUG`                             | `dota-den`   | The organization's slug, for the generic customer portal `https://polar.sh/<slug>/portal`                                                                                          |
+| `POLAR_SERVER`                                        | `production` | `sandbox` uses `sandbox-api.polar.sh` and takes only sandbox purchases (sandbox has its own token, products and webhook secret)                                                    |
+
+`npm run plus:polar-provision` (with `POLAR_ACCESS_TOKEN` and `POLAR_SERVER` set) finds or creates
+the two products and the webhook endpoint for `https://www.dota-den.com/api/v1/plus/webhook`
+(override with `POLAR_WEBHOOK_URL`). It's a dry run unless you pass `-- --apply`, and prints only the
+ids. A new endpoint's secret is written to `POLAR_WEBHOOK_SECRET_FILE` (mode 600) when set,
+otherwise read it in the dashboard.
 
 Go-live alerts (a Plus feature) also need Web Push (`VAPID_*`), Twitch or Kick keys, and a schedule:
 run `npm run jobs:schedules` once per environment (needs `QSTASH_TOKEN` and `APP_URL`) to create the
@@ -174,4 +190,6 @@ can call `GET /api/cron/streamer-alerts` with `Authorization: Bearer $CRON_SECRE
 | `MONGODB_TEST_URI`                        | `mongodb://127.0.0.1:27017` | Integration and E2E tests           |
 | `E2E_PORT`, `FIXTURE_PORT`, `E2E_DB_NAME` | see `playwright.config.ts`  | Run several E2E setups side by side |
 | `E2E_PLAIN_PORT`                          | `E2E_PORT + 2`              | The second E2E app server (no Plus) |
+| `E2E_POLAR_PORT`                          | `E2E_PORT + 4`              | The third E2E app server (Polar)    |
+| `POLAR_API_BASE_URL`                      | Polar's, per `POLAR_SERVER` | Points the Polar client at a fake   |
 | `CALIBRATE_DAYS`, `CALIBRATE_GAMES`       | `14`, `15000`               | `npm run draft:calibrate`           |
