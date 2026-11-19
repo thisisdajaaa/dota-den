@@ -7,7 +7,7 @@ import { env } from "@/common/config/env";
 import { getT } from "@/common/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser, type User } from "@/modules/identity";
-import { groupPageService, groupsService } from "@/modules/groups";
+import { groupPageService, groupsService, stackPlannerService } from "@/modules/groups";
 import { GROUP_ID_PATTERN } from "@/modules/groups/domain/group";
 import { GroupActions } from "@/modules/groups/ui/group-actions";
 import { HeroesCard } from "@/modules/groups/ui/heroes-card";
@@ -15,6 +15,7 @@ import { InviteLink } from "@/modules/groups/ui/invite-link";
 import { memberLookup, type MemberLookup } from "@/modules/groups/ui/member-names";
 import { MembersCard } from "@/modules/groups/ui/members-card";
 import { PartyCard } from "@/modules/groups/ui/party-card";
+import { StackPlannerCard } from "@/modules/groups/ui/stack-planner-card";
 import { WeeklyBoardCard } from "@/modules/groups/ui/weekly-board-card";
 import { matchesService } from "@/modules/matches";
 
@@ -59,6 +60,9 @@ export default async function GroupPage({ params }: PageProps<"/groups/[id]">) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-3">
+          <Suspense fallback={<Skeleton className="h-72 rounded-2xl" />}>
+            <PlannerSection user={user} group={group} view={view} />
+          </Suspense>
           <Suspense fallback={<Skeleton className="h-96 rounded-2xl" />}>
             <PartySection group={group} members={members} />
           </Suspense>
@@ -81,6 +85,31 @@ export default async function GroupPage({ params }: PageProps<"/groups/[id]">) {
         </div>
       </div>
     </div>
+  );
+}
+
+async function PlannerSection({
+  user,
+  group,
+  view,
+}: {
+  user: User;
+  group: Group;
+  view: Awaited<ReturnType<typeof groupsService.view>>;
+}) {
+  const context = await stackPlannerService.context(user, group);
+  return (
+    <StackPlannerCard
+      groupId={view.id}
+      groupName={view.name}
+      members={view.members.map(({ accountId32, name, avatarUrl, you }) => ({
+        accountId32,
+        name,
+        avatarUrl,
+        you,
+      }))}
+      context={context}
+    />
   );
 }
 

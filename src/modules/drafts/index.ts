@@ -13,6 +13,8 @@ export {
   getAiOpponent,
   getChallengeService,
   getDraftHeroes,
+  pickForMeService,
 } from "./drafts.container";
 export type { DraftRecordView } from "./dtos/responses/draft-record.dto";
 export type { RoomView, EventView } from "./dtos/responses/room-views.dto";
+export type { PickForMeResult } from "./dtos/responses/pick-for-me.dto";

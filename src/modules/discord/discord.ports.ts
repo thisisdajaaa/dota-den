@@ -1,4 +1,7 @@
 import type { DataOwner } from "@/common/privacy/user-data";
+import type { BotGame, BotLocale } from "./domain/bot";
+import type { BotHero } from "./domain/hero-match";
+import type { GuildSettings, NudgeSetting } from "./domain/server";
 import type { WebhookTarget } from "./domain/discord-webhook";
 import type { DiscordMessage, FeedMatch } from "./domain/feed";
 
@@ -106,6 +109,9 @@ export interface DiscordLink {
   avatar: string | null;
   /** Servers where the player used the bot. */
   guilds: string[];
+  /** Servers where they turned the Monday recap on. */
+  recapGuilds: string[];
+  nudges: NudgeSetting | null;
   linkedAt: Date;
 }
 
@@ -113,9 +119,150 @@ export interface DiscordLinksPort {
   forUser(userId: string): Promise<DiscordLink | null>;
   forDiscord(discordId: string): Promise<DiscordLink | null>;
   inGuild(guildId: string, limit: number): Promise<DiscordLink[]>;
-  link(input: Omit<DiscordLink, "guilds" | "linkedAt">, now: Date): Promise<void>;
+  link(
+    input: Omit<DiscordLink, "guilds" | "linkedAt" | "recapGuilds" | "nudges">,
+    now: Date,
+  ): Promise<void>;
   rememberGuild(discordId: string, guildId: string): Promise<void>;
+  /** Members who turned the recap on in this server. */
+  recapMembers(guildId: string, limit: number): Promise<DiscordLink[]>;
+  setRecap(discordId: string, guildId: string, on: boolean): Promise<void>;
+  setNudges(userId: string, nudges: NudgeSetting | null): Promise<boolean>;
+  /** Dota Den users who want nudges on Discord. */
+  nudgeUserIds(): Promise<string[]>;
   unlink(userId: string): Promise<boolean>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+/** A server's settings as stored (`/den setup`). */
+export interface StoredGuild extends GuildSettings {
+  language: BotLocale | null;
+  userId: string;
+  setupByDiscordId: string;
+  lastRecapWeek: string | null;
+}
+
+export interface DiscordGuildsPort {
+  get(guildId: string): Promise<StoredGuild | null>;
+  save(guild: Omit<StoredGuild, "lastRecapWeek">, now: Date): Promise<void>;
+  /** Servers with the recap on and a channel. */
+  withRecap(): Promise<StoredGuild[]>;
+  markRecapped(guildId: string, week: string, now: Date): Promise<void>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+export interface BotLogPort {
+  /** Claims a post; false when it was already claimed (posted, or being posted). */
+  claim(
+    id: string,
+    who: { userId: string | null; guildId: string | null },
+    now: Date,
+  ): Promise<boolean>;
+  release(id: string): Promise<void>;
+  markSent(id: string, now: Date): Promise<void>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+/** A message the bot sends (Discord's message object, the parts we use). */
+export interface BotMessage {
+  content?: string;
+  embeds?: Record<string, unknown>[];
+  flags?: number;
+  allowed_mentions: { parse: string[] };
+}
+
+export type BotPostOutcome =
+  | { kind: "ok" }
+  /** The channel or user is gone, or the bot may not post there (403/404). */
+  | { kind: "forbidden"; status: number }
+  | { kind: "rate_limited"; retryAfterMs: number }
+  | { kind: "failed"; status?: number };
+
+/** Discord's API as the bot uses it. */
+export interface DiscordApiPort {
+  /** Replaces a deferred "thinking…" answer (interaction webhook; no bot token needed). */
+  editOriginal(appId: string, token: string, message: BotMessage): Promise<BotPostOutcome>;
+  /** Posts to a channel as the bot (needs the bot token). */
+  postToChannel(channelId: string, message: BotMessage): Promise<BotPostOutcome>;
+  /** Sends a direct message as the bot (needs the bot token). */
+  directMessage(discordId: string, message: BotMessage): Promise<BotPostOutcome>;
+  /** Whether the bot token is set (channel posts and DMs). */
+  readonly canPost: boolean;
+}
+
+/** A coach review's fact, as the bot shows it (from our stored fact sheet). */
+export interface BotCoachFact {
+  base: string;
+  subject: string | null;
+  value: number | string;
+  unit: string;
+}
+
+export type BotCoachResult =
+  | {
+      kind: "review";
+      matchId: string;
+      heroId: number;
+      cached: boolean;
+      points: {
+        kind: "strength" | "improve";
+        title: string;
+        detail: string;
+        facts: BotCoachFact[];
+      }[];
+    }
+  | { kind: "no_match" }
+  | { kind: "unparsed"; matchId: string }
+  | { kind: "quota" }
+  | { kind: "resting" }
+  | { kind: "off" }
+  | { kind: "failed" };
+
+export type BotAskResult =
+  | { kind: "answer"; text: string; remaining: number; limit: number }
+  | { kind: "quota"; resetsAt: string }
+  | { kind: "fallback" }
+  | { kind: "resting" }
+  | { kind: "off" }
+  | { kind: "failed" };
+
+export interface BotPickSuggestion {
+  heroId: number;
+  you: { games: number; wins: number };
+  counters: { heroId: number; points: number; games: number }[];
+  allies: { heroId: number; points: number; games: number }[];
+}
+
+export type BotPickResult =
+  | {
+      kind: "ok";
+      suggestions: BotPickSuggestion[];
+      poolSize: number;
+      highRank: boolean;
+    }
+  | { kind: "failed" };
+
+export interface BotUser {
+  id: string;
+  accountId32: number;
+}
+
+/** What the bot asks other features for (closures over their services). */
+export interface BotFeatures {
+  games(accountId32: number): Promise<BotGame[]>;
+  heroes(): Promise<BotHero[]>;
+  userLanguage(userId: string): Promise<string | null>;
+  setLanguage(userId: string, locale: BotLocale): Promise<void>;
+  isPlus(userId: string): Promise<boolean>;
+  /** The coach review of a match (the latest one when null); stored reviews are reused. */
+  coach(user: BotUser, matchId: string | null, locale: BotLocale): Promise<BotCoachResult>;
+  /** One Ask Den question, from the same daily allowance as the site. */
+  ask(user: BotUser, question: string, locale: BotLocale): Promise<BotAskResult>;
+  pick(
+    user: BotUser,
+    req: { enemies: number[]; allies: number[]; position: 1 | 2 | 3 | 4 | 5 | null },
+  ): Promise<BotPickResult>;
 }

@@ -81,6 +81,8 @@ export const admin: MessageTree<typeof en> = {
       pick_for_me: "Pick for me",
       compare: "How you compare",
       discord_command: "Mga sugo sa Discord bot",
+      discord_recap: "Senemanang recap sa Discord server",
+      discord_nudge: "Mga pahinumdom sa Discord (tilt, stop-loss)",
       session_push: "Mga push sa session companion",
       stop_loss_push: "Mga pahinumdom sa stop-loss",
       ask_den: "Mga pangutana sa Ask Den nga natubag",

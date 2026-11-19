@@ -10,6 +10,7 @@ import type { DashboardFact } from "@/modules/matches/domain/read-models";
 import { matchQueries } from "@/modules/matches";
 import { matchesService, matchSyncService } from "@/modules/matches";
 import { usersService } from "@/modules/identity";
+import { discordServerService } from "@/modules/discord";
 import { notificationService } from "@/modules/notifications";
 import { plusService } from "@/modules/plus";
 import { steamSource } from "@/modules/presence";
@@ -86,17 +87,20 @@ export const sessionCompanionService = lazy(
   () =>
     new SessionCompanionService({
       players: async () => {
-        if (!notificationService.enabled) return [];
-        const [plus, subscribed, stopLossIds] = await Promise.all([
+        // Push devices, and members who asked the Discord bot for nudges (DM or server).
+        const [plus, subscribed, stopLossIds, discordIds] = await Promise.all([
           plusService.plusUserIds(),
-          notificationService.subscribedUserIds(),
+          notificationService.enabled ? notificationService.subscribedUserIds() : [],
           sessionSettingsRepository.stopLossUserIds(),
+          discordServerService.nudgeUserIds().catch((): string[] => []),
         ]);
-        const withDevice = new Set(subscribed);
+        const withDevice = new Set([...subscribed, ...discordIds]);
+        if (withDevice.size === 0) return [];
         const plusIds = new Set(plus);
         const wanted = new Map<string, { live: boolean; stopLoss: StopLossSettings | null }>();
         for (const id of new Set([...plus, ...stopLossIds])) {
           if (!withDevice.has(id)) continue;
+          // The same notification settings decide pushes and Discord nudges.
           const prefs = await notificationService.prefs(id);
           const live = plusIds.has(id) && prefs.session_live;
           const settings = prefs.stop_loss ? await sessionSettingsRepository.getStopLoss(id) : null;
@@ -130,9 +134,9 @@ export const sessionCompanionService = lazy(
           .facts,
       gapMinutes: async (userId) =>
         (await sessionSettingsRepository.getGap(userId)) ?? env().SESSION_DEFAULT_GAP_MINUTES,
-      notify: async (userId, news) => {
+      notify: async (userId, news): Promise<number> => {
         const t = await translatorFor(userId);
-        return notificationService.notifyOnce(userId, "session_live", news.matchId, async () => {
+        const message = async () => {
           const hero =
             (await matchesService.heroMap()).get(news.heroId)?.name ??
             t("notifications.push.heroFallback", { id: news.heroId });
@@ -155,34 +159,66 @@ export const sessionCompanionService = lazy(
             url: `/matches/${news.matchId}`,
             tag: `session-live-${news.matchId}`,
           };
-        });
+        };
+        const pushed = notificationService.enabled
+          ? await notificationService.notifyOnce(userId, "session_live", news.matchId, message)
+          : 0;
+        // On Discord only the tilt warning is a nudge (every game would be noise there).
+        const nudged = news.tilt
+          ? await discordServerService.nudge(userId, {
+              kind: "tilt",
+              occasion: news.matchId,
+              ...(await message()),
+            })
+          : 0;
+        return pushed + nudged;
       },
-      remind: async (userId, news) => {
+      remind: async (userId, news): Promise<number> => {
         const stop = news.stopLoss;
         if (!stop) return 0;
         const t = await translatorFor(userId);
+        const title = t("notifications.push.stopLoss.title", {
+          wins: news.session.wins,
+          losses: news.session.losses,
+        });
         const keyed = new Map(stop.status.reached.map((r) => [stopLossKey(stop.sessionId, r), r]));
-        return notificationService.notifyOnceEach(
-          userId,
-          "stop_loss",
-          [...keyed.keys()],
-          async (freshKeys) => {
-            const fresh = new Set(freshKeys.map((k) => keyed.get(k)!));
-            const sent = new Set(stop.status.reached.filter((r) => !fresh.has(r)));
-            const reminder = stopLossReminder(stop.status, sent);
-            if (!reminder) return null;
-            const { rule, limit, used } = reminder.rule;
-            return {
-              title: t("notifications.push.stopLoss.title", {
-                wins: news.session.wins,
-                losses: news.session.losses,
-              }),
-              body: plural(t, `notifications.push.stopLoss.${rule}`, limit, { used }),
-              url: "/dashboard",
-              tag: `stop-loss-${stop.sessionId}`,
-            };
-          },
-        );
+        const pushed = notificationService.enabled
+          ? await notificationService.notifyOnceEach(
+              userId,
+              "stop_loss",
+              [...keyed.keys()],
+              async (freshKeys) => {
+                const fresh = new Set(freshKeys.map((k) => keyed.get(k)!));
+                const sent = new Set(stop.status.reached.filter((r) => !fresh.has(r)));
+                const reminder = stopLossReminder(stop.status, sent);
+                if (!reminder) return null;
+                const { rule, limit, used } = reminder.rule;
+                return {
+                  title,
+                  body: plural(t, `notifications.push.stopLoss.${rule}`, limit, { used }),
+                  url: "/dashboard",
+                  tag: `stop-loss-${stop.sessionId}`,
+                };
+              },
+            )
+          : 0;
+        // Discord: the first reached rule not nudged yet this session (each rule once).
+        let nudged: number = 0;
+        for (const [key, reached] of keyed) {
+          const rule = stop.status.rules.find((r) => r.rule === reached);
+          if (!rule) continue;
+          nudged = await discordServerService.nudge(userId, {
+            kind: "stop_loss",
+            occasion: key,
+            title,
+            body: plural(t, `notifications.push.stopLoss.${rule.rule}`, rule.limit, {
+              used: rule.used,
+            }),
+            url: "/dashboard",
+          });
+          if (nudged) break;
+        }
+        return pushed + nudged;
       },
       used: (userId) => usageService.record("session_push", userId),
       reminded: (userId) => usageService.record("stop_loss_push", userId),

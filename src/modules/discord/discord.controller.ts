@@ -6,7 +6,11 @@ import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser, type User } from "@/modules/identity";
 import { InteractionSchema } from "./domain/bot";
 import { parseWebhookUrl } from "./domain/discord-webhook";
-import { ConnectWebhookSchema, FeedSettingsSchema } from "./schemas/discord.schema";
+import {
+  ConnectWebhookSchema,
+  FeedSettingsSchema,
+  NudgeSettingsSchema,
+} from "./schemas/discord.schema";
 import type { DiscordBotService } from "./services/discord-bot.service";
 import type { DiscordLinkService } from "./services/discord-link.service";
 import type { DiscordWebhookService, FeedOwner } from "./services/discord-webhook.service";
@@ -40,6 +44,8 @@ export class DiscordController {
         body: string,
       ) => boolean;
       secureCookies: () => boolean;
+      /** Runs a slow command's answer after the "thinking…" response is sent. */
+      defer: (task: () => Promise<void>) => void;
     },
   ) {}
 
@@ -122,9 +128,25 @@ export class DiscordController {
       }
       const interaction = InteractionSchema.safeParse(json);
       if (!interaction.success) throw new ValidationError("Invalid interaction");
+      const outcome = await this.deps.bot().handle(interaction.data);
+      if (outcome.later) this.deps.defer(outcome.later);
       // Discord reads the reply as is: no envelope.
-      return NextResponse.json(await this.deps.bot().handle(interaction.data));
+      return NextResponse.json(outcome.reply);
     },
+  );
+
+  /** PUT /api/v1/me/discord/nudges: tilt / stop-loss nudges by DM, or off. */
+  setNudges = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "discord:settings", limit: 30, windowMs: 60_000 },
+      body: NudgeSettingsSchema,
+    },
+    async ({ user, body }) =>
+      ServiceResponse.success(
+        await this.deps.links().setNudges(user.id, body.where),
+        "Discord nudges saved",
+      ),
   );
 
   /** PUT /api/v1/me/discord/webhook: save a webhook URL (checked with Discord first). */

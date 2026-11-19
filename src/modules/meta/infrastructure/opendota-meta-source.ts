@@ -118,7 +118,9 @@ const PlayerLaneRowSchema = z.object({
   hero_id: z.number().int().min(0),
   lane_role: z.number().int().nullable().optional(),
   is_roaming: z.boolean().nullable().optional(),
+  start_time: z.number().int().nonnegative().nullable().optional(),
   // Always returned by the match list, whatever is projected.
+  match_id: z.union([z.number().int().positive(), z.string().regex(/^\d+$/)]).optional(),
   player_slot: z.number().int().min(0).max(255).nullable().optional(),
   radiant_win: z.boolean().nullable().optional(),
 });
@@ -364,7 +366,7 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
         this.url(`/players/${accountId32}/matches`, {
           date: PLAYER_LANE_DAYS,
           limit: 100,
-          project: ["hero_id", "lane_role", "is_roaming"],
+          project: ["hero_id", "lane_role", "is_roaming", "start_time"],
         }),
         { ttlMs: TTL.playerLanes, cacheIf: Array.isArray, stamp },
       );
@@ -380,6 +382,8 @@ export class OpenDotaMetaSource implements MetaStatsSource, PlayerLaneHistory {
           laneRole: row.data.lane_role ?? null,
           isRoaming: row.data.is_roaming ?? null,
           result: resultOf(row.data.player_slot, row.data.radiant_win),
+          ...(row.data.match_id !== undefined ? { matchId: String(row.data.match_id) } : {}),
+          ...(typeof row.data.start_time === "number" ? { startTime: row.data.start_time } : {}),
         });
       }
       return ok({ windowDays: PLAYER_LANE_DAYS, games });

@@ -20,6 +20,7 @@ export function DiscordLinkCard({
   const [status, setStatus] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   // Nothing to offer until the Discord app is set up (unless an old link should be removable).
   if (!status.enabled && !status.linked) return null;
 
@@ -32,6 +33,25 @@ export function DiscordLinkCard({
       );
     } catch (e) {
       setProblem(e instanceof ApiClientError ? e.message : t("discord.link.failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveNudges(where: "off" | "dm") {
+    setBusy(true);
+    setProblem(null);
+    setSaved(false);
+    try {
+      setStatus(
+        await apiRequest<DiscordLinkStatus>("/api/v1/me/discord/nudges", {
+          method: "PUT",
+          body: { where },
+        }),
+      );
+      setSaved(true);
+    } catch (e) {
+      setProblem(e instanceof ApiClientError ? e.message : t("discord.link.nudgesFailed"));
     } finally {
       setBusy(false);
     }
@@ -84,6 +104,52 @@ export function DiscordLinkCard({
         </Button>
       ) : (
         <p className="text-sm text-muted-foreground">{t("discord.link.off")}</p>
+      )}
+      {status.linked && status.canNudge && (
+        <fieldset className="space-y-2" disabled={busy}>
+          <legend className="text-sm font-medium">{t("discord.link.nudgesLabel")}</legend>
+          <div className="flex flex-wrap gap-4 text-sm">
+            {(["off", "dm"] as const).map((where) => (
+              <label key={where} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="discord-nudges"
+                  value={where}
+                  checked={status.linked?.nudges === where}
+                  onChange={() => saveNudges(where)}
+                />
+                {t(where === "off" ? "discord.link.nudgesOff" : "discord.link.nudgesDm")}
+              </label>
+            ))}
+            {status.linked.nudges === "server" && (
+              <label className="flex items-center gap-2">
+                <input type="radio" name="discord-nudges" value="server" checked readOnly />
+                {t("discord.link.nudgesServer")}
+              </label>
+            )}
+          </div>
+          <p className="max-w-2xl text-xs text-muted-foreground">{t("discord.link.nudgesHelp")}</p>
+          {saved && (
+            <p role="status" className="text-sm text-win">
+              {t("discord.link.nudgesSaved")}
+            </p>
+          )}
+        </fieldset>
+      )}
+      {status.linked && (
+        <p className="max-w-2xl text-sm text-muted-foreground">{t("discord.link.commands")}</p>
+      )}
+      {status.inviteUrl && (
+        <p>
+          <a
+            href={status.inviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium underline underline-offset-4"
+          >
+            {t("discord.link.invite")}
+          </a>
+        </p>
       )}
       {problem && (
         <p role="alert" className="text-sm text-loss">

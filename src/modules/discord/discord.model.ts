@@ -2,6 +2,8 @@ export const DISCORD_COLLECTIONS = {
   webhooks: "discord_webhooks",
   log: "discord_post_log",
   links: "discord_links",
+  guilds: "discord_guilds",
+  botLog: "discord_bot_log",
 } as const;
 
 /**
@@ -18,8 +20,45 @@ export interface DiscordLinkDocument {
   globalName: string | null;
   avatar: string | null;
   guilds: string[];
+  /** Servers where the member turned on the Monday recap (`/den recap on:true`). */
+  recapGuilds?: string[];
+  /** Tilt / stop-loss nudges on Discord (`/den nudges`); absent or null: off. */
+  nudges?: { where: "dm" | "server"; guildId: string | null } | null;
   linkedAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * A server's bot settings (`/den setup`, by someone with Manage Server). The Monday recap is a
+ * Plus feature of whoever turned it on: it stops while they don't have Plus.
+ */
+export interface DiscordGuildDocument {
+  /** The Discord server (guild) id. */
+  _id: string;
+  channelId: string | null;
+  recap: boolean;
+  nudges: boolean;
+  language: "en" | "fil" | "ceb" | null;
+  /** The Dota Den user who last ran /den setup here (their Plus pays for the recap). */
+  userId: string;
+  setupByDiscordId: string;
+  /** The Monday of the last week a recap was posted for. */
+  lastRecapWeek: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Bot posts claimed once (recaps per server and week, nudges per member and occasion), so a
+ * retried job never posts twice. Removed by TTL after 30 days.
+ */
+export interface DiscordBotLogDocument {
+  /** `recap:<guild>:<week>` or `nudge:<user>:<kind>:<occasion>` */
+  _id: string;
+  userId: string | null;
+  guildId: string | null;
+  claimedAt: Date;
+  sentAt: Date | null;
 }
 
 /**

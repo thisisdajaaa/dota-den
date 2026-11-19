@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
+import { NotFoundError, ValidationError } from "@/common/errors/app-error";
 import type { DataOwner } from "@/common/privacy/user-data";
 import type { DiscordIdentity, DiscordLinksPort } from "../discord.ports";
 
@@ -20,6 +21,10 @@ export class DiscordLinkService {
         identify(code: string): Promise<DiscordIdentity | null>;
       } | null;
       links: DiscordLinksPort;
+      /** "Add the bot to your server" link; null when the bot isn't set up. */
+      inviteUrl?: string | null;
+      /** The bot token is set (DMs and channel posts work). */
+      canNudge?: boolean;
       now?: () => Date;
     },
   ) {}
@@ -70,9 +75,24 @@ export class DiscordLinkService {
             username: link.username,
             globalName: link.globalName,
             avatarUrl: avatarUrl(link.discordId, link.avatar),
+            nudges: link.nudges?.where ?? "off",
           }
         : null,
+      inviteUrl: this.deps.inviteUrl ?? null,
+      canNudge: this.deps.canNudge ?? false,
     };
+  }
+
+  /** Nudges by DM, or off (a server channel is picked with /den nudges in that server). */
+  async setNudges(userId: string, where: "off" | "dm"): Promise<DiscordLinkStatus> {
+    if (where === "dm" && !this.deps.canNudge)
+      throw new ValidationError("Discord nudges aren't set up here yet.");
+    const ok = await this.deps.links.setNudges(
+      userId,
+      where === "off" ? null : { where: "dm", guildId: null },
+    );
+    if (!ok) throw new NotFoundError("Link your Discord account first.");
+    return this.status(userId);
   }
 
   unlink(userId: string): Promise<boolean> {

@@ -63,6 +63,11 @@ for (const m of MATCHES) {
 // games, newest first. Battle Fury every game; Manta in the 10 even ones, 8 of them won;
 // 3 of the 10 without Manta won. Match details carry purchase logs and lanes.
 const COACH = 200_273;
+// Ask Den's account (SteamID 76561197960466002): the same 20 games, so the two specs never
+// share an account (each sign-in reads match details against the daily cap). Retries sign in
+// a million accounts up each time (support/attempt.ts), with the same games.
+const ASK = 200_274;
+const isAsk = (id) => id >= ASK && (id - ASK) % 1_000_000 === 0;
 const COACH_MANTA_WINS = new Set([0, 2, 4, 8, 10, 12, 14, 16]);
 const COACH_OTHER_WINS = new Set([1, 3, 5]);
 const COACH_MATCHES = Array.from({ length: 20 }, (_, i) => {
@@ -448,7 +453,119 @@ function groqWeeklyCoach(user) {
   };
 }
 
+// Stack planner fixture (tests/e2e/stack-planner.spec.ts; its own SteamIDs 76561197960467201–4).
+// Three friends played 6 games as one confirmed party (party size 3): Lead on Pos 1 (Anti-Mage,
+// safe lane), Support on Pos 4 (supports, off lane), Mid on Pos 2; 5 won. One more game Lead and
+// Support shared a team with no party data (unknown, never together or solo). Each also has solo
+// games at their position. The fourth member's games were never parsed (no lane data).
+const STACK = { lead: 201_473, support: 201_474, mid: 201_475, unparsed: 201_476 };
+const STACK_SLOTS = { [STACK.lead]: 0, [STACK.support]: 1, [STACK.mid]: 2, [STACK.unparsed]: 3 };
+const STACK_SEAT = {
+  [STACK.lead]: { hero: 1, lane: 1 },
+  [STACK.support]: { hero: 103, lane: 3 },
+  [STACK.mid]: { hero: 105, lane: 2 },
+};
+function stackRow(id, matchId, daysAgo, won, extra = {}) {
+  const seat = STACK_SEAT[id];
+  return {
+    match_id: matchId,
+    player_slot: STACK_SLOTS[id],
+    radiant_win: won,
+    duration: 2100,
+    game_mode: 22,
+    lobby_type: 7,
+    hero_id: seat?.hero ?? 107,
+    start_time: NOW - daysAgo * DAY,
+    version: seat ? 22 : null,
+    kills: 6,
+    deaths: 4,
+    assists: 9,
+    average_rank: 55,
+    party_size: null,
+    lane_role: seat ? seat.lane : null,
+    is_roaming: seat ? false : null,
+    ...extra,
+  };
+}
+const STACK_PARTY = Array.from({ length: 6 }, (_, i) => ({
+  matchId: 7_900_000_100 + i,
+  daysAgo: i + 1,
+  won: i !== 2,
+}));
+const STACK_UNKNOWN = { matchId: 7_900_000_200, daysAgo: 7, won: true };
+const STACK_MATCHES = new Map();
+for (const id of Object.values(STACK)) {
+  const rows = [];
+  if (id !== STACK.unparsed) {
+    for (const g of STACK_PARTY)
+      rows.push(stackRow(id, g.matchId, g.daysAgo, g.won, { party_size: 3 }));
+    if (id === STACK.lead || id === STACK.support)
+      rows.push(stackRow(id, STACK_UNKNOWN.matchId, STACK_UNKNOWN.daysAgo, STACK_UNKNOWN.won));
+    // Solo games at their own position: 4 wins, 2 losses.
+    for (let i = 0; i < 6; i++)
+      rows.push(
+        stackRow(id, 7_900_001_000 + (id - STACK.lead) * 100 + i, 8 + i, i < 4, { party_size: 1 }),
+      );
+  } else {
+    for (let i = 0; i < 3; i++) rows.push(stackRow(id, 7_900_002_000 + i, 2 + i, true));
+  }
+  STACK_MATCHES.set(
+    id,
+    rows.sort((a, b) => b.start_time - a.start_time),
+  );
+}
+const stackIds = new Set(Object.values(STACK));
+
+function stackMatches(id, url) {
+  const offset = Number(url.searchParams.get("offset") ?? 0);
+  const limit = Number(url.searchParams.get("limit") ?? 100);
+  const included = Number(url.searchParams.get("included_account_id") ?? 0);
+  const rows = STACK_MATCHES.get(id).filter(
+    (r) => !included || (STACK_MATCHES.get(included) ?? []).some((o) => o.match_id === r.match_id),
+  );
+  return rows.slice(offset, offset + limit);
+}
+
+function stackDetail(id) {
+  const matchId = Number(id);
+  const party = STACK_PARTY.find((g) => g.matchId === matchId);
+  const unknown = STACK_UNKNOWN.matchId === matchId ? STACK_UNKNOWN : null;
+  const game = party ?? unknown;
+  if (!game) return null;
+  const inIt = party ? [STACK.lead, STACK.support, STACK.mid] : [STACK.lead, STACK.support];
+  const players = [0, 1, 2, 3, 4, 128, 129, 130, 131, 132].map((slot) => {
+    const who = inIt.find((a) => STACK_SLOTS[a] === slot);
+    if (!who) return player(slot);
+    const seat = STACK_SEAT[who];
+    return player(slot, {
+      account_id: who,
+      personaname: `Stacker ${who}`,
+      hero_id: seat.hero,
+      party_id: party ? 7700 : null,
+      party_size: party ? 3 : null,
+      lane_role: seat.lane,
+      is_roaming: false,
+    });
+  });
+  return {
+    match_id: matchId,
+    start_time: NOW - game.daysAgo * DAY,
+    duration: 2100,
+    radiant_win: game.won,
+    radiant_score: 30,
+    dire_score: 20,
+    game_mode: 22,
+    lobby_type: 7,
+    region: 3,
+    first_blood_time: 90,
+    version: 22,
+    players,
+  };
+}
+
 function matchDetail(id) {
+  const stack = stackDetail(id);
+  if (stack) return stack;
   const coachAi = COACH_AI_MATCHES.findIndex((m) => String(m.match_id) === id);
   if (coachAi >= 0) return coachAiDetail(coachAi);
   const coach = COACH_MATCHES.findIndex((m) => String(m.match_id) === id);
@@ -1234,8 +1351,9 @@ const routes = [
       const offset = Number(url.searchParams.get("offset") ?? 0);
       const limit = Number(url.searchParams.get("limit") ?? 100);
       if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
+      if (stackIds.has(Number(m[1]))) return stackMatches(Number(m[1]), url);
       if (Number(m[1]) === COACH_AI) return COACH_AI_MATCHES.slice(offset, offset + limit);
-      if (Number(m[1]) === COACH) {
+      if (Number(m[1]) === COACH || isAsk(Number(m[1]))) {
         const heroId = url.searchParams.get("hero_id");
         return COACH_MATCHES.filter((r) => !heroId || r.hero_id === Number(heroId)).slice(
           offset,
@@ -1504,6 +1622,51 @@ function discord(req, res, url, body) {
   };
   const log = /^\/discord\/messages\/(\d+)$/.exec(url.pathname);
   if (log) return json(200, DISCORD_MESSAGES.get(log[1]) ?? []);
+  // Fake Discord OAuth2 and bot API (the Discord bot): sign-in always succeeds as one fixture
+  // user; interaction replies, channel posts and DMs are recorded under /discord/bot-log/:key.
+  if (url.pathname === "/discord/oauth2/authorize") {
+    const back = new URL(url.searchParams.get("redirect_uri") ?? "http://localhost/");
+    back.searchParams.set("code", "fixture-discord-code");
+    back.searchParams.set("state", url.searchParams.get("state") ?? "");
+    res.writeHead(302, { location: back.toString() });
+    return res.end();
+  }
+  if (url.pathname === "/discord/api/oauth2/token" && req.method === "POST") {
+    const code = new URLSearchParams(body).get("code");
+    if (code !== "fixture-discord-code") return json(400, { error: "invalid_grant" });
+    return json(200, { access_token: "fixture-discord-access", token_type: "Bearer" });
+  }
+  if (url.pathname === "/discord/api/users/@me" && req.method === "GET") {
+    if (req.headers.authorization !== "Bearer fixture-discord-access")
+      return json(401, { message: "401: Unauthorized" });
+    return json(200, {
+      id: "700000000000000001",
+      username: "fixtureden",
+      global_name: "Fixture Discord",
+      avatar: null,
+    });
+  }
+  const botLog = /^\/discord\/bot-log\/([\w-]+)$/.exec(url.pathname);
+  if (botLog) return json(200, DISCORD_MESSAGES.get(`bot:${botLog[1]}`) ?? []);
+  const record = (key, data) =>
+    DISCORD_MESSAGES.set(`bot:${key}`, [...(DISCORD_MESSAGES.get(`bot:${key}`) ?? []), data]);
+  const edit = /^\/discord\/api\/webhooks\/(\d+)\/([\w.-]+)\/messages\/@original$/.exec(
+    url.pathname,
+  );
+  if (edit && req.method === "PATCH") {
+    record(edit[2], JSON.parse(body || "{}"));
+    return json(200, { id: "710000000000000001" });
+  }
+  if (url.pathname === "/discord/api/users/@me/channels" && req.method === "POST") {
+    if (!req.headers.authorization?.startsWith("Bot ")) return json(401, { message: "401" });
+    return json(200, { id: "720000000000000001", type: 1 });
+  }
+  const post = /^\/discord\/api\/channels\/(\d+)\/messages$/.exec(url.pathname);
+  if (post && req.method === "POST") {
+    if (!req.headers.authorization?.startsWith("Bot ")) return json(401, { message: "401" });
+    record(post[1], JSON.parse(body || "{}"));
+    return json(200, { id: "730000000000000001" });
+  }
   const m = /^\/api\/webhooks\/(\d+)\/([\w-]+)$/.exec(url.pathname);
   if (!m) return false;
   const [, id, token] = m;

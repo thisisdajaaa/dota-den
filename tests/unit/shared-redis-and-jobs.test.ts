@@ -331,6 +331,8 @@ describe("jobs", () => {
         "session-companion": handler,
         "weekly-coach": handler,
         "weekly-coach-note": handler,
+        "discord-recap": handler,
+        "discord-recap-post": handler,
       },
       runs: repo,
     });

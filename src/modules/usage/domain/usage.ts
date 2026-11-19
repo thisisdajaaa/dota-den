@@ -13,6 +13,8 @@ export const FEATURES = [
   "pick_for_me",
   "compare",
   "discord_command",
+  "discord_recap",
+  "discord_nudge",
   "session_push",
   "stop_loss_push",
   "ask_den",
