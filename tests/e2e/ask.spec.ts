@@ -105,6 +105,13 @@ test("free players get 5 questions a day, then a Plus offer", async ({ page }) =
       i === left - 1 ? "That's all your questions for today" : `${left - i - 1} question`,
     );
   }
+  // A long chat scrolls inside the panel, kept at the newest message, so the page doesn't grow.
+  const scroll = region.getByTestId("ask-scroll");
+  await expect
+    .poll(() => scroll.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight))
+    .toBeLessThan(4);
+  const box = await region.boundingBox();
+  expect(box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   await expect(region).toContainText("That's all your questions for today");
   await expect(region).toContainText("Free players get 5 questions a day");
   await expect(region.getByRole("link", { name: "See Plus" })).toHaveAttribute("href", "/plus");
