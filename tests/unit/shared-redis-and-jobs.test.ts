@@ -375,7 +375,7 @@ describe("jobs", () => {
       retries: 3,
       headers: { "x-vercel-protection-bypass": "b" },
       delay: 35,
-      deduplicationId: "match-backfill:backfill:5@1",
+      deduplicationId: "match-backfill--backfill_3a5_401",
     });
   });
 
@@ -383,5 +383,14 @@ describe("jobs", () => {
     expect(bucketedKey("x", 60_000, 125_000)).toBe("x@2");
     expect(isJobName("match-backfill")).toBe(true);
     expect(isJobName("rm -rf")).toBe(false);
+  });
+});
+
+describe("qstashDedupId", () => {
+  it("keeps only characters QStash accepts, and distinct keys distinct", async () => {
+    const { qstashDedupId } = await import("@/modules/jobs/infrastructure/qstash-job-queue");
+    const id = qstashDedupId("match-backfill", "backfill:5@1");
+    expect(id).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(qstashDedupId("a", "x:y")).not.toBe(qstashDedupId("a", "x_y"));
   });
 });
