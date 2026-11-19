@@ -5,7 +5,7 @@ import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
 import { opsMonitor } from "@/modules/alerts";
-import { discordFeedService } from "@/modules/discord";
+import { discordFeedService, discordServerService } from "@/modules/discord";
 import { draftInsights } from "@/modules/drafts";
 import { emailDigest } from "@/modules/email";
 import { matchExtrasService, matchesService, matchSyncService } from "@/modules/matches";
@@ -93,6 +93,10 @@ export const jobsService = new JobsService({
   weeklyCoach: {
     schedule: (): Promise<unknown> => weeklyCoachService.runSchedule(),
     note: (payload): Promise<unknown> => weeklyCoachService.runOne(payload),
+  },
+  discordRecap: {
+    schedule: (): Promise<unknown> => discordServerService.runRecapSchedule(),
+    post: (payload): Promise<unknown> => discordServerService.postRecap(payload),
   },
   logger,
 });

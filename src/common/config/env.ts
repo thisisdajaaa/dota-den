@@ -139,7 +139,7 @@ const EnvSchema = z
     /**
      * Discord application (discord.com/developers): "Connect Discord" on the account page
      * (client id + secret, OAuth2 `identify`) and the Dota Den bot's slash commands (public
-     * key, to verify interactions; bot token, only for registering the commands).
+     * key, to verify interactions). See docs/discord-setup.md.
      */
     DISCORD_CLIENT_ID: z
       .string()
@@ -150,7 +150,11 @@ const EnvSchema = z
       .string()
       .regex(/^[0-9a-f]{64}$/i)
       .optional(),
+    /** The bot's token: registering commands, the Monday server recap and nudges (posts/DMs). */
     DISCORD_BOT_TOKEN: z.string().min(1).optional(),
+    /** Overrides for tests (fixture server). Default to Discord's API and OAuth2 page. */
+    DISCORD_API_BASE_URL: z.url().optional(),
+    DISCORD_AUTHORIZE_URL: z.url().optional(),
     TWITCH_CLIENT_ID: z.string().min(1).optional(),
     TWITCH_CLIENT_SECRET: z.string().min(1).optional(),
     /** Overrides for tests (fixture server). Default to Twitch's. */

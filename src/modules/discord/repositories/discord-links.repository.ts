@@ -3,6 +3,7 @@ import type { Db } from "mongodb";
 import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import { DISCORD_COLLECTIONS, type DiscordLinkDocument } from "../discord.model";
 import type { DiscordLink, DiscordLinksPort } from "../discord.ports";
+import type { NudgeSetting } from "../domain/server";
 
 const toLink = (d: DiscordLinkDocument): DiscordLink => ({
   discordId: d._id,
@@ -12,6 +13,8 @@ const toLink = (d: DiscordLinkDocument): DiscordLink => ({
   globalName: d.globalName,
   avatar: d.avatar,
   guilds: d.guilds,
+  recapGuilds: d.recapGuilds ?? [],
+  nudges: d.nudges ?? null,
   linkedAt: d.linkedAt,
 });
 
@@ -28,6 +31,8 @@ export class DiscordLinksRepository implements DiscordLinksPort {
     await Promise.all([
       col.createIndex({ userId: 1 }, { unique: true, name: "uniq_user" }),
       col.createIndex({ guilds: 1 }, { name: "by_guild" }),
+      col.createIndex({ recapGuilds: 1 }, { name: "by_recap_guild" }),
+      col.createIndex({ "nudges.where": 1 }, { name: "by_nudges", sparse: true }),
     ]);
   }
 
@@ -49,7 +54,10 @@ export class DiscordLinksRepository implements DiscordLinksPort {
    * Links the accounts, replacing any earlier link of either side (a Discord account belongs
    * to one Dota Den account at a time, and the other way round).
    */
-  async link(input: Omit<DiscordLink, "guilds" | "linkedAt">, now: Date): Promise<void> {
+  async link(
+    input: Omit<DiscordLink, "guilds" | "linkedAt" | "recapGuilds" | "nudges">,
+    now: Date,
+  ): Promise<void> {
     const col = await this.col();
     await col.deleteMany({ userId: input.userId, _id: { $ne: input.discordId } });
     await col.updateOne(
@@ -71,6 +79,43 @@ export class DiscordLinksRepository implements DiscordLinksPort {
 
   async rememberGuild(discordId: string, guildId: string): Promise<void> {
     await (await this.col()).updateOne({ _id: discordId }, { $addToSet: { guilds: guildId } });
+  }
+
+  async recapMembers(guildId: string, limit: number): Promise<DiscordLink[]> {
+    // Only members who are (still) in the server's list and turned the recap on there.
+    return (
+      await (
+        await this.col()
+      )
+        .find({ recapGuilds: guildId, guilds: guildId })
+        .limit(limit)
+        .toArray()
+    ).map(toLink);
+  }
+
+  async setRecap(discordId: string, guildId: string, on: boolean): Promise<void> {
+    await (
+      await this.col()
+    ).updateOne(
+      { _id: discordId },
+      on
+        ? { $addToSet: { recapGuilds: guildId, guilds: guildId } }
+        : { $pull: { recapGuilds: guildId } },
+    );
+  }
+
+  async setNudges(userId: string, nudges: NudgeSetting | null): Promise<boolean> {
+    const res = await (await this.col()).updateOne({ userId }, { $set: { nudges } });
+    return res.matchedCount === 1;
+  }
+
+  async nudgeUserIds(): Promise<string[]> {
+    const docs = await (
+      await this.col()
+    )
+      .find({ "nudges.where": { $in: ["dm", "server"] } }, { projection: { userId: 1 } })
+      .toArray();
+    return docs.map((d) => d.userId);
   }
 
   async unlink(userId: string): Promise<boolean> {

@@ -13,6 +13,9 @@ import {
   MatchReadRepository,
 } from "@/modules/matches/repositories/matches.repository";
 import { toFact } from "@/modules/matches/services/match-sync.service";
+import { DiscordBotLogRepository } from "@/modules/discord/repositories/discord-bot-log.repository";
+import { DiscordGuildsRepository } from "@/modules/discord/repositories/discord-guilds.repository";
+import { DiscordLinksRepository } from "@/modules/discord/repositories/discord-links.repository";
 import { createTestDb } from "../support/mongo";
 
 let db: Db;
@@ -187,5 +190,100 @@ describe("Discord feed end to end (database, fake Discord)", () => {
       discordWebhook: 1,
       discordPosts: 2,
     });
+  });
+});
+
+describe("Discord bot storage (links, servers, posts)", () => {
+  const GUILD = "222222222222222222";
+  const ME = { userId: "link-u1", accountId32: 9001 };
+  const identity = (discordId: string, userId: string, accountId32: number) => ({
+    discordId,
+    userId,
+    accountId32,
+    username: `user${discordId.slice(-2)}`,
+    globalName: null,
+    avatar: null,
+  });
+
+  it("one link per Dota Den user and per Discord user; relinking replaces the old one", async () => {
+    const links = new DiscordLinksRepository(async () => db);
+    await links.ensureIndexes();
+    await links.link(identity("100000000000000011", ME.userId, ME.accountId32), T0);
+    await links.link(identity("100000000000000012", ME.userId, ME.accountId32), hours(1));
+    expect(await links.forDiscord("100000000000000011")).toBeNull();
+    expect(await links.forUser(ME.userId)).toMatchObject({
+      discordId: "100000000000000012",
+      guilds: [],
+      recapGuilds: [],
+      nudges: null,
+      linkedAt: hours(1),
+    });
+    // Another Dota Den account taking the same Discord account moves the link.
+    await links.link(identity("100000000000000012", "link-u2", 9002), hours(2));
+    expect(await links.forUser(ME.userId)).toBeNull();
+    await links.link(identity("100000000000000012", ME.userId, ME.accountId32), hours(3));
+  });
+
+  it("recap and nudges are opt-in per member; leaving the recap keeps the member", async () => {
+    const links = new DiscordLinksRepository(async () => db);
+    const id = "100000000000000012";
+    await links.rememberGuild(id, GUILD);
+    expect(await links.recapMembers(GUILD, 10)).toEqual([]);
+    await links.setRecap(id, GUILD, true);
+    expect((await links.recapMembers(GUILD, 10)).map((l) => l.userId)).toEqual([ME.userId]);
+    await links.setRecap(id, GUILD, false);
+    expect(await links.recapMembers(GUILD, 10)).toEqual([]);
+    expect((await links.inGuild(GUILD, 10)).map((l) => l.userId)).toEqual([ME.userId]);
+
+    expect(await links.nudgeUserIds()).toEqual([]);
+    expect(await links.setNudges(ME.userId, { where: "server", guildId: GUILD })).toBe(true);
+    expect(await links.nudgeUserIds()).toEqual([ME.userId]);
+    expect((await links.forUser(ME.userId))?.nudges).toEqual({ where: "server", guildId: GUILD });
+    await links.setNudges(ME.userId, null);
+    expect(await links.nudgeUserIds()).toEqual([]);
+    expect(await links.setNudges("nobody", null)).toBe(false);
+  });
+
+  it("server settings: saved by an admin, listed for the recap, marked once posted", async () => {
+    const guilds = new DiscordGuildsRepository(async () => db);
+    await guilds.ensureIndexes();
+    const settings = {
+      guildId: GUILD,
+      channelId: "444444444444444444",
+      recap: true,
+      nudges: false,
+      language: "fil" as const,
+      userId: ME.userId,
+      setupByDiscordId: "100000000000000012",
+    };
+    await guilds.save(settings, T0);
+    await guilds.save({ ...settings, guildId: "333333333333333333", recap: false }, T0);
+    expect((await guilds.withRecap()).map((g) => g.guildId)).toEqual([GUILD]);
+    await guilds.markRecapped(GUILD, "2026-10-05", hours(1));
+    // Saving again keeps the last recap week.
+    await guilds.save({ ...settings, nudges: true }, hours(2));
+    expect(await guilds.get(GUILD)).toMatchObject({ nudges: true, lastRecapWeek: "2026-10-05" });
+  });
+
+  it("bot posts are claimed once; a released claim can be taken again; all of it goes with the account", async () => {
+    const posts = new DiscordBotLogRepository(async () => db);
+    await posts.ensureIndexes();
+    const who = { userId: ME.userId, guildId: null };
+    expect(await posts.claim("nudge:link-u1:stop_loss:s1", who, T0)).toBe(true);
+    expect(await posts.claim("nudge:link-u1:stop_loss:s1", who, T0)).toBe(false);
+    await posts.release("nudge:link-u1:stop_loss:s1");
+    expect(await posts.claim("nudge:link-u1:stop_loss:s1", who, T0)).toBe(true);
+    await posts.markSent("nudge:link-u1:stop_loss:s1", T0);
+    await posts.release("nudge:link-u1:stop_loss:s1");
+    expect(await posts.claim("nudge:link-u1:stop_loss:s1", who, T0)).toBe(false);
+
+    const links = new DiscordLinksRepository(async () => db);
+    const guilds = new DiscordGuildsRepository(async () => db);
+    expect(await links.exportForOwner(ME)).toHaveLength(1);
+    expect(await guilds.exportForOwner(ME)).toHaveLength(2);
+    expect(await posts.exportForOwner(ME)).toHaveLength(1);
+    expect(await links.deleteForOwner(ME)).toBe(1);
+    expect(await guilds.deleteForOwner(ME)).toBe(2);
+    expect(await posts.deleteForOwner(ME)).toBe(1);
   });
 });

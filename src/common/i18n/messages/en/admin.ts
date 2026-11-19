@@ -79,6 +79,8 @@ export const admin = {
       pick_for_me: "Pick for me",
       compare: "How you compare",
       discord_command: "Discord bot commands",
+      discord_recap: "Discord server recaps",
+      discord_nudge: "Discord nudges (tilt, stop-loss)",
       session_push: "Session companion pushes",
       stop_loss_push: "Stop-loss reminders",
       ask_den: "Ask Den questions answered",

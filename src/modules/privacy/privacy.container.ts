@@ -3,7 +3,7 @@ import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
 import { askService } from "@/modules/assistant";
-import { discordLinkService, discordWebhookService } from "@/modules/discord";
+import { discordLinkService, discordServerService, discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
 import { emailService } from "@/modules/email";
 import { goalsService } from "@/modules/goals";
@@ -58,6 +58,8 @@ export const privacyService = lazy(
         discordWebhookService,
         // The linked Discord account (the bot).
         discordLinkService,
+        // Servers you set the bot up in, and its recap / nudge posts about you.
+        discordServerService,
         emailService,
         // The local subscription record; billing records stay with the provider (ADR 0013).
         plusService,

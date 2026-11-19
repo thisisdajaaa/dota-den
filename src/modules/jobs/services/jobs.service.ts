@@ -1,6 +1,7 @@
 import type { Logger } from "@/common/logging/logger";
 import { bucketedKey, type JobName } from "../domain/job";
 import { coachJobKey } from "@/modules/report/domain/weekly-coach";
+import { recapJobKey } from "@/modules/discord/domain/server";
 import type { JobHandler, JobQueue, MatchSyncPort } from "../jobs.ports";
 
 /** A long history is imported in chunks; stop chaining after this many (a safety net). */
@@ -35,6 +36,11 @@ export class JobsService {
         schedule: () => Promise<unknown>;
         note: (payload: Record<string, unknown>) => Promise<unknown>;
       };
+      /** The Discord bot's Monday server recap: the tick and one server's post. */
+      discordRecap?: {
+        schedule: () => Promise<unknown>;
+        post: (payload: Record<string, unknown>) => Promise<unknown>;
+      };
       logger: Pick<Logger, "info">;
       now?: () => number;
     },
@@ -62,6 +68,14 @@ export class JobsService {
       "weekly-coach-note": async (payload) => {
         await this.deps.weeklyCoach?.note(payload);
       },
+      "discord-recap": async () => {
+        const run = await this.deps.discordRecap?.schedule();
+        if (run) this.deps.logger.info("discord_recap_run", { run });
+      },
+      "discord-recap-post": async (payload) => {
+        const outcome = await this.deps.discordRecap?.post(payload);
+        if (outcome) this.deps.logger.info("discord_recap_post", { outcome });
+      },
     };
   }
 
@@ -73,6 +87,16 @@ export class JobsService {
   async enqueueWeeklyCoachNote(job: { userId: string; week: string }): Promise<void> {
     await this.deps.queue().enqueue("weekly-coach-note", job, {
       dedupKey: coachJobKey(job.userId, job.week),
+    });
+  }
+
+  /**
+   * Queue one server's Monday recap. One per server and week (the dedup key uses only
+   * letters, digits and '-', which QStash accepts), so a repeated tick posts nothing new.
+   */
+  async enqueueDiscordRecap(job: { guildId: string; week: string }): Promise<void> {
+    await this.deps.queue().enqueue("discord-recap-post", job, {
+      dedupKey: recapJobKey(job.guildId, job.week),
     });
   }
 

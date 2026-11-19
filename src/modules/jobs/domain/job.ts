@@ -18,6 +18,10 @@ export const JOB_NAMES = [
   // queues one note job per Plus player.
   "weekly-coach",
   "weekly-coach-note",
+  // The Discord bot's Monday server recap: the tick (Monday 09:00 Manila) queues one post job
+  // per server that turned it on.
+  "discord-recap",
+  "discord-recap-post",
 ] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
