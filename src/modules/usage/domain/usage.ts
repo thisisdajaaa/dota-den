@@ -9,11 +9,13 @@ export const FEATURES = [
   "coach_review",
   "auto_review",
   "period_read",
+  "weekly_coach",
   "pick_for_me",
   "compare",
   "discord_command",
   "session_push",
   "stop_loss_push",
+  "ask_den",
 ] as const;
 export type Feature = (typeof FEATURES)[number];
 

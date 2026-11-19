@@ -2,6 +2,7 @@ import "server-only";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
+import { askService } from "@/modules/assistant";
 import { discordLinkService, discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
 import { emailService } from "@/modules/email";
@@ -17,7 +18,7 @@ import { plusService } from "@/modules/plus";
 import { sharesService } from "@/modules/shares";
 import { patchWatchlistService } from "@/modules/patches";
 import { practiceService } from "@/modules/practice";
-import { battleReportService, periodReadService } from "@/modules/report";
+import { battleReportService, periodReadService, weeklyCoachService } from "@/modules/report";
 import { followService } from "@/modules/players";
 import { sessionCompanionService, sessionService } from "@/modules/sessions";
 import { togetherService } from "@/modules/together";
@@ -50,6 +51,8 @@ export const privacyService = lazy(
         battleReportService,
         // The battle report's AI reads (Plus).
         periodReadService,
+        // The Monday weekly coach notes (Plus).
+        weeklyCoachService,
         notificationService,
         sharesService,
         discordWebhookService,
@@ -60,6 +63,8 @@ export const privacyService = lazy(
         plusService,
         // Per-day feature use counters (admin usage numbers).
         usageService,
+        // Ask Den's chat history and daily question counts (ADR 0015).
+        askService,
       ],
       identity: usersService,
       logger,

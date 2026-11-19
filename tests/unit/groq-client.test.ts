@@ -72,3 +72,96 @@ describe("GroqClient", () => {
     });
   });
 });
+
+describe("GroqClient tool calling", () => {
+  const toolReply = (message: unknown) =>
+    new Response(JSON.stringify({ choices: [{ message }] }), { status: 200 });
+
+  it("sends the tools and the conversation in the wire format, and returns tool calls", async () => {
+    const fetch = vi.fn(async (_url: string, _init: RequestInit) =>
+      toolReply({
+        content: null,
+        tool_calls: [{ id: "c1", type: "function", function: { name: "my_mmr", arguments: "{}" } }],
+      }),
+    );
+    const client = new GroqClient({ apiKey: "k", fetch, retryDelayMs: 0 });
+    const res = await client.chatWithTools(
+      [
+        { role: "system", content: "rules" },
+        { role: "user", content: "hi" },
+        {
+          role: "assistant",
+          content: null,
+          toolCalls: [{ id: "c0", name: "my_sessions", arguments: "{}" }],
+        },
+        { role: "tool", toolCallId: "c0", content: '{"games":3}' },
+      ],
+      {
+        model: "m",
+        tools: [{ name: "my_mmr", description: "d", parameters: { type: "object" } }],
+      },
+    );
+    expect(res).toEqual({
+      ok: true,
+      value: { content: null, toolCalls: [{ id: "c1", name: "my_mmr", arguments: "{}" }] },
+    });
+    const body = JSON.parse(fetch.mock.calls[0][1].body as string);
+    expect(body.tools).toEqual([
+      {
+        type: "function",
+        function: { name: "my_mmr", description: "d", parameters: { type: "object" } },
+      },
+    ]);
+    expect(body.tool_choice).toBe("auto");
+    expect(body.response_format).toBeUndefined();
+    expect(body.messages[2]).toEqual({
+      role: "assistant",
+      content: null,
+      tool_calls: [
+        { id: "c0", type: "function", function: { name: "my_sessions", arguments: "{}" } },
+      ],
+    });
+    expect(body.messages[3]).toEqual({ role: "tool", tool_call_id: "c0", content: '{"games":3}' });
+  });
+
+  it("returns the text when the model answers, and refuses a malformed completion", async () => {
+    const answer = new GroqClient({
+      apiKey: "k",
+      fetch: async () => toolReply({ content: "Ward the river." }),
+      retryDelayMs: 0,
+    });
+    expect(await answer.chatWithTools([], { model: "m", tools: [], toolChoice: "none" })).toEqual({
+      ok: true,
+      value: { content: "Ward the river.", toolCalls: [] },
+    });
+    const broken = new GroqClient({
+      apiKey: "k",
+      fetch: async () => new Response(JSON.stringify({ choices: [] }), { status: 200 }),
+      retryDelayMs: 0,
+    });
+    expect(await broken.chatWithTools([], { model: "m", tools: [] })).toMatchObject({
+      ok: false,
+      error: { type: "invalid_response" },
+    });
+  });
+});
+
+describe("GroqClient tool argument errors", () => {
+  it("reports Groq's tool call validation failure as a bad answer, not an outage", async () => {
+    const client = new GroqClient({
+      apiKey: "k",
+      retryDelayMs: 0,
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            error: { message: "Tool call validation failed: parameters for tool x did not match" },
+          }),
+          { status: 400 },
+        ),
+    });
+    expect(await client.chatWithTools([], { model: "m", tools: [] })).toMatchObject({
+      ok: false,
+      error: { type: "invalid_response" },
+    });
+  });
+});

@@ -1,5 +1,28 @@
 /** UI copy for the report feature. */
 export const report = {
+  coach: {
+    kicker: "Weekly coach (Plus)",
+    title: "Your Monday coach note",
+    week: "Week of {range}",
+    about:
+      "Written by AI every Monday morning from last week's games (Monday to Sunday, Philippine time), using only your numbers (listed below the note). It can be wrong.",
+    fix: "This week's one fix",
+    basedOn: "Based on",
+    notYet: "Your note for the week of {range} isn't written yet.",
+    write: "Write my note now",
+    writing: "Writing your note…",
+    noGames:
+      "No games that week, so there's nothing to coach yet. Play a few and check back next Monday.",
+    pitch:
+      "Every Monday, Plus members get a short note from the AI coach about their week, in English, Filipino or Bisaya: what went well, what cost games, and one thing to fix, tied to their own numbers.",
+    previewLabel: "Preview: a coach note is hidden here",
+    seePlus: "See Plus",
+    resting: "The AI coach is resting for today. Try again tomorrow.",
+    failed: "The AI couldn't write a note it could back with your numbers. Try again later.",
+    unavailable:
+      "The AI service or your match history isn't answering right now. Try again in a little while.",
+    offline: "Can't reach Dota Den right now.",
+  },
   read: {
     kicker: "AI read (Plus)",
     title: "What this period says",

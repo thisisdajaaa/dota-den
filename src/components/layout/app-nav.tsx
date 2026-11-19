@@ -8,6 +8,7 @@ import type { Messages } from "@/common/i18n/messages";
 import type { Translator } from "@/common/i18n/translate";
 import {
   BookOpenText,
+  BotMessageSquare,
   CalendarRange,
   Ellipsis,
   FileChartColumn,
@@ -37,6 +38,7 @@ export type NavKey =
   | "mmr"
   | "sessions"
   | "report"
+  | "ask"
   | "together"
   | "groups"
   | "meta"
@@ -63,6 +65,7 @@ const ITEMS: NavItem[] = [
   { key: "mmr", href: "/mmr", icon: CalendarRange, auth: true, group: "you" },
   { key: "sessions", href: "/sessions", icon: History, auth: true, group: "you" },
   { key: "report", href: "/report", icon: FileChartColumn, auth: true, group: "you" },
+  { key: "ask", href: "/ask", icon: BotMessageSquare, auth: true, group: "you" },
   { key: "together", href: "/together", icon: UsersRound, auth: true, group: "community" },
   { key: "groups", href: "/groups", icon: Handshake, auth: true, group: "community" },
   { key: "meta", href: "/meta", icon: TrendingUp, auth: false, group: "tools" },

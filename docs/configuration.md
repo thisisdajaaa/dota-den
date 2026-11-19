@@ -63,6 +63,11 @@ constructors. `.env.example` lists every variable with its default.
 | `MATCH_COACH_MODEL`          | string         | `DRAFT_AI_MODEL`      | Groq model for the match coach. Reviews are cached per model, so changing it lets players get a new review                                                                                                                                                                                                                                                                     |
 | `MATCH_COACH_TIMEOUT_MS`     | int            | `25000`               | Timeout for one coach answer (the coach may ask twice: one retry when an answer fails its checks)                                                                                                                                                                                                                                                                              |
 | `MATCH_COACH_API_KEY`        | secret         | `GROQ_API_KEY`        | A separate Groq key for the coach only (e.g. to track its cost apart)                                                                                                                                                                                                                                                                                                          |
+| `ASK_ENABLED`                | `true`/`false` | `true`                | Ask Den, the AI chat at /ask (ADR 0015); uses the coach's Groq key (`MATCH_COACH_API_KEY`, else `GROQ_API_KEY`)                                                                                                                                                                                                                                                                |
+| `ASK_MODEL`                  | string         | `MATCH_COACH_MODEL`   | Groq model for Ask Den; it must support tool calling                                                                                                                                                                                                                                                                                                                           |
+| `ASK_TIMEOUT_MS`             | int            | `20000`               | Timeout for one Ask Den model call (a question makes a few: tool rounds, the answer, one retry)                                                                                                                                                                                                                                                                                |
+| `ASK_FREE_PER_DAY`           | int            | `5`                   | Ask Den questions per Manila day for free players                                                                                                                                                                                                                                                                                                                              |
+| `ASK_PLUS_PER_DAY`           | int            | `100`                 | Ask Den questions per Manila day for Plus                                                                                                                                                                                                                                                                                                                                      |
 | `GROQ_BASE_URL`              | URL            | Groq's API            | Tests point this at the fixture server's stand-in for Groq                                                                                                                                                                                                                                                                                                                     |
 
 ## Operator tuning
@@ -182,6 +187,13 @@ Go-live alerts (a Plus feature) also need Web Push (`VAPID_*`), Twitch or Kick k
 run `npm run jobs:schedules` once per environment (needs `QSTASH_TOKEN` and `APP_URL`) to create the
 QStash schedule that calls `/api/jobs/streamer-alerts` every 5 minutes. Without QStash, any scheduler
 can call `GET /api/cron/streamer-alerts` with `Authorization: Bearer $CRON_SECRET`.
+
+The Monday AI weekly coach (Plus) uses the AI coach's key and model (`MATCH_COACH_*` /
+`GROQ_API_KEY`, the shared `DRAFT_AI_BUDGET_PER_DAY`) and the same `npm run jobs:schedules` (or the
+admin page's "Set up job schedules"): schedule `dota-den-weekly-coach` calls `/api/jobs/weekly-coach`
+at `0 23 * * 0` UTC (Monday 07:00 in Manila), which queues one `weekly-coach-note` job per Plus
+player (dedup key `weekly-coach-<userId>-<week>`). Without QStash nothing is sent on Mondays; Plus
+players can still write the note from the battle report.
 
 ## Test-only
 

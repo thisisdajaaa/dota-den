@@ -3,11 +3,12 @@ import { SectionSkeleton } from "@/modules/meta/ui/meta-section";
 import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, Clock, Info } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BotMessageSquare, Clock, Info } from "lucide-react";
 import { cn } from "cn";
 import { getLocale, getT } from "@/common/i18n/server";
 import { LocalTime } from "@/components/local-time";
 import { annotationsService } from "@/modules/annotations";
+import { askService } from "@/modules/assistant";
 import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
 import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
@@ -241,6 +242,16 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         <Suspense fallback={<SectionSkeleton label={t("matches.coach.label")} rows={2} />}>
           <CoachSection user={viewer} match={match} />
         </Suspense>
+      )}
+
+      {/* Ask Den about your own match (ADR 0015). */}
+      {me && viewer && askService.enabled && (
+        <Link
+          href={`/ask?match=${match.matchId}`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-gold hover:underline"
+        >
+          <BotMessageSquare aria-hidden className="size-4" /> {t("ask.match.entry")}
+        </Link>
       )}
 
       {/* Usually shown: reserve its space so the cards below don't jump when it arrives. */}

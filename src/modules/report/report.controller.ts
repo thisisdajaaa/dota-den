@@ -8,15 +8,19 @@ import { requireUser } from "@/modules/identity";
 import { parseReportRange } from "./domain/report-range";
 import type { PeriodReadDto } from "./dtos/responses/period-read.dto";
 import { PeriodReadRequestSchema } from "./schemas/period-read.schema";
+import { WeeklyCoachRequestSchema } from "./schemas/weekly-coach.schema";
 import type { BattleReportService } from "./services/battle-report.service";
 import type { PeriodReadService } from "./services/period-read.service";
+import type { WeeklyCoachService } from "./services/weekly-coach.service";
+import { toCoachNoteDto } from "./dtos/responses/weekly-coach.dto";
 
-/** The battle report's API: the AI read of a period (Plus). */
+/** The battle report's API: the AI read of a period and the weekly coach note (Plus). */
 export class ReportController {
   constructor(
     private readonly deps: {
       report: BattleReportService;
       read: () => PeriodReadService;
+      coach: () => WeeklyCoachService;
     },
   ) {}
 
@@ -45,6 +49,29 @@ export class ReportController {
         cached,
       };
       return ServiceResponse.success(dto);
+    },
+  );
+
+  /**
+   * POST /api/v1/report/weekly-coach: the weekly coach note for a finished week (the last one
+   * by default), written now in the viewer's language or the one already stored.
+   */
+  weeklyCoach = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "report-weekly-coach", limit: 10, windowMs: 3_600_000 },
+      body: WeeklyCoachRequestSchema,
+      invalidMessage: "Invalid week",
+    },
+    async ({ user, body }) => {
+      const coach = this.deps.coach();
+      const week = body.week ?? coach.currentWeek();
+      const result = await coach.write(user, week, await getLocale());
+      return ServiceResponse.success(
+        result.status === "no_games"
+          ? { status: "no_games" as const, week }
+          : { status: result.status, note: toCoachNoteDto(result.note) },
+      );
     },
   );
 }
