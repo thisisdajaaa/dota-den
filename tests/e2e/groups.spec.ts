@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
+import { attempt } from "./support/attempt";
 
 // Identities no other spec uses (one per role, so parallel runs don't collide).
 const OWNER = "76561197960462001";
@@ -146,12 +147,17 @@ test("the group page counts confirmed party games only, and unknown party data a
   browser,
   baseURL,
 }) => {
+  // Two sign-ins and six pages against `next dev`: more than the default 30s on CI.
+  test.setTimeout(60_000);
   const headers = { origin: new URL(baseURL!).origin };
+  // A name of its own on a retry: a run that failed before its clean-up leaves its group in
+  // "Your groups", and two links with one name would be ambiguous.
+  const name = attempt() === 0 ? "Fixture stack" : `Fixture stack ${attempt() + 1}`;
   // Fixture Hero and Fixture Peer share 4 party games, 1 same-team game without party data
   // and 1 game as opponents.
   const hero = await signedIn(browser);
   const made = await hero.request.post("/api/v1/groups", {
-    data: { name: "Fixture stack" },
+    data: { name },
     headers,
   });
   expect(made.status()).toBe(201);
@@ -177,11 +183,11 @@ test("the group page counts confirmed party games only, and unknown party data a
   await hero.goto("/together");
   await hero
     .getByRole("region", { name: "Your groups" })
-    .getByRole("link", { name: "Open Fixture stack" })
+    .getByRole("link", { name: `Open ${name}`, exact: true })
     .click();
   await expect(hero).toHaveURL(new RegExp(`/groups/${id}$`));
   // Metadata streams in after a client-side navigation: wait for it before the axe pass.
-  await expect(hero).toHaveTitle(/Fixture stack/);
+  await expect(hero).toHaveTitle(new RegExp(name));
 
   const axe = await new AxeBuilder({ page: hero }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(

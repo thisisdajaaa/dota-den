@@ -264,13 +264,18 @@ describe("OpenDotaMetaSource", () => {
     }));
     const res = await source.recentLanes(22202);
     expect(res.ok && res.value.value.games).toEqual([
-      { heroId: 1, laneRole: 1, isRoaming: false, result: "win" },
-      { heroId: 2, laneRole: 3, isRoaming: null, result: "loss" },
-      { heroId: 2, laneRole: null, isRoaming: null, result: null },
+      { heroId: 1, laneRole: 1, isRoaming: false, result: "win", matchId: "1" },
+      { heroId: 2, laneRole: 3, isRoaming: null, result: "loss", matchId: "2" },
+      { heroId: 2, laneRole: null, isRoaming: null, result: null, matchId: "4" },
     ]);
     const url = new URL(fetch.mock.calls[0][0]);
     expect(url.pathname).toBe("/api/players/22202/matches");
-    expect(url.searchParams.getAll("project")).toEqual(["hero_id", "lane_role", "is_roaming"]);
+    expect(url.searchParams.getAll("project")).toEqual([
+      "hero_id",
+      "lane_role",
+      "is_roaming",
+      "start_time",
+    ]);
     expect(url.searchParams.get("date")).toBe("60");
   });
 });

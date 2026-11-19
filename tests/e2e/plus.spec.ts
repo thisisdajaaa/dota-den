@@ -1,13 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
+import { attempt, attemptSteamId } from "./support/attempt";
 import { E2E_CRON_SECRET } from "./support/cron";
 import { lemonSqueezyHeaders, subscriptionEvent } from "./support/plus-webhook";
 
 // Dota Den Plus with a fake Lemon Squeezy store configured (ADR 0013). Own test identities,
-// so subscriptions saved here stay out of other specs.
-const LOGIN = "/api/v1/auth/steam/login?as=76561197960461001";
-const ALERTS_LOGIN = "/api/v1/auth/steam/login?as=76561197960461002";
-/** A push endpoint nothing listens on; one per test (an endpoint belongs to one user). */
-const endpoint = (name: string) => `https://127.0.0.1:9/push/e2e-plus-${name}`;
+// so subscriptions saved here stay out of other specs, and new ones (and subscription ids) on
+// a retry: a failed run leaves its player subscribed, and its newer events make a retry's
+// events look stale.
+const login = (steamId: string) => `/api/v1/auth/steam/login?as=${attemptSteamId(steamId)}`;
+const subscription = (name: string) => `e2e-sub-${name}-${attempt()}`;
+/** A push endpoint nothing listens on; one per test run (an endpoint belongs to one user). */
+const endpoint = (name: string) => `https://127.0.0.1:9/push/e2e-plus-${name}-${attempt()}`;
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
@@ -50,7 +53,10 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   page,
   baseURL,
 }) => {
-  await page.goto(LOGIN);
+  // A dozen pages and webhook round trips against `next dev`: more than the default 30s on CI.
+  test.setTimeout(60_000);
+  const subscriptionId = subscription("1");
+  await page.goto(login("76561197960461001"));
   await page.goto("/plus");
   await expect(page.getByRole("heading", { level: 1, name: /Dota Den Plus/ })).toBeVisible();
   const monthly = page.getByRole("article", { name: "Monthly" });
@@ -93,7 +99,7 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   const now = Date.now();
   const created = subscriptionEvent({
     event: "subscription_created",
-    subscriptionId: "e2e-sub-1",
+    subscriptionId,
     userId,
     status: "active",
     updatedAt: new Date(now - 10 * MINUTE),
@@ -134,7 +140,7 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   const periodEnd = new Date(now + 20 * DAY);
   const cancelled = subscriptionEvent({
     event: "subscription_cancelled",
-    subscriptionId: "e2e-sub-1",
+    subscriptionId,
     userId,
     status: "cancelled",
     updatedAt: new Date(now - 5 * MINUTE),
@@ -145,7 +151,7 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   // An older update arriving late is ignored.
   const late = subscriptionEvent({
     event: "subscription_updated",
-    subscriptionId: "e2e-sub-1",
+    subscriptionId,
     userId,
     status: "active",
     updatedAt: new Date(now - 8 * MINUTE),
@@ -161,14 +167,14 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   // "Download your data" has the subscription record, never the buyer's email.
   const exported = await (await page.request.get("/api/v1/me/export?format=json")).json();
   expect(exported.plusSubscriptions).toEqual([
-    expect.objectContaining({ id: "lemonsqueezy:e2e-sub-1", status: "cancelled" }),
+    expect.objectContaining({ id: `lemonsqueezy:${subscriptionId}`, status: "cancelled" }),
   ]);
   expect(JSON.stringify(exported)).not.toContain("buyer@e2e.example");
 
   // Expired: back to free.
   const expired = subscriptionEvent({
     event: "subscription_expired",
-    subscriptionId: "e2e-sub-1",
+    subscriptionId,
     userId,
     status: "expired",
     updatedAt: new Date(now),
@@ -186,7 +192,7 @@ test("go-live alerts check followed channels for Plus players", async ({
   baseURL,
   request,
 }) => {
-  await page.goto(ALERTS_LOGIN);
+  await page.goto(login("76561197960461002"));
   const userId = await checkoutUserId(page);
   await saveDevice(page, baseURL!, "alerts");
   const followed = await page.request.post("/api/v1/me/streamers", {
@@ -201,7 +207,7 @@ test("go-live alerts check followed channels for Plus players", async ({
   expect(followed.ok()).toBe(true);
   const body = subscriptionEvent({
     event: "subscription_created",
-    subscriptionId: "e2e-sub-alerts",
+    subscriptionId: subscription("alerts"),
     userId,
     status: "active",
     updatedAt: new Date(),

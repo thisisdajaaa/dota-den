@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { attemptSteamId } from "./support/attempt";
 
-// Each test has its own identity (tests in a file run in parallel).
-const LOGIN = "/api/v1/auth/steam/login?as=76561197960459301";
-const ACCOUNT = 76561197960459301n - 76561197960265728n;
-const API_LOGIN = "/api/v1/auth/steam/login?as=76561197960459302";
+// Each test has its own identity (tests in a file run in parallel), and a retry a new one: a
+// failed run leaves its games, its sync cooldown and its stop-loss behind.
 const FIXTURE = `http://127.0.0.1:${process.env.FIXTURE_PORT ?? 3101}`;
 
 test("set a stop-loss, then see it reached on the overview after two losses", async ({
@@ -11,10 +10,12 @@ test("set a stop-loss, then see it reached on the overview after two losses", as
   baseURL,
 }) => {
   const headers = { origin: new URL(baseURL!).origin };
+  const steamId = attemptSteamId("76561197960459301");
+  const account = BigInt(steamId) - 76561197960265728n;
   // Sign in without opening the dashboard (which would sync before the games exist).
-  await page.request.get(LOGIN);
+  await page.request.get(`/api/v1/auth/steam/login?as=${steamId}`);
   for (let i = 0; i < 2; i++)
-    await page.request.post(`${FIXTURE}/e2e/play?account=${ACCOUNT}&result=loss`);
+    await page.request.post(`${FIXTURE}/e2e/play?account=${account}&result=loss`);
   const sync = await page.request.post("/api/v1/me/matches/sync", { headers });
   expect(sync.status()).toBe(200);
   expect((await sync.json()).data.inserted).toBe(2);
@@ -84,7 +85,7 @@ test("stop-loss settings need a session, the same origin and valid limits", asyn
   expect((await put(valid)).status()).toBe(401);
   expect((await request.get("/api/v1/me/settings/stop-loss")).status()).toBe(401);
 
-  await request.get(API_LOGIN);
+  await request.get(`/api/v1/auth/steam/login?as=${attemptSteamId("76561197960459302")}`);
   // Off until set.
   expect((await (await request.get("/api/v1/me/settings/stop-loss")).json()).data).toEqual({
     enabled: false,

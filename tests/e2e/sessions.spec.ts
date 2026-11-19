@@ -4,8 +4,16 @@ import { expect, test } from "@playwright/test";
 test.describe.configure({ mode: "serial" });
 
 test("sessions: list, recap, and notes + goal that persist across reloads", async ({ page }) => {
+  // Eight pages and a reload against `next dev`: more than the default 30s on CI.
+  test.setTimeout(60_000);
   await page.goto("/api/v1/auth/steam/login");
   await expect(page).toHaveURL(/\/dashboard$/);
+  // The default 1 h break, whatever a failed run of the gap test below left behind.
+  const reset = await page.request.put("/api/v1/me/settings/session-gap", {
+    data: { gapMinutes: 60 },
+    headers: { origin: new URL(page.url()).origin },
+  });
+  expect(reset.status()).toBe(200);
   // The dashboard auto-syncs the 12 fixture matches (one per day).
   await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
     timeout: 20_000,
@@ -54,9 +62,18 @@ test("sessions: list, recap, and notes + goal that persist across reloads", asyn
   ).toHaveCount(1);
   await expect(page.getByText(/kills \+ assists − deaths/)).toBeVisible();
 
-  // Client-side validation from the shared schema.
+  // Client-side validation from the shared schema. Only once the form is hydrated: before
+  // that, Save submits the plain HTML form (a page load, no validation). A change shows
+  // "Unsaved changes" only once React handles it, so change it until it does. The goal is
+  // cleared first: a retry finds the one a failed run saved, and "Not decided" first undoes
+  // a radio checked before hydration (checking it again would then do nothing).
   const form = page.getByRole("form", { name: "Notes and goal" });
-  await form.getByRole("radio", { name: "Yes" }).check({ force: true });
+  await expect(async () => {
+    await form.getByLabel("Goal").fill("");
+    await form.getByRole("radio", { name: "Not decided" }).check({ force: true });
+    await form.getByRole("radio", { name: "Yes" }).check({ force: true });
+    await expect(form.getByText("Unsaved changes")).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
   await form.getByRole("button", { name: "Save notes" }).click();
   await expect(form.getByRole("alert")).toContainText("Set a goal");
 

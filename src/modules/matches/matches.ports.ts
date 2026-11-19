@@ -227,6 +227,13 @@ export interface MatchExtrasStore {
   pendingParsed(accountId32: number, limit: number): Promise<PendingExtras[]>;
   /** Match details fetched for you since `since` (the daily cap). */
   fetchedSince(accountId32: number, since: Date): Promise<number>;
+  /**
+   * Holds the account's extras run until `until`, across servers. False while another run
+   * (on any server) holds it, or when the account has never synced.
+   */
+  lease(accountId32: number, now: Date, until: Date): Promise<boolean>;
+  /** Ends the hold taken until `until` (a lapsed hold another run has taken is left alone). */
+  releaseLease(accountId32: number, until: Date): Promise<void>;
   save(extras: MatchExtras, fetchedAt: Date): Promise<void>;
   /** Your stored extras from parsed replays on one hero, newest first. */
   forHero(accountId32: number, heroId: number): Promise<MatchExtras[]>;

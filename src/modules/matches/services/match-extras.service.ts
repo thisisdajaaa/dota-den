@@ -4,6 +4,8 @@ import { EXTRAS_PER_DAY, matchExtrasFrom, type MatchExtras } from "../domain/mat
 import type { MatchDetailProvider, MatchExtrasStore, PendingExtras } from "../matches.ports";
 
 const DAY_MS = 24 * 3_600_000;
+/** Longest a run may hold an account (a crashed run's hold lapses after this). */
+const LEASE_MS = 5 * 60_000;
 
 export type ExtrasOutcome =
   | "done"
@@ -53,8 +55,16 @@ export class MatchExtrasService {
     const run: ExtrasRun = { outcome: "done", fetched: 0, parsed: 0 };
     if (this.running.has(accountId32)) return { ...run, outcome: "busy" };
     this.running.add(accountId32);
+    const { store } = this.deps;
+    let leased: Date | null = null;
     try {
-      const { store } = this.deps;
+      // The cap is counted, then filled: two runs at once (on two servers, or the daily cron
+      // and a sync) would both see room and go over it. The lease allows one run per account.
+      const now = this.now();
+      const until = new Date(now + LEASE_MS);
+      if (!(await store.lease(accountId32, new Date(now), until)))
+        return { ...run, outcome: "busy" };
+      leased = until;
       const perDay = this.deps.perDay ?? EXTRAS_PER_DAY;
       const used = await store.fetchedSince(accountId32, new Date(this.now() - DAY_MS));
       if (used >= perDay) return { ...run, outcome: "capped" };
@@ -83,6 +93,7 @@ export class MatchExtrasService {
       return run;
     } finally {
       this.running.delete(accountId32);
+      if (leased) await store.releaseLease(accountId32, leased);
     }
   }
 

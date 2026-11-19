@@ -78,6 +78,10 @@ export interface LaneGame {
   isRoaming: boolean | null;
   /** The player's result, when the row says which side won. */
   result?: "win" | "loss" | null;
+  /** The match, when the source says (links a game to a confirmed party game). */
+  matchId?: string;
+  /** Start time in Unix seconds, when the source says. */
+  startTime?: number;
 }
 
 /**

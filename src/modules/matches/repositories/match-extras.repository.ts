@@ -23,6 +23,12 @@ export class MatchExtrasRepository implements MatchExtrasStore {
     return (await this.getDb()).collection<MatchExtrasDoc>(MATCH_COLLECTIONS.extras);
   }
 
+  private async syncState() {
+    return (await this.getDb()).collection<{ accountId32: number; extrasLeaseUntil?: Date | null }>(
+      MATCH_COLLECTIONS.syncState,
+    );
+  }
+
   private async facts() {
     return (await this.getDb()).collection<PlayerMatchFactDoc>(MATCH_COLLECTIONS.facts);
   }
@@ -71,6 +77,24 @@ export class MatchExtrasRepository implements MatchExtrasStore {
 
   async fetchedSince(accountId32: number, since: Date): Promise<number> {
     return (await this.col()).countDocuments({ accountId32, fetchedAt: { $gte: since } });
+  }
+
+  async lease(accountId32: number, now: Date, until: Date): Promise<boolean> {
+    // On the account's sync state, which every synced account has (and account deletion
+    // removes). A missing field matches `null`.
+    const res = await (
+      await this.syncState()
+    ).updateOne(
+      { accountId32, $or: [{ extrasLeaseUntil: null }, { extrasLeaseUntil: { $lte: now } }] },
+      { $set: { extrasLeaseUntil: until } },
+    );
+    return res.modifiedCount === 1;
+  }
+
+  async releaseLease(accountId32: number, until: Date): Promise<void> {
+    await (
+      await this.syncState()
+    ).updateOne({ accountId32, extrasLeaseUntil: until }, { $set: { extrasLeaseUntil: null } });
   }
 
   async save(extras: MatchExtras, fetchedAt: Date): Promise<void> {
