@@ -150,8 +150,15 @@ export class AppAskData implements AskDataPort {
   }
 
   async matchSummary(owner: AskOwner, args: AskToolArgs<"match_summary">): Promise<ToolResult> {
-    const matchId = args.match_id ?? (await this.src.games(owner.accountId32))[0]?.matchId;
+    // Only the player's own imported games: an id the model made up never reaches OpenDota.
+    const games = await this.src.games(owner.accountId32);
+    const matchId = args.match_id ?? games[0]?.matchId;
     if (!matchId) return errorResult("no_games_imported");
+    if (!games.some((g) => g.matchId === matchId))
+      return errorResult(
+        "not_your_match",
+        "Only the player's own imported matches can be read. Use my_recent_games for match ids.",
+      );
     const res = await this.src.factSheet(owner.accountId32, matchId);
     if (!res.ok) {
       if (res.error.type === "not_yours")

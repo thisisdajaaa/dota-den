@@ -54,9 +54,17 @@ export class AssistantController {
       const logger = this.deps.logger;
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          const send = (event: AskEventDto) =>
-            controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
-          controller.enqueue(encoder.encode(SAFARI_PRIMER));
+          // A player who leaves mid-answer closes the stream: the answer still finishes (and
+          // the question still counts), it just isn't sent.
+          const write = (chunk: string) => {
+            try {
+              controller.enqueue(encoder.encode(chunk));
+            } catch {
+              // Stream closed by the client.
+            }
+          };
+          const send = (event: AskEventDto) => write(`${JSON.stringify(event)}\n`);
+          write(SAFARI_PRIMER);
           try {
             const data = await service.answer(ticket, body, locale, send);
             send({ type: "answer", data });
@@ -69,7 +77,11 @@ export class AssistantController {
               send({ type: "error", reason: "internal", message: "Something went wrong." });
             }
           } finally {
-            controller.close();
+            try {
+              controller.close();
+            } catch {
+              // Already closed by the client.
+            }
           }
         },
       });

@@ -327,7 +327,8 @@ export class AskService {
       const turn = reply.value;
       if (turn.toolCalls.length > 0 && !last) {
         messages.push({ role: "assistant", content: turn.content, toolCalls: turn.toolCalls });
-        for (const tc of turn.toolCalls) {
+        // A turn asking for more tools than a question may use gets only the first few.
+        for (const tc of turn.toolCalls.slice(0, MAX_TOOL_CALLS)) {
           const result = await this.tool(owner, tc, tools, emit);
           facts.push(...factsFromResult(result.data, `t${tools.length}`));
           backing.push(JSON.stringify(result.data));
@@ -370,7 +371,11 @@ export class AskService {
       return errorResult(parsed.error);
     }
     used.push(parsed.name);
-    emit({ type: "status", tool: parsed.name });
+    try {
+      emit({ type: "status", tool: parsed.name });
+    } catch {
+      // A status line is only a nicety.
+    }
     try {
       return await this.dispatch(owner, parsed.name, parsed.args);
     } catch (error) {
