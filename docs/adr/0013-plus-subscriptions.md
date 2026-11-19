@@ -31,7 +31,7 @@ behind a provider-agnostic `BillingProvider` port. The first adapter is Lemon Sq
     (free: one new review per rolling 7 days; the coach is new, nothing free became paid), a
     faster history import and automatic parse requests for new games, inside the same global
     budgets.
-- Display prices **₱299/month** and **₱2,990/year** (Philippine pesos; the yearly plan is ten
+- Display prices **₱149/month** and **₱1,490/year** (lowered on 2026-11-19 from ₱299/₱2,990, below Valve's ₱251 Dota Plus; existing subscribers keep their price) (Philippine pesos; the yearly plan is ten
   months' price, "2 months free"). The provider charges, may show local currency and adds tax;
   the page says so. (First drafted as $3.99 / $29.99; switched to pesos on 2026-10-23.)
 
@@ -262,8 +262,8 @@ account review was pending when this was built, so `PLUS_ENABLED` stays off unti
 - **Events subscribed** (`POLAR_WEBHOOK_EVENTS`): `subscription.created`, `.updated`, `.active`,
   `.canceled`, `.uncanceled`, `.revoked`, `.past_due`, `.paused`, `.resumed` and `order.refunded`.
 - **Provisioning.** `npm run plus:polar-provision` (dry run unless `-- --apply`) finds the products
-  by `metadata.plan` or name and the endpoint by URL, creates what's missing (₱299/month and
-  ₱2,990/year as fixed PHP prices, `metadata.plan`), adds missing events to an existing endpoint,
+  by `metadata.plan` or name and the endpoint by URL, creates what's missing (₱149/month and
+  ₱1,490/year as fixed PHP prices, `metadata.plan`), adds missing events to an existing endpoint,
   and prints only ids. A new endpoint's secret goes to `POLAR_WEBHOOK_SECRET_FILE` (mode 600) or
   is read in the dashboard.
 - **Privacy and legal.** We send Polar our user id and the buyer's IP (the privacy policy says so

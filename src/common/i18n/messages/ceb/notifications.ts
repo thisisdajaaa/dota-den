@@ -56,6 +56,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Live session updates (Plus)",
       help: "Samtang makita ka sa Steam sa Dota: matag nahuman nga duwa uban ang imong record sa session, ug pahibalo kung ang imong kaugalingong history nag-ingon nga mas mahuyang ka kung sunod-sunod ang pildi.",
     },
+    weekly_coach: {
+      label: "Weekly coach matag Lunes (Plus)",
+      help: "Lunes sa buntag: mubo nga AI coaching note bahin sa miaging semana, nga adunay usa ka butang nga ayohon. Kung imo kining patyon, dili na usab isulat ang note para nimo (mahimo pa nimo kining isulat sa battle report).",
+    },
     stop_loss: {
       label: "Naabot ang stop-loss",
       help: "Samtang makita ka sa Steam sa Dota: kung maabot sa usa ka duwa ang stop-loss nga imong gibutang (Account → Stop-loss). Kausa matag limit matag session.",
@@ -108,6 +112,10 @@ export const notifications: MessageTree<typeof en> = {
         other:
           "Nagbutang ka og limit nga {n} ka duwa matag session. {used} na ang imong nadula. Maayong panahon na nga mohunong.",
       },
+    },
+    weeklyCoach: {
+      title: "Ania na ang imong Monday coach note",
+      body: "Usa ka ayohon karong semanaha: {fix}",
     },
     coachReview: {
       title: "Na-review na ang imong duwa sa {hero}",

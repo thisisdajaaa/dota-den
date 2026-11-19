@@ -9,6 +9,7 @@ export const FEATURES = [
   "coach_review",
   "auto_review",
   "period_read",
+  "weekly_coach",
   "pick_for_me",
   "compare",
   "discord_command",

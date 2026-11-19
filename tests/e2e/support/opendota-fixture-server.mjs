@@ -337,6 +337,7 @@ function groqCoach(body) {
   groqCalls++;
   const user = body.messages?.find((m) => m.role === "user")?.content ?? "";
   groqLastLanguage = /^LANGUAGE: (\w+)/m.exec(user)?.[1] ?? null;
+  if (/^TASK: weekly-coach$/m.test(user)) return groqWeeklyCoach(user);
   const facts = new Map();
   for (const line of user.split("\n")) {
     const parts = line.split(" | ");
@@ -416,6 +417,35 @@ function groqAsk(body) {
   return reply(
     `In your last ${data.games} games you won ${data.wins} (${Math.round(data.winRatePct)}%). Stick to one hero for a few games and watch your deaths.`,
   );
+}
+
+/**
+ * The Monday weekly coach note: quotes the week's games, wins and deaths per game from the
+ * FACTS lines ("key | label: value"), so it passes the app's checker.
+ */
+function groqWeeklyCoach(user) {
+  const facts = new Map();
+  for (const line of user.split("\n")) {
+    const m = /^([\w.]+) \| .*: ([^:]+)$/.exec(line);
+    if (m) facts.set(m[1], m[2]);
+  }
+  const note = {
+    headline: `A busy week on ${facts.get("hero1.name") ?? "your heroes"}`,
+    paragraphs: [
+      `You played ${facts.get("games")} games and won ${facts.get("wins")}. Your best hero carried a lot of them.`,
+    ],
+    facts: ["games", "wins", "hero1.name"],
+    fix: {
+      title: "Die less before fights",
+      detail: `You died ${facts.get("avgDeaths")} times a game. Walk with your team instead of alone.`,
+      facts: ["avgDeaths"],
+    },
+  };
+  return {
+    id: `chatcmpl-fixture-${groqCalls}`,
+    object: "chat.completion",
+    choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(note) } }],
+  };
 }
 
 function matchDetail(id) {

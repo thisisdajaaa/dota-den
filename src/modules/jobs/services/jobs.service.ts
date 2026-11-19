@@ -1,5 +1,6 @@
 import type { Logger } from "@/common/logging/logger";
 import { bucketedKey, type JobName } from "../domain/job";
+import { coachJobKey } from "@/modules/report/domain/weekly-coach";
 import type { JobHandler, JobQueue, MatchSyncPort } from "../jobs.ports";
 
 /** A long history is imported in chunks; stop chaining after this many (a safety net). */
@@ -29,6 +30,11 @@ export class JobsService {
       coachAutoReview?: (payload: Record<string, unknown>) => Promise<void>;
       /** One run of the Plus session companion. */
       sessionCompanion?: () => Promise<unknown>;
+      /** The Plus weekly coach: the Monday tick (queues the notes) and one player's note. */
+      weeklyCoach?: {
+        schedule: () => Promise<unknown>;
+        note: (payload: Record<string, unknown>) => Promise<unknown>;
+      };
       logger: Pick<Logger, "info">;
       now?: () => number;
     },
@@ -49,7 +55,25 @@ export class JobsService {
       "session-companion": async () => {
         await this.deps.sessionCompanion?.();
       },
+      "weekly-coach": async () => {
+        const run = await this.deps.weeklyCoach?.schedule();
+        if (run) this.deps.logger.info("weekly_coach_run", { run });
+      },
+      "weekly-coach-note": async (payload) => {
+        await this.deps.weeklyCoach?.note(payload);
+      },
     };
+  }
+
+  /**
+   * Queue one player's weekly coach note. The dedup key is per player and week, and uses only
+   * letters, digits and '-' (QStash refuses ':' in deduplication ids), so a repeated tick
+   * queues nothing new.
+   */
+  async enqueueWeeklyCoachNote(job: { userId: string; week: string }): Promise<void> {
+    await this.deps.queue().enqueue("weekly-coach-note", job, {
+      dedupKey: coachJobKey(job.userId, job.week),
+    });
   }
 
   /**

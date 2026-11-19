@@ -11,6 +11,7 @@ describe("setUpSchedules", () => {
     expect(set.map((s) => s.destination)).toEqual([
       "https://www.dota-den.com/api/jobs/streamer-alerts",
       "https://www.dota-den.com/api/jobs/session-companion",
+      "https://www.dota-den.com/api/jobs/weekly-coach",
     ]);
     expect(create).toHaveBeenCalledTimes(JOB_SCHEDULES.length);
     expect(create).toHaveBeenCalledWith(

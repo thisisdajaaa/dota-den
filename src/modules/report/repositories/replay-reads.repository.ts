@@ -8,7 +8,13 @@ import {
   replayReadId,
   type ReplayReadDocument,
 } from "../report.model";
-import type { PeriodReadsPort, ReplayReadsPort, StoredPeriodRead } from "../report.ports";
+import type {
+  CoachNotesPort,
+  PeriodReadsPort,
+  ReplayReadsPort,
+  StoredCoachNote,
+  StoredPeriodRead,
+} from "../report.ports";
 
 /** Lane outcomes and objectives per parsed match and player, so each replay is read once. */
 export class ReplayReadsRepository implements ReplayReadsPort {
@@ -98,6 +104,65 @@ export class PeriodReadsRepository implements PeriodReadsPort {
       { ...rest, expiresAt: new Date(read.createdAt.getTime() + PERIOD_READ_TTL_MS) },
       { upsert: true },
     );
+  }
+
+  async exportForOwner(owner: DataOwner) {
+    return forExport(await (await this.col()).find({ userId: owner.userId }).toArray());
+  }
+
+  async deleteForOwner(owner: DataOwner): Promise<number> {
+    return (await (await this.col()).deleteMany({ userId: owner.userId })).deletedCount;
+  }
+}
+
+interface CoachNoteDoc extends Omit<StoredCoachNote, "id"> {
+  _id: string;
+  expiresAt: Date;
+}
+
+/** Weekly coach notes, kept a year (the report page can show any past week's note). */
+const COACH_NOTE_TTL_MS = 365 * 24 * 3_600_000;
+
+export class CoachNotesRepository implements CoachNotesPort {
+  constructor(private readonly getDb: () => Promise<Db>) {}
+
+  private async col() {
+    return (await this.getDb()).collection<CoachNoteDoc>("report_weekly_coach_notes");
+  }
+
+  async ensureIndexes(): Promise<void> {
+    const col = await this.col();
+    await Promise.all([
+      col.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, name: "ttl_expiresAt" }),
+      col.createIndex({ userId: 1, week: -1 }, { name: "by_user_week" }),
+    ]);
+  }
+
+  private static fromDoc({ _id, expiresAt: _e, ...rest }: CoachNoteDoc): StoredCoachNote {
+    return { id: _id, ...rest };
+  }
+
+  async get(id: string): Promise<StoredCoachNote | null> {
+    const doc = await (await this.col()).findOne({ _id: id });
+    return doc ? CoachNotesRepository.fromDoc(doc) : null;
+  }
+
+  /** Inserts only when missing, so two writers racing keep the first note. */
+  async saveOnce(note: StoredCoachNote): Promise<StoredCoachNote> {
+    const { id, ...rest } = note;
+    const col = await this.col();
+    await col.updateOne(
+      { _id: id },
+      {
+        $setOnInsert: {
+          ...rest,
+          expiresAt: new Date(note.createdAt.getTime() + COACH_NOTE_TTL_MS),
+        },
+      },
+      { upsert: true },
+    );
+    const kept = await col.findOne({ _id: id });
+    return kept ? CoachNotesRepository.fromDoc(kept) : note;
   }
 
   async exportForOwner(owner: DataOwner) {

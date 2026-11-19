@@ -3,6 +3,7 @@ import type { RankedResultRow } from "@/modules/matches/domain/read-models";
 import type { ReportGame } from "./domain/battle-report";
 import type { ReplaySummary } from "./domain/replay-summary";
 import type { ReadLocale, ReadPoint } from "./domain/period-read";
+import type { CoachNote } from "./domain/weekly-coach";
 import type { Result } from "@/common/result";
 import type { GroundFact } from "@/common/utils/grounding";
 
@@ -66,6 +67,39 @@ export interface StoredPeriodRead {
 export interface PeriodReadsPort {
   get(key: string): Promise<StoredPeriodRead | null>;
   save(read: StoredPeriodRead): Promise<void>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+/** The language model behind the weekly coach note. Returns its JSON unvalidated. */
+export interface WeeklyCoachWriter {
+  readonly model: string;
+  write(
+    input: { week: string; facts: readonly GroundFact[]; smallWeek: boolean },
+    opts: { locale: ReadLocale; problems?: readonly string[] },
+  ): Promise<Result<unknown, PeriodReaderError>>;
+}
+
+/** One player's weekly coach note, written once per week. */
+export interface StoredCoachNote {
+  /** `${userId}-${week}` */
+  id: string;
+  userId: string;
+  /** The week's Monday (Manila time). */
+  week: string;
+  locale: ReadLocale;
+  model: string;
+  version: string;
+  games: number;
+  facts: GroundFact[];
+  note: CoachNote;
+  createdAt: Date;
+}
+
+export interface CoachNotesPort {
+  get(id: string): Promise<StoredCoachNote | null>;
+  /** Saves the note unless one exists for that id; returns the one kept. */
+  saveOnce(note: StoredCoachNote): Promise<StoredCoachNote>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }

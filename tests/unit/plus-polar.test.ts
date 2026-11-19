@@ -711,7 +711,7 @@ describe("Polar provisioning", () => {
       is_recurring: true,
       recurring_interval: "month",
       metadata: { plan: "monthly" },
-      prices: [{ amount_type: "fixed", price_currency: "php", price_amount: 29900 }],
+      prices: [{ amount_type: "fixed", price_currency: "php", price_amount: 14900 }],
     },
     {
       id: "f7ddc56a-88ab-4425-98a4-9d5e951e70bf",
@@ -719,17 +719,17 @@ describe("Polar provisioning", () => {
       is_recurring: true,
       recurring_interval: "year",
       metadata: { plan: "yearly" },
-      prices: [{ amount_type: "fixed", price_currency: "php", price_amount: 299000 }],
+      prices: [{ amount_type: "fixed", price_currency: "php", price_amount: 149000 }],
     },
   ];
 
   it("prices the products from PLAN_PRICES, in PHP cents", () => {
-    expect(priceInCents("₱299")).toBe(29900);
-    expect(priceInCents("₱2,990")).toBe(299000);
+    expect(priceInCents("₱149")).toBe(14900);
+    expect(priceInCents("₱1,490")).toBe(149000);
     expect(polarProductRequest("yearly")).toMatchObject({
       name: "Dota Den Plus (yearly)",
       recurring_interval: "year",
-      prices: [{ amount_type: "fixed", price_currency: "php", price_amount: 299000 }],
+      prices: [{ amount_type: "fixed", price_currency: "php", price_amount: 149000 }],
       metadata: { plan: "yearly" },
     });
   });
@@ -832,7 +832,7 @@ describe("Polar provisioning", () => {
     const { api, calls } = fakePolar({ products });
     const log: string[] = [];
     await provisionPolar({ api, apply: true, webhookUrl: URL_, log: (l) => log.push(l) });
-    expect(log.join("\n")).toMatch(/Warning: it has no fixed php 29900 price/);
+    expect(log.join("\n")).toMatch(/Warning: it has no fixed php 14900 price/);
     expect(calls.filter((c) => c.path === "/v1/products/" && c.method === "POST")).toEqual([]);
   });
 });

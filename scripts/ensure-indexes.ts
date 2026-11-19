@@ -40,6 +40,7 @@ import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-me
 import { DraftRoomsRepository } from "@/modules/drafts/repositories/draft-rooms.repository";
 import { MatchDraftReadsRepository } from "@/modules/drafts/repositories/match-draft-reads.repository";
 import {
+  CoachNotesRepository,
   PeriodReadsRepository,
   ReplayReadsRepository,
 } from "@/modules/report/repositories/replay-reads.repository";
@@ -108,6 +109,7 @@ async function main(): Promise<void> {
   await Promise.all([
     new AskChatsRepository(async () => db).ensureIndexes(),
     new AskUsageRepository(async () => db).ensureIndexes(),
+    new CoachNotesRepository(async () => db).ensureIndexes(),
   ]);
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();

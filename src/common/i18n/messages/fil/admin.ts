@@ -77,6 +77,7 @@ export const admin: MessageTree<typeof en> = {
       coach_review: "Mga AI coach review na naisulat (kasama ang auto)",
       auto_review: "Mga auto post-game review",
       period_read: "Mga AI read ng battle report",
+      weekly_coach: "Mga lingguhang note ng coach tuwing Lunes",
       pick_for_me: "Pick for me",
       compare: "How you compare",
       discord_command: "Mga utos sa Discord bot",
@@ -123,7 +124,7 @@ export const admin: MessageTree<typeof en> = {
     schedules: "I-set up ang job schedules",
     schedulesPending: "Sine-set up…",
     schedulesDone:
-      "Na-set up ang {n} schedule (bawat 5 minuto: go-live alerts at session companion).",
+      "Na-set up ang {n} schedule (bawat 5 minuto: go-live alerts at session companion; Lunes 7:00 ng umaga sa Manila: weekly coach).",
     schedulesOff: "Walang QStash dito: sa app mismo tumatakbo ang mga job.",
     schedulesFailed: "Hindi ma-set up ang mga schedule.",
   },

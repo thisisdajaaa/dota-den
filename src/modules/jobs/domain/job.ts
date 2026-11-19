@@ -14,6 +14,10 @@ export const JOB_NAMES = [
   "coach-auto-review",
   // Plus session companion: a QStash schedule delivers it every 5 minutes.
   "session-companion",
+  // Plus Monday weekly coach: a QStash schedule delivers the tick (Monday 07:00 Manila), which
+  // queues one note job per Plus player.
+  "weekly-coach",
+  "weekly-coach-note",
 ] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
