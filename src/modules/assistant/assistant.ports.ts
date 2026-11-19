@@ -6,7 +6,7 @@ import type {
 } from "@/common/llm/groq-client";
 import type { DataOwner } from "@/common/privacy/user-data";
 import type { Result } from "@/common/result";
-import type { AskMessage } from "./domain/ask-chat";
+import type { AskConversationSummary, AskMessage } from "./domain/ask-chat";
 import type { ToolResult } from "./domain/ask-results";
 import type { AskToolArgs } from "./schemas/ask-tools.schema";
 
@@ -39,17 +39,31 @@ export interface AskDataPort {
   wardSpots(args: AskToolArgs<"ward_spots">): Promise<ToolResult>;
   heroCounters(owner: AskOwner, args: AskToolArgs<"hero_counters">): Promise<ToolResult>;
   metaHeroes(owner: AskOwner, args: AskToolArgs<"meta_heroes">): Promise<ToolResult>;
+  patchNotes(args: AskToolArgs<"patch_notes">): Promise<ToolResult>;
 }
 
-/** Each player's short chat history (kept a few days). */
+/** Each player's conversations (kept for a while after their last message). */
 export interface AskChatsPort {
-  get(userId: string): Promise<AskMessage[]>;
-  /** Appends, keeps only the newest `keep` messages, and forgets the chat at `expiresAt`. */
-  append(
+  /** Newest first, at most `limit`. */
+  list(userId: string, limit: number): Promise<AskConversationSummary[]>;
+  /** The conversation's messages, or null when it isn't this user's (or doesn't exist). */
+  get(userId: string, id: string): Promise<AskMessage[] | null>;
+  /** Starts a conversation and forgets the user's oldest past `maxConversations`; its id. */
+  create(
     userId: string,
     messages: readonly AskMessage[],
+    opts: { title: string; now: Date; expiresAt: Date; maxConversations: number },
+  ): Promise<string>;
+  /** Appends, keeping the newest `keep` messages; false when it isn't this user's. */
+  append(
+    userId: string,
+    id: string,
+    messages: readonly AskMessage[],
     opts: { keep: number; now: Date; expiresAt: Date },
-  ): Promise<void>;
+  ): Promise<boolean>;
+  /** Forgets one conversation; false when it isn't this user's. */
+  remove(userId: string, id: string): Promise<boolean>;
+  /** Forgets all of them. */
   clear(userId: string): Promise<void>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;

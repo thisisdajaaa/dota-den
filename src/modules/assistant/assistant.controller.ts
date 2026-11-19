@@ -6,7 +6,7 @@ import { getLocale } from "@/common/i18n/server";
 import type { Logger } from "@/common/logging/logger";
 import { requireUser } from "@/modules/identity";
 import type { AskEventDto } from "./dtos/responses/ask.dto";
-import { AskRequestSchema } from "./schemas/ask-tools.schema";
+import { AskConversationQuerySchema, AskRequestSchema } from "./schemas/ask-tools.schema";
 import type { AskService } from "./services/ask.service";
 
 /** Safari holds a streamed response until 1 KB has arrived; a blank first line gets past it. */
@@ -18,11 +18,19 @@ export class AssistantController {
     private readonly deps: { service: () => AskService; logger: Pick<Logger, "error"> },
   ) {}
 
-  /** GET /api/v1/ask: the remembered chat and today's allowance. */
-  state = handler({ guard: requireUser }, async ({ user }) =>
-    ServiceResponse.success(
-      await this.deps.service().state({ userId: user.id, accountId32: user.accountId32 }),
-    ),
+  /**
+   * GET /api/v1/ask: the player's conversations, the newest one's messages and today's
+   * allowance. GET /api/v1/ask?c=<id>: one of their conversations (404 when it isn't theirs).
+   */
+  state = handler(
+    { guard: requireUser, query: AskConversationQuerySchema },
+    async ({ user, query }) => {
+      const owner = { userId: user.id, accountId32: user.accountId32 };
+      const service = this.deps.service();
+      return ServiceResponse.success(
+        query.c ? await service.conversation(owner, query.c) : await service.state(owner),
+      );
+    },
   );
 
   /**
@@ -75,9 +83,12 @@ export class AssistantController {
     },
   );
 
-  /** DELETE /api/v1/ask: forgets the chat. */
-  clear = handler({ guard: requireUser }, async ({ user }) => {
-    await this.deps.service().clear({ userId: user.id, accountId32: user.accountId32 });
-    return ServiceResponse.success(null, "Chat cleared");
-  });
+  /** DELETE /api/v1/ask?c=<id>: forgets one conversation; without `c`, all of them. */
+  clear = handler(
+    { guard: requireUser, query: AskConversationQuerySchema },
+    async ({ user, query }) => {
+      await this.deps.service().clear({ userId: user.id, accountId32: user.accountId32 }, query.c);
+      return ServiceResponse.success(null, query.c ? "Conversation deleted" : "Chats cleared");
+    },
+  );
 }

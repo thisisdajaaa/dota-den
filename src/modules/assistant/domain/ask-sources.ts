@@ -12,14 +12,18 @@ export type AskSource =
   | { kind: "high_rank_pubs" }
   | { kind: "pro_games"; games: number | null }
   /** OpenDota's public games in one rank bracket (bracket label, e.g. "Herald–Guardian"). */
-  | { kind: "bracket_pubs"; bracket: string };
+  | { kind: "bracket_pubs"; bracket: string }
+  /** Valve's official patch notes (version, e.g. "7.42"). */
+  | { kind: "patch_notes"; version: string };
 
 const id = (s: AskSource) =>
   s.kind === "your_match"
     ? `${s.kind}:${s.matchId}`
     : s.kind === "bracket_pubs"
       ? `${s.kind}:${s.bracket}`
-      : s.kind;
+      : s.kind === "patch_notes"
+        ? `${s.kind}:${s.version}`
+        : s.kind;
 
 /** One chip per source; for counted sources, the largest count seen. */
 export function mergeSources(sources: readonly AskSource[]): AskSource[] {

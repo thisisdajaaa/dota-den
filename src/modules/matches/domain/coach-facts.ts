@@ -16,7 +16,7 @@ import { PERF_STATS, type PerfStat } from "./match-performance";
 import type { ItemInfo } from "./read-models";
 
 /** Bump when the prompt or the fact sheet changes meaningfully: old reviews stay cached. */
-export const COACH_PROMPT_VERSION = "coach-v4";
+export const COACH_PROMPT_VERSION = "coach-v5";
 
 /** Languages the coach writes in: the interface languages (src/common/i18n/locales.ts). */
 export type CoachLocale = "en" | "fil" | "ceb";
@@ -38,6 +38,7 @@ export function isKeyItem(item: Pick<ItemInfo, "key" | "qual" | "cost"> | undefi
 /** What a fact is; the UI labels it from this (plus `subject` for items and opponents). */
 export type CoachFactBase =
   | "result"
+  | "leftGame"
   | "duration"
   | "patch"
   | "party"
@@ -147,6 +148,8 @@ export function buildCoachFactSheet(input: {
 
   const won = (p.side === "radiant") === match.radiantWin;
   add("result", won ? "win" : "loss", "text");
+  // Only when known to be true: a game the player left says little about how they play.
+  if (p.leftGame === true) add("leftGame", "yes", "text");
   add("duration", match.durationSec, "clock");
   if (!add("patch", patch, "text")) missing.push("patch");
 
@@ -265,6 +268,8 @@ export function buildCoachFactSheet(input: {
 
 const EN_BASE: Record<CoachFactBase, string> = {
   result: "Result",
+  leftGame:
+    "The player abandoned or disconnected from this game for good (their stats stop there and their items were sold; don't judge their play on it)",
   duration: "Game length",
   patch: "Patch",
   party: "Queued",
@@ -300,7 +305,8 @@ const EN_BASE: Record<CoachFactBase, string> = {
   teamfightDeathsMid: "Team fight deaths 10:00–30:00",
   teamfightDeathsLate: "Team fight deaths after 30:00",
   itemTiming: "bought at (game clock)",
-  benchmark: "percentile vs recent games on this hero (higher is better)",
+  benchmark:
+    "percentile vs other players' public games on this hero, not the player's own games (50 is average, higher is better)",
 };
 
 const EN_STAT: Record<PerfStat, string> = {

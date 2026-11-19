@@ -49,25 +49,54 @@ describe("AskUsageRepository", () => {
 });
 
 describe("AskChatsRepository", () => {
-  it("keeps only the newest messages, and forgets an expired chat", async () => {
-    const at = new Date();
-    for (let i = 0; i < 6; i++)
-      await chats.append("u1", [{ role: "user", text: `q${i}`, at }], {
-        keep: 4,
-        now: at,
-        expiresAt: later,
-      });
-    expect((await chats.get("u1")).map((m) => m.text)).toEqual(["q2", "q3", "q4", "q5"]);
-    await chats.append("u2", [{ role: "user", text: "old", at }], {
-      keep: 4,
-      now: at,
-      expiresAt: new Date(Date.now() - 1000),
+  const at = new Date();
+  const msg = (text: string) => ({ role: "user" as const, text, at });
+  const create = (userId: string, title: string, max = 30, expiresAt = later) =>
+    chats.create(userId, [msg(title)], {
+      title,
+      now: new Date(),
+      expiresAt,
+      maxConversations: max,
     });
-    expect(await chats.get("u2")).toEqual([]);
+
+  it("keeps only the newest messages of a conversation, and forgets an expired one", async () => {
+    const id = await create("u1", "q0");
+    for (let i = 1; i < 6; i++)
+      expect(
+        await chats.append("u1", id, [msg(`q${i}`)], { keep: 4, now: at, expiresAt: later }),
+      ).toBe(true);
+    expect((await chats.get("u1", id))!.map((m) => m.text)).toEqual(["q2", "q3", "q4", "q5"]);
+    const old = await create("u2", "old", 30, new Date(Date.now() - 1000));
+    expect(await chats.get("u2", old)).toBeNull();
+    expect(await chats.list("u2", 10)).toEqual([]);
   });
 
-  it("clears a chat", async () => {
-    await chats.clear("u1");
-    expect(await chats.get("u1")).toEqual([]);
+  it("never lets one player read, add to or delete another's conversation", async () => {
+    const id = await create("u1", "mine");
+    expect(await chats.get("u9", id)).toBeNull();
+    expect(await chats.append("u9", id, [msg("x")], { keep: 4, now: at, expiresAt: later })).toBe(
+      false,
+    );
+    expect(await chats.remove("u9", id)).toBe(false);
+    expect(await chats.get("u1", id)).not.toBeNull();
+  });
+
+  it("lists newest first with titles, and caps how many a player keeps", async () => {
+    await chats.clear("u3");
+    const ids: string[] = [];
+    for (let i = 0; i < 4; i++) ids.push(await create("u3", `chat ${i}`, 3));
+    const list = await chats.list("u3", 10);
+    expect(list.map((c) => c.title)).toEqual(["chat 3", "chat 2", "chat 1"]);
+    expect(list[0]).toMatchObject({ id: ids[3], messages: 1 });
+    expect(await chats.get("u3", ids[0])).toBeNull();
+  });
+
+  it("deletes one conversation, or all of a player's", async () => {
+    const a = await create("u4", "a");
+    const b = await create("u4", "b");
+    expect(await chats.remove("u4", a)).toBe(true);
+    expect((await chats.list("u4", 10)).map((c) => c.id)).toEqual([b]);
+    await chats.clear("u4");
+    expect(await chats.list("u4", 10)).toEqual([]);
   });
 });

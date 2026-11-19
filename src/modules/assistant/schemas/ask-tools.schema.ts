@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { META_BRACKETS } from "@/modules/meta/domain/rank-bracket";
+import { CONVERSATION_ID } from "../domain/ask-chat";
 import { WARD_KINDS, WARD_PHASES, WARD_SIDES } from "@/modules/guides/domain/ward-spots";
 
 /**
@@ -67,11 +68,30 @@ export const ASK_TOOL_SCHEMAS = {
   hero_counters: z.object({ hero }).strict(),
   meta_heroes: z
     .object({
-      position,
+      position: position
+        .optional()
+        .describe("Only this role; omit to get the strongest heroes in every role"),
       bracket: z
         .enum([...META_BRACKETS, "mine"])
         .optional()
         .describe('Rank bracket; "mine" (default) is the player\'s own from their medal'),
+    })
+    .strict(),
+  patch_notes: z
+    .object({
+      hero: hero.optional().describe("What changed for this hero"),
+      item: z
+        .string()
+        .trim()
+        .min(1)
+        .max(40)
+        .optional()
+        .describe('What changed for this item, e.g. "Black King Bar", "BKB"'),
+      version: z
+        .string()
+        .regex(/^\d{1,2}\.\d{2}[a-z]?$/)
+        .optional()
+        .describe('A patch version like "7.42" or "7.41c"; omit for the latest'),
     })
     .strict(),
 } as const;
@@ -102,7 +122,9 @@ const DESCRIPTIONS: Record<AskToolName, string> = {
   hero_counters:
     "Heroes a hero is strong and weak against (Legend–Immortal pubs or pro games), plus the player's own record against that hero.",
   meta_heroes:
-    "The strongest heroes for a position in a rank bracket (public games), defaulting to the player's own bracket.",
+    "The strongest heroes right now in a rank bracket (public games, the current patch), defaulting to the player's own bracket. Give a position for one role, or omit it for the top heroes of every role (use that for 'who is strong / meta right now').",
+  patch_notes:
+    "Valve's official patch notes: what changed for a hero or an item, or an overview of a patch (latest by default). Use for 'what changed', 'was X nerfed/buffed', 'what's new in 7.xx'.",
 };
 
 /** The tool list sent to the model (JSON schemas made from the zod schemas above). */
@@ -145,5 +167,12 @@ export const AskRequestSchema = z.object({
     .string()
     .regex(/^\d{1,20}$/)
     .optional(),
+  /** The conversation to continue; omitted starts a new one. */
+  conversationId: z.string().regex(CONVERSATION_ID).optional(),
 });
 export type AskRequest = z.infer<typeof AskRequestSchema>;
+
+/** Picks one conversation (GET to open it, DELETE to forget it; DELETE without forgets all). */
+export const AskConversationQuerySchema = z.object({
+  c: z.string().regex(CONVERSATION_ID).optional(),
+});

@@ -1,14 +1,42 @@
 import type { AskSource } from "./ask-sources";
 
 /**
- * Ask Den's short memory (pure): the last few turns of a player's chat, kept so a follow-up
- * ("and on Lion?") makes sense. Only the words are kept, never tool results.
+ * Ask Den's conversations (pure). A player keeps several chats and can go back to any of
+ * them; the model sees the newest turns of the one being continued, so a follow-up ("and on
+ * Lion?") makes sense. Only the words are kept, never tool results.
  */
 
-/** Turns (a question and its answer) kept per player. */
+/** Turns (a question and its answer) the model sees from the conversation. */
 export const ASK_MAX_TURNS = 10;
-/** A chat is forgotten this long after its last message. */
-export const ASK_CHAT_TTL_MS = 3 * 86_400_000;
+/** Messages kept per conversation (older ones drop off). */
+export const ASK_KEEP_MESSAGES = 60;
+/** Conversations kept per player: starting one more forgets the oldest. */
+export const ASK_MAX_CONVERSATIONS = 30;
+/** A conversation is forgotten this long after its last message. */
+export const ASK_CHAT_TTL_MS = 30 * 86_400_000;
+/** Longest conversation title (made from its first question). */
+export const ASK_TITLE_CHARS = 60;
+
+/** Conversation ids are ours (UUIDs); a legacy chat used the user id (24 hex). */
+export const CONVERSATION_ID =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{24})$/;
+
+/** A conversation in the list: no messages. */
+export interface AskConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: Date;
+  messages: number;
+}
+
+/** A conversation's title: its first question on one line, cut at a word. */
+export function conversationTitle(question: string): string {
+  const line = question.replace(/\s+/g, " ").trim();
+  if (line.length <= ASK_TITLE_CHARS) return line;
+  const head = line.slice(0, ASK_TITLE_CHARS);
+  const space = head.lastIndexOf(" ");
+  return `${(space > ASK_TITLE_CHARS / 2 ? head.slice(0, space) : head).trim()}…`;
+}
 
 export interface AskMessage {
   role: "user" | "assistant";
@@ -36,5 +64,5 @@ export function modelHistory(messages: readonly AskMessage[]): AskMessage[] {
       }
     }
   }
-  return out;
+  return out.slice(-ASK_MAX_TURNS * 2);
 }

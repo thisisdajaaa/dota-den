@@ -19,7 +19,7 @@ async function ask(page: Page, question: string) {
   }).toPass({ timeout: 20_000 });
 }
 
-test("Ask Den answers from the player's own games, with its sources, and can be cleared", async ({
+test("Ask Den answers from the player's own games, keeps separate chats, and deletes them", async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -53,13 +53,37 @@ test("Ask Den answers from the player's own games, with its sources, and can be 
   await expect(region).not.toContainText("4242");
   await expect(region).toContainText(`${left - 1} question`);
 
-  // The chat is remembered, then cleared.
+  // The chat is remembered (and its address reopens it).
+  await expect(page).toHaveURL(/\/ask\?c=[0-9a-f-]{36}$/);
+  const firstChat = page.url();
   await page.reload();
   await expect(log).toContainText("In your last 20 games you won 11 (55%).");
-  await region.getByRole("button", { name: "Clear chat" }).click();
+
+  // A new chat starts empty; the old one is still in the list and can be reopened.
+  const chats = page.getByRole("navigation", { name: "Your chats" });
+  await chats.getByRole("button", { name: "New chat" }).click();
   await expect(log).not.toContainText("In your last 20 games");
-  await page.reload();
+  await expect(page).toHaveURL(/\/ask$/);
+  await ask(page, "How are my games going?");
+  await expect(log).toContainText("In your last 20 games you won 11 (55%).", { timeout: 20_000 });
+  await expect(log).not.toContainText("Why do I keep losing on Anti-Mage?");
+  await expect(chats.getByRole("button", { name: /^Open chat: / })).toHaveCount(2);
+  await chats
+    .getByRole("button", { name: "Open chat: Why do I keep losing on Anti-Mage?" })
+    .click();
+  await expect(log).toContainText("Why do I keep losing on Anti-Mage?");
+  await expect(log).not.toContainText("How are my games going?");
+  await expect(page).toHaveURL(firstChat);
+
+  // Deleting a chat forgets it; the other stays.
+  await region.getByRole("button", { name: "Delete chat" }).click();
+  await expect(log).not.toContainText("Why do I keep losing on Anti-Mage?");
+  await expect(chats.getByRole("button", { name: /^Open chat: / })).toHaveCount(1);
+  await page.goto(firstChat);
   await expect(region.getByRole("button", { name: "What should I build on Lion?" })).toBeVisible();
+  await expect(
+    chats.getByRole("button", { name: "Open chat: How are my games going?" }),
+  ).toBeVisible();
 });
 
 test("free players get 5 questions a day, then a Plus offer", async ({ page }) => {

@@ -14,6 +14,18 @@ export const ask = {
   clear: "Clear chat",
   you: "You",
   den: "Den",
+  conversations: {
+    label: "Your chats",
+    newChat: "New chat",
+    open: "Open chat: {title}",
+    delete: "Delete chat",
+    deleteNamed: "Delete chat: {title}",
+    empty: "No chats yet. Your questions are kept for 30 days.",
+    show: "Chats ({n})",
+    hide: "Hide chats",
+    gone: "That chat doesn't exist any more, so a new one was started.",
+    loadFailed: "Couldn't open that chat. Try again.",
+  },
   starters: {
     title: "Try asking",
     lose: "Why do I keep losing on Pudge?",
@@ -33,6 +45,7 @@ export const ask = {
     ward_spots: "Finding ward spots…",
     hero_counters: "Checking matchups…",
     meta_heroes: "Checking the meta…",
+    patch_notes: "Reading the patch notes…",
   },
   sources: {
     label: "Based on",
@@ -44,6 +57,7 @@ export const ask = {
     high_rank_pubs: "STRATZ Legend–Immortal pubs",
     pro_games: "pro games",
     bracket_pubs: "{bracket} public games",
+    patch_notes: "{version} patch notes",
   },
   quota: {
     left: { one: "1 question left today", other: "{n} questions left today" },

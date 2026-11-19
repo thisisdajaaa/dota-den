@@ -3,7 +3,14 @@ import type { ToolCall, ToolChatMessage } from "@/common/llm/groq-client";
 import type { Logger } from "@/common/logging/logger";
 import type { DataOwner } from "@/common/privacy/user-data";
 import type { GroundFact } from "@/common/utils/grounding";
-import { ASK_CHAT_TTL_MS, ASK_MAX_TURNS, modelHistory, type AskMessage } from "../domain/ask-chat";
+import {
+  ASK_CHAT_TTL_MS,
+  ASK_KEEP_MESSAGES,
+  ASK_MAX_CONVERSATIONS,
+  conversationTitle,
+  modelHistory,
+  type AskMessage,
+} from "../domain/ask-chat";
 import {
   factsFromResult,
   factsFromText,
@@ -26,7 +33,13 @@ import {
 } from "../domain/ask-quota";
 import { errorResult, type ToolResult } from "../domain/ask-results";
 import { mergeSources, type AskSource } from "../domain/ask-sources";
-import { toMessageDto, type AskAnswerDto, type AskStateDto } from "../dtos/responses/ask.dto";
+import {
+  toConversationDto,
+  toMessageDto,
+  type AskAnswerDto,
+  type AskConversationDto,
+  type AskStateDto,
+} from "../dtos/responses/ask.dto";
 import {
   ASK_TOOL_DEFINITIONS,
   parseToolArgs,
@@ -108,18 +121,34 @@ export class AskService {
     return askQuota({ plus: isPlus, used, now, limits: this.deps.limits });
   }
 
-  /** The chat page's state: the remembered chat and today's allowance. */
-  async state(owner: AskOwner): Promise<AskStateDto> {
-    const [quota, messages] = await Promise.all([
+  /**
+   * The chat page's state: the player's conversations, the open one (`conversationId`, or
+   * the newest when none is asked for; a new chat when it isn't theirs) and today's allowance.
+   */
+  async state(owner: AskOwner, conversationId?: string): Promise<AskStateDto> {
+    const [quota, conversations] = await Promise.all([
       this.quota(owner.userId),
-      this.deps.chats.get(owner.userId).catch(() => []),
+      this.deps.chats.list(owner.userId, ASK_MAX_CONVERSATIONS).catch(() => []),
     ]);
+    const openId = conversationId ?? conversations[0]?.id;
+    const messages = openId
+      ? await this.deps.chats.get(owner.userId, openId).catch(() => null)
+      : null;
     return {
       enabled: this.enabled,
       quota,
       plusLimit: this.deps.limits.plus,
-      messages: messages.map(toMessageDto),
+      conversations: conversations.map(toConversationDto),
+      conversationId: messages ? (openId ?? null) : null,
+      messages: (messages ?? []).map(toMessageDto),
     };
+  }
+
+  /** One of the player's conversations; not found when it isn't theirs. */
+  async conversation(owner: AskOwner, id: string) {
+    const messages = await this.deps.chats.get(owner.userId, id);
+    if (!messages) throw notFound();
+    return { conversationId: id, messages: messages.map(toMessageDto) };
   }
 
   /** Takes one question from today's allowance; throws when it's used up or Ask Den is off. */
@@ -143,9 +172,10 @@ export class AskService {
     return { owner, day, plus };
   }
 
-  /** Forgets the player's chat. */
-  async clear(owner: AskOwner): Promise<void> {
-    await this.deps.chats.clear(owner.userId);
+  /** Forgets one conversation, or all of them when no id is given. */
+  async clear(owner: AskOwner, conversationId?: string): Promise<void> {
+    if (!conversationId) return this.deps.chats.clear(owner.userId);
+    if (!(await this.deps.chats.remove(owner.userId, conversationId))) throw notFound();
   }
 
   /**
@@ -161,22 +191,19 @@ export class AskService {
     const { owner } = ticket;
     let answered = false;
     try {
-      const history = modelHistory(await this.deps.chats.get(owner.userId).catch(() => []));
+      // A conversation that isn't the player's is "not found" (and the question is given back).
+      const earlier = request.conversationId
+        ? await this.deps.chats.get(owner.userId, request.conversationId)
+        : [];
+      if (!earlier) throw notFound();
+      const history = modelHistory(earlier);
       const result = await this.run(owner, request, locale, history, emit);
       const now = this.now();
       const question: AskMessage = { role: "user", text: request.question, at: now };
       const answer: AskMessage = result.fallback
         ? { role: "assistant", text: "", sources: [], fallback: true, at: now }
         : { role: "assistant", text: result.text, sources: result.sources, at: now };
-      await this.deps.chats
-        .append(owner.userId, [question, answer], {
-          keep: ASK_MAX_TURNS * 2,
-          now,
-          expiresAt: new Date(now.getTime() + ASK_CHAT_TTL_MS),
-        })
-        .catch((error: unknown) => {
-          this.deps.logger.warn("ask_chat_save_failed", { error });
-        });
+      const conversation = await this.save(owner.userId, request, [question, answer], now);
       if (!result.fallback) {
         answered = true;
         await this.deps.used?.(owner.userId);
@@ -188,12 +215,44 @@ export class AskService {
         plus: ticket.plus,
       });
       return {
+        conversation,
         question: toMessageDto(question),
         answer: toMessageDto(answer),
         quota: await this.quotaAfter(ticket, answered),
       };
     } finally {
       if (!answered) await this.deps.usage.release(owner.userId, ticket.day).catch(() => {});
+    }
+  }
+
+  /** Saves the turn to its conversation (a new one when none was given); never fails. */
+  private async save(
+    userId: string,
+    request: AskRequest,
+    turn: readonly AskMessage[],
+    now: Date,
+  ): Promise<AskConversationDto | null> {
+    const expiresAt = new Date(now.getTime() + ASK_CHAT_TTL_MS);
+    try {
+      if (request.conversationId) {
+        const kept = await this.deps.chats.append(userId, request.conversationId, turn, {
+          keep: ASK_KEEP_MESSAGES,
+          now,
+          expiresAt,
+        });
+        if (kept) return { id: request.conversationId, title: null, updatedAt: now.toISOString() };
+      }
+      const title = conversationTitle(request.question);
+      const id = await this.deps.chats.create(userId, turn, {
+        title,
+        now,
+        expiresAt,
+        maxConversations: ASK_MAX_CONVERSATIONS,
+      });
+      return { id, title, updatedAt: now.toISOString() };
+    } catch (error) {
+      this.deps.logger.warn("ask_chat_save_failed", { error });
+      return null;
     }
   }
 
@@ -338,6 +397,8 @@ export class AskService {
         return d.heroCounters(owner, args as AskToolArgs<"hero_counters">);
       case "meta_heroes":
         return d.metaHeroes(owner, args as AskToolArgs<"meta_heroes">);
+      case "patch_notes":
+        return d.patchNotes(args as AskToolArgs<"patch_notes">);
     }
   }
 
@@ -356,6 +417,11 @@ export class AskService {
     return { askDenChats: chats, askDenQuestions: uses };
   }
 }
+
+const notFound = () =>
+  new AppError("not_found", "That conversation doesn't exist any more.", {
+    reason: "conversation_not_found",
+  });
 
 /** The reply as plain text: markdown emphasis and headings dropped (the chat shows text). */
 function plainText(text: string): string {
