@@ -92,11 +92,36 @@ export function AskChat({
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<AskToolName | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const end = useRef<HTMLDivElement>(null);
+  /** The conversation's own scroll area (the page itself doesn't scroll to follow it). */
+  const scroller = useRef<HTMLDivElement>(null);
+  /** Whether the reader is at (or near) the newest message; reading back isn't interrupted. */
+  const pinned = useRef(true);
+  const shown = useRef(0);
 
   useEffect(() => {
-    end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [messages.length, busy]);
+    const el = scroller.current;
+    if (!el) return;
+    // Opening a chat jumps to its end; a new question or answer follows it smoothly, unless
+    // you've scrolled up to read (your own question always brings you back down).
+    const opened = shown.current === 0 || messages.length < shown.current;
+    shown.current = messages.length;
+    if (opened || pinned.current || busy) {
+      el.scrollTo({ top: el.scrollHeight, behavior: opened ? "auto" : "smooth" });
+      pinned.current = true;
+    }
+  }, [messages, busy, status]);
+
+  // When the area around it changes (the question box swapped for the daily-limit note, the
+  // chats folding open, a phone keyboard), stay at the newest message if you were there.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const keep = new ResizeObserver(() => {
+      if (pinned.current) el.scrollTop = el.scrollHeight;
+    });
+    keep.observe(el);
+    return () => keep.disconnect();
+  }, []);
 
   const out = quota.remaining === 0;
 
@@ -278,7 +303,7 @@ export function AskChat({
       {conversations.length === 0 ? (
         <p className="px-1 text-xs text-muted-foreground">{t("ask.conversations.empty")}</p>
       ) : (
-        <ul className="max-h-[60dvh] space-y-0.5 overflow-y-auto overscroll-contain pr-1">
+        <ul className="max-h-[30dvh] space-y-0.5 overflow-y-auto overscroll-contain pr-1 lg:max-h-[calc(100dvh-11rem)]">
           {conversations.map((c) => {
             const current = c.id === conversationId;
             return (
@@ -321,9 +346,13 @@ export function AskChat({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="hidden lg:block">{list}</aside>
-      <section aria-labelledby="ask-chat" className="panel flex min-w-0 flex-col gap-4 p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <aside className="hidden lg:sticky lg:top-4 lg:block lg:self-start">{list}</aside>
+      <section
+        aria-labelledby="ask-chat"
+        // The chat fits the screen: messages scroll inside it, the question box stays in view.
+        className="panel flex h-[calc(100dvh-22rem)] max-h-[60rem] min-h-[24rem] min-w-0 flex-col gap-3 p-4 sm:p-5 lg:h-[calc(100dvh-16rem)]"
+      >
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
           <h2 id="ask-chat" className="flex items-center gap-2 text-base font-semibold">
             <BotMessageSquare aria-hidden className="size-4 text-gold" /> {t("ask.den")}
           </h2>
@@ -345,7 +374,7 @@ export function AskChat({
         </div>
 
         {/* Phones and tablets: the chats fold away above the conversation. */}
-        <div className="space-y-2 lg:hidden">
+        <div className="shrink-0 space-y-2 lg:hidden">
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -372,56 +401,65 @@ export function AskChat({
         </div>
 
         {matchId && (
-          <p className="rounded-md bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground">
+          <p className="shrink-0 rounded-md bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground">
             {t("ask.match.context", { id: matchId })}
           </p>
         )}
 
-        <div role="log" aria-label={t("ask.title")} className="flex flex-col gap-3">
-          {messages.map((m, i) => (
-            <Message key={`${m.at}-${i}`} message={m} />
-          ))}
-          {loading && (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-              <Loader2 aria-hidden className="size-4 animate-spin" />
+        <div
+          ref={scroller}
+          data-testid="ask-scroll"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+          }}
+          className="-mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-2"
+        >
+          <div role="log" aria-label={t("ask.title")} className="flex flex-col gap-3">
+            {messages.map((m, i) => (
+              <Message key={`${m.at}-${i}`} message={m} />
+            ))}
+            {loading && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+                <Loader2 aria-hidden className="size-4 animate-spin" />
+              </p>
+            )}
+            {busy && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+                <Loader2 aria-hidden className="size-4 animate-spin" />
+                {status ? t(`ask.status.${status}`) : t("ask.thinking")}
+              </p>
+            )}
+          </div>
+
+          {messages.length === 0 && !busy && !loading && !out && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("ask.starters.title")}</p>
+              <ul className="flex flex-wrap gap-2">
+                {STARTERS.map((key) => (
+                  <li key={key}>
+                    <button
+                      type="button"
+                      onClick={() => send(t(`ask.starters.${key}`))}
+                      className="rounded-full border border-white/[0.08] px-3 py-1.5 text-left text-sm hover:border-gold/40 hover:text-gold"
+                    >
+                      {t(`ask.starters.${key}`)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {problem && (
+            <p role="alert" className="text-sm text-loss">
+              {problem}
             </p>
           )}
-          {busy && (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-              <Loader2 aria-hidden className="size-4 animate-spin" />
-              {status ? t(`ask.status.${status}`) : t("ask.thinking")}
-            </p>
-          )}
-          <div ref={end} />
         </div>
 
-        {messages.length === 0 && !busy && !loading && !out && (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{t("ask.starters.title")}</p>
-            <ul className="flex flex-wrap gap-2">
-              {STARTERS.map((key) => (
-                <li key={key}>
-                  <button
-                    type="button"
-                    onClick={() => send(t(`ask.starters.${key}`))}
-                    className="rounded-full border border-white/[0.08] px-3 py-1.5 text-left text-sm hover:border-gold/40 hover:text-gold"
-                  >
-                    {t(`ask.starters.${key}`)}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {problem && (
-          <p role="alert" className="text-sm text-loss">
-            {problem}
-          </p>
-        )}
-
         {out ? (
-          <div className="space-y-1.5 rounded-lg border border-gold/25 bg-gold/[0.06] p-3 text-sm">
+          <div className="shrink-0 space-y-1.5 rounded-lg border border-gold/25 bg-gold/[0.06] p-3 text-sm">
             <p className="font-medium">{t("ask.out.title")}</p>
             <p className="text-muted-foreground">
               {quota.plus
@@ -437,7 +475,7 @@ export function AskChat({
           </div>
         ) : (
           <form
-            className="flex items-end gap-2"
+            className="flex shrink-0 items-end gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               void send(input);
@@ -469,7 +507,7 @@ export function AskChat({
             </Button>
           </form>
         )}
-        <p className="text-xs text-muted-foreground">{t("ask.disclaimer")}</p>
+        <p className="shrink-0 text-xs text-muted-foreground">{t("ask.disclaimer")}</p>
       </section>
     </div>
   );
