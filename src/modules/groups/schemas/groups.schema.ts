@@ -6,6 +6,7 @@ import {
   MIN_GROUP_NAME,
   normaliseGroupName,
 } from "../domain/group";
+import { MAX_STACK, MIN_STACK } from "../domain/stack-planner";
 
 export const GroupNameSchema = z
   .string()
@@ -22,3 +23,21 @@ export const GroupMemberParams = z.object({
   accountId: z.coerce.number().int().positive().max(4_294_967_295),
 });
 export const InviteTokenParams = z.object({ token: z.string().regex(INVITE_TOKEN_PATTERN) });
+
+const AccountId = z.number().int().positive().max(4_294_967_295);
+const StackMembers = z
+  .array(AccountId)
+  .min(MIN_STACK)
+  .max(MAX_STACK)
+  .refine((ids) => new Set(ids).size === ids.length, "Each member once");
+
+/** `?members=1,2,3`: the account ids of who's in tonight. */
+export const PlanQuerySchema = z.object({
+  members: z
+    .string()
+    .max(80)
+    .regex(/^\d+(,\d+)*$/)
+    .transform((s) => s.split(",").map(Number))
+    .pipe(StackMembers),
+});
+export const PlanDiscordSchema = z.object({ members: StackMembers }).strict();
