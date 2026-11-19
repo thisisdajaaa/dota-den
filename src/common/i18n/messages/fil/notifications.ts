@@ -56,6 +56,10 @@ export const notifications: MessageTree<typeof en> = {
       label: "Live session updates (Plus)",
       help: "Habang nakikita ka ng Steam sa Dota: bawat tapos na laro kasama ang record mo sa session, at paalala kapag sinasabi ng sarili mong history na mas humihina ka kapag sunod-sunod ang talo.",
     },
+    weekly_coach: {
+      label: "Weekly coach tuwing Lunes (Plus)",
+      help: "Lunes ng umaga: maikling AI coaching note tungkol sa nakaraang linggo, may isang dapat ayusin. Kapag pinatay mo ito, hindi na rin isusulat ang note para sa 'yo (puwede mo pa rin itong isulat sa battle report).",
+    },
     stop_loss: {
       label: "Naabot ang stop-loss",
       help: "Habang nasa Dota ka ayon sa Steam: kapag naabot ng isang laro ang stop-loss na itinakda mo (Account → Stop-loss). Isang beses bawat limit bawat session.",
@@ -108,6 +112,10 @@ export const notifications: MessageTree<typeof en> = {
         other:
           "Nagtakda ka ng limit na {n} laro bawat session. {used} na ang nalaro mo. Magandang oras na para tumigil.",
       },
+    },
+    weeklyCoach: {
+      title: "Nandito na ang Monday coach note mo",
+      body: "Isang aayusin ngayong linggo: {fix}",
     },
     coachReview: {
       title: "Na-review na ang laro mo sa {hero}",

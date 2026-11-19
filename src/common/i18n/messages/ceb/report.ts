@@ -2,6 +2,30 @@ import type { MessageTree } from "../../translate";
 import type { report as en } from "../en/report";
 
 export const report: MessageTree<typeof en> = {
+  coach: {
+    kicker: "Weekly coach (Plus)",
+    title: "Imong Monday coach note",
+    week: "Semana sa {range}",
+    about:
+      "Gisulat sa AI matag Lunes sa buntag gikan sa imong mga duwa sa miaging semana (Lunes hangtod Domingo, oras sa Pilipinas), gamit lang ang imong mga numero (nakalista ubos sa note). Mahimo kining masayop.",
+    fix: "Usa ka ayohon karong semanaha",
+    basedOn: "Base sa",
+    notYet: "Wala pa nasulat ang imong note para sa semana sa {range}.",
+    write: "Isulat na ang akong note",
+    writing: "Gisulat ang imong note…",
+    noGames:
+      "Walay duwa ato nga semana, mao nga wala pay ikasulti. Pagduwa sa pipila ug balik sunod Lunes.",
+    pitch:
+      "Matag Lunes, ang mga Plus member makadawat og mubo nga note gikan sa AI coach bahin sa ilang semana, sa English, Filipino o Bisaya: unsay nindot, unsay nakapildi, ug usa ka ayohon, base sa ilang kaugalingong numero.",
+    previewLabel: "Preview: adunay natago nga coach note diri",
+    seePlus: "Tan-awa ang Plus",
+    resting: "Nagpahulay ang AI coach karong adlawa. Sulayi pag-usab ugma.",
+    failed:
+      "Wala makasulat ang AI og note nga mapamatud-an sa imong mga numero. Sulayi pag-usab unya.",
+    unavailable:
+      "Wala motubag ang AI service o ang imong match history karon. Sulayi pag-usab unya.",
+    offline: "Dili maabot ang Dota Den karon.",
+  },
   read: {
     kicker: "AI read (Plus)",
     title: "Unsay giingon niini nga panahon",

@@ -75,6 +75,7 @@ export const admin = {
       coach_review: "AI coach reviews written (auto included)",
       auto_review: "Auto post-game reviews",
       period_read: "Battle report AI reads",
+      weekly_coach: "Monday weekly coach notes",
       pick_for_me: "Pick for me",
       compare: "How you compare",
       discord_command: "Discord bot commands",
@@ -120,7 +121,7 @@ export const admin = {
     schedules: "Set up job schedules",
     schedulesPending: "Setting up…",
     schedulesDone:
-      "{n} schedules set up (every 5 minutes: go-live alerts and the session companion).",
+      "{n} schedules set up (every 5 minutes: go-live alerts and the session companion; Mondays 07:00 Manila: the weekly coach).",
     schedulesOff: "QStash isn't configured here: jobs run in the app instead.",
     schedulesFailed: "The schedules couldn't be set up.",
   },
