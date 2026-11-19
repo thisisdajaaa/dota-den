@@ -1,7 +1,7 @@
 import "server-only";
 import { logger } from "@/common/logging/logger";
 import { openDotaConfig, openDotaGateway } from "@/common/providers/opendota";
-import { stratzHeroCurves } from "@/common/providers/stratz";
+import { stratzHeroCurves, stratzHeroItems } from "@/common/providers/stratz";
 import { ok } from "@/common/result";
 import { lazy } from "@/common/utils/lazy";
 import { matchExtrasService, matchQueries, matchesService } from "@/modules/matches";
@@ -53,6 +53,8 @@ export const heroesService = lazy(() => {
       },
     },
     extras: { forHero: (accountId32, heroId) => matchExtrasService.forHero(accountId32, heroId) },
+    // Shared, cached STRATZ aggregates only (one request per hero for everyone).
+    builds: { forHero: async (heroId) => (await stratzHeroItems()?.forHero(heroId)) ?? null },
     heroes: async () =>
       [...(await matchesService.heroMap()).values()].map((h) => ({ id: h.id, roles: h.roles })),
     items: async (): Promise<ItemCatalog> => {

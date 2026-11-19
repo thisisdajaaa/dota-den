@@ -44,6 +44,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Mas paspas nga hero coaching",
         body: "Item timings ug lane results para sa tibuok nimong recent history sa matag hero: hangtod 100 sa imong mga parsed nga duwa ang masusi matag adlaw (libre: 10 matag adlaw).",
       },
+      buildCheck: {
+        title: "Build check batok sa high-rank",
+        body: "Sa matag hero page, imong item timings batok sa mga Legend–Immortal player sa imong posisyon sa miaging semana, uban ang usa ka sulayan (libre: imong kaugalingong timings).",
+      },
       read: {
         title: "AI read sa imong battle report",
         body: "Pagpili og bisan unsang panahon sa imong battle report ug makakuha og pipila ka obserbasyon ug usa ka angay tutokan, gisulat gikan lang sa mga numero sa maong page (nakalista ang mga numero nga gigamit).",

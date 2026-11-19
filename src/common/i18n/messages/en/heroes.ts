@@ -207,6 +207,31 @@ export const heroes = {
     listLabel: "Most-bought items",
     ofGames: "of games · {games} of {total}",
   },
+  buildCheck: {
+    kicker: "Plus",
+    title: "Build check vs high-rank",
+    description:
+      "Your typical item timings on {hero} ({yours} analysed in this role) against Legend–Immortal pubs at {pos} last week ({theirs}).",
+    footer:
+      "Medians: your first purchase in the games you bought it (games in brackets) and the minute by which half of the high-rank purchases were made. Only items bought in at least 1 in 10 of those games. Timings follow from how a game goes, so a gap is a hint, not a rule.",
+    pos: "Pos {n}",
+    suggestion:
+      "One thing to try: your {item} comes {gap} later than at {pos} in Legend–Immortal pubs ({yours} vs {theirs}). Look at what slows it down: farm in the first 10 minutes, or items bought before it.",
+    onPace:
+      "Your core timings are within 2 minutes of Legend–Immortal {pos} players. Nothing stands out to fix.",
+    tableLabel: "Your item timings against high-rank players",
+    you: "You",
+    them: "Legend–Immortal",
+    gap: "Gap",
+    noItems: "None of your items here are bought often enough in high-rank games to compare yet.",
+    notEnough:
+      "The build check needs {min} analysed games in one role on {hero}; you have {games} so far.",
+    noRole:
+      "No role to compare yet: your analysed {hero} games have no lane role, or high-rank pubs don't play {hero} there often enough.",
+    locked:
+      "With Plus, your item timings on {hero} are checked against Legend–Immortal players at your position, with one thing to try.",
+    seePlus: "See Plus",
+  },
   coaching: {
     kicker: "Coaching",
     worksTitle: "What works for you",

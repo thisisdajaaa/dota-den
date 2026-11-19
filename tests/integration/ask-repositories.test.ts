@@ -62,10 +62,12 @@ describe("AskUsageRepository", () => {
 describe("AskChatsRepository", () => {
   const at = new Date();
   const msg = (text: string) => ({ role: "user" as const, text, at });
+  // Each one a millisecond after the last, so "newest" is well defined.
+  let clock = Date.now();
   const create = (userId: string, title: string, max = 30, expiresAt = later) =>
     chats.create(userId, [msg(title)], {
       title,
-      now: new Date(),
+      now: new Date(++clock),
       expiresAt,
       maxConversations: max,
     });
