@@ -31,6 +31,11 @@ export interface MatchPlayer {
   hasShard: boolean;
   partyId: number | null;
   partySize: number | null;
+  /**
+   * True when the player abandoned or disconnected for good (OpenDota leaver_status 2+);
+   * null or missing when not known.
+   */
+  leftGame?: boolean | null;
   rankTier: number | null;
   /** Percentiles against others on the same hero (OpenDota); null when not given. */
   benchmarks: PlayerBenchmarks | null;

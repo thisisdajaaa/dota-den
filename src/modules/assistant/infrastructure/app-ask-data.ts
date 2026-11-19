@@ -14,7 +14,8 @@ import {
   type MetaBracket,
 } from "@/modules/meta/domain/rank-bracket";
 import type { RankedHero } from "@/modules/meta/domain/meta-stats";
-import type { Position } from "@/modules/meta/domain/position";
+import { POSITIONS, type Position } from "@/modules/meta/domain/position";
+import type { Patch } from "@/modules/patches/domain/patch";
 import type { PlaySession } from "@/modules/sessions/domain/session";
 import type { SessionMmr } from "@/modules/sessions/domain/session-mmr";
 import type { StopLossSettings, StopLossStatus } from "@/modules/sessions/domain/stop-loss";
@@ -26,8 +27,10 @@ import {
   heroGuideResult,
   heroStatsResult,
   matchSummaryResult,
+  metaAllRolesResult,
   metaResult,
   mmrResult,
+  patchNotesResult,
   recentGamesResult,
   sessionsResult,
   wardSpotsResult,
@@ -64,6 +67,8 @@ export interface AskSources {
     position: Position,
     bracket: MetaBracket,
   ): Promise<Result<{ heroes: RankedHero[] }, unknown>>;
+  /** A stored patch by version, or the latest when none is given; null when unknown. */
+  patch(version?: string): Promise<Patch | null>;
   now?: () => Date;
 }
 
@@ -145,8 +150,15 @@ export class AppAskData implements AskDataPort {
   }
 
   async matchSummary(owner: AskOwner, args: AskToolArgs<"match_summary">): Promise<ToolResult> {
-    const matchId = args.match_id ?? (await this.src.games(owner.accountId32))[0]?.matchId;
+    // Only the player's own imported games: an id the model made up never reaches OpenDota.
+    const games = await this.src.games(owner.accountId32);
+    const matchId = args.match_id ?? games[0]?.matchId;
     if (!matchId) return errorResult("no_games_imported");
+    if (!games.some((g) => g.matchId === matchId))
+      return errorResult(
+        "not_your_match",
+        "Only the player's own imported matches can be read. Use my_recent_games for match ids.",
+      );
     const res = await this.src.factSheet(owner.accountId32, matchId);
     if (!res.ok) {
       if (res.error.type === "not_yours")
@@ -232,6 +244,25 @@ export class AppAskData implements AskDataPort {
         ? bracketForRankTier(await this.src.rankTier(owner.accountId32).catch(() => null))
         : null;
     const bracket: MetaBracket = asked === "mine" ? (yours ?? DEFAULT_BRACKET) : asked;
+    const label = bracketLabel(bracket);
+    const bracketIsYours = yours !== null && yours === bracket;
+    if (args.position === undefined) {
+      const [all, { heroName }] = await Promise.all([
+        Promise.all(POSITIONS.map((p) => this.src.topHeroes(p, bracket).catch(() => null))),
+        this.names(),
+      ]);
+      if (all.every((r) => !r?.ok))
+        return errorResult("unavailable", "The meta couldn't be loaded right now.");
+      return metaAllRolesResult({
+        bracketLabel: label,
+        bracketIsYours,
+        roles: POSITIONS.map((position, i) => {
+          const r = all[i];
+          return { position, heroes: r?.ok ? r.value.heroes : [] };
+        }),
+        heroName,
+      });
+    }
     const [res, { heroName }] = await Promise.all([
       this.src.topHeroes(args.position as Position, bracket),
       this.names(),
@@ -239,10 +270,94 @@ export class AppAskData implements AskDataPort {
     if (!res.ok) return errorResult("unavailable", "The meta couldn't be loaded right now.");
     return metaResult({
       position: args.position as Position,
-      bracketLabel: bracketLabel(bracket),
-      bracketIsYours: yours !== null && yours === bracket,
+      bracketLabel: label,
+      bracketIsYours,
       heroes: res.value.heroes,
       heroName,
     });
   }
+
+  async patchNotes(args: AskToolArgs<"patch_notes">): Promise<ToolResult> {
+    const [patch, { heroes, heroName }] = await Promise.all([
+      this.src.patch(args.version),
+      this.names(),
+    ]);
+    let hero: { id: number; name: string } | undefined;
+    if (args.hero) {
+      const h = findHero(args.hero, heroes);
+      if (!h) return this.unknownHero(args.hero);
+      hero = { id: h.id, name: h.name };
+    }
+    let item: { id: number; name: string } | undefined;
+    if (args.item) {
+      const found = findItem(args.item, [...(await this.src.items()).values()]);
+      if (!found)
+        return errorResult(
+          "unknown_item",
+          `No item called "${args.item.slice(0, 40)}". Ask the player which item they mean.`,
+        );
+      item = found;
+    }
+    return patchNotesResult({
+      patch: patch && {
+        version: patch.version,
+        publishedAt: patch.publishedAt,
+        heroes: patch.sections.heroes,
+        items: [...patch.sections.items, ...patch.sections.neutralItems],
+        general: patch.sections.general,
+        counts: {
+          heroesChanged: patch.sections.heroes.length,
+          itemsChanged: patch.sections.items.length + patch.sections.neutralItems.length,
+        },
+      },
+      hero,
+      item,
+      heroName,
+      dayKey: manilaDay,
+    });
+  }
+}
+
+/** Common short names players use for items. */
+const ITEM_ALIASES: Record<string, string> = {
+  bkb: "black king bar",
+  blink: "blink dagger",
+  bots: "boots of travel",
+  aghs: "aghanim's scepter",
+  scepter: "aghanim's scepter",
+  shard: "aghanim's shard",
+  euls: "eul's scepter of divinity",
+  mkb: "monkey king bar",
+  "battle fury": "battle fury",
+  bf: "battle fury",
+  deso: "desolator",
+  sny: "sange and yasha",
+  "s&y": "sange and yasha",
+  hex: "scythe of vyse",
+  midas: "hand of midas",
+  orchid: "orchid malevolence",
+  pipe: "pipe of insight",
+  glimmer: "glimmer cape",
+  force: "force staff",
+};
+
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/[^a-z0-9' &]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** An item by its name or a common short name (exact, then a unique prefix). */
+export function findItem(
+  text: string,
+  items: ReadonlyArray<{ id: number; name: string; key?: string }>,
+): { id: number; name: string } | null {
+  const q = norm(text);
+  const wanted = ITEM_ALIASES[q] ?? q;
+  const exact = items.find((i) => norm(i.name) === wanted || i.key === wanted.replace(/ /g, "_"));
+  if (exact) return { id: exact.id, name: exact.name };
+  const starts = items.filter((i) => norm(i.name).startsWith(wanted));
+  return starts.length === 1 ? { id: starts[0].id, name: starts[0].name } : null;
 }

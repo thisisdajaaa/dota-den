@@ -17,6 +17,7 @@ import type { HeroCoaching } from "@/modules/heroes/domain/hero-coaching";
 import type { MatchupRecord, OwnMatchups } from "@/modules/heroes/domain/own-matchups";
 import type { RankedHero } from "@/modules/meta/domain/meta-stats";
 import { POSITION_INFO, type Position } from "@/modules/meta/domain/position";
+import type { HeroPatchNotes, ItemPatchNotes, PatchNote } from "@/modules/patches/domain/patch";
 import type { PlaySession } from "@/modules/sessions/domain/session";
 import type { SessionMmr } from "@/modules/sessions/domain/session-mmr";
 import { MIN_TILT_GAMES, type TiltStats, type WinRate } from "@/modules/sessions/domain/tilt";
@@ -507,5 +508,102 @@ export function metaResult(input: {
       }),
     },
     sources: [{ kind: "bracket_pubs", bracket: input.bracketLabel }],
+  };
+}
+
+/** The strongest heroes in every role (a "who's strong right now" question with no role). */
+export function metaAllRolesResult(input: {
+  bracketLabel: string;
+  bracketIsYours: boolean;
+  roles: ReadonlyArray<{ position: Position; heroes: readonly RankedHero[] }>;
+  heroName: HeroName;
+  perRole?: number;
+}): ToolResult {
+  const roles = input.roles.filter((r) => r.heroes.length > 0);
+  if (roles.length === 0) return errorResult("no_meta_data");
+  return {
+    data: {
+      bracket: input.bracketLabel,
+      bracketIsThePlayersOwn: input.bracketIsYours,
+      roles: roles.map((r) => ({
+        position: r.position,
+        role: POSITION_INFO[r.position].name,
+        heroes: r.heroes.slice(0, input.perRole ?? 4).map((h, i) => {
+          const w = h.bracket ?? h.atPosition ?? h.highRank;
+          return {
+            rank: i + 1,
+            hero: input.heroName(h.heroId),
+            ...(w ? { games: w.games, winRatePct: pct(w.rate) } : {}),
+            ...(h.bracket?.pickRate != null ? { pickRatePct: pct(h.bracket.pickRate) } : {}),
+          };
+        }),
+      })),
+    },
+    sources: [{ kind: "bracket_pubs", bracket: input.bracketLabel }],
+  };
+}
+
+// ---------------------------------------------------------------- patch_notes
+
+/** Patch note lines kept per answer (long patches are cut, and say so). */
+export const PATCH_NOTE_LINES = 40;
+
+const noteLines = (notes: readonly PatchNote[]) =>
+  notes.filter((n) => n.text.trim()).map((n) => (n.subtitle ? `${n.text}:` : n.text));
+
+/** What a patch changed: for one hero, one item, or an overview. Valve's own words. */
+export function patchNotesResult(input: {
+  patch: {
+    version: string;
+    publishedAt: Date;
+    heroes: readonly HeroPatchNotes[];
+    items: readonly ItemPatchNotes[];
+    general: ReadonlyArray<{ title: string | null; notes: readonly PatchNote[] }>;
+    counts: { heroesChanged: number; itemsChanged: number };
+  } | null;
+  hero?: { id: number; name: string };
+  item?: { id: number; name: string };
+  heroName: HeroName;
+  dayKey: (d: Date) => string;
+}): ToolResult {
+  const { patch } = input;
+  if (!patch) return errorResult("patch_not_found", "Only stored patches can be read.");
+  const head = { patch: patch.version, released: input.dayKey(patch.publishedAt) };
+  const sources: AskSource[] = [{ kind: "patch_notes", version: patch.version }];
+  const capped = (lines: string[]) => ({
+    changes: lines.slice(0, PATCH_NOTE_LINES),
+    ...(lines.length > PATCH_NOTE_LINES ? { moreChangesNotShown: true } : {}),
+  });
+  if (input.hero) {
+    const h = patch.heroes.find((x) => x.heroId === input.hero!.id);
+    if (!h) return { data: { ...head, hero: input.hero.name, changed: false }, sources };
+    const lines = [
+      ...noteLines(h.heroNotes),
+      ...h.abilities.flatMap((a) =>
+        noteLines(a.notes).map((t) => `${a.abilityName ?? "Ability"}: ${t}`),
+      ),
+      ...noteLines(h.talentNotes).map((t) => `Talent: ${t}`),
+    ];
+    return { data: { ...head, hero: input.hero.name, changed: true, ...capped(lines) }, sources };
+  }
+  if (input.item) {
+    const it = patch.items.find((x) => x.itemId === input.item!.id);
+    if (!it) return { data: { ...head, item: input.item.name, changed: false }, sources };
+    return {
+      data: { ...head, item: input.item.name, changed: true, ...capped(noteLines(it.notes)) },
+      sources,
+    };
+  }
+  return {
+    data: {
+      ...head,
+      heroesChanged: patch.counts.heroesChanged,
+      itemsChanged: patch.counts.itemsChanged,
+      heroesWithChanges: patch.heroes.slice(0, 60).map((h) => input.heroName(h.heroId)),
+      ...capped(
+        patch.general.flatMap((g) => [...(g.title ? [`${g.title}:`] : []), ...noteLines(g.notes)]),
+      ),
+    },
+    sources,
   };
 }

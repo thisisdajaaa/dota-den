@@ -16,6 +16,18 @@ export const ask: MessageTree<typeof en> = {
   clear: "I-clear ang chat",
   you: "Ikaw",
   den: "Den",
+  conversations: {
+    label: "Imong mga chat",
+    newChat: "Bag-ong chat",
+    open: "Ablihi ang chat: {title}",
+    delete: "Papasa ang chat",
+    deleteNamed: "Papasa ang chat: {title}",
+    empty: "Wala pay chat. Gitipigan ang imong mga pangutana sulod sa 30 ka adlaw.",
+    show: "Mga chat ({n})",
+    hide: "Itago ang mga chat",
+    gone: "Wala na kana nga chat, mao nga nagsugod og bag-o.",
+    loadFailed: "Dili maablihan ang chat. Sulayi pag-usab.",
+  },
   starters: {
     title: "Sulayi pangutana",
     lose: "Nganong pirmi ko pildi sa Pudge?",
@@ -35,6 +47,7 @@ export const ask: MessageTree<typeof en> = {
     ward_spots: "Gipangita ang mga ward spot…",
     hero_counters: "Gisusi ang mga matchup…",
     meta_heroes: "Gisusi ang meta…",
+    patch_notes: "Gibasa ang patch notes…",
   },
   sources: {
     label: "Base sa",
@@ -46,6 +59,7 @@ export const ask: MessageTree<typeof en> = {
     high_rank_pubs: "STRATZ Legend–Immortal pubs",
     pro_games: "mga pro game",
     bracket_pubs: "mga public game sa {bracket}",
+    patch_notes: "patch notes sa {version}",
   },
   quota: {
     left: {
@@ -61,7 +75,7 @@ export const ask: MessageTree<typeof en> = {
     seePlus: "Tan-awa ang Plus",
   },
   fallback:
-    "Dili nako masuportahan sa imong data ang tubag, busa dili ko manag-an. Sulayi pangutana sa laing paagi, o bahin sa usa ka hero o duwa. Wala maihap kini nga pangutana.",
+    "Dili nako masuportahan sa imong data ang tubag, busa dili ko manag-an. Sulayi pangutana sa laing paagi, o bahin sa usa ka hero o duwa.",
   errors: {
     resting: "Nagpahulay si Den karong adlawa (nahurot na ang AI budget). Sulayi pag-usab ugma.",
     unavailable:

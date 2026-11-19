@@ -16,6 +16,18 @@ export const ask: MessageTree<typeof en> = {
   clear: "I-clear ang chat",
   you: "Ikaw",
   den: "Den",
+  conversations: {
+    label: "Mga chat mo",
+    newChat: "Bagong chat",
+    open: "Buksan ang chat: {title}",
+    delete: "Burahin ang chat",
+    deleteNamed: "Burahin ang chat: {title}",
+    empty: "Wala pang chat. Itinatago ang mga tanong mo nang 30 araw.",
+    show: "Mga chat ({n})",
+    hide: "Itago ang mga chat",
+    gone: "Wala na ang chat na iyon, kaya nagsimula ng bago.",
+    loadFailed: "Hindi mabuksan ang chat. Subukan ulit.",
+  },
   starters: {
     title: "Subukang itanong",
     lose: "Bakit ako talo lagi sa Pudge?",
@@ -35,6 +47,7 @@ export const ask: MessageTree<typeof en> = {
     ward_spots: "Hinahanap ang mga ward spot…",
     hero_counters: "Sinusuri ang mga matchup…",
     meta_heroes: "Sinusuri ang meta…",
+    patch_notes: "Binabasa ang patch notes…",
   },
   sources: {
     label: "Batay sa",
@@ -46,6 +59,7 @@ export const ask: MessageTree<typeof en> = {
     high_rank_pubs: "STRATZ Legend–Immortal pubs",
     pro_games: "mga pro game",
     bracket_pubs: "mga public game sa {bracket}",
+    patch_notes: "patch notes ng {version}",
   },
   quota: {
     left: { one: "1 tanong na lang ngayong araw", other: "{n} tanong pa ngayong araw" },
@@ -58,7 +72,7 @@ export const ask: MessageTree<typeof en> = {
     seePlus: "Tingnan ang Plus",
   },
   fallback:
-    "Hindi ko masuportahan ng data mo ang sagot, kaya hindi ako manghuhula. Subukang itanong sa ibang paraan, o tungkol sa isang hero o laro. Hindi nabilang ang tanong na ito.",
+    "Hindi ko masuportahan ng data mo ang sagot, kaya hindi ako manghuhula. Subukang itanong sa ibang paraan, o tungkol sa isang hero o laro.",
   errors: {
     resting: "Nagpapahinga si Den ngayong araw (ubos na ang AI budget). Subukan ulit bukas.",
     unavailable:

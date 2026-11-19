@@ -326,6 +326,7 @@ export const matches = {
       "Written by a language model from this match's data. It can be wrong: the numbers are from the match, the advice is the model's read of them.",
     model: "Model: {model}",
     facts: {
+      leftGame: "Left the game",
       result: "Result",
       duration: "Game length",
       patch: "Patch",

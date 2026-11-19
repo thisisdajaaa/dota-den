@@ -128,6 +128,7 @@ const MatchPlayerSchema = z.object({
   aghanims_shard: nullableInt,
   party_id: nullableInt,
   party_size: nullableInt,
+  leaver_status: nullableInt,
   rank_tier: nullableInt,
   benchmarks: z
     .record(
@@ -461,6 +462,8 @@ export class OpenDotaAdapter
         hasShard: p.aghanims_shard === 1,
         partyId: p.party_id ?? null,
         partySize: p.party_size ?? null,
+        // 2+ is "disconnected too long", "abandoned", "AFK" or "never connected".
+        leftGame: p.leaver_status == null ? null : p.leaver_status >= 2,
         rankTier: p.rank_tier ?? null,
         benchmarks: toBenchmarks(p.benchmarks),
         laning: toLaning(p),
