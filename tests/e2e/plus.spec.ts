@@ -54,8 +54,8 @@ test("a signed webhook activates Plus; cancelled keeps it until the period ends"
   await page.goto("/plus");
   await expect(page.getByRole("heading", { level: 1, name: /Dota Den Plus/ })).toBeVisible();
   const monthly = page.getByRole("article", { name: "Monthly" });
-  await expect(monthly).toContainText("₱299");
-  await expect(page.getByRole("article", { name: "Yearly" })).toContainText("₱2,990");
+  await expect(monthly).toContainText("₱149");
+  await expect(page.getByRole("article", { name: "Yearly" })).toContainText("₱1,490");
   await expect(monthly.getByRole("button", { name: /Get Plus monthly/ })).toBeEnabled();
   // The button starts the checkout on our server, then opens the provider's page.
   await page.route("https://dota-den-e2e.lemonsqueezy.com/**", (route) =>

@@ -31,7 +31,7 @@ describe("PlusPricing", () => {
     );
     expect(screen.getByRole("heading", { name: "Plus is coming soon" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /get plus/i })).not.toBeInTheDocument();
-    expect(screen.getByText("₱299")).toBeInTheDocument();
+    expect(screen.getByText("₱149")).toBeInTheDocument();
     for (const b of screen.getAllByRole("button", { name: "Opens soon" })) expect(b).toBeDisabled();
     // Honest copy is there either way.
     expect(screen.getByRole("heading", { name: "Free for everyone, always" })).toBeInTheDocument();
@@ -85,10 +85,10 @@ describe("PlusPricing", () => {
       />,
     );
     const monthly = screen.getByRole("article", { name: "Monthly" });
-    expect(within(monthly).getByText("₱299")).toBeVisible();
+    expect(within(monthly).getByText("₱149")).toBeVisible();
     expect(within(monthly).getByRole("button", { name: /get plus monthly/i })).toBeEnabled();
     const yearly = screen.getByRole("article", { name: "Yearly" });
-    expect(within(yearly).getByText("₱2,990")).toBeVisible();
+    expect(within(yearly).getByText("₱1,490")).toBeVisible();
     expect(screen.getByText(/local currency/i)).toBeVisible();
     expect(screen.getByText(/Cancel anytime/i)).toBeVisible();
     expect(screen.getByText(/Track up to 200 players, follow 200 channels/)).toBeVisible();

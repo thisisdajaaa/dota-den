@@ -19,7 +19,7 @@ test("without a payment provider, Plus is 'coming soon' and nothing can be bough
   ).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Get Plus/ })).toHaveCount(0);
   // The prices show (a payment provider reviews them), but the buttons can't be used.
-  await expect(page.getByRole("article", { name: "Monthly" })).toContainText("₱299");
+  await expect(page.getByRole("article", { name: "Monthly" })).toContainText("₱149");
   await expect(page.getByRole("button", { name: "Opens soon" })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Opens soon" }).first()).toBeDisabled();
   // Plus and the legal drafts are reachable from the footer.
