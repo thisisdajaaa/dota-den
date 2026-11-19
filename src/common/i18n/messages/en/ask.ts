@@ -1,0 +1,74 @@
+/** UI copy for Ask Den, the AI chat (ADR 0015). */
+export const ask = {
+  title: "Ask Den",
+  kicker: "AI coach",
+  heading: "Ask Den",
+  description:
+    "Ask about your games, heroes, builds, wards and the meta, in English, Filipino or Bisaya. Den answers only from your own data and public stats, and tells you when it doesn't know.",
+  disclaimer:
+    "AI answers can be wrong. Every number is checked against our data before you see it.",
+  inputLabel: "Your question",
+  placeholder: "Ask anything about your Dota…",
+  send: "Send",
+  thinking: "Den is thinking…",
+  clear: "Clear chat",
+  you: "You",
+  den: "Den",
+  starters: {
+    title: "Try asking",
+    lose: "Why do I keep losing on Pudge?",
+    build: "What should I build on Lion?",
+    wards: "Where should I ward at 10 minutes as Dire?",
+    tilt: "Am I tilting tonight?",
+    meta: "Which heroes are strong in my bracket?",
+    last: "How did my last game go?",
+  },
+  status: {
+    my_recent_games: "Looking at your recent games…",
+    my_hero_stats: "Checking your hero stats…",
+    match_summary: "Reading the match…",
+    my_sessions: "Checking tonight's session…",
+    my_mmr: "Opening your MMR journal…",
+    hero_guide: "Looking up the build…",
+    ward_spots: "Finding ward spots…",
+    hero_counters: "Checking matchups…",
+    meta_heroes: "Checking the meta…",
+  },
+  sources: {
+    label: "Based on",
+    your_games: { one: "your last game", other: "your last {n} games" },
+    your_parsed_games: { one: "1 parsed replay", other: "{n} parsed replays" },
+    your_match: "this match",
+    your_sessions: "your play sessions",
+    your_mmr: "your MMR journal",
+    high_rank_pubs: "STRATZ Legend–Immortal pubs",
+    pro_games: "pro games",
+    bracket_pubs: "{bracket} public games",
+  },
+  quota: {
+    left: { one: "1 question left today", other: "{n} questions left today" },
+    resets: "Resets at midnight, Manila time.",
+  },
+  out: {
+    title: "That's all your questions for today",
+    free: "Free players get {free} questions a day. Plus members get {plus} a day, and unlimited AI coach reviews.",
+    plus: "You've used today's {n} questions. They reset at midnight, Manila time.",
+    seePlus: "See Plus",
+  },
+  fallback:
+    "I couldn't back up an answer with your data, so I won't guess. Try asking another way, or about one hero or game. This question wasn't counted.",
+  errors: {
+    resting: "Den is resting for today (the AI budget is used up). Try again tomorrow.",
+    unavailable:
+      "The AI isn't answering right now. Try again in a little while. Your question wasn't counted.",
+    rate: "That's a lot of questions at once. Wait a minute and try again.",
+    offline: "Can't reach Dota Den right now.",
+    generic: "Something went wrong. Your question wasn't counted.",
+  },
+  off: "Ask Den isn't available right now.",
+  match: {
+    entry: "Ask Den about this match",
+    question: "How did I play in this match, and what should I do better next time?",
+    context: "About match {id}",
+  },
+};

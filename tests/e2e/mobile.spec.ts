@@ -96,6 +96,7 @@ test("signed-in pages fit a phone screen, and the footer isn't hidden by the tab
     "/mmr",
     "/sessions",
     "/report",
+    "/ask",
     "/together",
     "/together/40001",
     "/heroes",

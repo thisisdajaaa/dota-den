@@ -2,6 +2,7 @@ import "server-only";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
 import { annotationsService } from "@/modules/annotations";
+import { askService } from "@/modules/assistant";
 import { discordLinkService, discordWebhookService } from "@/modules/discord";
 import { draftsPrivacy } from "@/modules/drafts";
 import { emailService } from "@/modules/email";
@@ -62,6 +63,8 @@ export const privacyService = lazy(
         plusService,
         // Per-day feature use counters (admin usage numbers).
         usageService,
+        // Ask Den's chat history and daily question counts (ADR 0015).
+        askService,
       ],
       identity: usersService,
       logger,

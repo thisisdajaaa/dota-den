@@ -15,6 +15,7 @@ export const FEATURES = [
   "discord_command",
   "session_push",
   "stop_loss_push",
+  "ask_den",
 ] as const;
 export type Feature = (typeof FEATURES)[number];
 

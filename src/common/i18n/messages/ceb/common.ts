@@ -10,6 +10,7 @@ export const common: MessageTree<typeof en> = {
     heroes: "Mga hero",
     mmr: "MMR journal",
     sessions: "Mga session",
+    ask: "Ask Den",
     report: "Battle report",
     together: "Magkauban",
     groups: "Mga grupo",

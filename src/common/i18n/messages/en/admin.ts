@@ -81,6 +81,7 @@ export const admin = {
       discord_command: "Discord bot commands",
       session_push: "Session companion pushes",
       stop_loss_push: "Stop-loss reminders",
+      ask_den: "Ask Den questions answered",
     },
   },
   users: {

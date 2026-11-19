@@ -74,6 +74,16 @@ const TUNING = {
   /** Time limit for one coach answer (the service may ask twice). */
   MATCH_COACH_TIMEOUT_MS: positiveInt(25_000, 120_000),
 
+  /** Ask Den, the AI chat (ADR 0015): on wherever the coach's Groq key is set, unless "false". */
+  ASK_ENABLED: flag(true),
+  /** Groq model for Ask Den (needs tool calling). Defaults to the coach's model. */
+  ASK_MODEL: z.string().trim().min(1).optional(),
+  /** Time limit for one model call (a question can take a few: tools, then the answer). */
+  ASK_TIMEOUT_MS: positiveInt(20_000, 120_000),
+  /** Questions per Manila day for free players and for Plus. */
+  ASK_FREE_PER_DAY: positiveInt(5, 1_000),
+  ASK_PLUS_PER_DAY: positiveInt(100, 10_000),
+
   // Leaderboards.
   LEADERBOARD_ROW_LIMIT: positiveInt(50, 500),
   LEADERBOARD_EVERYONE_MAX_PLAYERS: positiveInt(5_000, 100_000),

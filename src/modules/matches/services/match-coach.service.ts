@@ -236,6 +236,22 @@ export class MatchCoachService {
     }
   }
 
+  /**
+   * The coach's fact sheet for a player's own match, parsed or not (an unparsed replay lists
+   * laning and items as missing), without calling the model. `not_yours` when the account
+   * isn't in the match: other players' games are never read this way (Ask Den uses this).
+   */
+  async factSheet(
+    accountId32: number,
+    matchId: string,
+  ): Promise<Result<CoachFactSheet, ProviderError | { type: "not_yours" }>> {
+    const res = await this.deps.matches.match(matchId);
+    if (!res.ok) return res;
+    const me = res.value.players.find((p) => p.accountId32 === accountId32);
+    if (!me) return { ok: false, error: { type: "not_yours" } };
+    return { ok: true, value: await this.sheet(res.value, me) };
+  }
+
   private async sheet(match: MatchDetail, me: MatchPlayer): Promise<CoachFactSheet> {
     const [heroes, items, timeline] = await Promise.all([
       this.deps.matches.heroMap(),

@@ -37,6 +37,7 @@ const SIGNED_IN = [
   "/heroes",
   "/leaderboards",
   "/report",
+  "/ask",
   "/account",
 ];
 
