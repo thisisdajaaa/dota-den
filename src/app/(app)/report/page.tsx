@@ -13,7 +13,17 @@ import { dayKeyFormatter } from "@/common/time/day-key";
 import { getCurrentUser, type User } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
 import { formatDuration, formatPercent } from "@/modules/matches/ui/format";
-import { battleReportService, periodReadService, type ReportReplaysView } from "@/modules/report";
+import {
+  battleReportService,
+  periodReadService,
+  toCoachNoteDto,
+  weeklyCoachService,
+  type ReportReplaysView,
+  type WeeklyCoachInitial,
+  type WeeklyCoachView,
+} from "@/modules/report";
+import { coachWeekOf } from "@/modules/report/domain/weekly-coach";
+import { WeeklyCoachCard } from "@/modules/report/ui/weekly-coach-card";
 import { PeriodReadCard, type PeriodReadInitial } from "@/modules/report/ui/period-read-card";
 import {
   MAX_LOOKBACK_DAYS,
@@ -151,6 +161,12 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
         href={(v) => href({ ...rangeQuery, ...(v === "overview" ? {} : { tab: v }) })}
       />
 
+      {tab === "overview" && (
+        <Suspense fallback={null}>
+          <WeeklyCoachSection user={user} week={coachWeekOf(range)} />
+        </Suspense>
+      )}
+
       {/* Keyed so a new range or tab shows the skeleton instead of the previous report. */}
       <Suspense key={`${range.from}:${range.to}:${tab}`} fallback={<ReportSkeleton />}>
         <ReportBody
@@ -164,6 +180,20 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
       </Suspense>
     </div>
   );
+}
+
+/**
+ * The Monday weekly coach (Plus): the note for the week in the URL when it's exactly one
+ * coach week (the push links there), else last week's. Never fails the page.
+ */
+async function WeeklyCoachSection({ user, week }: { user: User; week: string | null }) {
+  const initial: WeeklyCoachInitial = await weeklyCoachService
+    .view(user, week)
+    .then((v: WeeklyCoachView): WeeklyCoachInitial =>
+      v.status === "ready" ? { status: "ready", note: toCoachNoteDto(v.note) } : v,
+    )
+    .catch((): WeeklyCoachInitial => ({ status: "off" }));
+  return <WeeklyCoachCard initial={initial} />;
 }
 
 function ReportSkeleton() {

@@ -183,6 +183,13 @@ run `npm run jobs:schedules` once per environment (needs `QSTASH_TOKEN` and `APP
 QStash schedule that calls `/api/jobs/streamer-alerts` every 5 minutes. Without QStash, any scheduler
 can call `GET /api/cron/streamer-alerts` with `Authorization: Bearer $CRON_SECRET`.
 
+The Monday AI weekly coach (Plus) uses the AI coach's key and model (`MATCH_COACH_*` /
+`GROQ_API_KEY`, the shared `DRAFT_AI_BUDGET_PER_DAY`) and the same `npm run jobs:schedules` (or the
+admin page's "Set up job schedules"): schedule `dota-den-weekly-coach` calls `/api/jobs/weekly-coach`
+at `0 23 * * 0` UTC (Monday 07:00 in Manila), which queues one `weekly-coach-note` job per Plus
+player (dedup key `weekly-coach-<userId>-<week>`). Without QStash nothing is sent on Mondays; Plus
+players can still write the note from the battle report.
+
 ## Test-only
 
 | Variable                                  | Default                     | Used by                             |

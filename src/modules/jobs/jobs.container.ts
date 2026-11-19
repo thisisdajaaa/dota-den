@@ -17,6 +17,7 @@ import { metaService } from "@/modules/meta";
 import { medalService } from "@/modules/mmr";
 import { notificationTriggers } from "@/modules/notifications";
 import { patchImportService } from "@/modules/patches";
+import { weeklyCoachService } from "@/modules/report";
 import { InlineJobQueue } from "./infrastructure/inline-job-queue";
 import { QStashJobQueue } from "./infrastructure/qstash-job-queue";
 import { setUpSchedules } from "./infrastructure/qstash-schedules";
@@ -89,6 +90,10 @@ export const jobsService = new JobsService({
     await autoReviewService.run(payload);
   },
   sessionCompanion: () => sessionCompanionService.run(),
+  weeklyCoach: {
+    schedule: (): Promise<unknown> => weeklyCoachService.runSchedule(),
+    note: (payload): Promise<unknown> => weeklyCoachService.runOne(payload),
+  },
   logger,
 });
 

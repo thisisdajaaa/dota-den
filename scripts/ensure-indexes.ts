@@ -36,6 +36,7 @@ import { DraftMetaCacheRepository } from "@/modules/drafts/repositories/draft-me
 import { DraftRoomsRepository } from "@/modules/drafts/repositories/draft-rooms.repository";
 import { MatchDraftReadsRepository } from "@/modules/drafts/repositories/match-draft-reads.repository";
 import {
+  CoachNotesRepository,
   PeriodReadsRepository,
   ReplayReadsRepository,
 } from "@/modules/report/repositories/replay-reads.repository";
@@ -101,6 +102,7 @@ async function main(): Promise<void> {
   ]);
   await new ReplayReadsRepository(async () => db).ensureIndexes();
   await new PeriodReadsRepository(async () => db).ensureIndexes();
+  await new CoachNotesRepository(async () => db).ensureIndexes();
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();

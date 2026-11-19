@@ -53,6 +53,10 @@ export const notifications = {
       label: "Live session updates (Plus)",
       help: "While Steam shows you in Dota: each finished game with your session record, and a heads-up when your own history says you play worse on a losing streak.",
     },
+    weekly_coach: {
+      label: "Monday weekly coach (Plus)",
+      help: "Monday morning: a short AI coaching note about last week, with one thing to fix. Turning this off stops the note being written for you too (you can still write it on the battle report).",
+    },
     stop_loss: {
       label: "Stop-loss reached",
       help: "While Steam shows you in Dota: when a game reaches a stop-loss you set (Account → Stop-loss). Once per limit per session.",
@@ -104,6 +108,10 @@ export const notifications = {
         one: "You set a limit of 1 game a session. That's {used} played. Good time to stop.",
         other: "You set a limit of {n} games a session. That's {used} played. Good time to stop.",
       },
+    },
+    weeklyCoach: {
+      title: "Your Monday coach note is in",
+      body: "This week's one fix: {fix}",
     },
     coachReview: {
       title: "Your {hero} game is reviewed",

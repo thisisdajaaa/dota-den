@@ -38,9 +38,11 @@ export function periodFacts(
     mmrExact: number | null;
   },
   heroName: (heroId: number) => string,
+  opts: { minGames?: number; previousLabel?: string } = {},
 ): PeriodFacts | null {
   const { report: r, current, previous } = input;
-  if (r.games < MIN_READ_GAMES) return null;
+  if (r.games < Math.max(1, opts.minGames ?? MIN_READ_GAMES)) return null;
+  const before = opts.previousLabel ?? "the period before";
   const facts: GroundFact[] = [];
   const add = (key: string, label: string, value: number | string, unit: GroundFact["unit"]) =>
     facts.push({ key, label, value, unit });
@@ -68,18 +70,12 @@ export function periodFacts(
     add("mmrChange", "MMR change (from your MMR journal)", input.mmrExact, "number");
 
   if (previous.games > 0) {
-    add("prevGames", "Games in the period before", previous.games, "count");
+    add("prevGames", `Games in ${before}`, previous.games, "count");
     if (previous.winRate !== null)
-      add(
-        "prevWinRate",
-        "Win rate in the period before, %",
-        Math.round(previous.winRate * 100),
-        "percent",
-      );
-    if (previous.kda !== null)
-      add("prevKda", "KDA in the period before", round1(previous.kda), "ratio");
+      add("prevWinRate", `Win rate in ${before}, %`, Math.round(previous.winRate * 100), "percent");
+    if (previous.kda !== null) add("prevKda", `KDA in ${before}`, round1(previous.kda), "ratio");
     if (previous.gpm !== null)
-      add("prevGpm", "Gold per minute in the period before", Math.round(previous.gpm), "number");
+      add("prevGpm", `Gold per minute in ${before}`, Math.round(previous.gpm), "number");
   }
 
   const heroes = [...r.heroes]

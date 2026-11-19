@@ -380,6 +380,7 @@ it("gives settings saved before a kind existed that kind's default (Plus kinds o
     coach_review: true,
     session_live: true,
     stop_loss: true,
+    weekly_coach: true,
   });
   expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
 });
@@ -394,6 +395,7 @@ it("has a default for every kind", () => {
     "coach_review",
     "session_live",
     "stop_loss",
+    "weekly_coach",
   ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });

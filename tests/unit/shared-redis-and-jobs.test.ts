@@ -329,6 +329,8 @@ describe("jobs", () => {
         "streamer-alerts": handler,
         "coach-auto-review": handler,
         "session-companion": handler,
+        "weekly-coach": handler,
+        "weekly-coach-note": handler,
       },
       runs: repo,
     });
