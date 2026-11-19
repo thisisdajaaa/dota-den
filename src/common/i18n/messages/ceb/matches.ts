@@ -333,6 +333,7 @@ export const matches: MessageTree<typeof en> = {
       "Gisulat sa usa ka language model gikan sa data niining duwa. Mahimo kining masayop: gikan sa duwa ang mga numero, apan ang tambag basa ra sa model niini.",
     model: "Model: {model}",
     facts: {
+      leftGame: "Mibiya sa duwa",
       result: "Resulta",
       duration: "Gidugayon sa duwa",
       patch: "Patch",

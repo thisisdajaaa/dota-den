@@ -11,6 +11,7 @@ import { heroesService } from "@/modules/heroes";
 import { matchCoachService, matchesService, matchQueries } from "@/modules/matches";
 import { metaService } from "@/modules/meta";
 import { mmrJournalService } from "@/modules/mmr";
+import { patchesService } from "@/modules/patches";
 import { playersService } from "@/modules/players";
 import { plusService } from "@/modules/plus";
 import { sessionService } from "@/modules/sessions";
@@ -57,6 +58,10 @@ const askData = new AppAskData({
   },
   wardCells: () => guideService.wardCells(),
   topHeroes: (position, bracket) => metaService.topHeroes(position, bracket),
+  patch: async (version) => {
+    const v = version ?? (await patchesService.latest())?.version;
+    return v ? patchesService.getByVersion(v) : null;
+  },
 });
 
 /** Ask Den (ADR 0015), on the coach's Groq key and the shared daily AI budget. */

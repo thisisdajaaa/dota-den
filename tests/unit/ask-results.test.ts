@@ -155,9 +155,15 @@ describe("AppAskData scoping", () => {
   it("reads only the owner's games and refuses matches they weren't in", async () => {
     const src = sources();
     const data = new AppAskData(src);
+    // An id that isn't one of the player's imported games never reaches OpenDota.
     const res = await data.matchSummary({ userId: "u1", accountId32: 111 }, { match_id: "999" });
-    expect(src.factSheet).toHaveBeenCalledWith(111, "999");
+    expect(src.games).toHaveBeenCalledWith(111);
+    expect(src.factSheet).not.toHaveBeenCalled();
     expect(res.data).toMatchObject({ error: "not_your_match" });
+    // One of theirs is read, and the owner check there still applies.
+    const own = await data.matchSummary({ userId: "u1", accountId32: 111 }, { match_id: "8000" });
+    expect(src.factSheet).toHaveBeenCalledWith(111, "8000");
+    expect(own.data).toMatchObject({ error: "not_your_match" });
   });
 
   it("defaults to the owner's newest game", async () => {

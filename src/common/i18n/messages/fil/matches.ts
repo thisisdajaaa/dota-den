@@ -334,6 +334,7 @@ export const matches: MessageTree<typeof en> = {
       "Isinulat ng isang language model mula sa data ng match na ito. Puwede itong magkamali: galing sa match ang mga numero, pero ang payo ay basa lang ng model sa mga ito.",
     model: "Model: {model}",
     facts: {
+      leftGame: "Umalis sa laro",
       result: "Resulta",
       duration: "Haba ng laro",
       patch: "Patch",

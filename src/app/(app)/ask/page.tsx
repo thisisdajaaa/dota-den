@@ -3,6 +3,7 @@ import { getT } from "@/common/i18n/server";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { askService } from "@/modules/assistant";
+import { CONVERSATION_ID } from "@/modules/assistant/domain/ask-chat";
 import { AskChat } from "@/modules/assistant/ui/ask-chat";
 import { getCurrentUser } from "@/modules/identity";
 import { plusService } from "@/modules/plus";
@@ -19,14 +20,16 @@ export default async function AskPage({ searchParams }: PageProps<"/ask">) {
   const user = await getCurrentUser();
   if (!user) return null;
   const t = await getT();
-  const { match } = await searchParams;
+  const { match, c } = await searchParams;
   const matchId = typeof match === "string" && MATCH_ID.test(match) ? match : undefined;
-  const state = await askService
-    .state({ userId: user.id, accountId32: user.accountId32 })
-    .catch(() => null);
+  // From a match page a new chat starts; otherwise the asked-for (or newest) chat opens.
+  const open = typeof c === "string" && CONVERSATION_ID.test(c) ? c : undefined;
+  const owner = { userId: user.id, accountId32: user.accountId32 };
+  const state = await askService.state(owner, matchId ? undefined : open).catch(() => null);
+  const fresh = matchId !== undefined;
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader
         kicker={t("ask.kicker")}
         title={t("ask.heading")}
@@ -34,7 +37,9 @@ export default async function AskPage({ searchParams }: PageProps<"/ask">) {
       />
       {state?.enabled ? (
         <AskChat
-          initialMessages={state.messages}
+          initialConversations={state.conversations}
+          initialConversationId={fresh ? null : state.conversationId}
+          initialMessages={fresh ? [] : state.messages}
           initialQuota={state.quota}
           plusLimit={state.plusLimit}
           plusOnSale={plusService.offer().status === "available"}

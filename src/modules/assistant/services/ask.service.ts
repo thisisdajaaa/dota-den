@@ -3,7 +3,14 @@ import type { ToolCall, ToolChatMessage } from "@/common/llm/groq-client";
 import type { Logger } from "@/common/logging/logger";
 import type { DataOwner } from "@/common/privacy/user-data";
 import type { GroundFact } from "@/common/utils/grounding";
-import { ASK_CHAT_TTL_MS, ASK_MAX_TURNS, modelHistory, type AskMessage } from "../domain/ask-chat";
+import {
+  ASK_CHAT_TTL_MS,
+  ASK_KEEP_MESSAGES,
+  ASK_MAX_CONVERSATIONS,
+  conversationTitle,
+  modelHistory,
+  type AskMessage,
+} from "../domain/ask-chat";
 import {
   factsFromResult,
   factsFromText,
@@ -26,7 +33,13 @@ import {
 } from "../domain/ask-quota";
 import { errorResult, type ToolResult } from "../domain/ask-results";
 import { mergeSources, type AskSource } from "../domain/ask-sources";
-import { toMessageDto, type AskAnswerDto, type AskStateDto } from "../dtos/responses/ask.dto";
+import {
+  toConversationDto,
+  toMessageDto,
+  type AskAnswerDto,
+  type AskConversationDto,
+  type AskStateDto,
+} from "../dtos/responses/ask.dto";
 import {
   ASK_TOOL_DEFINITIONS,
   parseToolArgs,
@@ -46,6 +59,11 @@ import type {
 export const MAX_MODEL_CALLS = 6;
 /** Tool calls per question at most (a model asking for more gets an error result). */
 export const MAX_TOOL_CALLS = 8;
+/**
+ * Answers that fail the checks are given back this many times a Manila day; after that they
+ * count, so failing on purpose can't spend the shared AI budget for free.
+ */
+export const MAX_FREE_FALLBACKS = 3;
 /** Longest answer kept; anything longer is cut at a sentence. */
 const MAX_ANSWER_CHARS = 2_000;
 
@@ -108,18 +126,34 @@ export class AskService {
     return askQuota({ plus: isPlus, used, now, limits: this.deps.limits });
   }
 
-  /** The chat page's state: the remembered chat and today's allowance. */
-  async state(owner: AskOwner): Promise<AskStateDto> {
-    const [quota, messages] = await Promise.all([
+  /**
+   * The chat page's state: the player's conversations, the open one (`conversationId`, or
+   * the newest when none is asked for; a new chat when it isn't theirs) and today's allowance.
+   */
+  async state(owner: AskOwner, conversationId?: string): Promise<AskStateDto> {
+    const [quota, conversations] = await Promise.all([
       this.quota(owner.userId),
-      this.deps.chats.get(owner.userId).catch(() => []),
+      this.deps.chats.list(owner.userId, ASK_MAX_CONVERSATIONS).catch(() => []),
     ]);
+    const openId = conversationId ?? conversations[0]?.id;
+    const messages = openId
+      ? await this.deps.chats.get(owner.userId, openId).catch(() => null)
+      : null;
     return {
       enabled: this.enabled,
       quota,
       plusLimit: this.deps.limits.plus,
-      messages: messages.map(toMessageDto),
+      conversations: conversations.map(toConversationDto),
+      conversationId: messages ? (openId ?? null) : null,
+      messages: (messages ?? []).map(toMessageDto),
     };
+  }
+
+  /** One of the player's conversations; not found when it isn't theirs. */
+  async conversation(owner: AskOwner, id: string) {
+    const messages = await this.deps.chats.get(owner.userId, id);
+    if (!messages) throw notFound();
+    return { conversationId: id, messages: messages.map(toMessageDto) };
   }
 
   /** Takes one question from today's allowance; throws when it's used up or Ask Den is off. */
@@ -143,14 +177,16 @@ export class AskService {
     return { owner, day, plus };
   }
 
-  /** Forgets the player's chat. */
-  async clear(owner: AskOwner): Promise<void> {
-    await this.deps.chats.clear(owner.userId);
+  /** Forgets one conversation, or all of them when no id is given. */
+  async clear(owner: AskOwner, conversationId?: string): Promise<void> {
+    if (!conversationId) return this.deps.chats.clear(owner.userId);
+    if (!(await this.deps.chats.remove(owner.userId, conversationId))) throw notFound();
   }
 
   /**
    * Answers a question with a reserved ticket. The question is given back when no answer
-   * could be written (model down, budget spent, or the reply failed the checks twice).
+   * could be written: always when the model or budget failed, and up to
+   * MAX_FREE_FALLBACKS times a day when the reply failed the checks twice.
    */
   async answer(
     ticket: AskTicket,
@@ -159,27 +195,30 @@ export class AskService {
     emit: AskEmit = () => {},
   ): Promise<AskAnswerDto> {
     const { owner } = ticket;
-    let answered = false;
+    // Settled: the question was counted or given back (nothing left for `finally`).
+    let settled = false;
     try {
-      const history = modelHistory(await this.deps.chats.get(owner.userId).catch(() => []));
+      // A conversation that isn't the player's is "not found" (and the question is given back).
+      const earlier = request.conversationId
+        ? await this.deps.chats.get(owner.userId, request.conversationId)
+        : [];
+      if (!earlier) throw notFound();
+      const history = modelHistory(earlier);
       const result = await this.run(owner, request, locale, history, emit);
       const now = this.now();
       const question: AskMessage = { role: "user", text: request.question, at: now };
       const answer: AskMessage = result.fallback
         ? { role: "assistant", text: "", sources: [], fallback: true, at: now }
         : { role: "assistant", text: result.text, sources: result.sources, at: now };
-      await this.deps.chats
-        .append(owner.userId, [question, answer], {
-          keep: ASK_MAX_TURNS * 2,
-          now,
-          expiresAt: new Date(now.getTime() + ASK_CHAT_TTL_MS),
-        })
-        .catch((error: unknown) => {
-          this.deps.logger.warn("ask_chat_save_failed", { error });
-        });
+      const conversation = await this.save(owner.userId, request, [question, answer], now);
       if (!result.fallback) {
-        answered = true;
+        settled = true;
         await this.deps.used?.(owner.userId);
+      } else {
+        settled = true;
+        await this.deps.usage
+          .release(owner.userId, ticket.day, { fallback: true, maxFallbacks: MAX_FREE_FALLBACKS })
+          .catch(() => false);
       }
       this.deps.logger.info("ask_answered", {
         tools: result.tools,
@@ -188,22 +227,45 @@ export class AskService {
         plus: ticket.plus,
       });
       return {
+        conversation,
         question: toMessageDto(question),
         answer: toMessageDto(answer),
-        quota: await this.quotaAfter(ticket, answered),
+        quota: await this.quota(owner.userId, ticket.plus),
       };
     } finally {
-      if (!answered) await this.deps.usage.release(owner.userId, ticket.day).catch(() => {});
+      if (!settled) await this.deps.usage.release(owner.userId, ticket.day).catch(() => false);
     }
   }
 
-  /** The quota to show after this answer (counting its own question when it was used). */
-  private async quotaAfter(ticket: AskTicket, answered: boolean): Promise<AskQuota> {
-    const q = await this.quota(ticket.owner.userId, ticket.plus);
-    if (answered) return q;
-    // The question is given back in `finally`, after this read: show it as given back.
-    const used = Math.max(0, q.used - 1);
-    return { ...q, used, remaining: Math.max(0, q.limit - used) };
+  /** Saves the turn to its conversation (a new one when none was given); never fails. */
+  private async save(
+    userId: string,
+    request: AskRequest,
+    turn: readonly AskMessage[],
+    now: Date,
+  ): Promise<AskConversationDto | null> {
+    const expiresAt = new Date(now.getTime() + ASK_CHAT_TTL_MS);
+    try {
+      if (request.conversationId) {
+        const kept = await this.deps.chats.append(userId, request.conversationId, turn, {
+          keep: ASK_KEEP_MESSAGES,
+          now,
+          expiresAt,
+        });
+        if (kept) return { id: request.conversationId, title: null, updatedAt: now.toISOString() };
+      }
+      const title = conversationTitle(request.question);
+      const id = await this.deps.chats.create(userId, turn, {
+        title,
+        now,
+        expiresAt,
+        maxConversations: ASK_MAX_CONVERSATIONS,
+      });
+      return { id, title, updatedAt: now.toISOString() };
+    } catch (error) {
+      this.deps.logger.warn("ask_chat_save_failed", { error });
+      return null;
+    }
   }
 
   /** The tool-calling loop. */
@@ -226,7 +288,7 @@ export class AskService {
       { role: "system", content: askSystemPrompt({ locale, today, matchId: request.matchId }) },
       ...history.map((m) => ({
         role: m.role,
-        content: m.role === "user" ? wrapQuestion(m.text) : m.text,
+        content: m.role === "user" ? wrapQuestion(m.text) : withoutRoleLines(m.text),
       })),
       { role: "user", content: wrapQuestion(request.question) },
     ];
@@ -265,7 +327,8 @@ export class AskService {
       const turn = reply.value;
       if (turn.toolCalls.length > 0 && !last) {
         messages.push({ role: "assistant", content: turn.content, toolCalls: turn.toolCalls });
-        for (const tc of turn.toolCalls) {
+        // A turn asking for more tools than a question may use gets only the first few.
+        for (const tc of turn.toolCalls.slice(0, MAX_TOOL_CALLS)) {
           const result = await this.tool(owner, tc, tools, emit);
           facts.push(...factsFromResult(result.data, `t${tools.length}`));
           backing.push(JSON.stringify(result.data));
@@ -308,7 +371,11 @@ export class AskService {
       return errorResult(parsed.error);
     }
     used.push(parsed.name);
-    emit({ type: "status", tool: parsed.name });
+    try {
+      emit({ type: "status", tool: parsed.name });
+    } catch {
+      // A status line is only a nicety.
+    }
     try {
       return await this.dispatch(owner, parsed.name, parsed.args);
     } catch (error) {
@@ -338,6 +405,8 @@ export class AskService {
         return d.heroCounters(owner, args as AskToolArgs<"hero_counters">);
       case "meta_heroes":
         return d.metaHeroes(owner, args as AskToolArgs<"meta_heroes">);
+      case "patch_notes":
+        return d.patchNotes(args as AskToolArgs<"patch_notes">);
     }
   }
 
@@ -355,6 +424,22 @@ export class AskService {
     ]);
     return { askDenChats: chats, askDenQuestions: uses };
   }
+}
+
+const notFound = () =>
+  new AppError("not_found", "That conversation doesn't exist any more.", {
+    reason: "conversation_not_found",
+  });
+
+/**
+ * An earlier answer as the model sees it again: lines that pose as instructions ("System:",
+ * "<question>") are dropped, so a jailbreak that slipped into one answer isn't replayed.
+ */
+export function withoutRoleLines(text: string): string {
+  return text
+    .split("\n")
+    .filter((l) => !/^\s*(?:system|developer|assistant|user|tool)\s*:|<\/?\s*question\s*>/i.test(l))
+    .join("\n");
 }
 
 /** The reply as plain text: markdown emphasis and headings dropped (the chat shows text). */
