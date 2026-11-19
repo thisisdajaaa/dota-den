@@ -15,8 +15,8 @@ export const isPlan = (v: unknown): v is Plan =>
  * in the buyer's local currency (with tax), so these are the reference prices only.
  */
 export const PLAN_PRICES: Record<Plan, { amount: string; currency: "PHP" }> = {
-  monthly: { amount: "₱299", currency: "PHP" },
-  yearly: { amount: "₱2,990", currency: "PHP" },
+  monthly: { amount: "₱149", currency: "PHP" },
+  yearly: { amount: "₱1,490", currency: "PHP" },
 };
 
 /** Where a cap already exists for free players, Plus multiplies it by this. */

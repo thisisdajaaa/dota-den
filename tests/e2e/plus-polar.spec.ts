@@ -36,7 +36,7 @@ test("Polar: checkout carries our user id; signed webhooks drive the plan", asyn
     route.fulfill({ status: 200, contentType: "text/html", body: "<title>Fake Polar</title>" }),
   );
   const monthly = page.getByRole("article", { name: "Monthly" });
-  await expect(monthly).toContainText("₱299");
+  await expect(monthly).toContainText("₱149");
   await monthly.getByRole("button", { name: /Get Plus monthly/ }).click();
   await expect(page).toHaveURL(/sandbox\.polar\.sh\/checkout\/polar_c_e2e_/);
   const userId = new URL(page.url()).searchParams.get("e2e_user");
