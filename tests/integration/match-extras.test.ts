@@ -89,6 +89,25 @@ describe("MatchExtrasRepository", () => {
     expect(await repo.parsedGamesOnHero(501, 1)).toBe(2);
   });
 
+  it("holds an account's run across servers until released or lapsed", async () => {
+    const repo = new MatchExtrasRepository(async () => db);
+    await db.collection("match_sync_state").insertOne({ accountId32: 701, lockedUntil: null });
+    const t0 = new Date("2026-11-01T00:00:00Z");
+    const later = (ms: number) => new Date(t0.getTime() + ms);
+
+    expect(await repo.lease(701, t0, later(60_000))).toBe(true);
+    // Held: another server's run is refused until the hold ends.
+    expect(await repo.lease(701, later(1_000), later(61_000))).toBe(false);
+    await repo.releaseLease(701, later(60_000));
+    expect(await repo.lease(701, later(2_000), later(62_000))).toBe(true);
+    // A crashed run's hold lapses; its late release doesn't end the new holder's.
+    expect(await repo.lease(701, later(70_000), later(130_000))).toBe(true);
+    await repo.releaseLease(701, later(62_000));
+    expect(await repo.lease(701, later(71_000), later(131_000))).toBe(false);
+    // An account that never synced has nothing to hold.
+    expect(await repo.lease(702, t0, later(60_000))).toBe(false);
+  });
+
   it("exports and deletes only the owner's extras", async () => {
     const repo = new MatchExtrasRepository(async () => db);
     await repo.save(extras(601, "x"), new Date());

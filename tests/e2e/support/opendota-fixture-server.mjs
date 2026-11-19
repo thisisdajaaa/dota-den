@@ -63,6 +63,11 @@ for (const m of MATCHES) {
 // games, newest first. Battle Fury every game; Manta in the 10 even ones, 8 of them won;
 // 3 of the 10 without Manta won. Match details carry purchase logs and lanes.
 const COACH = 200_273;
+// Ask Den's account (SteamID 76561197960466002): the same 20 games, so the two specs never
+// share an account (each sign-in reads match details against the daily cap). Retries sign in
+// a million accounts up each time (support/attempt.ts), with the same games.
+const ASK = 200_274;
+const isAsk = (id) => id >= ASK && (id - ASK) % 1_000_000 === 0;
 const COACH_MANTA_WINS = new Set([0, 2, 4, 8, 10, 12, 14, 16]);
 const COACH_OTHER_WINS = new Set([1, 3, 5]);
 const COACH_MATCHES = Array.from({ length: 20 }, (_, i) => {
@@ -1235,7 +1240,7 @@ const routes = [
       const limit = Number(url.searchParams.get("limit") ?? 100);
       if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
       if (Number(m[1]) === COACH_AI) return COACH_AI_MATCHES.slice(offset, offset + limit);
-      if (Number(m[1]) === COACH) {
+      if (Number(m[1]) === COACH || isAsk(Number(m[1]))) {
         const heroId = url.searchParams.get("hero_id");
         return COACH_MATCHES.filter((r) => !heroId || r.hero_id === Number(heroId)).slice(
           offset,

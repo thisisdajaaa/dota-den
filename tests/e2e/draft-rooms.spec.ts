@@ -7,20 +7,37 @@ const GUEST_STEAM_ID = "76561197960305729";
 const SYNCED = { timeout: 30_000 };
 
 /**
- * Clicks until the click has an effect. On a slow machine a button can be clicked before
- * the page's JavaScript is attached; the click is then lost, so try again.
+ * Clicks until the page sends its POST to `action` (a click before the page's JavaScript is
+ * attached sends nothing; then click again), then waits for the effect. Never clicks again
+ * once the request is out: a slow answer to a ban is no reason to ban again, and in Captain's
+ * Mode the next turn is often the same side's, so a second click would be a second ban.
  */
-async function clickUntil(button: Locator, effect: () => Promise<void>) {
+async function clickUntilSent(
+  page: Page,
+  button: Locator,
+  action: string,
+  effect: () => Promise<void>,
+) {
   await expect(async () => {
+    const sent = page
+      .waitForRequest(
+        (r) => r.method() === "POST" && new URL(r.url()).pathname.endsWith(`/${action}`),
+        { timeout: 2_000 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
     await button.click();
-    await effect();
+    expect(await sent).toBe(true);
   }).toPass({ timeout: 30_000, intervals: [500, 1000, 2000] });
+  await effect();
 }
 
 async function banFirstAvailable(page: Page, nextStep: string) {
   const grid = page.getByRole("region", { name: "Heroes" });
-  await clickUntil(grid.getByRole("button", { name: /^ban / }).first(), () =>
-    expect(page.getByText(nextStep, { exact: true })).toBeVisible({ timeout: 5000 }),
+  await clickUntilSent(page, grid.getByRole("button", { name: /^ban / }).first(), "actions", () =>
+    expect(page.getByText(nextStep, { exact: true })).toBeVisible(SYNCED),
   );
 }
 
@@ -52,14 +69,20 @@ test("two captains draft live in a room while a spectator watches", async ({ bro
   // The guest joins through the link and takes the open seat.
   await guestPage.goto(roomUrl);
   const guestLobby = guestPage.getByRole("region", { name: "Lobby" });
-  await clickUntil(guestLobby.getByRole("button", { name: "Take seat" }), () =>
-    expect(guestLobby).toContainText("Waiting for the host to start", { timeout: 5000 }),
+  await clickUntilSent(
+    guestPage,
+    guestLobby.getByRole("button", { name: "Take seat" }),
+    "join",
+    () => expect(guestLobby).toContainText("Waiting for the host to start", SYNCED),
   );
 
   // The host sees the guest arrive (polling) and starts.
   await expect(hostLobby).toContainText("Fixture Peer", SYNCED);
-  await clickUntil(hostLobby.getByRole("button", { name: "Start draft" }), () =>
-    expect(hostPage.getByText("Step 1 of 24", { exact: true })).toBeVisible({ timeout: 5000 }),
+  await clickUntilSent(
+    hostPage,
+    hostLobby.getByRole("button", { name: "Start draft" }),
+    "start",
+    () => expect(hostPage.getByText("Step 1 of 24", { exact: true })).toBeVisible(SYNCED),
   );
 
   // Radiant (host) has first pick, so the host bans first; the guest can't act yet.
