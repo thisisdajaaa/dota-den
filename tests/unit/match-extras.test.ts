@@ -122,13 +122,23 @@ describe("MatchExtrasService", () => {
       startedAt: new Date(NOW - i * 3_600_000),
     }));
 
-  function setup(opts: { used?: number; waiting?: number }) {
+  function setup(opts: { used?: number; waiting?: number; heldElsewhere?: boolean }) {
     const saved: MatchExtras[] = [];
+    // The cross-server hold: taken while free (or lapsed), released by its holder.
+    let heldUntil: Date | null = opts.heldElsewhere ? new Date(NOW + 60_000) : null;
     const store: MatchExtrasStore = {
       pendingParsed: vi.fn(async (_id: number, limit: number) =>
         pending(opts.waiting ?? 20).slice(0, limit),
       ),
       fetchedSince: async () => opts.used ?? 0,
+      lease: vi.fn(async (_id: number, now: Date, until: Date) => {
+        if (heldUntil && heldUntil > now) return false;
+        heldUntil = until;
+        return true;
+      }),
+      releaseLease: vi.fn(async (_id: number, until: Date) => {
+        if (heldUntil?.getTime() === until.getTime()) heldUntil = null;
+      }),
       save: async (e) => void saved.push(e),
       forHero: async () => saved.filter((e) => e.parsed),
       parsedGamesOnHero: async () => 3,
@@ -202,6 +212,32 @@ describe("MatchExtrasService", () => {
     ).toMatchObject({ outcome: "rate_limited", fetched: 0 });
     expect(busy.saved).toEqual([]);
     expect(fetchMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs once per account at a time, across servers, and lets go when done", async () => {
+    const base = {
+      provider: { fetchMatch: vi.fn(async (id: string) => ok(parsedMatch(id))) },
+      completedItems: async () => isItem,
+      logger: { info: () => {}, warn: () => {} },
+      now: () => NOW,
+    };
+    // Another server's run holds the account: this one fetches nothing (the cap stays exact).
+    const elsewhere = setup({ heldElsewhere: true });
+    expect(
+      await new MatchExtrasService({ ...base, store: elsewhere.store }).backfill(7),
+    ).toMatchObject({ outcome: "busy", fetched: 0 });
+    expect(elsewhere.store.pendingParsed).not.toHaveBeenCalled();
+    expect(elsewhere.store.releaseLease).not.toHaveBeenCalled();
+
+    // Two runs at once on one server: the second is busy; the hold is released afterwards.
+    const { store } = setup({ waiting: 3 });
+    const svc = new MatchExtrasService({ ...base, store });
+    const [first, second] = await Promise.all([svc.backfill(7), svc.backfill(7)]);
+    expect(first).toMatchObject({ outcome: "done", fetched: 3 });
+    expect(second).toMatchObject({ outcome: "busy", fetched: 0 });
+    expect(store.lease).toHaveBeenCalledTimes(1);
+    expect(store.releaseLease).toHaveBeenCalledTimes(1);
+    expect(await svc.backfill(7)).toMatchObject({ outcome: "done" });
   });
 
   it("stores a missing match as missing, so it isn't fetched again", async () => {

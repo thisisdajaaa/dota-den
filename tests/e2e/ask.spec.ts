@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { attemptSteamId } from "./support/attempt";
 
 // Ask Den (ADR 0015) with the fixture's stand-in for Groq: it calls my_recent_games, then
-// answers quoting only the tool's numbers. The hero-coaching account: 20 Anti-Mage games,
-// 11 won. Free plan: 5 questions a Manila day.
-const LOGIN = "/api/v1/auth/steam/login?as=76561197960466001";
+// answers quoting only the tool's numbers. Its own account with the hero-coaching games (20
+// Anti-Mage games, 11 won), so the hero-coaching spec's account is left alone, and a new one
+// on a retry (each run uses one of the 5 free questions a Manila day).
+const login = () => `/api/v1/auth/steam/login?as=${attemptSteamId("76561197960466002")}`;
 
 const chat = (page: Page) => page.getByRole("region", { name: "Den", exact: true });
 
@@ -21,7 +23,7 @@ test("Ask Den answers from the player's own games, with its sources, and can be 
   page,
 }) => {
   test.setTimeout(90_000);
-  await page.goto(LOGIN);
+  await page.goto(login());
   await expect(page.getByText("Showing 20 of your 20 matches").first()).toBeVisible({
     timeout: 20_000,
   });

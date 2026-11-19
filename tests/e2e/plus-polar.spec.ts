@@ -1,15 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
+import { attempt, attemptSteamId } from "./support/attempt";
 import { polarHeaders, polarSubscriptionEvent } from "./support/plus-webhook";
 
 // Dota Den Plus with Polar as the payment provider (ADR 0013, Polar addendum), against the
 // third app server: a fake Polar API on the fixture server (sandbox mode) and webhooks signed
-// with a test secret. Own test identities, so subscriptions saved here stay out of other specs.
+// with a test secret. Own test identities, so subscriptions saved here stay out of other specs,
+// and new ones (with new subscription ids) on a retry, which a failed run's state would break.
 const POLAR_URL = process.env.E2E_POLAR_URL ?? "http://localhost:3104";
 const FIXTURE = `http://localhost:${process.env.FIXTURE_PORT ?? 3101}`;
 test.use({ baseURL: POLAR_URL });
 
-const LOGIN = "/api/v1/auth/steam/login?as=76561197960461201";
-const LEGAL_LOGIN = "/api/v1/auth/steam/login?as=76561197960461202";
+const login = (steamId: string) => `/api/v1/auth/steam/login?as=${attemptSteamId(steamId)}`;
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
@@ -24,7 +25,7 @@ async function deliver(page: Page, body: string, headers = polarHeaders(body)) {
 
 test("Polar: checkout carries our user id; signed webhooks drive the plan", async ({ page }) => {
   test.setTimeout(120_000);
-  await page.goto(LOGIN);
+  await page.goto(login("76561197960461201"));
   await page.goto("/plus");
   await expect(page.getByRole("heading", { level: 1, name: /Dota Den Plus/ })).toBeVisible();
   await expect(
@@ -67,7 +68,7 @@ test("Polar: checkout carries our user id; signed webhooks drive the plan", asyn
 
   // Nothing unsigned, wrongly signed or old is accepted.
   const now = Date.now();
-  const subscriptionId = "0a0a0a0a-1111-4222-8333-e2e000000001";
+  const subscriptionId = `0a0a0a0a-1111-4222-8333-e2e${String(attempt() + 1).padStart(9, "0")}`;
   const created = polarSubscriptionEvent({
     type: "subscription.created",
     subscriptionId,
@@ -108,7 +109,11 @@ test("Polar: checkout carries our user id; signed webhooks drive the plan", asyn
   const order = JSON.stringify({
     type: "order.paid",
     timestamp: new Date().toISOString(),
-    data: { id: "ord_e2e_1", subscription_id: subscriptionId, metadata: { user_id: userId } },
+    data: {
+      id: `ord_e2e_${attempt() + 1}`,
+      subscription_id: subscriptionId,
+      metadata: { user_id: userId },
+    },
   });
   expect(await deliver(page, order)).toBe("ignored");
 
@@ -173,7 +178,7 @@ test("Polar: checkout carries our user id; signed webhooks drive the plan", asyn
 });
 
 test("Polar: the legal pages name Polar as the merchant of record", async ({ page }) => {
-  await page.goto(LEGAL_LOGIN);
+  await page.goto(login("76561197960461202"));
   await page.goto("/terms");
   await expect(
     page.getByText(/Plus is sold by Polar \(polar\.sh\), acting as merchant/),
