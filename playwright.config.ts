@@ -9,6 +9,7 @@ import {
 } from "./tests/e2e/support/plus-webhook";
 import { E2E_RESEND_WEBHOOK_SECRET } from "./tests/e2e/support/resend-webhook";
 import { E2E_SUPPORT_EMAIL } from "./tests/e2e/support/legal";
+import { E2E_DISCORD_APP_ID, E2E_DISCORD_PUBLIC_KEY } from "./tests/e2e/support/discord-bot";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
@@ -54,6 +55,10 @@ const PLAIN_ENV: Record<string, string> = {
   EMAIL_FROM: "",
   RESEND_WEBHOOK_SECRET: "",
   ADMIN_ALERT_WEBHOOK_URL: "",
+  DISCORD_CLIENT_ID: "",
+  DISCORD_CLIENT_SECRET: "",
+  DISCORD_PUBLIC_KEY: "",
+  DISCORD_BOT_TOKEN: "",
   SUPPORT_EMAIL: "",
   BILLING_PROVIDER: "",
   PLUS_ENABLED: "",
@@ -146,6 +151,13 @@ export default defineConfig({
         CRON_SECRET: E2E_CRON_SECRET,
         // Never post owner alerts to a real Discord channel from tests.
         ADMIN_ALERT_WEBHOOK_URL: "",
+        // The Discord bot and "Connect Discord" against the fixture's fake Discord.
+        DISCORD_CLIENT_ID: E2E_DISCORD_APP_ID,
+        DISCORD_CLIENT_SECRET: "e2e-discord-secret",
+        DISCORD_PUBLIC_KEY: E2E_DISCORD_PUBLIC_KEY,
+        DISCORD_BOT_TOKEN: "e2e-discord-bot-token",
+        DISCORD_API_BASE_URL: `${fixtureURL}/discord/api`,
+        DISCORD_AUTHORIZE_URL: `${fixtureURL}/discord/oauth2/authorize`,
         // Dota Den Plus (ADR 0013): a fake Lemon Squeezy store. Tests sign webhooks with this
         // test secret; checkout links only need to be well formed (nothing follows them).
         BILLING_PROVIDER: "lemonsqueezy",

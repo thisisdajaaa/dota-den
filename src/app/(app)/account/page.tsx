@@ -38,7 +38,9 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
     notificationService.status(user.id),
     sharesService.list(user.id),
     discordWebhookService.status(user.id),
-    discordLinkService.status(user.id).catch(() => ({ enabled: false, linked: null })),
+    discordLinkService
+      .status(user.id)
+      .catch(() => ({ enabled: false, linked: null, inviteUrl: null, canNudge: false })),
     emailService.status(user.id),
     plusService.plan(user.id),
     sessionService.stopLossSettings({ userId: user.id, accountId32: user.accountId32 }),

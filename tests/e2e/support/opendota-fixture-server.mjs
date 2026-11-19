@@ -1504,6 +1504,51 @@ function discord(req, res, url, body) {
   };
   const log = /^\/discord\/messages\/(\d+)$/.exec(url.pathname);
   if (log) return json(200, DISCORD_MESSAGES.get(log[1]) ?? []);
+  // Fake Discord OAuth2 and bot API (the Discord bot): sign-in always succeeds as one fixture
+  // user; interaction replies, channel posts and DMs are recorded under /discord/bot-log/:key.
+  if (url.pathname === "/discord/oauth2/authorize") {
+    const back = new URL(url.searchParams.get("redirect_uri") ?? "http://localhost/");
+    back.searchParams.set("code", "fixture-discord-code");
+    back.searchParams.set("state", url.searchParams.get("state") ?? "");
+    res.writeHead(302, { location: back.toString() });
+    return res.end();
+  }
+  if (url.pathname === "/discord/api/oauth2/token" && req.method === "POST") {
+    const code = new URLSearchParams(body).get("code");
+    if (code !== "fixture-discord-code") return json(400, { error: "invalid_grant" });
+    return json(200, { access_token: "fixture-discord-access", token_type: "Bearer" });
+  }
+  if (url.pathname === "/discord/api/users/@me" && req.method === "GET") {
+    if (req.headers.authorization !== "Bearer fixture-discord-access")
+      return json(401, { message: "401: Unauthorized" });
+    return json(200, {
+      id: "700000000000000001",
+      username: "fixtureden",
+      global_name: "Fixture Discord",
+      avatar: null,
+    });
+  }
+  const botLog = /^\/discord\/bot-log\/([\w-]+)$/.exec(url.pathname);
+  if (botLog) return json(200, DISCORD_MESSAGES.get(`bot:${botLog[1]}`) ?? []);
+  const record = (key, data) =>
+    DISCORD_MESSAGES.set(`bot:${key}`, [...(DISCORD_MESSAGES.get(`bot:${key}`) ?? []), data]);
+  const edit = /^\/discord\/api\/webhooks\/(\d+)\/([\w.-]+)\/messages\/@original$/.exec(
+    url.pathname,
+  );
+  if (edit && req.method === "PATCH") {
+    record(edit[2], JSON.parse(body || "{}"));
+    return json(200, { id: "710000000000000001" });
+  }
+  if (url.pathname === "/discord/api/users/@me/channels" && req.method === "POST") {
+    if (!req.headers.authorization?.startsWith("Bot ")) return json(401, { message: "401" });
+    return json(200, { id: "720000000000000001", type: 1 });
+  }
+  const post = /^\/discord\/api\/channels\/(\d+)\/messages$/.exec(url.pathname);
+  if (post && req.method === "POST") {
+    if (!req.headers.authorization?.startsWith("Bot ")) return json(401, { message: "401" });
+    record(post[1], JSON.parse(body || "{}"));
+    return json(200, { id: "730000000000000001" });
+  }
   const m = /^\/api\/webhooks\/(\d+)\/([\w-]+)$/.exec(url.pathname);
   if (!m) return false;
   const [, id, token] = m;

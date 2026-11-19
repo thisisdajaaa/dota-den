@@ -12,6 +12,7 @@ describe("setUpSchedules", () => {
       "https://www.dota-den.com/api/jobs/streamer-alerts",
       "https://www.dota-den.com/api/jobs/session-companion",
       "https://www.dota-den.com/api/jobs/weekly-coach",
+      "https://www.dota-den.com/api/jobs/discord-recap",
     ]);
     expect(create).toHaveBeenCalledTimes(JOB_SCHEDULES.length);
     expect(create).toHaveBeenCalledWith(
@@ -21,6 +22,10 @@ describe("setUpSchedules", () => {
         retries: 0,
         headers: expect.objectContaining({ "x-vercel-protection-bypass": "b" }),
       }),
+    );
+    // Monday 09:00 in Manila (UTC+8 all year) is Monday 01:00 UTC.
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ scheduleId: "dota-den-discord-recap", cron: "0 1 * * 1" }),
     );
   });
 });

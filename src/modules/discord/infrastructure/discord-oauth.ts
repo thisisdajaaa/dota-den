@@ -1,7 +1,7 @@
 import { createPublicKey, verify } from "node:crypto";
 import { z } from "zod";
 
-const API = "https://discord.com/api/v10";
+const DEFAULT_API = "https://discord.com/api/v10";
 const DiscordUser = z.object({
   id: z.string().regex(/^\d{15,25}$/),
   username: z.string().min(1).max(64),
@@ -17,13 +17,16 @@ export class DiscordOAuth {
       clientId: string;
       clientSecret: string;
       redirectUri: string;
+      /** Test overrides (fixture server); Discord's own otherwise. */
+      apiBaseUrl?: string;
+      authorizeUrl?: string;
       fetch?: typeof fetch;
       timeoutMs?: number;
     },
   ) {}
 
   authorizeUrl(state: string): string {
-    const u = new URL("https://discord.com/oauth2/authorize");
+    const u = new URL(this.opts.authorizeUrl ?? "https://discord.com/oauth2/authorize");
     u.searchParams.set("response_type", "code");
     u.searchParams.set("client_id", this.opts.clientId);
     u.searchParams.set("scope", "identify");
@@ -37,6 +40,7 @@ export class DiscordOAuth {
   async identify(code: string): Promise<DiscordIdentity | null> {
     const f = this.opts.fetch ?? fetch;
     const signal = AbortSignal.timeout(this.opts.timeoutMs ?? 8_000);
+    const API = (this.opts.apiBaseUrl ?? DEFAULT_API).replace(/\/$/, "");
     const token = await f(`${API}/oauth2/token`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
