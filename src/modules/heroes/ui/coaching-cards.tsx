@@ -1,3 +1,4 @@
+import { EXTRAS_PER_DAY, PLUS_EXTRAS_PER_DAY } from "@/modules/matches/domain/match-extras";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
@@ -99,19 +100,37 @@ export async function TimingsCard({
   coaching,
   items,
   heroLabel,
+  pace = "none",
 }: {
   coaching: HeroCoaching;
   items: Map<string, ItemInfo>;
   heroLabel: string;
+  /**
+   * How fast the rest is read: "plus" (the Plus daily cap), "free" (the free cap, with what
+   * Plus adds) or "none" (nothing said; Plus isn't on sale).
+   */
+  pace?: "plus" | "free" | "none";
 }) {
   const t = await getT();
   const games = (n: number) => plural(t, "heroes.counts.games", n);
   const byId = new Map([...items.values()].map((i) => [i.id, i]));
-  const progress = t("heroes.coaching.analysed", {
+  const analysed = t("heroes.coaching.analysed", {
     analysed: coaching.analysed,
     parsed: games(coaching.parsedGames),
     hero: heroLabel,
   });
+  // Only while there's more to read: once everything is analysed, the pace doesn't matter.
+  const behind = coaching.analysed < coaching.parsedGames;
+  const progress =
+    behind && pace !== "none"
+      ? `${analysed} ${t(
+          pace === "plus" ? "heroes.coaching.pacePlus" : "heroes.coaching.paceFree",
+          {
+            free: EXTRAS_PER_DAY,
+            plus: PLUS_EXTRAS_PER_DAY,
+          },
+        )}`
+      : analysed;
   return (
     <MetaSection
       id="hero-timings"

@@ -40,6 +40,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Paano ka ikumpara, sa bawat hero",
         body: "Ang last hits, kills + assists at deaths mo sa bawat hero laban sa mga player na kapareho mo ng rank (o mas mataas), sa parehong haba ng laro, kasama ang pinakamalaking kulang mo (libre: ang pinakamadalas mong hero).",
       },
+      coaching: {
+        title: "Mas mabilis na hero coaching",
+        body: "Item timings at lane results para sa buong recent history mo sa bawat hero: hanggang 100 sa mga parsed game mo ang nasusuri bawat araw (libre: 10 bawat araw).",
+      },
       read: {
         title: "AI read ng battle report mo",
         body: "Pumili ng kahit anong panahon sa battle report mo at makakuha ng ilang obserbasyon at isang dapat pagtuunan, isinulat mula lang sa mga numero ng page na iyon (nakalista ang mga ginamit na numero).",

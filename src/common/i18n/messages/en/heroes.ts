@@ -222,6 +222,8 @@ export const heroes = {
     points: "{pts} pts",
     timingsTitle: "Your timings and lanes",
     analysed: "{analysed} of your {parsed} with parsed replays on {hero} analysed so far.",
+    pacePlus: "With Plus, up to {plus} more are read each day.",
+    paceFree: "{free} more are read each day; Plus reads up to {plus}.",
     timingsNotEnough:
       "Item timings and lane results show once {min} of your parsed games on {hero} are analysed. A few more are read each day.",
     timingsFooter:

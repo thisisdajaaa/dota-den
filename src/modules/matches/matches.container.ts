@@ -20,6 +20,7 @@ import { jobsService } from "@/modules/jobs";
 import { notificationService } from "@/modules/notifications";
 import { plusService } from "@/modules/plus";
 import { PARSE_REQUEST_LIMIT, policyFor } from "./domain/sync-policy";
+import { EXTRAS_RUN_MS, extrasPerDay } from "./domain/match-extras";
 import { GroqMatchCoach } from "./infrastructure/groq-match-coach";
 import { OpenDotaAdapter } from "./infrastructure/opendota-adapter";
 import { MatchesController } from "./matches.controller";
@@ -83,6 +84,8 @@ export const matchExtrasService = new MatchExtrasService({
     const completed = new Set(res.value.filter(isNotableItem).map((i) => i.key));
     return (key) => completed.has(key);
   },
+  // Plus faster hero coaching: a bigger daily cap for a supporter's own games.
+  perDay: async (accountId32) => extrasPerDay(await accountHasPlus(accountId32)),
   logger,
 });
 
@@ -205,7 +208,7 @@ export const matchesController = new MatchesController({
   onSynced: (accountId32) =>
     after(() =>
       matchExtrasService
-        .backfill(accountId32)
+        .backfill(accountId32, { deadline: Date.now() + EXTRAS_RUN_MS })
         .then((run) => {
           if (run.fetched > 0) logger.info("match_extras_filled", { accountId32, ...run });
         })
