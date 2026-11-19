@@ -168,6 +168,21 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Native controls and scrollbars follow the theme (no white tracks). */
+  .dark {
+    color-scheme: dark;
+  }
+  /* Slim scrollbars: faint thumb on a transparent track, brighter on hover. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(1 0 0 / 0.12) transparent;
+  }
+  *:hover {
+    scrollbar-color: oklch(1 0 0 / 0.22) transparent;
+  }
+  :root:not(.dark) * {
+    scrollbar-color: oklch(0 0 0 / 0.18) transparent;
+  }
   .dark body {
     /* Atmosphere: ember glow top-left, Radiant teal haze right, faint grid. */
     background-image:
