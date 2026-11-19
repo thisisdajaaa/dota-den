@@ -41,6 +41,8 @@ test("a hero page shows what works for you, then your timings and lanes as games
       { timeout: 2_000 },
     );
   }).toPass({ timeout: 30_000 });
+  // A free player is told the pace, and what Plus changes (Plus is on sale in this server).
+  await expect(timings).toContainText("10 more are read each day; Plus reads up to 100.");
 
   // The 10 newest games: 7 wins, 3 losses. Battle Fury at 13:03 in wins, 16:07 in losses;
   // Manta has only one loss, too few for a typical time.

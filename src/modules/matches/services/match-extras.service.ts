@@ -27,7 +27,7 @@ export interface ExtrasRun {
 
 /**
  * Fills match_extras a little at a time: at most EXTRAS_PER_DAY match details per player per
- * day, most recent parsed games first. A stored match is never fetched again; a game without
+ * day (PLUS_EXTRAS_PER_DAY with Plus), most recent parsed games first. A stored match is never fetched again; a game without
  * replay data is stored as such, so missing stays missing.
  */
 export class MatchExtrasService {
@@ -42,9 +42,18 @@ export class MatchExtrasService {
       completedItems: () => Promise<((key: string) => boolean) | null>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => number;
-      perDay?: number;
+      /** Daily cap: a fixed number (tests) or per account (Plus reads more). */
+      perDay?: number | ((accountId32: number) => Promise<number>);
     },
   ) {}
+
+  private async perDay(accountId32: number): Promise<number> {
+    const { perDay } = this.deps;
+    if (typeof perDay === "number") return perDay;
+    if (!perDay) return EXTRAS_PER_DAY;
+    // Any failure (Plus unknown) falls back to the free cap, never above it.
+    return perDay(accountId32).catch(() => EXTRAS_PER_DAY);
+  }
 
   private now() {
     return this.deps.now?.() ?? Date.now();
@@ -65,7 +74,7 @@ export class MatchExtrasService {
       if (!(await store.lease(accountId32, new Date(now), until)))
         return { ...run, outcome: "busy" };
       leased = until;
-      const perDay = this.deps.perDay ?? EXTRAS_PER_DAY;
+      const perDay = await this.perDay(accountId32);
       const used = await store.fetchedSince(accountId32, new Date(this.now() - DAY_MS));
       if (used >= perDay) return { ...run, outcome: "capped" };
       const pending = await store.pendingParsed(accountId32, perDay - used);

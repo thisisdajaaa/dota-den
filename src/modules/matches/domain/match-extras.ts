@@ -8,6 +8,18 @@ import type { MatchResult } from "./player-match-fact";
 
 /** Match details fetched per player per day for extras (the rest wait for later days). */
 export const EXTRAS_PER_DAY = 10;
+/**
+ * Plus faster hero coaching: enough to read a whole recent history in a day or two. Each fetch
+ * still draws from the one shared OpenDota budget, so free players aren't slowed down.
+ */
+export const PLUS_EXTRAS_PER_DAY = 100;
+/** Longest one sync's after-response fill may run (the rest continues on the next sync). */
+export const EXTRAS_RUN_MS = 40_000;
+
+/** Match details a player may have fetched for extras per day. */
+export function extrasPerDay(isPlus: boolean): number {
+  return isPlus ? PLUS_EXTRAS_PER_DAY : EXTRAS_PER_DAY;
+}
 /** A lane is won or lost when one side earned at least this much more gold by minute 10. */
 export const EXTRAS_LANE_MARGIN = 1.1;
 /** Completed items kept per game (first purchases, in order). */

@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { err, ok } from "@/common/result";
 import type { MatchDetail, MatchPlayer } from "@/modules/matches/domain/match-detail";
 import {
+  EXTRAS_PER_DAY,
+  extrasPerDay,
   firstPurchases,
+  PLUS_EXTRAS_PER_DAY,
   laneResult,
   matchExtrasFrom,
   type MatchExtras,
@@ -174,6 +177,56 @@ describe("MatchExtrasService", () => {
     expect(store.pendingParsed).toHaveBeenCalledWith(7, 4);
     expect(fetchMatch.mock.calls.map(([id]) => id)).toEqual(["1000", "999", "998", "997"]);
     expect(saved).toHaveLength(4);
+  });
+
+  it("reads more for Plus, and falls back to the free cap when Plus can't be checked", async () => {
+    const fetchMatch = vi.fn(async (id: string) => ok(parsedMatch(id)));
+    const base = {
+      provider: { fetchMatch },
+      completedItems: async () => isItem,
+      logger: { info: () => {}, warn: () => {} },
+      now: () => NOW,
+    };
+    expect(extrasPerDay(true)).toBe(PLUS_EXTRAS_PER_DAY);
+    expect(extrasPerDay(false)).toBe(EXTRAS_PER_DAY);
+
+    const plus = setup({ used: 10, waiting: 200 });
+    const run = await new MatchExtrasService({
+      ...base,
+      store: plus.store,
+      perDay: async () => extrasPerDay(true),
+    }).backfill(7);
+    expect(run).toMatchObject({ outcome: "done", fetched: PLUS_EXTRAS_PER_DAY - 10 });
+    expect(plus.store.pendingParsed).toHaveBeenCalledWith(7, PLUS_EXTRAS_PER_DAY - 10);
+
+    const unknown = setup({ used: 10 });
+    expect(
+      await new MatchExtrasService({
+        ...base,
+        store: unknown.store,
+        perDay: async () => {
+          throw new Error("plus down");
+        },
+      }).backfill(7),
+    ).toMatchObject({ outcome: "capped", fetched: 0 });
+  });
+
+  it("stops at the deadline and keeps the rest for the next run", async () => {
+    let now = NOW;
+    const { saved, store } = setup({});
+    const fetchMatch = vi.fn(async (id: string) => {
+      now += 15_000;
+      return ok(parsedMatch(id));
+    });
+    const run = await new MatchExtrasService({
+      store,
+      provider: { fetchMatch },
+      completedItems: async () => isItem,
+      logger: { info: () => {}, warn: () => {} },
+      now: () => now,
+    }).backfill(7, { deadline: NOW + 40_000 });
+    expect(run).toEqual({ outcome: "out_of_time", fetched: 3, parsed: 3 });
+    expect(saved).toHaveLength(3);
   });
 
   it("stops at the cap, without a catalog, or when OpenDota is busy (storing nothing)", async () => {

@@ -15,6 +15,7 @@ import {
   Layers,
   PauseCircle,
   Sparkles,
+  Timer,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const PERKS: ReadonlyArray<{
   key:
     | "coach"
     | "compare"
+    | "coaching"
     | "read"
     | "pick"
     | "session"
@@ -54,6 +56,7 @@ const PERKS: ReadonlyArray<{
 }> = [
   { key: "coach", icon: Bot },
   { key: "compare", icon: Gauge },
+  { key: "coaching", icon: Timer },
   { key: "read", icon: FileText },
   { key: "pick", icon: Sparkles },
   { key: "session", icon: Activity },

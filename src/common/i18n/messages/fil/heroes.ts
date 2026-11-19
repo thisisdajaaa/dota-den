@@ -233,6 +233,8 @@ export const heroes: MessageTree<typeof en> = {
     points: "{pts} pts",
     timingsTitle: "Ang timings at lanes mo",
     analysed: "{analysed} sa {parsed} mong may parsed replay kay {hero} ang nasuri na.",
+    pacePlus: "Sa Plus, hanggang {plus} pa ang nasusuri bawat araw.",
+    paceFree: "{free} pa ang nasusuri bawat araw; sa Plus, hanggang {plus}.",
     timingsNotEnough:
       "Lalabas ang item timings at lane results kapag nasuri na ang {min} sa mga parsed na laro mo kay {hero}. Ilan pa ang binabasa bawat araw.",
     timingsFooter:
