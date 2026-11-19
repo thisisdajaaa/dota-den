@@ -218,6 +218,32 @@ export const heroes: MessageTree<typeof en> = {
     listLabel: "Kanunay paliton nga mga item",
     ofGames: "sa mga duwa · {games} sa {total}",
   },
+  buildCheck: {
+    kicker: "Plus",
+    title: "Build check batok sa high-rank",
+    description:
+      "Imong kasagarang item timings sa {hero} ({yours} ang nasusi niini nga role) batok sa Legend–Immortal pubs sa {pos} sa miaging semana ({theirs}).",
+    footer:
+      "Median: imong unang palit sa mga duwa nga gipalit nimo kini (gidaghanon sa duwa sa bracket) ug ang minuto nga nahimo na ang katunga sa mga palit sa high-rank. Apil lang ang mga item nga gipalit sa labing menos 1 sa 10 niadtong mga duwa. Ang timing nagdepende sa dagan sa duwa, busa timaan lang ang gilay-on, dili lagda.",
+    pos: "Pos {n}",
+    suggestion:
+      "Usa ka sulayan: imong {item} {gap} nga mas ulahi kaysa sa {pos} sa Legend–Immortal pubs ({yours} batok sa {theirs}). Tan-awa kung unsa ang nagpahinay: farm sa unang 10 minuto, o mga item nga gipalit una niini.",
+    onPace:
+      "Imong core timings sulod sa 2 minuto sa mga Legend–Immortal {pos} player. Walay klarong kinahanglan ayohon.",
+    tableLabel: "Imong item timings batok sa mga high-rank player",
+    you: "Ikaw",
+    them: "Legend–Immortal",
+    gap: "Gilay-on",
+    noItems:
+      "Wala pa sa imong mga item dinhi ang kanunay paliton sa high-rank games aron ikumpara.",
+    notEnough:
+      "Kinahanglan sa build check ang {min} ka nasusi nga duwa sa usa ka role sa {hero}; {games} pa lang ang anaa nimo.",
+    noRole:
+      "Wala pay role nga ikumpara: walay lane role ang imong nasusi nga mga duwa sa {hero}, o dili kanunay duwaon ang {hero} didto sa high-rank pubs.",
+    locked:
+      "Sa Plus, ikumpara ang imong item timings sa {hero} sa mga Legend–Immortal player sa imong posisyon, uban ang usa ka butang nga sulayan.",
+    seePlus: "Tan-awa ang Plus",
+  },
   coaching: {
     kicker: "Coaching",
     worksTitle: "Unsa ang epektibo para nimo",

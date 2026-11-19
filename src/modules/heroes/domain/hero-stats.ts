@@ -259,6 +259,8 @@ export function matchups(
 
 /** Item facts needed to decide what's worth listing. */
 export interface ItemMeta {
+  /** The item's numeric id, when the catalog has it (high-rank builds use ids). */
+  id?: number;
   key: string;
   qual: string | null;
   cost: number | null;

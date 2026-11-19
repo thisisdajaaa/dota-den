@@ -47,6 +47,10 @@ export const plus = {
         title: "Faster hero coaching",
         body: "Item timings and lane results for your whole recent history on every hero: up to 100 of your parsed games are read each day (free: 10 a day).",
       },
+      buildCheck: {
+        title: "Build check vs high-rank",
+        body: "On each hero page, your item timings against Legend–Immortal players at your position last week, with one thing to try (free: your own timings).",
+      },
       read: {
         title: "AI read of your battle report",
         body: "Pick any period on your battle report and get a few observations about it and one thing to focus on, written from that page's numbers only (each lists the numbers it uses).",

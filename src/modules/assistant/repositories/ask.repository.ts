@@ -90,11 +90,12 @@ export class AskChatsRepository implements AskChatsPort {
       updatedAt: opts.now,
       expiresAt: opts.expiresAt,
     });
-    // Keep the newest few: anything past the cap is forgotten.
+    // Keep the newest few: anything past the cap is forgotten. The new one always stays (two
+    // created in the same millisecond tie on updatedAt).
     const old = await col
-      .find({ userId }, { projection: { _id: 1 } })
-      .sort({ updatedAt: -1 })
-      .skip(opts.maxConversations)
+      .find({ userId, _id: { $ne: id } }, { projection: { _id: 1 } })
+      .sort({ updatedAt: -1, _id: 1 })
+      .skip(Math.max(0, opts.maxConversations - 1))
       .toArray();
     if (old.length) await col.deleteMany({ userId, _id: { $in: old.map((d) => d._id) } });
     return id;

@@ -11,6 +11,7 @@ import {
   Clock,
   FileText,
   Gauge,
+  Hammer,
   HeartHandshake,
   Layers,
   PauseCircle,
@@ -44,6 +45,7 @@ const PERKS: ReadonlyArray<{
     | "coach"
     | "compare"
     | "coaching"
+    | "buildCheck"
     | "read"
     | "pick"
     | "session"
@@ -57,6 +59,7 @@ const PERKS: ReadonlyArray<{
   { key: "coach", icon: Bot },
   { key: "compare", icon: Gauge },
   { key: "coaching", icon: Timer },
+  { key: "buildCheck", icon: Hammer },
   { key: "read", icon: FileText },
   { key: "pick", icon: Sparkles },
   { key: "session", icon: Activity },
