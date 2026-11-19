@@ -370,6 +370,54 @@ function groqCoach(body) {
   };
 }
 
+/**
+ * Ask Den's stand-in model (tool calling, ADR 0015). First it asks for the player's recent
+ * games; given the tool's result it answers quoting only those numbers, so the reply passes
+ * the app's checks. A question containing "INVENT" gets an invented number every time (the
+ * app must reject it twice and show its safe fallback).
+ */
+function groqAsk(body) {
+  groqCalls++;
+  const messages = body.messages ?? [];
+  const question =
+    [...messages].reverse().find((m) => m.role === "user" && /<question>/.test(m.content ?? ""))
+      ?.content ?? "";
+  const reply = (content) => ({
+    id: `chatcmpl-ask-${groqCalls}`,
+    object: "chat.completion",
+    choices: [{ index: 0, message: { role: "assistant", content } }],
+  });
+  if (/INVENT/.test(question)) return reply("You won 4242 games this week.");
+  const tools = messages.filter((m) => m.role === "tool");
+  if (tools.length === 0 && body.tool_choice !== "none")
+    return {
+      id: `chatcmpl-ask-${groqCalls}`,
+      object: "chat.completion",
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: "assistant",
+            content: null,
+            tool_calls: [
+              {
+                id: `call_${groqCalls}`,
+                type: "function",
+                function: { name: "my_recent_games", arguments: JSON.stringify({ count: 20 }) },
+              },
+            ],
+          },
+        },
+      ],
+    };
+  const data = JSON.parse(tools.at(-1)?.content ?? "{}");
+  if (data.error || !data.games)
+    return reply("I don't have your games yet. Open the Overview so they can be imported first.");
+  return reply(
+    `In your last ${data.games} games you won ${data.wins} (${Math.round(data.winRatePct)}%). Stick to one hero for a few games and watch your deaths.`,
+  );
+}
+
 function matchDetail(id) {
   const coachAi = COACH_AI_MATCHES.findIndex((m) => String(m.match_id) === id);
   if (coachAi >= 0) return coachAiDetail(coachAi);
@@ -1655,7 +1703,8 @@ createServer((req, res) => {
         return res.end(JSON.stringify({ error: { message: "Invalid API Key" } }));
       }
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify(groqCoach(JSON.parse(raw || "{}"))));
+      const body = JSON.parse(raw || "{}");
+      res.end(JSON.stringify(body.tools ? groqAsk(body) : groqCoach(body)));
     });
     return;
   }

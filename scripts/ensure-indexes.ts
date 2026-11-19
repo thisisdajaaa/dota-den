@@ -7,6 +7,10 @@ import { AlertLogRepository } from "@/modules/alerts/repositories/alert-log.repo
 import { AlertThrottleRepository } from "@/modules/alerts/repositories/alert-throttle.repository";
 import { OpsReportsRepository } from "@/modules/alerts/repositories/ops-reports.repository";
 import { AnnotationsRepository } from "@/modules/annotations/annotations.repository";
+import {
+  AskChatsRepository,
+  AskUsageRepository,
+} from "@/modules/assistant/repositories/ask.repository";
 import { GoalsRepository } from "@/modules/goals/goals.repository";
 import { UsageRepository } from "@/modules/usage/repositories/usage.repository";
 import { PracticeRepository } from "@/modules/practice/practice.repository";
@@ -101,6 +105,10 @@ async function main(): Promise<void> {
   ]);
   await new ReplayReadsRepository(async () => db).ensureIndexes();
   await new PeriodReadsRepository(async () => db).ensureIndexes();
+  await Promise.all([
+    new AskChatsRepository(async () => db).ensureIndexes(),
+    new AskUsageRepository(async () => db).ensureIndexes(),
+  ]);
   await new MmrEntriesRepository(async () => db).ensureIndexes();
   await new MedalHistoryRepository(async () => db).ensureIndexes();
   await new PatchesRepository(async () => db).ensureIndexes();

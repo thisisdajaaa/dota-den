@@ -30,6 +30,7 @@ import { discord } from "./discord";
 import { presence } from "./presence";
 import { email } from "./email";
 import { plus } from "./plus";
+import { ask } from "./ask";
 
 /** Every namespace of the ceb messages. Each feature owns one file in this folder. */
 export const messages = {
@@ -65,4 +66,5 @@ export const messages = {
   presence,
   email,
   plus,
+  ask,
 };

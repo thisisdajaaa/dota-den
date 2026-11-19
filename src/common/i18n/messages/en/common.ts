@@ -8,6 +8,7 @@ export const common = {
     heroes: "Heroes",
     mmr: "MMR journal",
     sessions: "Sessions",
+    ask: "Ask Den",
     report: "Battle report",
     together: "Together",
     groups: "Groups",
