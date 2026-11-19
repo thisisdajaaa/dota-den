@@ -1,20 +1,57 @@
 import "server-only";
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
+import { getLocale } from "@/common/i18n/server";
 import { requireUser } from "@/modules/identity";
 import {
   CreateGroupSchema,
   GroupIdParams,
   GroupMemberParams,
   JoinGroupSchema,
+  PlanDiscordSchema,
+  PlanQuerySchema,
   RenameGroupSchema,
 } from "./schemas/groups.schema";
 import type { GroupsService } from "./services/groups.service";
+import type { StackPlannerService } from "./services/stack-planner.service";
 
 const WRITE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 export class GroupsController {
-  constructor(private readonly deps: { service: GroupsService }) {}
+  constructor(private readonly deps: { service: GroupsService; planner: StackPlannerService }) {}
+
+  /** GET /api/v1/groups/:id/planner?members=1,2,3: tonight's lineup for those members. */
+  plan = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "groups:planner", limit: 20, windowMs: 60_000 },
+      params: GroupIdParams,
+      query: PlanQuerySchema,
+    },
+    async ({ user, params, query }) => {
+      const group = await this.deps.service.forMember(user, params.id);
+      return ServiceResponse.success(await this.deps.planner.plan(user, group, query.members));
+    },
+  );
+
+  /** POST /api/v1/groups/:id/planner/discord: post the plan to your Discord channel (Plus). */
+  postPlan = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "groups:planner:discord", limit: 5, windowMs: 60_000 },
+      params: GroupIdParams,
+      body: PlanDiscordSchema,
+      invalidMessage: "Pick 2 to 5 members",
+    },
+    async ({ user, params, body }) => {
+      const group = await this.deps.service.forMember(user, params.id);
+      const locale = user.settings.language ?? (await getLocale());
+      return ServiceResponse.success(
+        await this.deps.planner.postToDiscord(user, group, body.members, locale),
+        "Posted to Discord",
+      );
+    },
+  );
 
   /** GET /api/v1/groups: the groups you're in. */
   list = handler({ guard: requireUser }, async ({ user }) =>

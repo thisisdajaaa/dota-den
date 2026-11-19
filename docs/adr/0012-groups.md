@@ -55,3 +55,35 @@ A new `groups` feature (ADR 0009 layout), collection `groups`, members embedded.
 - A new group's numbers take a few visits to fill in for members with long shared histories.
 - Member pairs are only checked from the group page, so the numbers are as fresh as the last
   visit by any member.
+
+## Addendum (2026-11-19): stack planner
+
+"Tonight's best lineup" on the group page: a member ticks who's in (2 to 5 members) and gets a
+position for each, with the evidence behind it.
+
+- **Data.** Each ticked member's games from the last 30 days (the same window as "who plays
+  what"), placed in positions 1–5 by the Meta page's rule (parsed-replay lane role plus hero
+  roles), read from the Meta page's cached OpenDota source (`recentLanes`, which now also keeps
+  each game's match id and start time). Games without lane data are skipped and counted. Party
+  games come from the Together cache only, with the same rule as the rest of the page: a
+  confirmed party (same party id, size ≥ 2). Same team without party data is shown as unknown,
+  never as together or solo. The planner makes no Together checks of its own.
+- **Optimiser** (`domain/stack-planner.ts`): every assignment of distinct positions (at most
+  5! = 120) is scored and the best kept. A member's score at a position is their win rate there,
+  pulled toward 50% by 10 games (party games with this stack count twice), plus 0.1 × the share
+  of their games at that position. A win rate needs 3 decided games at the position and 5
+  placed games overall; below that a position scores 0.3 + the share bonus, so real records
+  pick first and thin players fall back to what they play most. A pair whose positions won
+  together 3+ times adds the pair's damped edge; 4+ games at ≤ 30% is listed as "maybe avoid".
+  Each slot says which rule placed it (record, most played, leftover, no data).
+- **Load.** Nothing is fetched until the member asks: one cached lane read per ticked member
+  (at most 5), the hero catalog, and the Together cache.
+- **Privacy.** Only for members (404 otherwise, members outside the group are refused). The
+  per-position records are derived from the same public games members already share ("heroes
+  and positions played in the last 30 days"; the join page now says so). Who's ticked at first:
+  you, plus members your own "Friends playing now" already shows you in Dota (no new presence
+  lookups for other members); otherwise everyone in a group of up to five, else just you.
+- **Plus.** Hero options per position (2–3, from the member's own games there) and posting the
+  plan to the viewer's own Discord channel (the webhook saved on their account page; groups have
+  no webhook of their own). Free players get the lineup, positions, evidence and a copyable
+  text for the group chat.

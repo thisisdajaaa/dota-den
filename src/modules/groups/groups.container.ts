@@ -1,17 +1,34 @@
 import "server-only";
 import { randomInt } from "node:crypto";
 import { getDb } from "@/common/db/mongo";
+import { DEFAULT_LOCALE, isLocale } from "@/common/i18n/locales";
+import { englishMessages, MESSAGES, type Messages } from "@/common/i18n/messages";
+import { translator } from "@/common/i18n/translate";
+import { logger } from "@/common/logging/logger";
+import { discordWebhooksRepository } from "@/modules/discord";
+import { discordMessage } from "@/modules/discord/domain/feed";
 import { usersService } from "@/modules/identity";
-import { matchQueries } from "@/modules/matches";
+import { matchesService, matchQueries } from "@/modules/matches";
+import { metaSource } from "@/modules/meta";
 import { playersService } from "@/modules/players";
+import { displayName } from "@/modules/players/ui/player-avatar";
 import { plusService } from "@/modules/plus";
+import { presenceService } from "@/modules/presence";
 import { togetherService } from "@/modules/together";
 import { INVITE_TOKEN_LENGTH } from "./domain/group";
 import { GroupsController } from "./groups.controller";
-import type { MemberGamesSource, MemberProfiles, PartySource } from "./groups.ports";
+import type {
+  MemberGamesSource,
+  MemberProfiles,
+  PartySource,
+  PlannerGamesSource,
+} from "./groups.ports";
+import { PlanDiscordPoster } from "./infrastructure/plan-discord-poster";
 import { GroupsRepository } from "./repositories/groups.repository";
 import { GroupPageService } from "./services/group-page.service";
 import { GroupsService } from "./services/groups.service";
+import { StackPlannerService } from "./services/stack-planner.service";
+import { planLines } from "./ui/stack-plan-text";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const newToken = () =>
@@ -89,4 +106,57 @@ export const groupPageService = new GroupPageService({
   games,
 });
 
-export const groupsController = new GroupsController({ service: groupsService });
+/** Members' recent lanes: the Meta page's cached OpenDota source (60 days, 100 games). */
+const plannerGames: PlannerGamesSource = {
+  laneGames: async (accountId32) => {
+    const res = await metaSource.recentLanes(accountId32);
+    if (!res.ok) logger.warn("planner_lanes_unavailable", { reason: res.error.type });
+    return res.ok ? res.value.value.games : null;
+  },
+  heroes: () => matchesService.heroMap(),
+};
+
+/** Discord embeds cap a description at 4096 characters. */
+const MAX_DESCRIPTION = 4000;
+
+export const stackPlannerService = new StackPlannerService({
+  party,
+  games: plannerGames,
+  profiles,
+  presence: {
+    playingNow: async (viewer) => {
+      try {
+        const res = await presenceService.playingNow(viewer);
+        return res.friends.map((f) => f.accountId32);
+      } catch (error) {
+        logger.warn("planner_presence_failed", { error });
+        return [];
+      }
+    },
+  },
+  discord: new PlanDiscordPoster({
+    get: (userId) => discordWebhooksRepository.get(userId),
+    markGone: (userId, now) => discordWebhooksRepository.markGone(userId, now),
+  }),
+  isPlus: (userId) => plusService.isPlus(userId),
+  message: (plan, names, locale, groupName) => {
+    const t = translator<Messages>(
+      MESSAGES[isLocale(locale) ? locale : DEFAULT_LOCALE],
+      englishMessages,
+    );
+    const { title, body } = planLines(t, plan, (id) => displayName(names.get(id) ?? null, id));
+    return discordMessage([
+      {
+        title: title(groupName).slice(0, 256),
+        description: body.join("\n").slice(0, MAX_DESCRIPTION),
+        color: 0xd4a843,
+        footer: { text: t("groups.planner.text.footer").slice(0, 2048) },
+      },
+    ]);
+  },
+});
+
+export const groupsController = new GroupsController({
+  service: groupsService,
+  planner: stackPlannerService,
+});

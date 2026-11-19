@@ -1,5 +1,8 @@
 import type { DataOwner } from "@/common/privacy/user-data";
 import type { Result } from "@/common/result";
+import type { DiscordMessage } from "@/modules/discord/domain/feed";
+import type { HeroInfo } from "@/modules/matches/domain/read-models";
+import type { LaneGame } from "@/modules/meta/domain/position";
 import type { PairClassification } from "@/modules/together/domain/pair";
 import type { Group, GroupMember } from "./domain/group";
 import type { HeroPlay } from "./domain/member-activity";
@@ -59,4 +62,30 @@ export interface MemberGamesSource {
   recentHeroes(accountId32: number, now: Date, days: number): Promise<HeroPlay[]>;
   /** Ranked results between two instants. */
   rankedResults(accountId32: number, from: Date, to: Date): Promise<Array<"win" | "loss">>;
+}
+
+/** What the stack planner reads: members' recent lanes and the hero catalog. */
+export interface PlannerGamesSource {
+  /** A member's recent games with lane info (OpenDota, cached); null when unavailable now. */
+  laneGames(accountId32: number): Promise<LaneGame[] | null>;
+  heroes(): Promise<Map<number, HeroInfo>>;
+}
+
+/** The viewer's own Discord channel (their saved webhook), for posting a plan. */
+export interface PlannerDiscord {
+  /** The channel's name when a webhook is saved and Discord still has it; null otherwise. */
+  channel(userId: string): Promise<{ name: string | null } | null>;
+  post(userId: string, message: DiscordMessage): Promise<PostOutcome>;
+}
+
+export type PostOutcome =
+  | { kind: "ok" }
+  | { kind: "none" }
+  | { kind: "gone" }
+  | { kind: "rate_limited"; retryAfterMs: number }
+  | { kind: "failed" };
+
+/** Members the viewer's "Friends playing now" already shows as in Dota (accounts). */
+export interface PlannerPresence {
+  playingNow(viewer: { userId: string; accountId32: number; steamId64: string }): Promise<number[]>;
 }
