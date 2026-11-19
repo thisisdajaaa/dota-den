@@ -172,7 +172,8 @@ export const AskRequestSchema = z.object({
 });
 export type AskRequest = z.infer<typeof AskRequestSchema>;
 
-/** Picks one conversation (GET to open it, DELETE to forget it; DELETE without forgets all). */
+/** Picks one conversation (GET to open it, DELETE to forget it; DELETE ?all=1 forgets all). */
 export const AskConversationQuerySchema = z.object({
   c: z.string().regex(CONVERSATION_ID).optional(),
+  all: z.literal("1").optional(),
 });

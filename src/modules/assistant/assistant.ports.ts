@@ -74,8 +74,15 @@ export interface AskUsagePort {
   used(userId: string, day: string): Promise<number>;
   /** Takes one question if fewer than `limit` were taken that day (atomic); false when not. */
   reserve(userId: string, day: string, limit: number, expiresAt: Date): Promise<boolean>;
-  /** Gives a question back (the answer failed). */
-  release(userId: string, day: string): Promise<void>;
+  /**
+   * Gives a question back (the answer failed); true when it was. A `fallback` (the reply
+   * failed the checks) is given back only while fewer than `maxFallbacks` were that day.
+   */
+  release(
+    userId: string,
+    day: string,
+    opts?: { fallback: true; maxFallbacks: number },
+  ): Promise<boolean>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }

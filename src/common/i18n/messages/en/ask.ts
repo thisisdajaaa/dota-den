@@ -70,7 +70,7 @@ export const ask = {
     seePlus: "See Plus",
   },
   fallback:
-    "I couldn't back up an answer with your data, so I won't guess. Try asking another way, or about one hero or game. This question wasn't counted.",
+    "I couldn't back up an answer with your data, so I won't guess. Try asking another way, or about one hero or game.",
   errors: {
     resting: "Den is resting for today (the AI budget is used up). Try again tomorrow.",
     unavailable:

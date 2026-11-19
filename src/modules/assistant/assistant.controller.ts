@@ -83,10 +83,12 @@ export class AssistantController {
     },
   );
 
-  /** DELETE /api/v1/ask?c=<id>: forgets one conversation; without `c`, all of them. */
+  /** DELETE /api/v1/ask?c=<id>: forgets one conversation; ?all=1 forgets all of them. */
   clear = handler(
     { guard: requireUser, query: AskConversationQuerySchema },
     async ({ user, query }) => {
+      if (!query.c && query.all !== "1")
+        throw new AppError("bad_request", "Say which chat to delete (c) or all=1.");
       await this.deps.service().clear({ userId: user.id, accountId32: user.accountId32 }, query.c);
       return ServiceResponse.success(null, query.c ? "Conversation deleted" : "Chats cleared");
     },

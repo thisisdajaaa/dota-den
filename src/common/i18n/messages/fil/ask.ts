@@ -72,7 +72,7 @@ export const ask: MessageTree<typeof en> = {
     seePlus: "Tingnan ang Plus",
   },
   fallback:
-    "Hindi ko masuportahan ng data mo ang sagot, kaya hindi ako manghuhula. Subukang itanong sa ibang paraan, o tungkol sa isang hero o laro. Hindi nabilang ang tanong na ito.",
+    "Hindi ko masuportahan ng data mo ang sagot, kaya hindi ako manghuhula. Subukang itanong sa ibang paraan, o tungkol sa isang hero o laro.",
   errors: {
     resting: "Nagpapahinga si Den ngayong araw (ubos na ang AI budget). Subukan ulit bukas.",
     unavailable:

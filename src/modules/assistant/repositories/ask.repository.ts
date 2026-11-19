@@ -183,10 +183,23 @@ export class AskUsageRepository implements AskUsagePort {
     return false;
   }
 
-  async release(userId: string, day: string): Promise<void> {
-    await (
+  async release(
+    userId: string,
+    day: string,
+    opts?: { fallback: true; maxFallbacks: number },
+  ): Promise<boolean> {
+    const res = await (
       await this.col()
-    ).updateOne({ _id: `${userId}:${day}`, count: { $gt: 0 } }, { $inc: { count: -1 } });
+    ).updateOne(
+      {
+        _id: `${userId}:${day}`,
+        count: { $gt: 0 },
+        // One atomic check: a fallback is given back only under the day's allowance.
+        ...(opts ? { fallbacks: { $not: { $gte: opts.maxFallbacks } } } : {}),
+      },
+      { $inc: { count: -1, ...(opts ? { fallbacks: 1 } : {}) } },
+    );
+    return res.modifiedCount === 1;
   }
 
   async exportForOwner(owner: DataOwner) {

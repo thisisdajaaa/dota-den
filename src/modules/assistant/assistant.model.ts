@@ -31,5 +31,7 @@ export interface AskUsageDoc {
   userId: string;
   day: string;
   count: number;
+  /** Failed answers given back that day (missing when none). */
+  fallbacks?: number;
   expiresAt: Date;
 }

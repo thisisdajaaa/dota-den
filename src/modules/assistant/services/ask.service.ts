@@ -59,6 +59,11 @@ import type {
 export const MAX_MODEL_CALLS = 6;
 /** Tool calls per question at most (a model asking for more gets an error result). */
 export const MAX_TOOL_CALLS = 8;
+/**
+ * Answers that fail the checks are given back this many times a Manila day; after that they
+ * count, so failing on purpose can't spend the shared AI budget for free.
+ */
+export const MAX_FREE_FALLBACKS = 3;
 /** Longest answer kept; anything longer is cut at a sentence. */
 const MAX_ANSWER_CHARS = 2_000;
 
@@ -180,7 +185,8 @@ export class AskService {
 
   /**
    * Answers a question with a reserved ticket. The question is given back when no answer
-   * could be written (model down, budget spent, or the reply failed the checks twice).
+   * could be written: always when the model or budget failed, and up to
+   * MAX_FREE_FALLBACKS times a day when the reply failed the checks twice.
    */
   async answer(
     ticket: AskTicket,
@@ -189,7 +195,8 @@ export class AskService {
     emit: AskEmit = () => {},
   ): Promise<AskAnswerDto> {
     const { owner } = ticket;
-    let answered = false;
+    // Settled: the question was counted or given back (nothing left for `finally`).
+    let settled = false;
     try {
       // A conversation that isn't the player's is "not found" (and the question is given back).
       const earlier = request.conversationId
@@ -205,8 +212,13 @@ export class AskService {
         : { role: "assistant", text: result.text, sources: result.sources, at: now };
       const conversation = await this.save(owner.userId, request, [question, answer], now);
       if (!result.fallback) {
-        answered = true;
+        settled = true;
         await this.deps.used?.(owner.userId);
+      } else {
+        settled = true;
+        await this.deps.usage
+          .release(owner.userId, ticket.day, { fallback: true, maxFallbacks: MAX_FREE_FALLBACKS })
+          .catch(() => false);
       }
       this.deps.logger.info("ask_answered", {
         tools: result.tools,
@@ -218,10 +230,10 @@ export class AskService {
         conversation,
         question: toMessageDto(question),
         answer: toMessageDto(answer),
-        quota: await this.quotaAfter(ticket, answered),
+        quota: await this.quota(owner.userId, ticket.plus),
       };
     } finally {
-      if (!answered) await this.deps.usage.release(owner.userId, ticket.day).catch(() => {});
+      if (!settled) await this.deps.usage.release(owner.userId, ticket.day).catch(() => false);
     }
   }
 
@@ -256,15 +268,6 @@ export class AskService {
     }
   }
 
-  /** The quota to show after this answer (counting its own question when it was used). */
-  private async quotaAfter(ticket: AskTicket, answered: boolean): Promise<AskQuota> {
-    const q = await this.quota(ticket.owner.userId, ticket.plus);
-    if (answered) return q;
-    // The question is given back in `finally`, after this read: show it as given back.
-    const used = Math.max(0, q.used - 1);
-    return { ...q, used, remaining: Math.max(0, q.limit - used) };
-  }
-
   /** The tool-calling loop. */
   private async run(
     owner: AskOwner,
@@ -285,7 +288,7 @@ export class AskService {
       { role: "system", content: askSystemPrompt({ locale, today, matchId: request.matchId }) },
       ...history.map((m) => ({
         role: m.role,
-        content: m.role === "user" ? wrapQuestion(m.text) : m.text,
+        content: m.role === "user" ? wrapQuestion(m.text) : withoutRoleLines(m.text),
       })),
       { role: "user", content: wrapQuestion(request.question) },
     ];
@@ -422,6 +425,17 @@ const notFound = () =>
   new AppError("not_found", "That conversation doesn't exist any more.", {
     reason: "conversation_not_found",
   });
+
+/**
+ * An earlier answer as the model sees it again: lines that pose as instructions ("System:",
+ * "<question>") are dropped, so a jailbreak that slipped into one answer isn't replayed.
+ */
+export function withoutRoleLines(text: string): string {
+  return text
+    .split("\n")
+    .filter((l) => !/^\s*(?:system|developer|assistant|user|tool)\s*:|<\/?\s*question\s*>/i.test(l))
+    .join("\n");
+}
 
 /** The reply as plain text: markdown emphasis and headings dropped (the chat shows text). */
 function plainText(text: string): string {

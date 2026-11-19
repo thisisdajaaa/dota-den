@@ -41,6 +41,17 @@ describe("AskUsageRepository", () => {
     expect(await usage.used("u3", "2026-11-18")).toBe(0);
   });
 
+  it("gives failed answers back only up to the day's allowance (atomically)", async () => {
+    for (let i = 0; i < 4; i++) await usage.reserve("u5", "2026-11-18", 10, later);
+    const back = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        usage.release("u5", "2026-11-18", { fallback: true, maxFallbacks: 2 }),
+      ),
+    );
+    expect(back.filter(Boolean)).toHaveLength(2);
+    expect(await usage.used("u5", "2026-11-18")).toBe(2);
+  });
+
   it("exports and deletes a player's counts", async () => {
     expect(await usage.exportForOwner({ userId: "u1", accountId32: 1 })).toHaveLength(2);
     expect(await usage.deleteForOwner({ userId: "u1", accountId32: 1 })).toBe(2);

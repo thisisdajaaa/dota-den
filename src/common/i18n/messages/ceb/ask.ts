@@ -75,7 +75,7 @@ export const ask: MessageTree<typeof en> = {
     seePlus: "Tan-awa ang Plus",
   },
   fallback:
-    "Dili nako masuportahan sa imong data ang tubag, busa dili ko manag-an. Sulayi pangutana sa laing paagi, o bahin sa usa ka hero o duwa. Wala maihap kini nga pangutana.",
+    "Dili nako masuportahan sa imong data ang tubag, busa dili ko manag-an. Sulayi pangutana sa laing paagi, o bahin sa usa ka hero o duwa.",
   errors: {
     resting: "Nagpahulay si Den karong adlawa (nahurot na ang AI budget). Sulayi pag-usab ugma.",
     unavailable:
