@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { grantPlus } from "./support/grant-plus";
 
 // Its own fixture account: 20 parsed Anti-Mage games with purchase data and match details.
 const LOGIN = "/api/v1/auth/steam/login?as=76561197960466001";
@@ -41,6 +42,8 @@ test("a hero page shows what works for you, then your timings and lanes as games
       { timeout: 2_000 },
     );
   }).toPass({ timeout: 30_000 });
+  // A free player is told the pace, and what Plus changes (Plus is on sale in this server).
+  await expect(timings).toContainText("10 more are read each day; Plus reads up to 100.");
 
   // The 10 newest games: 7 wins, 3 losses. Battle Fury at 13:03 in wins, 16:07 in losses;
   // Manta has only one loss, too few for a typical time.
@@ -75,4 +78,22 @@ test("a hero page shows what works for you, then your timings and lanes as games
     laneRole: 1,
     itemTimings: expect.arrayContaining([expect.objectContaining({ key: "bfury" })]),
   });
+
+  // Build check: free players see what Plus adds, with no numbers.
+  const check = page.getByRole("region", { name: "Build check vs high-rank" });
+  await expect(check).toContainText("With Plus, your item timings on Anti-Mage are checked");
+  await expect(check.getByRole("table")).toHaveCount(0);
+
+  // With Plus: the 10 analysed safe-lane games against Legend–Immortal Pos 1 (the fixture's
+  // STRATZ, Battle Fury at 15:00). 13:05 is ahead of it, so there's nothing to fix.
+  await grantPlus(page, "e2e-build-check");
+  await page.reload();
+  await expect(check).toContainText(
+    "(10 games analysed in this role) against Legend–Immortal pubs at Pos 1 last week (8,000 games)",
+  );
+  const vs = check.getByRole("table", { name: "Your item timings against high-rank players" });
+  await expect(vs.getByRole("row").filter({ hasText: "Battle Fury" })).toContainText(
+    "13:05 (10)15:00−1:55",
+  );
+  await expect(check).toContainText("Nothing stands out to fix.");
 });

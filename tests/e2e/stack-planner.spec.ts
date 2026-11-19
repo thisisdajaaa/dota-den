@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { lemonSqueezyHeaders, subscriptionEvent } from "./support/plus-webhook";
+import { grantPlus as grant } from "./support/grant-plus";
+
+const grantPlus = (page: Page) => grant(page, "e2e-planner");
 
 // Identities only this spec uses (the fixture server's stack planner data).
 const LEAD = "76561197960467201";
@@ -21,32 +23,6 @@ async function signedIn(browser: Browser, steamId: string): Promise<Page> {
   await page.goto(`/api/v1/auth/steam/login?as=${steamId}`);
   await expect(page).toHaveURL(/\/dashboard/);
   return page;
-}
-
-/** Plus for this player through a signed (fake) Lemon Squeezy webhook. */
-async function grantPlus(page: Page) {
-  const origin = new URL(page.url()).origin;
-  const res = await page.request.post("/api/v1/plus/checkout", {
-    data: { plan: "monthly" },
-    headers: { origin },
-  });
-  expect(res.status()).toBe(200);
-  const userId = new URL((await res.json()).data.url).searchParams.get(
-    "checkout[custom][user_id]",
-  )!;
-  const body = subscriptionEvent({
-    event: "subscription_created",
-    subscriptionId: `e2e-planner-${userId}`,
-    userId,
-    status: "active",
-    updatedAt: new Date(),
-    renewsAt: new Date(Date.now() + 30 * 86_400_000),
-  });
-  const hook = await page.request.post("/api/v1/plus/webhook", {
-    data: body,
-    headers: lemonSqueezyHeaders(body, "subscription_created"),
-  });
-  expect(hook.status()).toBe(200);
 }
 
 test("the stack planner suggests positions from real games, with Plus extras", async ({

@@ -1,3 +1,4 @@
+import type { HighRankPosition } from "./domain/build-check";
 import type { LaneGame } from "@/modules/meta/domain/position";
 import type { Result } from "@/common/result";
 import type { CoachingGame } from "./domain/hero-coaching";
@@ -67,6 +68,12 @@ export interface HighRankStats {
 /** Your recent games with lane info (the Meta page's source). */
 export interface LaneHistory {
   recentLanes(accountId32: number): SourceResult<{ windowDays: number; games: LaneGame[] }>;
+}
+
+/** High-rank (Legend–Immortal) pub builds per position, shared and cached (STRATZ). */
+export interface HighRankBuilds {
+  /** null when unavailable (no STRATZ, or it can't answer right now). */
+  forHero(heroId: number): Promise<HighRankPosition[] | null>;
 }
 
 export interface HeroCatalogEntry {

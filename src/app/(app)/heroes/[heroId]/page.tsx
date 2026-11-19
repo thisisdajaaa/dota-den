@@ -20,11 +20,12 @@ import {
   unavailableCopy,
 } from "@/modules/heroes/ui/hero-sections";
 import { BuildCard } from "@/modules/heroes/ui/build-card";
-import { TimingsCard, WhatWorksCard } from "@/modules/heroes/ui/coaching-cards";
+import { BuildCheckCard, TimingsCard, WhatWorksCard } from "@/modules/heroes/ui/coaching-cards";
 import { ProgressCard } from "@/modules/heroes/ui/progress-card";
 import { guideService } from "@/modules/guides";
 import { getViewerTimeZone } from "@/common/http/request-context";
 import { getCurrentUser } from "@/modules/identity";
+import { plusService } from "@/modules/plus";
 import type { HeroInfo, ItemInfo } from "@/modules/matches/domain/read-models";
 import { matchesService, matchQueries } from "@/modules/matches";
 import { formatAgo, formatPercent } from "@/modules/matches/ui/format";
@@ -176,6 +177,16 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
           <Suspense fallback={null}>
             <TimingsSection
               service={service}
+              userId={user.id}
+              accountId32={user.accountId32}
+              heroId={heroId}
+              name={name}
+            />
+          </Suspense>
+          <Suspense fallback={null}>
+            <BuildCheckSection
+              service={service}
+              userId={user.id}
               accountId32={user.accountId32}
               heroId={heroId}
               name={name}
@@ -335,26 +346,64 @@ async function WhatWorksSection({ details, name }: { details: DetailsResult; nam
 /** Item timings and lanes from the stored extras of your parsed games (no upstream call). */
 async function TimingsSection({
   service,
+  userId,
   accountId32,
   heroId,
   name,
 }: {
   service: HeroesService;
+  userId: string;
   accountId32: number;
   heroId: number;
   name: string;
 }) {
-  const [coaching, items] = await Promise.all([
+  const [coaching, items, plus] = await Promise.all([
     service.coaching(accountId32, heroId).catch((error: unknown) => {
       logger.error("hero_section_failed", { section: "coaching", error });
       return null;
     }),
     matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
+    plusService.isPlus(userId).catch(() => false),
   ]);
   // Nothing to say without any parsed game on the hero.
   if (!coaching || coaching.parsedGames === 0) return null;
   const byKey = new Map([...items.values()].map((i) => [i.key, i]));
-  return <TimingsCard coaching={coaching} items={byKey} heroLabel={name} />;
+  const pace = plus ? "plus" : plusService.offer().status === "available" ? "free" : "none";
+  return <TimingsCard coaching={coaching} items={byKey} heroLabel={name} pace={pace} />;
+}
+
+/**
+ * Build check (Plus): your timings against Legend–Immortal pubs at your position. Free sees a
+ * short note while Plus is on sale; nothing is computed for it.
+ */
+async function BuildCheckSection({
+  service,
+  userId,
+  accountId32,
+  heroId,
+  name,
+}: {
+  service: HeroesService;
+  userId: string;
+  accountId32: number;
+  heroId: number;
+  name: string;
+}) {
+  const plus = await plusService.isPlus(userId).catch(() => false);
+  if (!plus) {
+    if (plusService.offer().status !== "available") return null;
+    return <BuildCheckCard check={null} items={new Map()} heroLabel={name} locked />;
+  }
+  const [check, items] = await Promise.all([
+    service.buildCheck(accountId32, heroId).catch((error: unknown) => {
+      logger.error("hero_section_failed", { section: "build_check", error });
+      return null;
+    }),
+    matchesService.itemMap().catch((): Map<number, ItemInfo> => new Map()),
+  ]);
+  if (!check) return null;
+  const byKey = new Map([...items.values()].map((i) => [i.key, i]));
+  return <BuildCheckCard check={check} items={byKey} heroLabel={name} />;
 }
 
 async function ItemsSection({ details, name }: { details: DetailsResult; name: string }) {

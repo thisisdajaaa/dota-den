@@ -218,6 +218,31 @@ export const heroes: MessageTree<typeof en> = {
     listLabel: "Mga pinakamadalas bilhing item",
     ofGames: "ng mga laro · {games} sa {total}",
   },
+  buildCheck: {
+    kicker: "Plus",
+    title: "Build check laban sa high-rank",
+    description:
+      "Ang karaniwang item timings mo sa {hero} ({yours} ang nasuri sa role na ito) laban sa Legend–Immortal pubs sa {pos} noong nakaraang linggo ({theirs}).",
+    footer:
+      "Median: ang unang bili mo sa mga larong binili mo ito (bilang ng laro sa bracket) at ang minuto kung kailan nagawa ang kalahati ng mga bili ng high-rank. Kasama lang ang mga item na binili sa hindi bababa sa 1 sa 10 ng mga larong iyon. Nakadepende ang timing sa takbo ng laro, kaya pahiwatig lang ang agwat, hindi patakaran.",
+    pos: "Pos {n}",
+    suggestion:
+      "Isang subukan: ang {item} mo ay {gap} na mas huli kaysa sa {pos} sa Legend–Immortal pubs ({yours} laban sa {theirs}). Tingnan kung ano ang nagpapabagal: farm sa unang 10 minuto, o mga item na binili bago ito.",
+    onPace:
+      "Ang core timings mo ay pasok sa 2 minuto ng mga Legend–Immortal {pos} player. Walang kapansin-pansing kailangang ayusin.",
+    tableLabel: "Ang item timings mo laban sa mga high-rank player",
+    you: "Ikaw",
+    them: "Legend–Immortal",
+    gap: "Agwat",
+    noItems: "Wala pa sa mga item mo rito ang madalas bilhin sa high-rank games para maikumpara.",
+    notEnough:
+      "Kailangan ng build check ang {min} nasuring laro sa isang role sa {hero}; {games} pa lang ang mayroon ka.",
+    noRole:
+      "Wala pang role na maikukumpara: walang lane role ang mga nasuri mong laro sa {hero}, o hindi madalas laruin ang {hero} doon sa high-rank pubs.",
+    locked:
+      "Sa Plus, ikinukumpara ang item timings mo sa {hero} sa mga Legend–Immortal player sa posisyon mo, kasama ang isang bagay na susubukan.",
+    seePlus: "Tingnan ang Plus",
+  },
   coaching: {
     kicker: "Coaching",
     worksTitle: "Ano ang gumagana para sa iyo",
@@ -233,6 +258,8 @@ export const heroes: MessageTree<typeof en> = {
     points: "{pts} pts",
     timingsTitle: "Ang timings at lanes mo",
     analysed: "{analysed} sa {parsed} mong may parsed replay kay {hero} ang nasuri na.",
+    pacePlus: "Sa Plus, hanggang {plus} pa ang nasusuri bawat araw.",
+    paceFree: "{free} pa ang nasusuri bawat araw; sa Plus, hanggang {plus}.",
     timingsNotEnough:
       "Lalabas ang item timings at lane results kapag nasuri na ang {min} sa mga parsed na laro mo kay {hero}. Ilan pa ang binabasa bawat araw.",
     timingsFooter:

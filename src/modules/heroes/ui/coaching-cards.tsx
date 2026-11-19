@@ -1,3 +1,5 @@
+import { EXTRAS_PER_DAY, PLUS_EXTRAS_PER_DAY } from "@/modules/matches/domain/match-extras";
+import Link from "next/link";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
@@ -6,6 +8,7 @@ import type { ItemInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { ItemIcon } from "@/modules/matches/ui/item-icon";
 import { MetaSection, Unavailable } from "@/modules/meta/ui/meta-section";
+import { SUGGEST_GAP_SEC, type BuildCheck } from "../domain/build-check";
 import type { HeroCoaching, ItemImpactView, TimingSide } from "../domain/hero-coaching";
 
 const ROLE_KEYS = { 1: "safe", 2: "mid", 3: "off", 4: "jungle" } as const;
@@ -99,19 +102,37 @@ export async function TimingsCard({
   coaching,
   items,
   heroLabel,
+  pace = "none",
 }: {
   coaching: HeroCoaching;
   items: Map<string, ItemInfo>;
   heroLabel: string;
+  /**
+   * How fast the rest is read: "plus" (the Plus daily cap), "free" (the free cap, with what
+   * Plus adds) or "none" (nothing said; Plus isn't on sale).
+   */
+  pace?: "plus" | "free" | "none";
 }) {
   const t = await getT();
   const games = (n: number) => plural(t, "heroes.counts.games", n);
   const byId = new Map([...items.values()].map((i) => [i.id, i]));
-  const progress = t("heroes.coaching.analysed", {
+  const analysed = t("heroes.coaching.analysed", {
     analysed: coaching.analysed,
     parsed: games(coaching.parsedGames),
     hero: heroLabel,
   });
+  // Only while there's more to read: once everything is analysed, the pace doesn't matter.
+  const behind = coaching.analysed < coaching.parsedGames;
+  const progress =
+    behind && pace !== "none"
+      ? `${analysed} ${t(
+          pace === "plus" ? "heroes.coaching.pacePlus" : "heroes.coaching.paceFree",
+          {
+            free: EXTRAS_PER_DAY,
+            plus: PLUS_EXTRAS_PER_DAY,
+          },
+        )}`
+      : analysed;
   return (
     <MetaSection
       id="hero-timings"
@@ -198,6 +219,138 @@ export async function TimingsCard({
           )}
         </div>
       )}
+    </MetaSection>
+  );
+}
+
+/** Gap in m:ss with a sign: "+2:10" later than high-rank, "−0:40" earlier. */
+function gapTime(sec: number): string {
+  if (sec === 0) return "0:00";
+  return `${sec > 0 ? "+" : "−"}${clockTime(Math.abs(sec))}`;
+}
+
+/**
+ * Build check (Plus): your item timings against Legend–Immortal pubs at your position, with
+ * one suggestion. Free players see what it is when Plus is on sale (no numbers computed).
+ */
+export async function BuildCheckCard({
+  check,
+  items,
+  heroLabel,
+  locked = false,
+}: {
+  check: BuildCheck | null;
+  items: Map<string, ItemInfo>;
+  heroLabel: string;
+  /** Not Plus: a short note about the feature, nothing computed. */
+  locked?: boolean;
+}) {
+  const t = await getT();
+  const games = (n: number) => plural(t, "heroes.counts.games", n);
+  const name = (key: string) => items.get(key)?.name ?? key;
+  const byId = new Map([...items.values()].map((i) => [i.id, i]));
+  if (locked) {
+    return (
+      <MetaSection
+        id="hero-build-check"
+        kicker={t("heroes.buildCheck.kicker")}
+        title={t("heroes.buildCheck.title")}
+      >
+        <p className="border-t border-gold/30 bg-gold/5 px-5 py-3 text-sm">
+          {t("heroes.buildCheck.locked", { hero: heroLabel })}{" "}
+          <Link href="/plus" className="font-medium text-gold hover:underline">
+            {t("heroes.buildCheck.seePlus")}
+          </Link>
+        </p>
+      </MetaSection>
+    );
+  }
+  if (!check) return null;
+  if (check.status !== "ok") {
+    return (
+      <MetaSection
+        id="hero-build-check"
+        kicker={t("heroes.buildCheck.kicker")}
+        title={t("heroes.buildCheck.title")}
+      >
+        <Unavailable>
+          {check.status === "no_role"
+            ? t("heroes.buildCheck.noRole", { hero: heroLabel })
+            : t("heroes.buildCheck.notEnough", {
+                games: games(check.yourGames),
+                min: check.minGames,
+                hero: heroLabel,
+              })}
+        </Unavailable>
+      </MetaSection>
+    );
+  }
+  const pos = t("heroes.buildCheck.pos", { n: check.position });
+  return (
+    <MetaSection
+      id="hero-build-check"
+      kicker={t("heroes.buildCheck.kicker")}
+      title={t("heroes.buildCheck.title")}
+      description={t("heroes.buildCheck.description", {
+        yours: games(check.yourGames),
+        pos,
+        theirs: games(check.theirGames),
+        hero: heroLabel,
+      })}
+      footer={t("heroes.buildCheck.footer")}
+    >
+      <div className="space-y-4 border-t border-white/[0.06] px-5 py-4">
+        <p className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-sm">
+          {check.suggestion
+            ? t("heroes.buildCheck.suggestion", {
+                item: name(check.suggestion.key),
+                gap: clockTime(check.suggestion.gap),
+                yours: clockTime(check.suggestion.yours.median),
+                theirs: clockTime(check.suggestion.theirs.median),
+                pos,
+              })
+            : t("heroes.buildCheck.onPace", { pos })}
+        </p>
+        {check.rows.length > 0 ? (
+          <table className="w-full text-sm" aria-label={t("heroes.buildCheck.tableLabel")}>
+            <thead>
+              <tr className="text-left text-xs text-muted-foreground">
+                <th className="pb-2 font-normal">{t("heroes.coaching.item")}</th>
+                <th className="pb-2 text-right font-normal">{t("heroes.buildCheck.you")}</th>
+                <th className="pb-2 text-right font-normal">{t("heroes.buildCheck.them")}</th>
+                <th className="pb-2 text-right font-normal">{t("heroes.buildCheck.gap")}</th>
+              </tr>
+            </thead>
+            <tbody className="tabular-nums">
+              {check.rows.map((r) => (
+                <tr key={r.key} className="border-t border-white/[0.04]">
+                  <td className="py-1.5">
+                    <span className="flex items-center gap-2">
+                      <ItemIcon itemId={items.get(r.key)?.id ?? null} items={byId} size="sm" />
+                      {name(r.key)}
+                    </span>
+                  </td>
+                  <td className="py-1.5 text-right">
+                    <span className="font-semibold">{clockTime(r.yours.median)}</span>{" "}
+                    <span className="text-muted-foreground">({r.yours.games})</span>
+                  </td>
+                  <td className="py-1.5 text-right">{clockTime(r.theirs.median)}</td>
+                  <td
+                    className={cn(
+                      "py-1.5 text-right",
+                      r.gap >= SUGGEST_GAP_SEC ? "text-loss" : r.gap <= 0 ? "text-win" : "",
+                    )}
+                  >
+                    {gapTime(r.gap)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("heroes.buildCheck.noItems")}</p>
+        )}
+      </div>
     </MetaSection>
   );
 }

@@ -15,11 +15,13 @@ import {
   type HighRankComparison,
 } from "./domain/hero-stats";
 import { heroCoaching, itemImpact, type HeroCoaching } from "./domain/hero-coaching";
+import { buildCheck, type BuildCheck } from "./domain/build-check";
 import { heroProgress } from "./domain/hero-progress";
 import { lineupProgress, ownMatchups } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 import type {
   HeroCatalogEntry,
+  HighRankBuilds,
   HighRankStats,
   ItemCatalog,
   LaneHistory,
@@ -49,6 +51,8 @@ export class HeroesService {
       highRank: HighRankStats;
       lanes: LaneHistory;
       extras: StoredExtras;
+      /** High-rank builds for the build check; absent when not wired. */
+      builds?: HighRankBuilds;
       /** The hero catalog (ids and roles). */
       heroes: () => Promise<readonly HeroCatalogEntry[]>;
       items: () => Promise<ItemCatalog>;
@@ -153,6 +157,32 @@ export class HeroesService {
       const item = catalog.get(key);
       return item !== undefined && isNotableItem(item);
     });
+  }
+
+  /**
+   * Build check (Plus): your item timings against Legend–Immortal pubs at your position, with
+   * one suggestion. null when the item catalog or the high-rank builds are unavailable.
+   */
+  async buildCheck(accountId32: number, heroId: number): Promise<BuildCheck | null> {
+    if (!this.deps.builds) return null;
+    const [{ games }, catalog, positions] = await Promise.all([
+      this.deps.extras.forHero(accountId32, heroId),
+      this.deps.items(),
+      this.deps.builds.forHero(heroId).catch(() => null),
+    ]);
+    if (catalog.size === 0 || !positions) return null;
+    const byId = new Map(
+      [...catalog.values()].flatMap((i) => (i.id === undefined ? [] : [[i.id, i] as const])),
+    );
+    return buildCheck(
+      games,
+      positions,
+      (id) => byId.get(id)?.key,
+      (key) => {
+        const item = catalog.get(key);
+        return item !== undefined && isNotableItem(item);
+      },
+    );
   }
 
   /** Your record next to public high-rank games on the hero. */
