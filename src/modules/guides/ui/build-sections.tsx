@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "cn";
 import { getT } from "@/common/i18n/server";
+import { minimapFor } from "@/components/minimap";
+import { ZoomableMap } from "@/components/zoomable-map";
 import type { ItemInfo } from "@/modules/matches/domain/read-models";
 import type { BuildStep, ItemPick } from "../domain/hero-guide";
 import { BUILD_STEPS } from "../domain/hero-guide";
@@ -12,14 +14,11 @@ import {
   WARD_KINDS,
   WARD_PHASES,
   WARD_SIDES,
-  type WardCell,
+  type WardData,
   type WardKind,
   type WardPhase,
   type WardSide,
 } from "../domain/ward-spots";
-
-/** Map artwork OpenDota serves (Valve's minimap); the ward grid uses the same coordinates. */
-export const WARD_MAP_IMAGE = "https://www.opendota.com/assets/images/dota2/map/detailed_740.webp";
 
 function ItemTile({
   pick,
@@ -59,7 +58,8 @@ function ItemTile({
 
 /**
  * The build laid out like Dota's in-game guides: starting items, early items, the core in the
- * order it's bought with its typical and fast timings, then situational items.
+ * order it's bought with its typical and fast timings, the late-game items that fill the
+ * inventory, then situational items.
  */
 export async function BuildPath({
   build,
@@ -80,14 +80,14 @@ export async function BuildPath({
             <h3 className="text-sm font-semibold">{t(`guides.build.steps.${step}`)}</h3>
             <p className="text-xs text-muted-foreground">{t(`guides.build.hints.${step}`)}</p>
           </div>
-          {step === "core" ? (
+          {step === "core" || step === "late" ? (
             <ol className="flex flex-wrap items-start gap-x-1 gap-y-3">
-              {build.core.map((pick, i) => (
+              {build[step].map((pick, i) => (
                 <li key={pick.itemId} className="flex items-start gap-1">
                   <ul>
                     <ItemTile pick={pick} itemMap={itemMap} showTiming />
                   </ul>
-                  {i < build.core.length - 1 && (
+                  {i < build[step].length - 1 && (
                     <ChevronRight aria-hidden className="mt-3 size-4 text-muted-foreground" />
                   )}
                 </li>
@@ -130,7 +130,7 @@ export async function BuildPath({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
-              {[...build.early, ...build.core].map((p) => (
+              {[...build.early, ...build.core, ...build.late].map((p) => (
                 <tr key={p.itemId}>
                   <th scope="row" className="py-2 pr-2 text-left font-normal">
                     {itemMap.get(p.itemId)?.name ?? `#${p.itemId}`}
@@ -177,6 +177,17 @@ export async function SkillBuildCard({
           {skills
             ? t("guides.skills.description", { hero: heroLabel, n: skills.games })
             : t("guides.skills.unavailable")}
+          {skills?.patch && (
+            <>
+              {" "}
+              {skills.currentPatch && skills.currentPatch !== skills.patch
+                ? t("guides.skills.stalePatch", {
+                    patch: skills.patch,
+                    current: skills.currentPatch,
+                  })
+                : t("guides.skills.patch", { patch: skills.patch })}
+            </>
+          )}
         </p>
       </div>
       {skills && (
@@ -309,7 +320,7 @@ export async function WardMap({
   hrefFor,
   compact,
 }: {
-  data: { cells: WardCell[]; games: number } | null;
+  data: WardData | null;
   side: WardSide;
   phase: WardPhase;
   kind: WardKind;
@@ -318,6 +329,11 @@ export async function WardMap({
 }) {
   const t = await getT();
   const spots = data ? topWardSpots(data.cells, { side, phase, kind }) : [];
+  const map = minimapFor(data?.patch);
+  const stale =
+    data?.patch && data.currentPatch && data.patch !== data.currentPatch
+      ? { patch: data.patch, current: data.currentPatch }
+      : null;
   const chip = (current: boolean) =>
     cn(
       "inline-flex min-h-9 items-center rounded-full border px-3 text-sm",
@@ -383,49 +399,62 @@ export async function WardMap({
               </nav>
             ))}
           </div>
-          <div
-            className={cn(
-              "relative mx-auto aspect-square w-full overflow-hidden rounded-lg ring-1 ring-white/[0.08]",
-              compact ? "max-w-md" : "max-w-2xl",
-            )}
-          >
-            <Image
-              src={WARD_MAP_IMAGE}
-              alt={t("guides.wards.mapAlt")}
-              fill
-              sizes="(max-width: 768px) 100vw, 672px"
-              className="object-cover"
-            />
-            <ol>
-              {spots.map((s, i) => (
-                <li
-                  key={`${s.left}-${s.top}`}
-                  className={cn(
-                    "absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-semibold text-black ring-2 ring-black/60",
-                    kind === "observer" ? "bg-gold" : "bg-sky-400",
-                  )}
-                  style={{
-                    left: `${s.left * 100}%`,
-                    top: `${s.top * 100}%`,
-                    width: `${1.1 + s.relative * 0.7}rem`,
-                    height: `${1.1 + s.relative * 0.7}rem`,
-                    fontSize: "0.65rem",
-                  }}
-                  title={t("guides.wards.spotTitle", { rank: i + 1, n: s.count })}
-                >
-                  <span aria-hidden>{i + 1}</span>
-                  <span className="sr-only">
-                    {t("guides.wards.spotTitle", { rank: i + 1, n: s.count })}
-                  </span>
-                </li>
-              ))}
-            </ol>
-            {spots.length === 0 && (
-              <p className="absolute inset-x-0 bottom-3 text-center text-sm text-white">
-                {t("guides.wards.none")}
-              </p>
-            )}
+          <div className={cn("mx-auto w-full", compact ? "max-w-md" : "max-w-2xl")}>
+            <ZoomableMap
+              className="rounded-lg ring-1 ring-white/[0.08]"
+              labels={{
+                zoomIn: t("common.map.zoomIn"),
+                zoomOut: t("common.map.zoomOut"),
+                reset: t("common.map.reset"),
+                hint: t("common.map.hint"),
+              }}
+            >
+              <Image
+                src={map.src}
+                alt={t("guides.wards.mapAlt")}
+                fill
+                sizes="(max-width: 768px) 100vw, 672px"
+                className="pointer-events-none object-cover"
+                draggable={false}
+              />
+              <ol>
+                {spots.map((s, i) => (
+                  <li
+                    key={`${s.left}-${s.top}`}
+                    className={cn(
+                      "absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-semibold text-black ring-2 ring-black/60",
+                      kind === "observer" ? "bg-gold" : "bg-sky-400",
+                    )}
+                    style={{
+                      left: `${s.left * 100}%`,
+                      top: `${s.top * 100}%`,
+                      width: `${1.1 + s.relative * 0.7}rem`,
+                      height: `${1.1 + s.relative * 0.7}rem`,
+                      fontSize: "0.65rem",
+                      // Spots keep their size on screen as the map zooms.
+                      scale: "calc(1 / var(--map-zoom, 1))",
+                    }}
+                    title={t("guides.wards.spotTitle", { rank: i + 1, n: s.count })}
+                  >
+                    <span aria-hidden>{i + 1}</span>
+                    <span className="sr-only">
+                      {t("guides.wards.spotTitle", { rank: i + 1, n: s.count })}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              {spots.length === 0 && (
+                <p className="absolute inset-x-0 bottom-3 text-center text-sm text-white">
+                  {t("guides.wards.none")}
+                </p>
+              )}
+            </ZoomableMap>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {stale
+              ? t("guides.wards.stalePatch", stale)
+              : t("guides.wards.patch", { patch: map.patch })}
+          </p>
           <p className="text-xs text-muted-foreground">{t("guides.wards.note")}</p>
         </>
       )}

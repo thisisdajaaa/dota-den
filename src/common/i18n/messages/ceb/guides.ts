@@ -60,17 +60,19 @@ export const guides: MessageTree<typeof en> = {
   },
   build: {
     description:
-      "{hero} sa {position}, sama sa in-game guide: ang sinugdanang items sa mga Legend hangtod Immortal, dayon ang items nga gibuhat sa kadaghanan sumala sa han-ay, uban ang tinuod nga timing gikan sa katapusang tibuok semana sa mga duwa (STRATZ). Ang situational kay mga item nga gamay ra ang mipalit.",
+      "{hero} sa {position}, sama sa in-game guide: ang sinugdanang items sa mga Legend hangtod Immortal, dayon ang items nga gibuhat sa kadaghanan sumala sa han-ay, uban ang tinuod nga timing gikan sa katapusang tibuok semana sa mga duwa (STRATZ). Ang situational kay mga item nga gamay ra ang mipalit. Ang late-game items mao ang sunod nga nahuman sa kadaghanan sa tag-as nga mga duwa.",
     steps: {
       start: "Sinugdanang items",
       early: "Early game",
       core: "Core build",
+      late: "Late game",
       situational: "Situational",
     },
     hints: {
       start: "Gipalit sa wala pa ang horn",
       early: "Unang 10 ka minuto",
       core: "Sumala sa han-ay sa pagpalit · kasagarang minuto",
+      late: "Mahuman sa tag-as nga duwa, human sa 25 minutos · kasagarang minuto",
       situational: "Gamay ra ang mipalit; depende sa duwa",
     },
     timings: {
@@ -91,6 +93,9 @@ export const guides: MessageTree<typeof en> = {
     ability: "Ability",
     talent: "Talent",
     talents: "Mga talent",
+    patch: "Patch {patch}.",
+    stalePatch:
+      "Bag-o pa ang patch {current} ug gamay pa ang pro game niini nga hero, mao nga gikan sa mga duwa sa {patch} kini nga build. Ang talents nga makita kay ang karon; 0% ang mga bag-o sa {current}.",
     talentNote:
       "Unsa ka kanunay gikuha sa mga pro ang matag kilid sa laray. Mausab ang numero sa talent matag patch, mao nga ang duwa ang magpakita sa eksaktong kantidad.",
   },
@@ -102,6 +107,9 @@ export const guides: MessageTree<typeof en> = {
     mapAlt: "Mapa sa Dota 2 nga adunay labing gigamit nga ward spot",
     spotTitle: "Spot {rank}: {n} ka ward",
     none: "Walay kasagarang spot alang niini nga pili.",
+    patch: "Mapa sa patch {patch}.",
+    stalePatch:
+      "Bag-o pa ang patch {current} ug gamay pa ang parsed pro game, mao nga gikan sa mga duwa sa {patch} kini nga mga spot, sa mapa sa {patch}.",
     note: "Gikan sa mga parsed pro game sa OpenDota. Gihiusa ang mga spot sa gamay nga grid, mao nga ang usa ka tuldok mahimong maglangkob sa pipila ka duol nga cliff.",
     link: "Mapa sa ward spots",
     linkHint: "Asa magbutang og observer ug sentry ang mga pro, sumala sa kilid ug oras",

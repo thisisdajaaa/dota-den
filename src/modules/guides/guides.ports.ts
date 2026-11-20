@@ -1,6 +1,6 @@
 import type { MatchupRow, MatchupSource, Phase, ProGame, PubBuild } from "./domain/hero-guide";
 import type { AbilityRef, TalentRef } from "./domain/skill-build";
-import type { WardCell } from "./domain/ward-spots";
+import type { WardData } from "./domain/ward-spots";
 
 /** Where guide data comes from. Each call is null when that source is unavailable. */
 export interface GuideSource {
@@ -24,9 +24,15 @@ export interface GuideSource {
     builds: number[][];
     abilities: AbilityRef[];
     talents: TalentRef[];
+    /** The patch the games were played on, and the current one; null when unknown. */
+    patch?: string | null;
+    currentPatch?: string | null;
   } | null>;
-  /** Ward placements in recent pro games, counted per map cell; absent or null when unavailable. */
-  wardCells?(): Promise<{ cells: WardCell[]; games: number } | null>;
+  /**
+   * Ward placements in recent pro games, counted per map cell, and the patch they were played
+   * on (null when unknown); absent or null when unavailable.
+   */
+  wardCells?(): Promise<WardData | null>;
   /** How the hero does against each other hero, and which games that's from. */
   matchups(heroId: number): Promise<{ rows: MatchupRow[]; source: MatchupSource } | null>;
 }

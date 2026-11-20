@@ -2,7 +2,12 @@ import { z } from "zod";
 import type { ProviderGateway } from "@/common/providers/provider-gateway";
 import type { GuideSource } from "../guides.ports";
 import type { MatchupRow, MatchupSource, Phase, ProGame } from "../domain/hero-guide";
-import type { AbilityRef, TalentRef } from "../domain/skill-build";
+import {
+  MIN_SKILL_GAMES,
+  type AbilityRef,
+  type HeroKit,
+  type TalentRef,
+} from "../domain/skill-build";
 import {
   WARD_EARLY_UNTIL_SEC,
   WARD_MID_UNTIL_SEC,
@@ -44,8 +49,16 @@ const MatchupsSchema = z.array(
   }),
 );
 const SkillRowsSchema = z.object({
-  rows: z.array(z.object({ ability_upgrades_arr: z.array(z.number().int()).nullable() })),
+  rows: z.array(
+    z.object({
+      patch: z.string().nullable().optional(),
+      ability_upgrades_arr: z.array(z.number().int()).nullable(),
+    }),
+  ),
 });
+const PatchListSchema = z.array(
+  z.object({ name: z.string(), date: z.string().optional() }).passthrough(),
+);
 const WardRowsSchema = z.object({
   rows: z.array(
     z.object({
@@ -91,12 +104,19 @@ const AbilitiesSchema = z.record(
     .passthrough(),
 );
 
-/** Pro games on a hero with a recorded skill order, newest first. */
+/** Pro games on a hero with a recorded skill order, newest first (per patch). */
 const SKILL_GAMES = 150;
 const SKILL_DAYS = 90;
 /** Pro games the ward map is counted from, and the map cell size (OpenDota units). */
 const WARD_GAMES = 300;
 const WARD_DAYS = 21;
+/**
+ * The ward map uses games on the current patch once there are this many (terrain changes
+ * between patches move ward spots); until then, the previous patch's games, said as such.
+ */
+export const MIN_WARD_PATCH_GAMES = 30;
+/** Patch names as OpenDota writes them ("7.42"); anything else never reaches the SQL. */
+const PATCH_NAME = /^\d+\.\d+[a-z]?$/;
 const WARD_CELL = 4;
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com";
 const WARD_PHASES: readonly WardPhase[] = ["early", "mid", "late"];
@@ -112,8 +132,24 @@ const NamesSchema = z.object({
 export class OpenDotaGuideSource implements GuideSource {
   constructor(
     private readonly gateway: ProviderGateway,
-    private readonly opts: { baseUrl: string; apiKey?: string },
+    private readonly opts: {
+      baseUrl: string;
+      apiKey?: string;
+      /**
+       * The hero's current abilities and talents (Valve's own hero data, updated with each
+       * patch); OpenDota's constants are the fallback, and they can lag a new patch.
+       */
+      heroKit?: (heroId: number) => Promise<HeroKit | null>;
+    },
   ) {}
+
+  /** The current and previous patch names, newest first; null when OpenDota can't say. */
+  private async patches(): Promise<{ current: string; previous: string | null } | null> {
+    const d = await this.get(this.url("/constants/patch"), PatchListSchema, 6 * HOUR);
+    const names = (d ?? []).map((p) => p.name).filter((n) => PATCH_NAME.test(n));
+    if (names.length === 0) return null;
+    return { current: names[names.length - 1], previous: names[names.length - 2] ?? null };
+  }
 
   private url(path: string, params: Record<string, string> = {}): string {
     const u = new URL(`${this.opts.baseUrl}${path}`);
@@ -186,25 +222,45 @@ export class OpenDotaGuideSource implements GuideSource {
       .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
   }
 
-  /** Skill orders from recent pro games on the hero, with its abilities and talents. */
+  /**
+   * Skill orders from recent pro games on the hero, with its current abilities and talents.
+   * Games on the current patch when there are enough of them; otherwise the previous patch's
+   * (and `patch` says which).
+   */
   async skillBuilds(heroId: number) {
     if (!Number.isSafeInteger(heroId) || heroId < 1) return null;
-    const sql = `SELECT pm.ability_upgrades_arr FROM player_matches pm JOIN matches m USING(match_id) WHERE pm.hero_id = ${heroId} AND pm.ability_upgrades_arr IS NOT NULL AND m.start_time > extract(epoch from now() - interval '${SKILL_DAYS} days') ORDER BY m.start_time DESC LIMIT ${SKILL_GAMES}`;
+    const patches = await this.patches();
+    const wanted = patches ? [patches.current, patches.previous].filter((p) => p !== null) : [];
+    const sql = wanted.length
+      ? `SELECT patch, ability_upgrades_arr FROM (SELECT mp.patch, pm.ability_upgrades_arr, row_number() OVER (PARTITION BY mp.patch ORDER BY m.start_time DESC) AS rn FROM player_matches pm JOIN matches m USING(match_id) JOIN match_patch mp USING(match_id) WHERE pm.hero_id = ${heroId} AND pm.ability_upgrades_arr IS NOT NULL AND mp.patch IN (${wanted.map((p) => `'${p}'`).join(", ")})) t WHERE rn <= ${SKILL_GAMES}`
+      : `SELECT pm.ability_upgrades_arr FROM player_matches pm JOIN matches m USING(match_id) WHERE pm.hero_id = ${heroId} AND pm.ability_upgrades_arr IS NOT NULL AND m.start_time > extract(epoch from now() - interval '${SKILL_DAYS} days') ORDER BY m.start_time DESC LIMIT ${SKILL_GAMES}`;
     const [rows, kit] = await Promise.all([
-      this.get(this.url("/explorer", { sql }), SkillRowsSchema, 12 * HOUR),
+      this.get(this.url("/explorer", { sql }), SkillRowsSchema, 6 * HOUR),
       this.kit(heroId),
     ]);
     if (!rows || !kit) return null;
-    const builds = rows.rows.flatMap((r) =>
-      r.ability_upgrades_arr ? [r.ability_upgrades_arr] : [],
-    );
-    return { builds, ...kit };
+    const of = (patch: string | null) =>
+      rows.rows.flatMap((r) =>
+        r.ability_upgrades_arr && (patch === null || r.patch === patch)
+          ? [r.ability_upgrades_arr]
+          : [],
+      );
+    if (!patches) return { builds: of(null), ...kit, patch: null, currentPatch: null };
+    const current = of(patches.current);
+    if (current.length >= MIN_SKILL_GAMES || !patches.previous)
+      return { builds: current, ...kit, patch: patches.current, currentPatch: patches.current };
+    return {
+      builds: of(patches.previous),
+      ...kit,
+      patch: patches.previous,
+      currentPatch: patches.current,
+    };
   }
 
   /** The hero's abilities and talents with their ids, from the game-file constants. */
-  private async kit(
-    heroId: number,
-  ): Promise<{ abilities: AbilityRef[]; talents: TalentRef[] } | null> {
+  private async kit(heroId: number): Promise<HeroKit | null> {
+    const fresh = await this.opts.heroKit?.(heroId).catch(() => null);
+    if (fresh && fresh.abilities.length > 0) return fresh;
     const DAY = 24 * HOUR;
     const [heroes, heroAbilities, ids, abilities] = await Promise.all([
       this.get(this.url("/constants/heroes"), HeroKeysSchema, DAY),
@@ -236,13 +292,38 @@ export class OpenDotaGuideSource implements GuideSource {
     return { abilities: abilityRefs, talents };
   }
 
-  /** Observer and sentry placements in the latest pro games, per map cell, side and phase. */
-  async wardCells(): Promise<{ cells: WardCell[]; games: number } | null> {
-    const sql = `WITH recent AS (SELECT match_id FROM matches WHERE start_time > extract(epoch from now() - interval '${WARD_DAYS} days') ORDER BY start_time DESC LIMIT ${WARD_GAMES}), w AS (SELECT 'obs' AS kind, pm.player_slot < 128 AS radiant, o FROM player_matches pm JOIN recent USING(match_id), unnest(pm.obs_log) o UNION ALL SELECT 'sen', pm.player_slot < 128, o FROM player_matches pm JOIN recent USING(match_id), unnest(pm.sen_log) o) SELECT kind, radiant, CASE WHEN (o->>'time')::int < ${WARD_EARLY_UNTIL_SEC} THEN 0 WHEN (o->>'time')::int < ${WARD_MID_UNTIL_SEC} THEN 1 ELSE 2 END AS phase, round((o->>'x')::float / ${WARD_CELL}) * ${WARD_CELL} AS cx, round((o->>'y')::float / ${WARD_CELL}) * ${WARD_CELL} AS cy, count(*) AS n, (SELECT count(*) FROM recent) AS games FROM w GROUP BY 1, 2, 3, 4, 5 HAVING count(*) >= 3`;
-    const d = await this.get(this.url("/explorer", { sql }), WardRowsSchema, 12 * HOUR);
+  /**
+   * Observer and sentry placements in the latest pro games, per map cell, side and phase: games
+   * on the current patch once there are enough, else the previous patch's (`patch` says which).
+   */
+  async wardCells(): Promise<{
+    cells: WardCell[];
+    games: number;
+    patch: string | null;
+    currentPatch: string | null;
+  } | null> {
+    const patches = await this.patches();
+    const tag = <T extends object>(d: T | null) =>
+      d ? { ...d, currentPatch: patches?.current ?? null } : null;
+    if (!patches) return tag(await this.wardCellsFor(null));
+    const current = await this.wardCellsFor(patches.current);
+    if ((current && current.games >= MIN_WARD_PATCH_GAMES) || !patches.previous)
+      return tag(current);
+    return tag((await this.wardCellsFor(patches.previous)) ?? current);
+  }
+
+  private async wardCellsFor(
+    patch: string | null,
+  ): Promise<{ cells: WardCell[]; games: number; patch: string | null } | null> {
+    const recent = patch
+      ? `SELECT match_id FROM matches JOIN match_patch USING(match_id) WHERE match_patch.patch = '${patch}' ORDER BY start_time DESC LIMIT ${WARD_GAMES}`
+      : `SELECT match_id FROM matches WHERE start_time > extract(epoch from now() - interval '${WARD_DAYS} days') ORDER BY start_time DESC LIMIT ${WARD_GAMES}`;
+    const sql = `WITH recent AS (${recent}), w AS (SELECT 'obs' AS kind, pm.player_slot < 128 AS radiant, o FROM player_matches pm JOIN recent USING(match_id), unnest(pm.obs_log) o UNION ALL SELECT 'sen', pm.player_slot < 128, o FROM player_matches pm JOIN recent USING(match_id), unnest(pm.sen_log) o) SELECT kind, radiant, CASE WHEN (o->>'time')::int < ${WARD_EARLY_UNTIL_SEC} THEN 0 WHEN (o->>'time')::int < ${WARD_MID_UNTIL_SEC} THEN 1 ELSE 2 END AS phase, round((o->>'x')::float / ${WARD_CELL}) * ${WARD_CELL} AS cx, round((o->>'y')::float / ${WARD_CELL}) * ${WARD_CELL} AS cy, count(*) AS n, (SELECT count(*) FROM recent) AS games FROM w GROUP BY 1, 2, 3, 4, 5 HAVING count(*) >= 3`;
+    const d = await this.get(this.url("/explorer", { sql }), WardRowsSchema, 6 * HOUR);
     if (!d || d.rows.length === 0) return null;
     return {
       games: d.rows[0].games,
+      patch,
       cells: d.rows.map((r) => ({
         kind: r.kind === "obs" ? "observer" : "sentry",
         side: r.radiant ? "radiant" : "dire",
