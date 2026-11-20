@@ -96,6 +96,7 @@ export function AskChat({
   const scroller = useRef<HTMLDivElement>(null);
   /** Whether the reader is at (or near) the newest message; reading back isn't interrupted. */
   const pinned = useRef(true);
+  const lastTop = useRef(0);
   const shown = useRef(0);
 
   useEffect(() => {
@@ -411,9 +412,13 @@ export function AskChat({
           data-testid="ask-scroll"
           onScroll={(e) => {
             const el = e.currentTarget;
-            pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            // Only scrolling up lets go of the newest message: a smooth scroll down passes
+            // through "not at the end" on its way there and must not count as reading back.
+            if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) pinned.current = true;
+            else if (el.scrollTop < lastTop.current) pinned.current = false;
+            lastTop.current = el.scrollTop;
           }}
-          className="-mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-2"
+          className="relative -mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-2"
         >
           <div role="log" aria-label={t("ask.title")} className="flex flex-col gap-3">
             {messages.map((m, i) => (
