@@ -157,6 +157,68 @@ export const heroes = {
     emptyLoseTo: "No enemy hero with {min}+ games where you lose more than you win.",
     emptyWinWith: "No allied hero with {min}+ games where you win half or more.",
   },
+  splits: {
+    metaTitle: "Your splits",
+    link: "Your splits",
+    kicker: "Your heroes",
+    title: "Your splits",
+    description:
+      "Your record by patch, position, time of day, game length, how your lane went and who you laned with, each against your overall win rate.",
+    lockedTitle: "A Plus feature",
+    locked:
+      "Plus splits your whole imported history six ways (patch, position, time of day, game length, lane result and lane partner) so you can see where you win and where you don't. Free keeps your heroes, lanes and matchups.",
+    lockedLink: "See Plus",
+    overall: "Overall: {rate} over {games}.",
+    overallNone: "No imported games yet. Sync your matches from the dashboard.",
+    noGames: "No games here yet.",
+    none: "no games",
+    needsParsed:
+      "None of your stored games has a parsed replay yet. Lane data fills in a few games a day.",
+    above: "{pts} pts above your average",
+    below: "{pts} pts below your average",
+    patches: {
+      title: "By patch",
+      row: "Patch {patch}",
+      older: "{games} on older patches not shown",
+      unassigned: "{games} with no known patch",
+    },
+    positions: {
+      title: "By position",
+      note: "From {games} with a parsed replay; {unplaced} couldn't be placed (a core in the jungle, or an unknown hero).",
+    },
+    dayParts: {
+      title: "By time of day",
+      morning: "Morning (6am–12pm)",
+      afternoon: "Afternoon (12–6pm)",
+      evening: "Evening (6pm–12am)",
+      night: "Late night (12–6am)",
+      note: "When each game started, in your time zone.",
+    },
+    lengths: {
+      title: "By game length",
+      short: "Under {to} minutes",
+      normal: "{from}–{to} minutes",
+      long: "{from}–{to} minutes",
+      very_long: "{from} minutes or longer",
+    },
+    laneOutcomes: {
+      title: "After your lane",
+      won: "You won your lane",
+      even: "Even lane",
+      lost: "You lost your lane",
+      note: "Lanes read by gold at 10 minutes (10% margin) in {games} with a parsed replay. Jungle and roaming games have no lane result.",
+    },
+    partners: {
+      title: "Lane partners",
+      record: "{wins}–{losses}",
+      noneRead:
+        "No lane partners stored yet. They fill in as your parsed games are read, a few a day.",
+      noneListed: "No hero has laned with you in {min} or more games yet.",
+      note: "Allied heroes in your lane at 10 minutes, from {games}; listed after {min} games together. Solo lanes and roams aren't counted.",
+    },
+    footnote:
+      "Counted from your imported games only. Small samples are marked; a gap marked above or below your average needs at least 10 games and 5 points.",
+  },
   own: {
     metaTitle: "Matchups",
     kicker: "Matchups",

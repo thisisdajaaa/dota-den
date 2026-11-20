@@ -7,6 +7,7 @@ import {
   firstPurchases,
   PLUS_EXTRAS_PER_DAY,
   laneResult,
+  lanePartners,
   matchExtrasFrom,
   type MatchExtras,
 } from "@/modules/matches/domain/match-extras";
@@ -65,6 +66,19 @@ describe("match extras (domain)", () => {
     expect(laneResult([roamer, foe(1)], roamer)).toBeNull();
     const jungler = player(0, { laning: laning({ lane: 4 }) });
     expect(laneResult([jungler, foe(1)], jungler)).toBeNull();
+  });
+
+  it("lists the allied heroes laning with you; none for a roam or the jungle", () => {
+    const you = player(0, { heroId: 1, laning: laning() });
+    const partner = player(1, { heroId: 5, laning: laning() });
+    const roamer = player(2, { heroId: 9, laning: laning({ roaming: true }) });
+    const mid = player(3, { heroId: 7, laning: laning({ lane: 2 }) });
+    const foe = player(128, { heroId: 2, laning: laning() });
+    expect(lanePartners([you, partner, roamer, mid, foe], you)).toEqual([5]);
+    expect(lanePartners([you, foe], you)).toEqual([]);
+    expect(lanePartners([roamer, you], roamer)).toBeNull();
+    const jungler = player(0, { laning: laning({ lane: 4 }) });
+    expect(lanePartners([jungler, partner], jungler)).toBeNull();
   });
 
   it("keeps the first purchase of each completed item, in order", () => {
@@ -144,6 +158,7 @@ describe("MatchExtrasService", () => {
       }),
       save: async (e) => void saved.push(e),
       forHero: async () => saved.filter((e) => e.parsed),
+      lanesForAccount: async () => [],
       parsedGamesOnHero: async () => 3,
       exportForOwner: async () => [],
       deleteForOwner: async () => saved.length,

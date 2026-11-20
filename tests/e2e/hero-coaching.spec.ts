@@ -84,6 +84,13 @@ test("a hero page shows what works for you, then your timings and lanes as games
   await expect(check).toContainText("With Plus, your item timings on Anti-Mage are checked");
   await expect(check.getByRole("table")).toHaveCount(0);
 
+  // Your splits: free players see what it is, not the numbers.
+  await page.goto("/heroes/splits");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your splits");
+  await expect(page.getByRole("region", { name: "A Plus feature" })).toContainText("See Plus");
+  await expect(page.getByRole("region", { name: "By patch" })).toHaveCount(0);
+  await page.goto("/heroes/1");
+
   // With Plus: the 10 analysed safe-lane games against Legend–Immortal Pos 1 (the fixture's
   // STRATZ, Battle Fury at 15:00). 13:05 is ahead of it, so there's nothing to fix.
   await grantPlus(page, "e2e-build-check");
@@ -96,4 +103,24 @@ test("a hero page shows what works for you, then your timings and lanes as games
     "13:05 (10)15:00−1:55",
   );
   await expect(check).toContainText("Nothing stands out to fix.");
+
+  // Your splits with Plus: all 20 games by time of day and length; the 10 read games by
+  // position (Anti-Mage in the safe lane: Pos 1) and by lane result (7 won, 3 lost).
+  await page.goto("/heroes/splits");
+  await expect(page.getByText(/^Overall: .* over 20 games\.$/)).toBeVisible();
+  await expect(page.getByRole("region", { name: "By patch" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "By time of day" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "By game length" })).toBeVisible();
+  const positions = page.getByRole("region", { name: "By position" });
+  await expect(positions.getByRole("listitem").first()).toContainText("Pos 1");
+  await expect(positions.getByRole("listitem").first()).toContainText("10 games");
+  await expect(positions).toContainText("From 10 games with a parsed replay");
+  const after = page.getByRole("region", { name: "After your lane" });
+  await expect(after.getByRole("listitem").filter({ hasText: "You won your lane" })).toContainText(
+    "7 games",
+  );
+  await expect(after.getByRole("listitem").filter({ hasText: "You lost your lane" })).toContainText(
+    "3 games",
+  );
+  await expect(page.getByRole("region", { name: "Lane partners" })).toBeVisible();
 });

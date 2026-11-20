@@ -89,6 +89,34 @@ describe("MatchExtrasRepository", () => {
     expect(await repo.parsedGamesOnHero(501, 1)).toBe(2);
   });
 
+  it("fetches games stored before lane partners again, after new games, and keeps their data", async () => {
+    const facts = new MatchFactsRepository(async () => db);
+    const repo = new MatchExtrasRepository(async () => db);
+    await facts.upsertMany([fact(611, "n", 1, true), fact(611, "s", 2, true)]);
+    await repo.save(extras(611, "s", { heroId: 1, laneRole: 1 }), new Date());
+    // Pretend "s" was stored before lane partners were kept.
+    await db
+      .collection("match_extras")
+      .updateOne(
+        { _id: "611:s" as never },
+        { $set: { schemaVersion: 1 }, $unset: { lanePartnerHeroIds: "" } },
+      );
+
+    expect((await repo.pendingParsed(611, 10)).map((p) => p.matchId)).toEqual(["n", "s"]);
+    expect((await repo.pendingParsed(611, 1)).map((p) => p.matchId)).toEqual(["n"]);
+    expect(await repo.lanesForAccount(611)).toEqual([
+      { matchId: "s", heroId: 1, laneRole: 1, roaming: false, laneResult: "won" },
+    ]);
+
+    // A refetch without a replay keeps the parsed game and stops asking for it.
+    await repo.save(extras(611, "s", { parsed: false, laneRole: null }), new Date());
+    expect((await repo.forHero(611, 1))[0]).toMatchObject({ matchId: "s", laneRole: 1 });
+    expect((await repo.pendingParsed(611, 10)).map((p) => p.matchId)).toEqual(["n"]);
+
+    await repo.save(extras(611, "s", { lanePartnerHeroIds: [5] }), new Date());
+    expect((await repo.lanesForAccount(611))[0]).toMatchObject({ lanePartnerHeroIds: [5] });
+  });
+
   it("holds an account's run across servers until released or lapsed", async () => {
     const repo = new MatchExtrasRepository(async () => db);
     await db.collection("match_sync_state").insertOne({ accountId32: 701, lockedUntil: null });

@@ -48,6 +48,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Build check laban sa high-rank",
         body: "Sa bawat hero page, ang item timings mo laban sa mga Legend–Immortal player sa posisyon mo noong nakaraang linggo, kasama ang isang susubukan (libre: ang sarili mong timings).",
       },
+      splits: {
+        title: "Iyong splits",
+        body: "Ang buong history mo ayon sa patch, posisyon, oras ng araw, haba ng laro, resulta ng lane at lane partner, bawat isa laban sa average mo (libre: heroes, lanes at matchups mo).",
+      },
       postMortem: {
         title: "Post-mortem ng draft",
         body: "Sa mga match page, kung paano lumabas ang draft: mga lane sa 10 minuto kumpara sa inasahan ng draft, saan nakuha ang gold lead, at ang mga counter na nagustuhan nito (libre: ang basa sa draft).",

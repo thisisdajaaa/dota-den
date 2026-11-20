@@ -28,6 +28,7 @@ export const heroesService = lazy(() => {
           deaths: f.deaths,
           assists: f.assists,
           patch: f.patch,
+          durationSec: f.durationSec,
         })),
     },
     lineups: {
@@ -52,7 +53,10 @@ export const heroesService = lazy(() => {
         return res.ok ? ok(res.value.value) : res;
       },
     },
-    extras: { forHero: (accountId32, heroId) => matchExtrasService.forHero(accountId32, heroId) },
+    extras: {
+      forHero: (accountId32, heroId) => matchExtrasService.forHero(accountId32, heroId),
+      lanes: (accountId32) => matchExtrasService.lanes(accountId32),
+    },
     // Shared, cached STRATZ aggregates only (one request per hero for everyone).
     builds: { forHero: async (heroId) => (await stratzHeroItems()?.forHero(heroId)) ?? null },
     heroes: async () =>

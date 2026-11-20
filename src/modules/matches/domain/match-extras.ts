@@ -43,6 +43,11 @@ export interface MatchExtras {
   efficiencyPct: number | null;
   /** Your lane (with partners) against the lane opponents, by gold at 10 minutes. */
   laneResult: LaneResult | null;
+  /**
+   * Allied heroes in your lane (empty for a solo lane); null when there's no lane to read
+   * (unparsed, jungle, roaming). Missing on games stored before we kept it.
+   */
+  lanePartnerHeroIds?: number[] | null;
   /** First purchase of each completed item, seconds from the horn, in order. */
   itemTimings: Array<{ key: string; time: number }>;
 }
@@ -69,6 +74,26 @@ export function laneResult(players: readonly LanePlayer[], you: LanePlayer): Lan
   if (a >= b * EXTRAS_LANE_MARGIN) return "won";
   if (b >= a * EXTRAS_LANE_MARGIN) return "lost";
   return "even";
+}
+
+/** Allied heroes laning with you (not roaming); null when you had no lane. */
+export function lanePartners(
+  players: readonly Pick<MatchPlayer, "playerSlot" | "heroId" | "laning">[],
+  you: Pick<MatchPlayer, "playerSlot" | "laning">,
+): number[] | null {
+  const lane = you.laning?.lane;
+  if (!you.laning || you.laning.roaming || !lane || lane < 1 || lane > 3) return null;
+  const radiant = (slot: number) => slot < 128;
+  return players
+    .filter(
+      (p) =>
+        p.playerSlot !== you.playerSlot &&
+        radiant(p.playerSlot) === radiant(you.playerSlot) &&
+        p.laning?.lane === lane &&
+        !p.laning.roaming &&
+        p.heroId > 0,
+    )
+    .map((p) => p.heroId);
 }
 
 /** First purchase time of each item `isItem` accepts, in order. */
@@ -118,6 +143,7 @@ export function matchExtrasFrom(
     roaming: laning?.roaming ?? false,
     efficiencyPct: laning?.efficiencyPct ?? null,
     laneResult: laning ? laneResult(detail.players, you) : null,
+    lanePartnerHeroIds: laning ? lanePartners(detail.players, you) : null,
     itemTimings: laning ? firstPurchases(laning.purchases, isItem) : [],
   };
 }
