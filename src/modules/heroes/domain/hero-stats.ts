@@ -49,6 +49,8 @@ export interface HeroGame {
   assists: number;
   /** Patch in effect when the game started; null when unknown. */
   patch: string | null;
+  /** Game length, when the source gives it. */
+  durationSec?: number;
 }
 
 export interface HeroRecord extends WinRecord {

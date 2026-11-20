@@ -151,6 +151,11 @@ export class MatchExtrasService {
     return { games, parsedGames: Math.max(parsedGames, games.length) };
   }
 
+  /** Lanes of all your stored parsed games (deeper stats). */
+  async lanes(accountId32: number) {
+    return this.deps.store.lanesForAccount(accountId32);
+  }
+
   async exportMyData(owner: DataOwner) {
     return { matchExtras: await this.deps.store.exportForOwner(owner) };
   }

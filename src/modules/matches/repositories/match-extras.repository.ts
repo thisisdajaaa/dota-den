@@ -2,7 +2,7 @@ import "server-only";
 import type { Db } from "mongodb";
 import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import type { MatchExtras } from "../domain/match-extras";
-import type { MatchExtrasStore, PendingExtras } from "../matches.ports";
+import type { MatchExtrasStore, PendingExtras, StoredLane } from "../matches.ports";
 import { MATCH_COLLECTIONS, type PlayerMatchFactDoc } from "./matches.repository";
 
 export interface MatchExtrasDoc extends MatchExtras {
@@ -12,7 +12,8 @@ export interface MatchExtrasDoc extends MatchExtras {
   schemaVersion: number;
 }
 
-const SCHEMA_VERSION = 1;
+/** 2: lanePartnerHeroIds. Parsed games stored at 1 are fetched again, after new games. */
+const SCHEMA_VERSION = 2;
 export const matchExtrasId = (accountId32: number, matchId: string) => `${accountId32}:${matchId}`;
 
 /** Extras from parsed replays (one document per player and match), each fetched once. */
@@ -66,13 +67,45 @@ export class MatchExtrasRepository implements MatchExtrasStore {
       .sort({ startedAt: -1 })
       .limit(limit)
       .toArray();
-    return rows.map((r) => ({
+    const pending = rows.map((r) => ({
       matchId: r.matchId,
       heroId: r.heroId,
       side: r.side,
       result: r.result,
       startedAt: r.startedAt,
     }));
+    if (pending.length >= limit) return pending;
+    // Then parsed games stored before the current schema (e.g. without lane partners).
+    const stale = await (
+      await this.col()
+    )
+      .find(
+        { accountId32, parsed: true, schemaVersion: { $lt: SCHEMA_VERSION } },
+        { projection: { matchId: 1 } },
+      )
+      .sort({ startedAt: -1 })
+      .limit(limit - pending.length)
+      .toArray();
+    if (stale.length === 0) return pending;
+    const facts = await (
+      await this.facts()
+    )
+      .find(
+        { accountId32, matchId: { $in: stale.map((d) => d.matchId) } },
+        { projection: { matchId: 1, heroId: 1, side: 1, result: 1, startedAt: 1 } },
+      )
+      .sort({ startedAt: -1 })
+      .toArray();
+    return [
+      ...pending,
+      ...facts.map((r) => ({
+        matchId: r.matchId,
+        heroId: r.heroId,
+        side: r.side,
+        result: r.result,
+        startedAt: r.startedAt,
+      })),
+    ];
   }
 
   async fetchedSince(accountId32: number, since: Date): Promise<number> {
@@ -98,9 +131,16 @@ export class MatchExtrasRepository implements MatchExtrasStore {
   }
 
   async save(extras: MatchExtras, fetchedAt: Date): Promise<void> {
-    await (
-      await this.col()
-    ).updateOne(
+    const col = await this.col();
+    if (!extras.parsed) {
+      // A refetch that comes back without a replay never wipes a game stored as parsed.
+      const kept = await col.updateOne(
+        { _id: matchExtrasId(extras.accountId32, extras.matchId), parsed: true },
+        { $set: { fetchedAt, schemaVersion: SCHEMA_VERSION } },
+      );
+      if (kept.matchedCount === 1) return;
+    }
+    await col.updateOne(
       { _id: matchExtrasId(extras.accountId32, extras.matchId) },
       { $set: { ...extras, fetchedAt, schemaVersion: SCHEMA_VERSION } },
       { upsert: true },
@@ -115,6 +155,37 @@ export class MatchExtrasRepository implements MatchExtrasStore {
       .sort({ startedAt: -1 })
       .toArray();
     return docs.map(({ _id, fetchedAt: _f, schemaVersion: _v, ...extras }) => extras);
+  }
+
+  /** Lanes of every stored parsed game (for deeper stats), newest first. */
+  async lanesForAccount(accountId32: number): Promise<StoredLane[]> {
+    const docs = await (
+      await this.col()
+    )
+      .find(
+        { accountId32, parsed: true },
+        {
+          projection: {
+            _id: 0,
+            matchId: 1,
+            heroId: 1,
+            laneRole: 1,
+            roaming: 1,
+            laneResult: 1,
+            lanePartnerHeroIds: 1,
+          },
+        },
+      )
+      .sort({ startedAt: -1 })
+      .toArray();
+    return docs.map((d) => ({
+      matchId: d.matchId,
+      heroId: d.heroId,
+      laneRole: d.laneRole ?? null,
+      roaming: d.roaming ?? false,
+      laneResult: d.laneResult ?? null,
+      ...(d.lanePartnerHeroIds !== undefined ? { lanePartnerHeroIds: d.lanePartnerHeroIds } : {}),
+    }));
   }
 
   async parsedGamesOnHero(accountId32: number, heroId: number): Promise<number> {

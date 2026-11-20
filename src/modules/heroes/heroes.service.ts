@@ -17,6 +17,7 @@ import {
 import { heroCoaching, itemImpact, type HeroCoaching } from "./domain/hero-coaching";
 import { buildCheck, type BuildCheck } from "./domain/build-check";
 import { heroProgress } from "./domain/hero-progress";
+import { deeperStats, type DeeperStats } from "./domain/deeper-stats";
 import { lineupProgress, ownMatchups } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 import type {
@@ -210,5 +211,26 @@ export class HeroesService {
       breakdown: positionBreakdown(res.value.games, (id) => roles.get(id)),
       windowDays: res.value.windowDays,
     });
+  }
+
+  /**
+   * Deeper stats (Plus): your whole imported history (or one hero) split by patch, position,
+   * time of day, game length, lane result and lane partner.
+   */
+  async splits(
+    accountId32: number,
+    opts: { heroId?: number; timeZone: string },
+  ): Promise<DeeperStats> {
+    const [games, lanes, heroes] = await Promise.all([
+      this.deps.own.games(accountId32, opts.heroId),
+      this.deps.extras.lanes?.(accountId32) ?? Promise.resolve([]),
+      this.deps.heroes(),
+    ]);
+    const roles = new Map(heroes.map((h) => [h.id, h.roles]));
+    return deeperStats(
+      games.map((g) => ({ ...g, durationSec: g.durationSec ?? 0 })),
+      opts.heroId === undefined ? lanes : lanes.filter((l) => l.heroId === opts.heroId),
+      { timeZone: opts.timeZone, rolesOf: (id) => roles.get(id) },
+    );
   }
 }

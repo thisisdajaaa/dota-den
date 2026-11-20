@@ -221,6 +221,12 @@ export interface PendingExtras {
   startedAt: Date;
 }
 
+/** One stored parsed game's lane (for deeper stats). */
+export type StoredLane = Pick<
+  MatchExtras,
+  "matchId" | "heroId" | "laneRole" | "roaming" | "laneResult" | "lanePartnerHeroIds"
+>;
+
 /** Stored per-match extras (match_extras) and the parsed games still waiting for them. */
 export interface MatchExtrasStore {
   /** Your parsed imported games with no extras stored yet, newest first. */
@@ -237,6 +243,8 @@ export interface MatchExtrasStore {
   save(extras: MatchExtras, fetchedAt: Date): Promise<void>;
   /** Your stored extras from parsed replays on one hero, newest first. */
   forHero(accountId32: number, heroId: number): Promise<MatchExtras[]>;
+  /** Lanes of all your stored parsed games, newest first. */
+  lanesForAccount(accountId32: number): Promise<StoredLane[]>;
   /** Your imported games on the hero that OpenDota has parsed (stored or not). */
   parsedGamesOnHero(accountId32: number, heroId: number): Promise<number>;
   exportForOwner(owner: { accountId32: number }): Promise<Array<Record<string, unknown>>>;

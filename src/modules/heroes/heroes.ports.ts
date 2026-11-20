@@ -2,6 +2,7 @@ import type { HighRankPosition } from "./domain/build-check";
 import type { LaneGame } from "@/modules/meta/domain/position";
 import type { Result } from "@/common/result";
 import type { CoachingGame } from "./domain/hero-coaching";
+import type { SplitLane } from "./domain/deeper-stats";
 import type { HeroGame, ItemMeta, MatchupRow } from "./domain/hero-stats";
 import type { LineupGame } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
@@ -89,4 +90,6 @@ export interface StoredExtras {
     accountId32: number,
     heroId: number,
   ): Promise<{ games: CoachingGame[]; parsedGames: number }>;
+  /** Lanes of every stored parsed game (deeper stats); absent when not wired. */
+  lanes?(accountId32: number): Promise<SplitLane[]>;
 }

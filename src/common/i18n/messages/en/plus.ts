@@ -51,6 +51,10 @@ export const plus = {
         title: "Build check vs high-rank",
         body: "On each hero page, your item timings against Legend–Immortal players at your position last week, with one thing to try (free: your own timings).",
       },
+      splits: {
+        title: "Your splits",
+        body: "Your whole history by patch, position, time of day, game length, lane result and lane partner, each against your average (free: your heroes, lanes and matchups).",
+      },
       postMortem: {
         title: "Draft post-mortem",
         body: "On ranked match pages, how the draft played out: lanes at 10 minutes against what the draft expected, where the gold lead was won, and the counters it liked (free: the draft read).",
