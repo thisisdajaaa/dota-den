@@ -48,6 +48,10 @@ export const plus: MessageTree<typeof en> = {
         title: "Build check batok sa high-rank",
         body: "Sa matag hero page, imong item timings batok sa mga Legend–Immortal player sa imong posisyon sa miaging semana, uban ang usa ka sulayan (libre: imong kaugalingong timings).",
       },
+      postMortem: {
+        title: "Post-mortem sa draft",
+        body: "Sa mga match page, giunsa ang draft: mga lane sa 10 minutos itandi sa gipaabot sa draft, asa nakuha ang gold lead, ug ang mga counter nga nagustohan niini (libre: ang basa sa draft).",
+      },
       read: {
         title: "AI read sa imong battle report",
         body: "Pagpili og bisan unsang panahon sa imong battle report ug makakuha og pipila ka obserbasyon ug usa ka angay tutokan, gisulat gikan lang sa mga numero sa maong page (nakalista ang mga numero nga gigamit).",

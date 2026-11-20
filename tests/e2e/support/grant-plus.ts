@@ -8,6 +8,8 @@ export async function grantPlus(page: Page, tag = "e2e") {
     data: { plan: "monthly" },
     headers: { origin },
   });
+  // 409: this player already has Plus (another test granted it on the shared fixture account).
+  if (res.status() === 409) return;
   expect(res.status()).toBe(200);
   const userId = new URL((await res.json()).data.url).searchParams.get(
     "checkout[custom][user_id]",

@@ -12,6 +12,9 @@ import { askService } from "@/modules/assistant";
 import { MatchNotesCard } from "@/modules/annotations/ui/match-notes-card";
 import { getAiOpponent } from "@/modules/drafts";
 import { DraftRead } from "@/modules/drafts/ui/draft-read";
+import { plusService } from "@/modules/plus";
+import { DraftPostMortem } from "@/modules/drafts/ui/draft-post-mortem";
+import { draftPostMortem } from "@/modules/drafts/domain/draft-post-mortem";
 import { getCurrentUser } from "@/modules/identity";
 import { matchCoachService, matchesService } from "@/modules/matches";
 import type { MatchDetail } from "@/modules/matches/domain/match-detail";
@@ -266,7 +269,9 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
         <MatchDraftSection
           radiant={radiant.map((p) => p.heroId)}
           dire={dire.map((p) => p.heroId)}
-          radiantWin={match.radiantWin}
+          match={match}
+          viewerId={viewer?.id ?? null}
+          heroLabel={(id) => heroName(heroes.get(id), id)}
         />
       </Suspense>
 
@@ -348,11 +353,15 @@ async function BackLink({ signedIn }: { signedIn: boolean }) {
 async function MatchDraftSection({
   radiant,
   dire,
-  radiantWin,
+  match,
+  viewerId,
+  heroLabel,
 }: {
   radiant: number[];
   dire: number[];
-  radiantWin: boolean;
+  match: MatchDetail;
+  viewerId: string | null;
+  heroLabel: (heroId: number) => string;
 }) {
   if (radiant.length !== 5 || dire.length !== 5) return null;
   const outlook = await (await getAiOpponent()).outlookForHeroes(radiant, dire).catch(() => null);
@@ -360,19 +369,46 @@ async function MatchDraftSection({
   const t = await getT();
   const name = (s: "radiant" | "dire") =>
     s === "radiant" ? t("matches.sides.radiant") : t("matches.sides.dire");
-  const winner = radiantWin ? "radiant" : "dire";
+  const winner = match.radiantWin ? "radiant" : "dire";
+  // Plus: the post-mortem; free players see where to get it while Plus is on sale.
+  const plus = viewerId ? await plusService.isPlus(viewerId).catch(() => false) : false;
+  const showPostMortem = plus || plusService.offer().status === "available";
+  const pm = showPostMortem
+    ? draftPostMortem({
+        radiantWin: match.radiantWin,
+        durationSec: match.durationSec,
+        goldAdvantage: match.goldAdvantage,
+        lanes: outlook.lanes,
+        heroes: outlook.heroes,
+        players: match.players.map((p) => ({
+          side: p.side,
+          heroId: p.heroId,
+          lane: p.laning?.lane ?? null,
+          roaming: p.laning?.roaming ?? false,
+          goldAt10: p.laning?.goldAt10 ?? null,
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+          netWorth: p.netWorth,
+          heroDamage: p.heroDamage,
+        })),
+      })
+    : null;
   return (
-    <DraftRead
-      outlook={outlook}
-      name={name}
-      outcome={(favoured) =>
-        favoured
-          ? favoured === winner
-            ? t("matches.detail.draftAsSuggested", { side: name(winner) })
-            : t("matches.detail.draftDespite", { side: name(winner) })
-          : t("matches.detail.draftWon", { side: name(winner) })
-      }
-    />
+    <>
+      <DraftRead
+        outlook={outlook}
+        name={name}
+        outcome={(favoured) =>
+          favoured
+            ? favoured === winner
+              ? t("matches.detail.draftAsSuggested", { side: name(winner) })
+              : t("matches.detail.draftDespite", { side: name(winner) })
+            : t("matches.detail.draftWon", { side: name(winner) })
+        }
+      />
+      {pm && <DraftPostMortem pm={pm} heroName={heroLabel} sideName={name} locked={!plus} />}
+    </>
   );
 }
 
