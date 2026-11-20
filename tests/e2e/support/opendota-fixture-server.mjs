@@ -1186,6 +1186,24 @@ function explorer(sql) {
   if (q.includes("notable_players")) {
     return { rows: [{ account_id: 60001, name: "Fixture Pro" }], err: null };
   }
+  if (q.includes("obs_log")) {
+    // Ward spots in 40 pro games: a few cells per side, kind and phase.
+    const rows = [];
+    for (const kind of ["obs", "sen"])
+      for (const radiant of [true, false])
+        for (const phase of [0, 1, 2])
+          for (let i = 0; i < 4; i++)
+            rows.push({
+              kind,
+              radiant,
+              phase,
+              cx: 96 + i * 12 + (radiant ? 0 : 20),
+              cy: 100 + i * 8 + phase * 4,
+              n: 20 - i * 4,
+              games: 40,
+            });
+    return { rows, err: null };
+  }
   const meta = q.includes("AS drafts") || q.includes("a.lane=b.lane");
   return meta ? metaExplorer(q) : draftExplorer(q);
 }

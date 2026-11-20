@@ -12,8 +12,8 @@ import {
   type Phase,
   type PubBuild,
 } from "./domain/hero-guide";
-import { skillBuild } from "./domain/skill-build";
-import type { WardCell } from "./domain/ward-spots";
+import { skillBuild, type SkillBuild } from "./domain/skill-build";
+import type { WardData } from "./domain/ward-spots";
 import type { GuideSource } from "./guides.ports";
 import type { HeroGuide } from "./dtos/responses/hero-guide.dto";
 
@@ -59,7 +59,7 @@ export class GuideService {
       items,
       build: pub?.build ?? null,
       itemSource: pub?.itemSource ?? { source: "pro" },
-      skills: skills ? skillBuild(skills.builds, skills) : null,
+      skills: skills ? withPatch(skillBuild(skills.builds, skills), skills) : null,
       benchmarks: bench ? pickBenchmarks(bench) : null,
       proGames: games
         ? games.map((g) => ({
@@ -73,7 +73,7 @@ export class GuideService {
   }
 
   /** Where wards went in recent pro games; null when the source can't say. */
-  async wardCells(): Promise<{ cells: WardCell[]; games: number } | null> {
+  async wardCells(): Promise<WardData | null> {
     return (await this.deps.source.wardCells?.().catch(() => null)) ?? null;
   }
 
@@ -119,4 +119,13 @@ function pubItems(
     build: buildPath(build, exclude),
     itemSource: { source: "pubs", position: chosen.position, positions },
   };
+}
+
+function withPatch(
+  build: SkillBuild | null,
+  from: { patch?: string | null; currentPatch?: string | null },
+): SkillBuild | null {
+  return build
+    ? { ...build, patch: from.patch ?? null, currentPatch: from.currentPatch ?? null }
+    : null;
 }

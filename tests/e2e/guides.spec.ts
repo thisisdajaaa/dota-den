@@ -33,13 +33,18 @@ test("hero guides show pro builds, benchmarks and pro games", async ({ page }) =
   const core = items.getByRole("group", { name: "Core build" });
   await expect(core).toContainText("Battle Fury");
   await expect(core).toContainText("15′");
+  // Items finished after minute 25 in longer games fill the inventory; rarer ones are situational.
+  const late = items.getByRole("group", { name: "Late game" });
+  await expect(late).toContainText("Black King Bar");
+  await expect(late).toContainText("27′");
   const situational = items.getByRole("group", { name: "Situational" });
   await expect(situational).toContainText("Power Treads");
-  await expect(situational).toContainText("Black King Bar");
+  await expect(situational).not.toContainText("Black King Bar");
   // Timings: fast and typical minute, with the win rate of the games that built it.
   const timings = items.getByRole("table", { name: "Item timings" });
   await expect(timings.getByRole("row", { name: /Battle Fury/ })).toContainText("15 min");
   await expect(timings.getByRole("row", { name: /Battle Fury/ })).toContainText("55%");
+  await expect(timings.getByRole("row", { name: /Black King Bar/ })).toContainText("27 min");
   // Another position the hero is played in: its own build.
   const positions = items.getByRole("navigation", { name: "Positions" });
   await expect(positions.getByRole("link", { name: /Pos 1/ })).toHaveAttribute(
@@ -110,4 +115,44 @@ test.describe("without a STRATZ token", () => {
       matchups.getByRole("group", { name: "Anti-Mage is strong against" }),
     ).toBeVisible();
   });
+});
+
+test("ward spots sit on the patch's map, which zooms and pans", async ({ page }) => {
+  await page.goto("/guides/wards");
+  const wards = page.getByRole("region", { name: "Ward spots" });
+  await expect(wards).toContainText("last 40 pro games");
+  await expect(wards).toContainText("Patch 7.41 map.");
+  await expect(wards.getByRole("img", { name: /most used ward spots/ })).toHaveAttribute(
+    "src",
+    /minimap-7\.41/,
+  );
+  await expect(wards.getByText("Spot 1: 20 wards")).toBeAttached();
+
+  const map = wards.getByTestId("zoomable-map");
+  await expect(map).toHaveAttribute("data-zoom", "1.00");
+  await expect(wards.getByRole("button", { name: "Zoom out" })).toBeDisabled();
+  await wards.getByRole("button", { name: "Zoom in" }).click();
+  await expect(map).toHaveAttribute("data-zoom", "1.50");
+  await wards.getByRole("button", { name: "Zoom in" }).click();
+  await expect(map).toHaveAttribute("data-zoom", "2.25");
+  // Spots keep their size on screen while the map grows.
+  const spot = map.locator("li").first();
+  const before = (await spot.boundingBox())!.width;
+  // Dragging moves the zoomed map.
+  await map.scrollIntoViewIfNeeded();
+  const box = (await map.boundingBox())!;
+  const imgBefore = (await map.getByRole("img").boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 40, { steps: 5 });
+  await page.mouse.up();
+  const imgAfter = (await map.getByRole("img").boundingBox())!;
+  expect(imgAfter.x).toBeGreaterThan(imgBefore.x + 30);
+  expect(Math.abs((await spot.boundingBox())!.width - before)).toBeLessThan(2);
+  // Double-click zooms in further; reset goes back to the whole map.
+  await map.dblclick({ position: { x: 40, y: 40 } });
+  await expect(map).toHaveAttribute("data-zoom", "4.50");
+  await wards.getByRole("button", { name: "Reset zoom" }).click();
+  await expect(map).toHaveAttribute("data-zoom", "1.00");
+  await expect(wards.getByRole("button", { name: "Reset zoom" })).toHaveCount(0);
 });

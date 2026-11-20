@@ -17,9 +17,18 @@ export interface TalentRef {
   tier: 1 | 2 | 3 | 4;
 }
 
+/** A hero's abilities and talents, with the ids the games record. */
+export interface HeroKit {
+  abilities: AbilityRef[];
+  talents: TalentRef[];
+}
+
 export interface SkillBuild {
   /** Games the build is taken from. */
   games: number;
+  /** The patch those games were played on, and the current patch, when the source knows. */
+  patch?: string | null;
+  currentPatch?: string | null;
   /** Ability (or talent) id picked at each level from 1, the most common choice per level. */
   order: number[];
   /** Abilities that appear in `order`, in the hero's own ability order. */

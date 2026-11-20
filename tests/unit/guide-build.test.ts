@@ -28,7 +28,10 @@ describe("buildPath", () => {
       item(1, 700, 22), // core
       item(100, 600, 20), // core, bought earlier
       item(116, 300, 34), // core
-      item(50, 120, 25), // situational
+      item(50, 120, 25), // late game: after minute 25, below the core share
+      item(60, 80, 41), // late game, bought later
+      item(61, 100, 18), // situational: below the core share before minute 25
+      item(62, 50, 30), // situational: too few games for the late game
       item(46, 30, 30), // too rare
       item(200, 500, 15), // excluded (consumable)
     ],
@@ -40,10 +43,27 @@ describe("buildPath", () => {
     expect(path.core[0]).toMatchObject({ minute: 20, fastMinute: 18, share: 0.6, winRate: 0.5 });
   });
 
-  it("keeps starting, early and situational items apart", () => {
+  it("keeps starting, early, late and situational items apart", () => {
     expect(path.start.map((p) => p.itemId)).toEqual([44, 16]);
     expect(path.early.map((p) => p.itemId)).toEqual([36]);
-    expect(path.situational.map((p) => p.itemId)).toEqual([50]);
+    expect(path.late.map((p) => p.itemId)).toEqual([50, 60]);
+    expect(path.late[1]).toMatchObject({ minute: 41, share: 0.08 });
+    expect(path.situational.map((p) => p.itemId)).toEqual([61, 62]);
+  });
+
+  it("fills a full inventory in long games: up to six late items after the core", () => {
+    const many: PubBuild = {
+      ...build,
+      items: [
+        item(1, 700, 15),
+        item(100, 600, 20),
+        ...Array.from({ length: 8 }, (_, i) => item(300 + i, 200 - i * 10, 26 + i * 2)),
+      ],
+    };
+    const res = buildPath(many, () => false);
+    expect(res.core.map((p) => p.itemId)).toEqual([1, 100]);
+    expect(res.late.map((p) => p.itemId)).toEqual([300, 301, 302, 303, 304, 305]);
+    expect(res.situational.map((p) => p.itemId)).toEqual([306, 307]);
   });
 });
 
