@@ -61,8 +61,10 @@ export const guides: MessageTree<typeof en> = {
   build: {
     description:
       "{hero} sa {position}, sama sa in-game guide: ang sinugdanang items sa mga Legend hangtod Immortal, dayon ang items nga gibuhat sa kadaghanan sumala sa han-ay, uban ang tinuod nga timing gikan sa katapusang tibuok semana sa mga duwa (STRATZ). Ang situational kay mga item nga gamay ra ang mipalit. Ang late-game items mao ang sunod nga nahuman sa kadaghanan sa tag-as nga mga duwa.",
+    startGold: "Gipalit sa wala pa ang horn · {gold} sa {max} gold",
     steps: {
       start: "Sinugdanang items",
+      startAlt: "Laing sinugdanan",
       early: "Early game",
       core: "Core build",
       late: "Late game",
@@ -70,6 +72,7 @@ export const guides: MessageTree<typeof en> = {
     },
     hints: {
       start: "Gipalit sa wala pa ang horn",
+      startAlt: "Mao kini ang sinugdanan sa ubang player",
       early: "Unang 10 ka minuto",
       core: "Sumala sa han-ay sa pagpalit · kasagarang minuto",
       late: "Mahuman sa tag-as nga duwa, human sa 25 minutos · kasagarang minuto",

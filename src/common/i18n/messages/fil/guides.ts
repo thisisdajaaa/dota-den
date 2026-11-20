@@ -61,8 +61,10 @@ export const guides: MessageTree<typeof en> = {
   build: {
     description:
       "{hero} sa {position}, gaya ng in-game guide: ang panimulang items ng mga Legend hanggang Immortal, tapos ang items na binuo ng karamihan ayon sa pagkakasunod, kasama ang totoong timing mula sa huling buong linggo ng laro (STRATZ). Ang situational ay mga item na mas kaunti ang bumibili. Ang late-game items ang sumunod na natapos ng karamihan sa mahahabang laro.",
+    startGold: "Binili bago ang horn · {gold} sa {max} gold",
     steps: {
       start: "Panimulang items",
+      startAlt: "Ibang panimula",
       early: "Early game",
       core: "Core build",
       late: "Late game",
@@ -70,6 +72,7 @@ export const guides: MessageTree<typeof en> = {
     },
     hints: {
       start: "Binili bago ang horn",
+      startAlt: "Ito naman ang panimula ng ibang player",
       early: "Unang 10 minuto",
       core: "Ayon sa pagkakasunod ng pagbili · karaniwang minuto",
       late: "Natatapos sa mahahabang laro, pagkalipas ng 25 minuto · karaniwang minuto",

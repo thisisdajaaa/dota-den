@@ -23,6 +23,11 @@ export interface ItemRecord {
   minute: number | null;
   /** The minute by which a quarter of its purchases were made (a fast timing); null at the start. */
   fastMinute?: number | null;
+  /**
+   * Starting items only: how many copies most of the players who bought it took (a second copy
+   * counts when at least half of them bought one, and so on).
+   */
+  copies?: number;
 }
 
 /** A hero's latest full week at one position in Legend–Immortal pubs. */
@@ -122,9 +127,24 @@ export function parseItems(body: unknown): PositionBuild[] | null {
       minute: minuteAt(rows, 0.5),
       fastMinute: minuteAt(rows, 0.25),
     }));
-    const starting = start.data
-      .filter((r) => r.instance === 0 && r.wasGiven !== true)
-      .map((r) => ({ itemId: r.itemId, games: r.matchCount, wins: r.winCount, minute: null }));
+    const own = start.data.filter((r) => r.wasGiven !== true);
+    const copiesOf = (itemId: number, first: number) => {
+      let copies = 1;
+      while (
+        own.some((r) => r.itemId === itemId && r.instance === copies && r.matchCount * 2 >= first)
+      )
+        copies++;
+      return copies;
+    };
+    const starting = own
+      .filter((r) => r.instance === 0)
+      .map((r) => ({
+        itemId: r.itemId,
+        games: r.matchCount,
+        wins: r.winCount,
+        minute: null,
+        copies: copiesOf(r.itemId, r.matchCount),
+      }));
     builds.push({
       position: p,
       games: totals?.matchCount ?? 0,

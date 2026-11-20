@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildPath, type PubBuild } from "@/modules/guides/domain/hero-guide";
+import {
+  buildPath,
+  startingBuild,
+  STARTING_GOLD,
+  type PubBuild,
+} from "@/modules/guides/domain/hero-guide";
 import {
   skillBuild,
   talentName,
@@ -141,5 +146,63 @@ describe("ward spots", () => {
       [20, 1],
       [5, 0.25],
     ]);
+  });
+});
+
+describe("startingBuild", () => {
+  const COST: Record<number, number> = {
+    44: 90,
+    16: 50,
+    29: 500,
+    42: 50,
+    46: 50,
+    244: 250,
+    12: 50,
+  };
+  const costOf = (id: number) => COST[id] ?? null;
+  const start = (itemId: number, games: number, copies = 1) => ({
+    itemId,
+    games,
+    wins: games / 2,
+    minute: null,
+    copies,
+  });
+
+  it("is one start a player can afford: popular items, with copies, within 600 gold", () => {
+    // Blood Grenade, Tango ×2, Boots, Sentry, Branch ×2, Wind Lace: 1,030 gold if all bought.
+    const rows = [
+      start(12, 900), // Blood Grenade 50
+      start(44, 880, 2), // Tango ×2 180
+      start(29, 600), // Boots of Speed 500: doesn't fit after the above
+      start(42, 500), // Sentry 50
+      start(16, 450, 2), // Iron Branch ×2 100
+      start(244, 300), // Wind Lace 250: doesn't fit
+      start(46, 5), // too rare
+    ];
+    const { start: picks, alternatives } = startingBuild(rows, 1_000, costOf);
+    expect(picks.map((p) => [p.itemId, p.copies])).toEqual([
+      [12, 1],
+      [44, 2],
+      [42, 1],
+      [16, 2],
+    ]);
+    const gold = picks.reduce((n, p) => n + COST[p.itemId] * (p.copies ?? 1), 0);
+    expect(gold).toBe(380);
+    expect(gold).toBeLessThanOrEqual(STARTING_GOLD);
+    expect(alternatives.map((p) => p.itemId)).toEqual([29, 244]);
+  });
+
+  it("takes fewer copies when all of them don't fit", () => {
+    const { start: picks } = startingBuild([start(29, 900), start(44, 800, 3)], 1_000, costOf);
+    expect(picks.map((p) => [p.itemId, p.copies])).toEqual([
+      [29, 1],
+      [44, 1],
+    ]);
+  });
+
+  it("without prices, lists the most bought starting items", () => {
+    const { start: picks, alternatives } = startingBuild([start(44, 800), start(29, 900)], 1_000);
+    expect(picks.map((p) => p.itemId)).toEqual([29, 44]);
+    expect(alternatives).toEqual([]);
   });
 });

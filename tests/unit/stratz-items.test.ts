@@ -33,6 +33,9 @@ function body() {
       start: [
         { itemId: 44, instance: 0, wasGiven: false, matchCount: 900, winCount: 450 },
         { itemId: 44, instance: 1, wasGiven: true, matchCount: 300, winCount: 150 },
+        // A second Tango bought by most buyers, a third by few: two copies.
+        { itemId: 44, instance: 1, wasGiven: false, matchCount: 600, winCount: 300 },
+        { itemId: 44, instance: 2, wasGiven: false, matchCount: 200, winCount: 100 },
         { itemId: 16, instance: 0, wasGiven: true, matchCount: 800, winCount: 400 },
       ],
     },
@@ -74,6 +77,7 @@ describe("parseItems", () => {
     expect(pos1.items.find((i) => i.itemId === 116)?.minute).toBe(27);
     // Starting items the player bought themself; a teammate's handout doesn't count.
     expect(pos1.starting.map((i) => i.itemId)).toEqual([44]);
+    expect(pos1.starting[0].copies).toBe(2);
     expect(builds.find((b) => b.position === 3)).toMatchObject({ games: 0, items: [] });
   });
 

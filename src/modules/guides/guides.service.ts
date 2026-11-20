@@ -29,11 +29,18 @@ export class GuideService {
   async guide(
     heroId: number,
     isConsumable: (itemId: number) => boolean,
-    opts: { isFiller?: (itemId: number) => boolean; position?: number } = {},
+    opts: {
+      isFiller?: (itemId: number) => boolean;
+      position?: number;
+      /** Item prices, so the starting build fits the starting gold. */
+      costOf?: (itemId: number) => number | null;
+    } = {},
   ): Promise<HeroGuide> {
     const { source } = this.deps;
     const builds = await (source.itemBuilds?.(heroId) ?? Promise.resolve(null)).catch(() => null);
-    const pub = builds ? pubItems(builds, opts.isFiller ?? isConsumable, opts.position) : null;
+    const pub = builds
+      ? pubItems(builds, opts.isFiller ?? isConsumable, opts.position, opts.costOf)
+      : null;
     const [pop, bench, allGames, matchups, skills] = await Promise.all([
       pub ? Promise.resolve(null) : source.itemPopularity(heroId).catch(() => null),
       source.benchmarks(heroId).catch(() => null),
@@ -105,6 +112,7 @@ function pubItems(
   builds: readonly PubBuild[],
   exclude: (itemId: number) => boolean,
   asked: number | undefined,
+  costOf?: (itemId: number) => number | null,
 ): {
   items: Record<Phase, ItemPick[]>;
   build: Record<BuildStep, ItemPick[]>;
@@ -116,7 +124,7 @@ function pubItems(
   if (!chosen || !build) return null;
   return {
     items: pubPhases(build, exclude),
-    build: buildPath(build, exclude),
+    build: buildPath(build, exclude, costOf),
     itemSource: { source: "pubs", position: chosen.position, positions },
   };
 }

@@ -56,8 +56,10 @@ export const guides = {
   build: {
     description:
       "{hero} at {position}, laid out like the in-game guides: what Legend to Immortal players started with, then the items most of them built in the order they built them, with real timings from the last full week of games (STRATZ). Situational items are ones fewer players bought. Late-game items are the next ones most players finished in games that went long.",
+    startGold: "Bought before the horn · {gold} of {max} gold",
     steps: {
       start: "Starting items",
+      startAlt: "Other starts",
       early: "Early game",
       core: "Core build",
       late: "Late game",
@@ -65,6 +67,7 @@ export const guides = {
     },
     hints: {
       start: "Bought before the horn",
+      startAlt: "Some players start with these instead",
       early: "First 10 minutes",
       core: "In the order they're bought · typical minute",
       late: "Finished in longer games, after 25 minutes · typical minute",
