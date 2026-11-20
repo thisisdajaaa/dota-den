@@ -163,6 +163,68 @@ export const heroes: MessageTree<typeof en> = {
     emptyWinWith:
       "Walay kauban nga hero nga adunay {min}+ ka duwa diin modaog ka sa katunga o labaw pa.",
   },
+  splits: {
+    metaTitle: "Imong splits",
+    link: "Imong splits",
+    kicker: "Imong heroes",
+    title: "Imong splits",
+    description:
+      "Ang imong record sumala sa patch, posisyon, oras sa adlaw, gitas-on sa dula, unsa ang nahitabo sa imong lane ug kinsa imong kauban sa lane, matag usa batok sa imong overall win rate.",
+    lockedTitle: "Feature sa Plus",
+    locked:
+      "Gibahin sa Plus ang tibuok nimong imported history sa unom (patch, posisyon, oras sa adlaw, gitas-on sa dula, resulta sa lane ug lane partner) aron makita nimo asa ka modaog ug asa dili. Libre gihapon ang imong heroes, lanes ug matchups.",
+    lockedLink: "Tan-awa ang Plus",
+    overall: "Overall: {rate} sa {games}.",
+    overallNone: "Wala pay imported nga dula. I-sync ang imong matches gikan sa dashboard.",
+    noGames: "Wala pay dula diri.",
+    none: "walay dula",
+    needsParsed:
+      "Wala pay parsed replay sa imong mga na-store nga dula. Pila ka dula kada adlaw ang mapun-an sa lane data.",
+    above: "{pts} pts mas taas sa imong average",
+    below: "{pts} pts mas ubos sa imong average",
+    patches: {
+      title: "Sumala sa patch",
+      row: "Patch {patch}",
+      older: "{games} sa mas karaan nga patch, wala gipakita",
+      unassigned: "{games} nga wala mahibaw-i ang patch",
+    },
+    positions: {
+      title: "Sumala sa posisyon",
+      note: "Gikan sa {games} nga adunay parsed replay; {unplaced} ang dili mabutang (core sa jungle, o wala mailhi nga hero).",
+    },
+    dayParts: {
+      title: "Sumala sa oras sa adlaw",
+      morning: "Buntag (6am–12pm)",
+      afternoon: "Hapon (12–6pm)",
+      evening: "Gabii (6pm–12am)",
+      night: "Kaadlawon (12–6am)",
+      note: "Kanus-a nagsugod ang matag dula, sa imong time zone.",
+    },
+    lengths: {
+      title: "Sumala sa gitas-on sa dula",
+      short: "Ubos sa {to} minutos",
+      normal: "{from}–{to} minutos",
+      long: "{from}–{to} minutos",
+      very_long: "{from} minutos o labaw pa",
+    },
+    laneOutcomes: {
+      title: "Human sa imong lane",
+      won: "Nidaog ka sa lane",
+      even: "Patas ang lane",
+      lost: "Napildi ka sa lane",
+      note: "Gibasa ang lanes sumala sa gold sa 10 minutos (10% nga kalainan) sa {games} nga adunay parsed replay. Walay resulta sa lane ang jungle ug roaming.",
+    },
+    partners: {
+      title: "Mga lane partner",
+      record: "{wins}–{losses}",
+      noneRead:
+        "Wala pay na-store nga lane partner. Mapun-an kini samtang gibasa ang imong parsed games, pila kada adlaw.",
+      noneListed: "Wala pay hero nga nakauban nimo sa lane sa {min} o labaw pa nga dula.",
+      note: "Mga kauban sa imong lane sa 10 minutos, gikan sa {games}; gilista human sa {min} ka dula nga magkauban. Wala giapil ang solo lane ug roam.",
+    },
+    footnote:
+      "Giihap gikan sa imong imported games lang. Gimarkahan ang gagmay nga sample; kinahanglan og labing menos 10 ka dula ug 5 puntos aron markahan ang kalainan sa imong average.",
+  },
   own: {
     metaTitle: "Matchups",
     kicker: "Matchups",

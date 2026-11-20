@@ -163,6 +163,68 @@ export const heroes: MessageTree<typeof en> = {
     emptyWinWith:
       "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
   },
+  splits: {
+    metaTitle: "Iyong splits",
+    link: "Iyong splits",
+    kicker: "Iyong heroes",
+    title: "Iyong splits",
+    description:
+      "Ang record mo ayon sa patch, posisyon, oras ng araw, haba ng laro, kinalabasan ng lane mo at kung sino ang kasama mo sa lane, bawat isa laban sa overall win rate mo.",
+    lockedTitle: "Feature ng Plus",
+    locked:
+      "Hinahati ng Plus ang buong imported history mo sa anim (patch, posisyon, oras ng araw, haba ng laro, resulta ng lane at lane partner) para makita mo kung saan ka nananalo at saan hindi. Libre pa rin ang heroes, lanes at matchups mo.",
+    lockedLink: "Tingnan ang Plus",
+    overall: "Overall: {rate} sa {games}.",
+    overallNone: "Wala pang imported na laro. I-sync ang matches mo mula sa dashboard.",
+    noGames: "Wala pang laro dito.",
+    none: "walang laro",
+    needsParsed:
+      "Wala pang parsed replay sa mga naka-store mong laro. Ilang laro bawat araw ang napupunan ng lane data.",
+    above: "{pts} pts mas mataas sa average mo",
+    below: "{pts} pts mas mababa sa average mo",
+    patches: {
+      title: "Ayon sa patch",
+      row: "Patch {patch}",
+      older: "{games} sa mas lumang patch, hindi ipinapakita",
+      unassigned: "{games} na hindi alam ang patch",
+    },
+    positions: {
+      title: "Ayon sa posisyon",
+      note: "Mula sa {games} na may parsed replay; {unplaced} ang hindi mailagay (core sa jungle, o hindi kilalang hero).",
+    },
+    dayParts: {
+      title: "Ayon sa oras ng araw",
+      morning: "Umaga (6am–12pm)",
+      afternoon: "Hapon (12–6pm)",
+      evening: "Gabi (6pm–12am)",
+      night: "Hatinggabi (12–6am)",
+      note: "Kung kailan nagsimula ang bawat laro, sa time zone mo.",
+    },
+    lengths: {
+      title: "Ayon sa haba ng laro",
+      short: "Wala pang {to} minuto",
+      normal: "{from}–{to} minuto",
+      long: "{from}–{to} minuto",
+      very_long: "{from} minuto o higit pa",
+    },
+    laneOutcomes: {
+      title: "Pagkatapos ng lane mo",
+      won: "Nanalo ka sa lane",
+      even: "Pantay ang lane",
+      lost: "Natalo ka sa lane",
+      note: "Binasa ang lanes ayon sa gold sa 10 minuto (10% na agwat) sa {games} na may parsed replay. Walang resulta ng lane ang jungle at roaming.",
+    },
+    partners: {
+      title: "Mga lane partner",
+      record: "{wins}–{losses}",
+      noneRead:
+        "Wala pang naka-store na lane partner. Napupunan ito habang binabasa ang parsed games mo, ilan bawat araw.",
+      noneListed: "Wala pang hero na nakasama mo sa lane sa {min} o higit pang laro.",
+      note: "Mga kakampi sa lane mo sa 10 minuto, mula sa {games}; nakalista pagkatapos ng {min} larong magkasama. Hindi kasama ang solo lane at roam.",
+    },
+    footnote:
+      "Binilang mula sa imported games mo lang. Minarkahan ang maliliit na sample; kailangan ng hindi bababa sa 10 laro at 5 puntos para markahan ang agwat sa average mo.",
+  },
   own: {
     metaTitle: "Matchups",
     kicker: "Matchups",
