@@ -114,7 +114,7 @@ const WARD_DAYS = 21;
  * The ward map uses games on the current patch once there are this many (terrain changes
  * between patches move ward spots); until then, the previous patch's games, said as such.
  */
-export const MIN_WARD_PATCH_GAMES = 30;
+export const MIN_WARD_PATCH_GAMES = 10;
 /** Patch names as OpenDota writes them ("7.42"); anything else never reaches the SQL. */
 const PATCH_NAME = /^\d+\.\d+[a-z]?$/;
 const WARD_CELL = 4;

@@ -319,6 +319,7 @@ export function mmrResult(input: {
 
 const STEP_NAMES: Record<(typeof BUILD_STEPS)[number], string> = {
   start: "starting",
+  startAlt: "other starting choices",
   early: "early",
   core: "core",
   late: "late",

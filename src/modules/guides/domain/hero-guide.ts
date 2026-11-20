@@ -22,6 +22,8 @@ export interface ItemPick {
   fastMinute?: number;
   /** Pubs only: share of the position's games that bought it. */
   share?: number;
+  /** Starting items: how many copies to buy (1 when absent). */
+  copies?: number;
 }
 
 export type Position = 1 | 2 | 3 | 4 | 5;
@@ -33,6 +35,8 @@ export interface PubItem {
   wins: number;
   minute: number | null;
   fastMinute?: number | null;
+  /** Starting items: copies most buyers took. */
+  copies?: number;
 }
 
 /** A hero's pub games at one position, with what was bought. */
@@ -112,8 +116,47 @@ export function pubPhases(
 }
 
 /** The in-game guide's sections: what to start with, then the build in the order it's bought. */
-export const BUILD_STEPS = ["start", "early", "core", "late", "situational"] as const;
+export const BUILD_STEPS = ["start", "startAlt", "early", "core", "late", "situational"] as const;
 export type BuildStep = (typeof BUILD_STEPS)[number];
+
+/** Gold every hero starts with; a starting build has to fit in it. */
+export const STARTING_GOLD = 600;
+/** Other starting items are listed when at least this share of games bought them. */
+const START_ALT_SHARE = 0.1;
+
+/**
+ * One starting build a player can actually afford: the most bought starting items (with the
+ * copies most buyers took) added in order of popularity while they fit in STARTING_GOLD.
+ * Popular items that don't fit alongside them are alternatives. Without prices, the plain
+ * most-bought list is all there is.
+ */
+export function startingBuild(
+  rows: readonly PubItem[],
+  games: number,
+  costOf?: (itemId: number) => number | null,
+): { start: PubItem[]; alternatives: PubItem[] } {
+  const popular = [...rows]
+    .filter((r) => r.games > 0 && r.wins <= r.games && r.games / games >= MIN_ITEM_SHARE)
+    .sort((a, b) => b.games - a.games || a.itemId - b.itemId);
+  if (!costOf) return { start: popular.slice(0, 6), alternatives: [] };
+  const start: PubItem[] = [];
+  const alternatives: PubItem[] = [];
+  let spent = 0;
+  for (const r of popular) {
+    const cost = costOf(r.itemId);
+    const copies = Math.max(1, r.copies ?? 1);
+    // Fewer copies if all of them don't fit (two Tangos instead of three).
+    const fit =
+      cost === null ? 0 : Math.min(copies, Math.floor((STARTING_GOLD - spent) / Math.max(1, cost)));
+    if (cost !== null && fit >= 1 && start.length < 6) {
+      start.push({ ...r, copies: fit });
+      spent += fit * cost;
+    } else if (r.games / games >= START_ALT_SHARE && alternatives.length < 4) {
+      alternatives.push(r);
+    }
+  }
+  return { start, alternatives };
+}
 
 /** An item counts as part of the core build when at least this share of games buy it… */
 export const CORE_SHARE = 0.25;
@@ -138,6 +181,7 @@ const SITUATIONAL_SHARE = 0.04;
 export function buildPath(
   build: PubBuild,
   exclude: (itemId: number) => boolean,
+  costOf?: (itemId: number) => number | null,
 ): Record<BuildStep, ItemPick[]> {
   const games = Math.max(1, build.games);
   const toPick = (r: PubItem, most: number): ItemPick => ({
@@ -148,12 +192,10 @@ export function buildPath(
     share: r.games / games,
     ...(r.minute === null ? {} : { minute: r.minute }),
     ...(r.fastMinute === null || r.fastMinute === undefined ? {} : { fastMinute: r.fastMinute }),
+    ...(r.copies && r.copies > 1 ? { copies: r.copies } : {}),
   });
   const valid = (r: PubItem) => r.games > 0 && r.wins <= r.games;
-  const start = [...build.starting]
-    .filter((r) => valid(r) && r.games / games >= MIN_ITEM_SHARE)
-    .sort((a, b) => b.games - a.games || a.itemId - b.itemId)
-    .slice(0, 6);
+  const { start, alternatives } = startingBuild(build.starting, games, costOf);
   const timed = build.items.filter((r) => valid(r) && r.minute !== null && !exclude(r.itemId));
   const byMinute = (a: PubItem, b: PubItem) =>
     a.minute! - b.minute! || b.games - a.games || a.itemId - b.itemId;
@@ -190,6 +232,7 @@ export function buildPath(
   const most = (rows: PubItem[]) => Math.max(1, ...rows.map((r) => r.games));
   return {
     start: start.map((r) => toPick(r, most(start))),
+    startAlt: alternatives.map((r) => toPick(r, most(alternatives))),
     early: early.map((r) => toPick(r, most(early))),
     core: core.map((r) => toPick(r, most(core))),
     late: late.map((r) => toPick(r, most(late))),
