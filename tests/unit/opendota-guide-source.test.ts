@@ -184,7 +184,7 @@ describe("OpenDotaGuideSource: current patch first", () => {
   });
 
   it("maps wards from the previous patch while the new one has few games", async () => {
-    const gw = patchGateway({ currentGames: 16, skillRows: [] });
+    const gw = patchGateway({ currentGames: 6, skillRows: [] });
     const source = new OpenDotaGuideSource(gw as never, {
       baseUrl: "https://api.opendota.com/api",
     });

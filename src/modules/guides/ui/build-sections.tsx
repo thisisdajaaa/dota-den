@@ -7,7 +7,7 @@ import { minimapFor } from "@/components/minimap";
 import { ZoomableMap } from "@/components/zoomable-map";
 import type { ItemInfo } from "@/modules/matches/domain/read-models";
 import type { BuildStep, ItemPick } from "../domain/hero-guide";
-import { BUILD_STEPS } from "../domain/hero-guide";
+import { BUILD_STEPS, STARTING_GOLD } from "../domain/hero-guide";
 import { talentName, type SkillBuild } from "../domain/skill-build";
 import {
   topWardSpots,
@@ -48,7 +48,12 @@ function ItemTile({
           </span>
         )}
       </span>
-      <span className="line-clamp-2 text-[0.7rem] leading-tight">{name}</span>
+      <span className="line-clamp-2 text-[0.7rem] leading-tight">
+        {name}
+        {pick.copies && pick.copies > 1 ? (
+          <span className="font-semibold text-gold tabular-nums"> ×{pick.copies}</span>
+        ) : null}
+      </span>
       {showTiming && pick.minute !== undefined && (
         <span className="text-[0.7rem] font-medium text-gold tabular-nums">{pick.minute}′</span>
       )}
@@ -69,6 +74,10 @@ export async function BuildPath({
   itemMap: Map<number, ItemInfo>;
 }) {
   const t = await getT();
+  const startCosts = build.start.map((p) => itemMap.get(p.itemId)?.cost ?? null);
+  const startGold = startCosts.every((c) => c !== null)
+    ? build.start.reduce((n, p, i) => n + (startCosts[i] ?? 0) * (p.copies ?? 1), 0)
+    : null;
   const steps = BUILD_STEPS.filter((s) => build[s].length > 0);
   if (steps.length === 0)
     return <p className="text-sm text-muted-foreground">{t("guides.items.noData")}</p>;
@@ -78,7 +87,11 @@ export async function BuildPath({
         <div key={step} role="group" aria-label={t(`guides.build.steps.${step}`)}>
           <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
             <h3 className="text-sm font-semibold">{t(`guides.build.steps.${step}`)}</h3>
-            <p className="text-xs text-muted-foreground">{t(`guides.build.hints.${step}`)}</p>
+            <p className="text-xs text-muted-foreground">
+              {step === "start" && startGold !== null
+                ? t("guides.build.startGold", { gold: startGold, max: STARTING_GOLD })
+                : t(`guides.build.hints.${step}`)}
+            </p>
           </div>
           {step === "core" || step === "late" ? (
             <ol className="flex flex-wrap items-start gap-x-1 gap-y-3">

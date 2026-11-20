@@ -49,6 +49,7 @@ export default async function HeroGuidePage({
   const guide = await guideService.guide(heroId, isConsumable, {
     isFiller: (id) => isBuildFiller(items.get(id)),
     position,
+    costOf: (id) => items.get(id)?.cost ?? null,
   });
   const name = hero?.name ?? t("guides.hero.fallbackName", { id: heroId });
   // Ward spots belong on support guides: the build is for pos 4/5, or the hero is a support.

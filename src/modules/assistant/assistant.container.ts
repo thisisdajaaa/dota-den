@@ -54,6 +54,7 @@ const askData = new AppAskData({
     return guideService.guide(heroId, (id) => items.get(id)?.qual === "consumable", {
       isFiller: (id) => isBuildFiller(items.get(id)),
       position,
+      costOf: (id) => items.get(id)?.cost ?? null,
     });
   },
   wardCells: () => guideService.wardCells(),
