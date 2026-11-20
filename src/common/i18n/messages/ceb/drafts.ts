@@ -638,6 +638,46 @@ export const drafts: MessageTree<typeof en> = {
     footnote:
       "Gibanabana gikan sa draft ra, gamit ang samang data ug report card sa draft trainer. Sakto ang tag-an niini sa midaog {pct}% sa panahon sa bag-ong high-rank nga duwa nga wala pa niini makita, mao nga isipa kini nga basa, dili prediksyon.",
   },
+  postMortem: {
+    kicker: "Plus",
+    title: "Post-mortem sa draft",
+    locked:
+      "Sa Plus, makita kung giunsa niini nga draft: kinsa ang midaog sa matag lane sa minuto 10 itandi sa gipaabot sa draft, asa nakuha ang gold lead, ug unsa ang nahitabo sa mga counter nga nagustohan sa draft.",
+    lockedLink: "Tan-awa ang Plus",
+    summary: "Midaog ang {side} sulod sa {min} ka minuto.",
+    decided: "Kadaghanan sa ilang labaw nakuha sa {phase} ({gold} gold).",
+    comeback: "Napildi sila og {gold} gold sa minuto {min} apan nakabawi.",
+    leadForGood: "Nag-una na hangtod sa katapusan gikan sa minuto {min}.",
+    ledThroughout: "Nag-una sila sukad sa sugod.",
+    phaseLabels: { laning: "Laning stage", mid: "Mid game", late: "Late game" },
+    phases: { laning: "laning stage", mid: "mid game", late: "late game" },
+    lanes: {
+      title: "Mga lane sa 10 minutos",
+      lane: "Lane",
+      heroes: "Nag-lane",
+      gold: "Gold sa 10:00",
+      draft: "Draft",
+      ahead: "{side} +{gold}",
+      even: "Patas",
+      as_drafted: "Gipaabot ang {side}: sakto ang draft",
+      against_draft: "Gipaabot ang {side}: baliktad ang nahitabo",
+      expectedOnly: "Gipaabot ang {side}; patas ang lane",
+      noRead: "Walay klaro nga basa",
+    },
+    swings: {
+      title: "Asa milihok ang gold",
+      gained: "{side} +{gold}",
+      even: "Halos patas",
+    },
+    counters: {
+      title: "Mga counter nga nagustohan sa draft",
+      line: "{hero} batok sa {vs} (+{edge} sa mga high-rank nga duwa).",
+    },
+    needsParse:
+      "Kinahanglan og parsed replay para sa mga lane ug lihok sa gold; pangayo og detailed stats sa ibabaw.",
+    footnote:
+      "Gikan sa replay niini nga duwa ug sa parehas nga draft data sa ibabaw. Gipakita niini ang nahitabo tupad sa gipaabot sa draft, dili ang usa ra ka hinungdan sa kadaugan.",
+  },
   phrases: {
     side: { radiant: "Radiant", dire: "Dire" },
     position: {

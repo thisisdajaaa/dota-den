@@ -19,6 +19,7 @@ import {
   Timer,
   Zap,
   type LucideIcon,
+  Swords,
 } from "lucide-react";
 import { cn } from "cn";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
@@ -46,6 +47,7 @@ const PERKS: ReadonlyArray<{
     | "compare"
     | "coaching"
     | "buildCheck"
+    | "postMortem"
     | "read"
     | "pick"
     | "session"
@@ -60,6 +62,7 @@ const PERKS: ReadonlyArray<{
   { key: "compare", icon: Gauge },
   { key: "coaching", icon: Timer },
   { key: "buildCheck", icon: Hammer },
+  { key: "postMortem", icon: Swords },
   { key: "read", icon: FileText },
   { key: "pick", icon: Sparkles },
   { key: "session", icon: Activity },

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { grantPlus } from "./support/grant-plus";
 
 test("dashboard auto-syncs matches and links to an in-app match page", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
@@ -248,7 +249,10 @@ test("the overview shows achievements from your own games", async ({ page }) => 
   await expect(ach).toContainText(/\d+ of \d+ tiers/);
 });
 
-test("your real ranked drafts are graded: per match and over recent games", async ({ page }) => {
+test("your real ranked drafts are graded: per match and over recent games", async ({
+  page,
+  browser,
+}) => {
   await page.goto("/api/v1/auth/steam/login");
   await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
     timeout: 20_000,
@@ -265,6 +269,28 @@ test("your real ranked drafts are graded: per match and over recent games", asyn
     draft.getByRole("img", { name: /Estimated win chance from the draft/ }),
   ).toBeVisible();
   await expect(draft).toContainText(/(Radiant|Dire) won/);
+
+  // The post-mortem is Plus: anyone else sees what it is and where to get it.
+  const guest = await browser.newContext();
+  const guestPage = await guest.newPage();
+  await guestPage.goto("/matches/7000000012");
+  const locked = guestPage.getByRole("region", { name: "Draft post-mortem" });
+  await expect(locked.getByRole("link", { name: "See Plus" })).toHaveAttribute("href", "/plus");
+  await expect(locked.getByRole("table")).toHaveCount(0);
+  await guest.close();
+
+  await grantPlus(page, "post-mortem");
+  await page.reload();
+  const pm = page.getByRole("region", { name: "Draft post-mortem" });
+  // From the parsed replay: lanes at 10 minutes against the draft, and where the gold moved.
+  await expect(pm).toContainText(/(Radiant|Dire) won in \d+ minutes\./);
+  const lanes = pm.getByRole("table", { name: "Lanes at 10 minutes" });
+  await expect(lanes.getByRole("row")).not.toHaveCount(1);
+  await expect(lanes).toContainText(/Radiant safe lane vs Dire offlane|Mid lane/);
+  const swings = pm.getByRole("heading", { name: "Where the gold moved" });
+  await expect(swings).toBeVisible();
+  await expect(pm).toContainText(/Laning stage|laning stage/);
+  await expect(pm.getByRole("link", { name: "See Plus" })).toHaveCount(0);
 });
 
 test("tag your matches, add a note, and filter by tag", async ({ page }) => {

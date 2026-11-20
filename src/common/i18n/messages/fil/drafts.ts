@@ -638,6 +638,46 @@ export const drafts: MessageTree<typeof en> = {
     footnote:
       "Tinantiya mula sa draft lang, gamit ang parehong data at report card ng draft trainer. Tama ang hula nito sa nanalo {pct}% ng oras sa mga bagong high-rank na laro na hindi pa nito nakita, kaya ituring itong basa, hindi prediksyon.",
   },
+  postMortem: {
+    kicker: "Plus",
+    title: "Post-mortem ng draft",
+    locked:
+      "Sa Plus, makikita kung paano lumabas ang draft na ito: sino ang nanalo sa bawat lane pagdating ng minuto 10 kumpara sa inasahan ng draft, saan nakuha ang gold lead, at kumusta ang mga counter na nagustuhan ng draft.",
+    lockedLink: "Tingnan ang Plus",
+    summary: "Nanalo ang {side} sa loob ng {min} minuto.",
+    decided: "Karamihan ng lamang nila ay nakuha sa {phase} ({gold} gold).",
+    comeback: "Talo sila ng {gold} gold sa minuto {min} pero nakabawi.",
+    leadForGood: "Lamang na hanggang dulo mula minuto {min}.",
+    ledThroughout: "Lamang sila mula umpisa.",
+    phaseLabels: { laning: "Laning stage", mid: "Mid game", late: "Late game" },
+    phases: { laning: "laning stage", mid: "mid game", late: "late game" },
+    lanes: {
+      title: "Mga lane sa 10 minuto",
+      lane: "Lane",
+      heroes: "Nag-lane",
+      gold: "Gold pagdating ng 10:00",
+      draft: "Draft",
+      ahead: "{side} +{gold}",
+      even: "Pantay",
+      as_drafted: "Inasahan ang {side}: tama ang draft",
+      against_draft: "Inasahan ang {side}: baligtad ang nangyari",
+      expectedOnly: "Inasahan ang {side}; pantay ang lane",
+      noRead: "Walang malinaw na basa",
+    },
+    swings: {
+      title: "Saan gumalaw ang gold",
+      gained: "{side} +{gold}",
+      even: "Halos pantay",
+    },
+    counters: {
+      title: "Mga counter na nagustuhan ng draft",
+      line: "{hero} laban sa {vs} (+{edge} sa mga high-rank na laro).",
+    },
+    needsParse:
+      "Kailangan ng parsed replay para sa mga lane at galaw ng gold; humingi ng detailed stats sa itaas.",
+    footnote:
+      "Mula sa replay ng larong ito at sa parehong draft data sa itaas. Ipinapakita nito ang nangyari katabi ng inasahan ng draft, hindi ang iisang dahilan ng panalo.",
+  },
   phrases: {
     side: { radiant: "Radiant", dire: "Dire" },
     position: {

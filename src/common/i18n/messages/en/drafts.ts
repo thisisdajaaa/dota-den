@@ -621,6 +621,45 @@ export const drafts = {
     footnote:
       "Estimated from the draft alone, with the same data and report card as the draft trainer. It picked the winner {pct}% of the time on recent high-rank games it hadn't seen, so treat it as a read, not a prediction.",
   },
+  postMortem: {
+    kicker: "Plus",
+    title: "Draft post-mortem",
+    locked:
+      "With Plus, see how this draft played out: who won each lane by minute 10 against what the draft expected, where the gold lead was won, and how the counters the draft liked went.",
+    lockedLink: "See Plus",
+    summary: "{side} won in {min} minutes.",
+    decided: "Most of their lead came in the {phase} ({gold} gold).",
+    comeback: "They were {gold} gold behind at minute {min} and came back.",
+    leadForGood: "Ahead for good from minute {min}.",
+    ledThroughout: "They led from the start.",
+    phaseLabels: { laning: "Laning stage", mid: "Mid game", late: "Late game" },
+    phases: { laning: "laning stage", mid: "mid game", late: "late game" },
+    lanes: {
+      title: "Lanes at 10 minutes",
+      lane: "Lane",
+      heroes: "Laned",
+      gold: "Gold earned by 10:00",
+      draft: "Draft",
+      ahead: "{side} +{gold}",
+      even: "Even",
+      as_drafted: "Expected {side}: as drafted",
+      against_draft: "Expected {side}: went the other way",
+      expectedOnly: "Expected {side}; the lane was even",
+      noRead: "No clear read",
+    },
+    swings: {
+      title: "Where the gold moved",
+      gained: "{side} +{gold}",
+      even: "About even",
+    },
+    counters: {
+      title: "The counters the draft liked",
+      line: "{hero} into {vs} (+{edge} in high-rank games).",
+    },
+    needsParse: "Lanes and the gold swing need a parsed replay; ask for detailed stats above.",
+    footnote:
+      "From this game's replay and the same draft data as above. It shows what happened next to what the draft expected, not the one reason a game was won.",
+  },
   /** Sentences built by the draft domain (see `domain/phrase.ts`). */
   phrases: {
     side: { radiant: "Radiant", dire: "Dire" },
