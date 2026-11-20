@@ -112,6 +112,20 @@ test("free players get 5 questions a day, then a Plus offer", async ({ page }) =
     .toBeLessThan(4);
   const box = await region.boundingBox();
   expect(box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  // Scrolled back up, the messages below stay inside the panel: the page still ends at the
+  // footer (screen-reader labels once stretched it far below).
+  // The scroll area is what positioned bits inside messages are placed against, so they
+  // scroll (and clip) with it.
+  expect(await scroll.evaluate((el) => getComputedStyle(el).position)).not.toBe("static");
+  await page.setViewportSize({ width: 1280, height: 560 });
+  await scroll.evaluate((el) => (el.scrollTop = 0));
+  const pageEnd = await page.evaluate(() => ({
+    page: document.documentElement.scrollHeight,
+    footer: Math.round(
+      document.querySelector("footer")!.getBoundingClientRect().bottom + window.scrollY,
+    ),
+  }));
+  expect(pageEnd.page - pageEnd.footer).toBeLessThanOrEqual(1);
   await expect(region).toContainText("That's all your questions for today");
   await expect(region).toContainText("Free players get 5 questions a day");
   await expect(region.getByRole("link", { name: "See Plus" })).toHaveAttribute("href", "/plus");
