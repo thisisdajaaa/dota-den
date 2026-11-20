@@ -51,6 +51,10 @@ export const plus = {
         title: "Build check vs high-rank",
         body: "On each hero page, your item timings against Legend–Immortal players at your position last week, with one thing to try (free: your own timings).",
       },
+      postMortem: {
+        title: "Draft post-mortem",
+        body: "On ranked match pages, how the draft played out: lanes at 10 minutes against what the draft expected, where the gold lead was won, and the counters it liked (free: the draft read).",
+      },
       read: {
         title: "AI read of your battle report",
         body: "Pick any period on your battle report and get a few observations about it and one thing to focus on, written from that page's numbers only (each lists the numbers it uses).",
