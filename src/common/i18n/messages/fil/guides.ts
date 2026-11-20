@@ -60,17 +60,19 @@ export const guides: MessageTree<typeof en> = {
   },
   build: {
     description:
-      "{hero} sa {position}, gaya ng in-game guide: ang panimulang items ng mga Legend hanggang Immortal, tapos ang items na binuo ng karamihan ayon sa pagkakasunod, kasama ang totoong timing mula sa huling buong linggo ng laro (STRATZ). Ang situational ay mga item na mas kaunti ang bumibili.",
+      "{hero} sa {position}, gaya ng in-game guide: ang panimulang items ng mga Legend hanggang Immortal, tapos ang items na binuo ng karamihan ayon sa pagkakasunod, kasama ang totoong timing mula sa huling buong linggo ng laro (STRATZ). Ang situational ay mga item na mas kaunti ang bumibili. Ang late-game items ang sumunod na natapos ng karamihan sa mahahabang laro.",
     steps: {
       start: "Panimulang items",
       early: "Early game",
       core: "Core build",
+      late: "Late game",
       situational: "Situational",
     },
     hints: {
       start: "Binili bago ang horn",
       early: "Unang 10 minuto",
       core: "Ayon sa pagkakasunod ng pagbili · karaniwang minuto",
+      late: "Natatapos sa mahahabang laro, pagkalipas ng 25 minuto · karaniwang minuto",
       situational: "Mas kaunti ang bumibili; depende sa laro",
     },
     timings: {
@@ -91,6 +93,9 @@ export const guides: MessageTree<typeof en> = {
     ability: "Ability",
     talent: "Talent",
     talents: "Mga talent",
+    patch: "Patch {patch}.",
+    stalePatch:
+      "Bago pa ang patch {current} at kakaunti pa ang pro game sa hero na ito, kaya mula sa mga laro ng {patch} ang build na ito. Kasalukuyang talents ang nakikita; 0% ang mga bago sa {current}.",
     talentNote:
       "Gaano kadalas kinuha ng mga pro ang bawat panig ng hilera. Nagbabago ang numero ng talent kada patch, kaya ang laro ang nagpapakita ng eksaktong halaga.",
   },
@@ -102,6 +107,9 @@ export const guides: MessageTree<typeof en> = {
     mapAlt: "Mapa ng Dota 2 na may pinakaginagamit na ward spot",
     spotTitle: "Spot {rank}: {n} ward",
     none: "Walang karaniwang spot para sa pinili.",
+    patch: "Mapa ng patch {patch}.",
+    stalePatch:
+      "Bago pa ang patch {current} at kakaunti pa ang parsed pro game, kaya mula sa mga laro ng {patch} ang mga spot na ito, sa mapa ng {patch}.",
     note: "Mula sa mga parsed pro game ng OpenDota. Pinagsasama ang mga spot sa maliit na grid, kaya puwedeng sakop ng isang tuldok ang ilang malapit na cliff.",
     link: "Mapa ng ward spots",
     linkHint: "Kung saan naglalagay ng observer at sentry ang mga pro, ayon sa panig at oras",

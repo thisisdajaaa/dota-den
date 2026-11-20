@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "cn";
+import { ZoomableMap } from "@/components/zoomable-map";
 import { useT } from "@/common/i18n/client";
 import { plural } from "@/common/i18n/translate";
 import { clockTime } from "../domain/match-laning";
@@ -42,7 +43,16 @@ function MapBackdrop() {
 }
 
 /** Where the selected player warded and died (team fights only), from a parsed replay. */
-export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: string }) {
+export function WardMapCard({
+  map,
+  heroLabel,
+  mapImage = null,
+}: {
+  map: MapEvents;
+  heroLabel: string;
+  /** Valve's map art for the game's patch; the schematic map when there's none. */
+  mapImage?: string | null;
+}) {
   const t = useT();
   const [win, setWin] = useState<MapWindow>("all");
   const kind = (k: "observer" | "sentry") =>
@@ -85,55 +95,74 @@ export function WardMapCard({ map, heroLabel }: { map: MapEvents; heroLabel: str
         ))}
       </div>
       <div className="grid gap-4 sm:grid-cols-[minmax(0,22rem)_1fr]">
-        <svg
-          viewBox="0 0 100 100"
-          role="img"
-          aria-label={t("matches.wardMap.mapLabel", {
-            observers: plural(t, "matches.wardMap.observerWards", observers),
-            sentries: plural(t, "matches.wardMap.sentryWards", sentries),
-            deaths: plural(t, "matches.wardMap.teamFightDeaths", deaths.length),
-          })}
-          className="aspect-square w-full max-w-[22rem]"
+        <ZoomableMap
+          className="max-w-[22rem] rounded-lg"
+          labels={{
+            zoomIn: t("common.map.zoomIn"),
+            zoomOut: t("common.map.zoomOut"),
+            reset: t("common.map.reset"),
+            hint: t("common.map.hint"),
+          }}
         >
-          <MapBackdrop />
-          {wards.map((w, i) => {
-            const p = mapPoint(w.x, w.y);
-            return (
-              <circle
-                key={`w${i}`}
-                cx={p.left * 100}
-                cy={p.top * 100}
-                r={w.kind === "observer" ? 2.2 : 1.7}
-                className={cn(
-                  "stroke-black/60",
-                  w.kind === "observer" ? "fill-amber-300" : "fill-sky-400",
-                )}
-                strokeWidth="0.4"
-              >
-                <title>
-                  {`${t("matches.wardMap.wardAt", { kind: kind(w.kind), time: clockTime(w.placedAt) })}${
-                    w.removedAt !== null
-                      ? t("matches.wardMap.goneAt", { time: clockTime(w.removedAt) })
-                      : ""
-                  }`}
-                </title>
-              </circle>
-            );
-          })}
-          {deaths.map((d, i) => {
-            const p = mapPoint(d.x, d.y);
-            const cx = p.left * 100;
-            const cy = p.top * 100;
-            return (
-              <g key={`d${i}`} className="stroke-rose-500" strokeWidth="0.9" strokeLinecap="round">
-                <title>{t("matches.wardMap.diedAt", { time: clockTime(d.time) })}</title>
-                <path
-                  d={`M${cx - 1.8} ${cy - 1.8} L${cx + 1.8} ${cy + 1.8} M${cx + 1.8} ${cy - 1.8} L${cx - 1.8} ${cy + 1.8}`}
-                />
-              </g>
-            );
-          })}
-        </svg>
+          <svg
+            viewBox="0 0 100 100"
+            role="img"
+            aria-label={t("matches.wardMap.mapLabel", {
+              observers: plural(t, "matches.wardMap.observerWards", observers),
+              sentries: plural(t, "matches.wardMap.sentryWards", sentries),
+              deaths: plural(t, "matches.wardMap.teamFightDeaths", deaths.length),
+            })}
+            className="aspect-square size-full"
+          >
+            {mapImage ? (
+              <image href={mapImage} width="100" height="100" preserveAspectRatio="none" />
+            ) : (
+              <MapBackdrop />
+            )}
+            {wards.map((w, i) => {
+              const p = mapPoint(w.x, w.y);
+              return (
+                <circle
+                  key={`w${i}`}
+                  cx={p.left * 100}
+                  cy={p.top * 100}
+                  r={w.kind === "observer" ? 2.2 : 1.7}
+                  className={cn(
+                    "stroke-black/60",
+                    w.kind === "observer" ? "fill-amber-300" : "fill-sky-400",
+                  )}
+                  strokeWidth="0.4"
+                >
+                  <title>
+                    {`${t("matches.wardMap.wardAt", { kind: kind(w.kind), time: clockTime(w.placedAt) })}${
+                      w.removedAt !== null
+                        ? t("matches.wardMap.goneAt", { time: clockTime(w.removedAt) })
+                        : ""
+                    }`}
+                  </title>
+                </circle>
+              );
+            })}
+            {deaths.map((d, i) => {
+              const p = mapPoint(d.x, d.y);
+              const cx = p.left * 100;
+              const cy = p.top * 100;
+              return (
+                <g
+                  key={`d${i}`}
+                  className="stroke-rose-500"
+                  strokeWidth="0.9"
+                  strokeLinecap="round"
+                >
+                  <title>{t("matches.wardMap.diedAt", { time: clockTime(d.time) })}</title>
+                  <path
+                    d={`M${cx - 1.8} ${cy - 1.8} L${cx + 1.8} ${cy + 1.8} M${cx + 1.8} ${cy - 1.8} L${cx - 1.8} ${cy + 1.8}`}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </ZoomableMap>
         <div className="space-y-3 text-sm">
           <ul className="space-y-1.5">
             <li className="flex items-center gap-2">

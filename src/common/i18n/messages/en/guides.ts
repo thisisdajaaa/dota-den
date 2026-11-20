@@ -55,17 +55,19 @@ export const guides = {
   },
   build: {
     description:
-      "{hero} at {position}, laid out like the in-game guides: what Legend to Immortal players started with, then the items most of them built in the order they built them, with real timings from the last full week of games (STRATZ). Situational items are ones fewer players bought.",
+      "{hero} at {position}, laid out like the in-game guides: what Legend to Immortal players started with, then the items most of them built in the order they built them, with real timings from the last full week of games (STRATZ). Situational items are ones fewer players bought. Late-game items are the next ones most players finished in games that went long.",
     steps: {
       start: "Starting items",
       early: "Early game",
       core: "Core build",
+      late: "Late game",
       situational: "Situational",
     },
     hints: {
       start: "Bought before the horn",
       early: "First 10 minutes",
       core: "In the order they're bought · typical minute",
+      late: "Finished in longer games, after 25 minutes · typical minute",
       situational: "Fewer players buy these; pick by the game",
     },
     timings: {
@@ -86,6 +88,9 @@ export const guides = {
     ability: "Ability",
     talent: "Talent",
     talents: "Talents",
+    patch: "Patch {patch}.",
+    stalePatch:
+      "Patch {current} is new and has too few pro games on this hero, so this build is from {patch} games. Talents shown are the current ones; any new in {current} show 0%.",
     talentNote:
       "How often pros took each side of the row. Talent numbers change with patches, so the game shows the exact values.",
   },
@@ -97,6 +102,9 @@ export const guides = {
     mapAlt: "Dota 2 map with the most used ward spots",
     spotTitle: "Spot {rank}: {n} wards",
     none: "No common spots for this choice.",
+    patch: "Patch {patch} map.",
+    stalePatch:
+      "Patch {current} is new and has too few parsed pro games, so these spots are from {patch} games, shown on the {patch} map.",
     note: "From OpenDota's parsed pro games. Spots are grouped on a small grid, so a dot can cover a few nearby cliffs.",
     link: "Ward spots map",
     linkHint: "Where pros place observers and sentries, by side and time",

@@ -72,6 +72,12 @@ export const common: MessageTree<typeof en> = {
     today: "Karon",
     selected: "napili",
   },
+  map: {
+    zoomIn: "I-zoom in",
+    zoomOut: "I-zoom out",
+    reset: "I-reset ang zoom",
+    hint: "I-zoom gamit ang + ug −, double-click o double-tap, pinch, o Ctrl/⌘ + scroll. I-drag aron molihok.",
+  },
   language: { label: "Pinulongan", saved: "Nausab ang pinulongan" },
   filters: {
     button: "Mga filter",

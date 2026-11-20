@@ -112,19 +112,26 @@ export function pubPhases(
 }
 
 /** The in-game guide's sections: what to start with, then the build in the order it's bought. */
-export const BUILD_STEPS = ["start", "early", "core", "situational"] as const;
+export const BUILD_STEPS = ["start", "early", "core", "late", "situational"] as const;
 export type BuildStep = (typeof BUILD_STEPS)[number];
 
 /** An item counts as part of the core build when at least this share of games buy it… */
 export const CORE_SHARE = 0.25;
 /** …and as an early item at this share (cheap items are bought in fewer games). */
 const EARLY_SHARE = 0.15;
+/**
+ * Late-game items: bought from minute 25 on in at least this share of all games. Fewer games
+ * reach the late game, so these sit below the core share; with them the build fills the
+ * inventory.
+ */
+const LATE_SHARE = 0.06;
 /** Situational items: bought in at least this share of games, but below the core. */
 const SITUATIONAL_SHARE = 0.04;
 
 /**
  * A position's build laid out like the in-game guides: starting items, early items, the core
- * items in the order they're typically bought (with their timings), then situational items
+ * items in the order they're typically bought (with their timings), the late-game items that
+ * complete the inventory in longer games, then situational items
  * (bought in fewer games, best win rate first among those with enough games). All from what
  * players actually bought; nothing is suggested that the data doesn't show.
  */
@@ -160,7 +167,15 @@ export function buildPath(
     .sort((a, b) => b.games - a.games)
     .slice(0, 6)
     .sort(byMinute);
-  const used = new Set([...early, ...core].map((r) => r.itemId));
+  const coreIds = new Set(core.map((r) => r.itemId));
+  const late = timed
+    .filter(
+      (r) => !coreIds.has(r.itemId) && r.minute! >= MID_UNTIL && r.games / games >= LATE_SHARE,
+    )
+    .sort((a, b) => b.games - a.games || a.itemId - b.itemId)
+    .slice(0, 6)
+    .sort(byMinute);
+  const used = new Set([...early, ...core, ...late].map((r) => r.itemId));
   const situational = timed
     .filter(
       (r) =>
@@ -177,6 +192,7 @@ export function buildPath(
     start: start.map((r) => toPick(r, most(start))),
     early: early.map((r) => toPick(r, most(early))),
     core: core.map((r) => toPick(r, most(core))),
+    late: late.map((r) => toPick(r, most(late))),
     situational: situational.map((r) => toPick(r, most(situational))),
   };
 }

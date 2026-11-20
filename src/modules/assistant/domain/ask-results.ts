@@ -321,6 +321,7 @@ const STEP_NAMES: Record<(typeof BUILD_STEPS)[number], string> = {
   start: "starting",
   early: "early",
   core: "core",
+  late: "late",
   situational: "situational",
 };
 

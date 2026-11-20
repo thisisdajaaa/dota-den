@@ -24,6 +24,14 @@ export interface WardCell {
   count: number;
 }
 
+/** Ward cells from recent pro games, and the patch they were played on (null when unknown). */
+export interface WardData {
+  cells: WardCell[];
+  games: number;
+  patch?: string | null;
+  currentPatch?: string | null;
+}
+
 export interface WardSpot {
   /** Position on the map image, 0–1 from the left and from the top. */
   left: number;

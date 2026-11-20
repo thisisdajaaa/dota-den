@@ -72,6 +72,12 @@ export const common = {
     today: "Today",
     selected: "selected",
   },
+  map: {
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    reset: "Reset zoom",
+    hint: "Zoom with + and −, a double-click or double-tap, a pinch, or Ctrl/⌘ + scroll. Drag to move around.",
+  },
   language: { label: "Language", saved: "Language changed" },
   filters: {
     button: "Filters",

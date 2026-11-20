@@ -25,6 +25,7 @@ import { formatDuration, gameModeLabel, regionLabel } from "@/modules/matches/ui
 import { heroName } from "@/modules/matches/ui/hero-portrait";
 import { LaningCard } from "@/modules/matches/ui/laning-card";
 import { WardMapCard } from "@/modules/matches/ui/ward-map-card";
+import { minimapAt } from "@/components/minimap";
 import { PerformanceCard } from "@/modules/matches/ui/performance-card";
 import { Scoreboard } from "@/modules/matches/ui/scoreboard";
 import { ShareButton } from "@/modules/shares/ui/share-button";
@@ -287,6 +288,7 @@ export default async function MatchPage({ params, searchParams }: PageProps<"/ma
       {perfPlayer?.map && (
         <WardMapCard
           map={perfPlayer.map}
+          mapImage={minimapAt(match.startedAt)?.src ?? null}
           heroLabel={heroName(heroes.get(perfPlayer.heroId), perfPlayer.heroId)}
         />
       )}
