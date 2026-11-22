@@ -225,7 +225,7 @@ export const heroes = {
     title: "Who you lose to",
     description:
       "Your record against and with every hero, counted from the lineups of your own imported games.",
-    link: "Who you lose to: matchups from your games",
+    link: "Who you lose to",
     linkHero: "Matchups from your games on {name}",
     back: "Back to your heroes",
     last90: "Last 90 days",

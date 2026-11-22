@@ -231,7 +231,7 @@ export const heroes: MessageTree<typeof en> = {
     title: "Kinsa ang nakapildi nimo",
     description:
       "Ang imong record batok ug kauban ang matag hero, giihap gikan sa mga lineup sa imong kaugalingong na-import nga mga duwa.",
-    link: "Kinsa ang nakapildi nimo: matchups gikan sa imong mga duwa",
+    link: "Kinsa ang nakapildi nimo",
     linkHero: "Matchups gikan sa imong mga duwa gamit si {name}",
     back: "Balik sa imong mga hero",
     last90: "Katapusang 90 ka adlaw",

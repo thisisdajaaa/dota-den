@@ -231,7 +231,7 @@ export const heroes: MessageTree<typeof en> = {
     title: "Sino ang tumatalo sa iyo",
     description:
       "Ang record mo laban at kasama ang bawat hero, binilang mula sa mga lineup ng sarili mong na-import na laro.",
-    link: "Sino ang tumatalo sa iyo: matchups mula sa mga laro mo",
+    link: "Sino ang tumatalo sa iyo",
     linkHero: "Matchups mula sa mga laro mo gamit si {name}",
     back: "Bumalik sa mga hero mo",
     last90: "Huling 90 araw",

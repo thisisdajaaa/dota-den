@@ -60,14 +60,15 @@ const PERKS: ReadonlyArray<{
     | "thanks";
   icon: LucideIcon;
 }> = [
+  // AI and coaching first: they're what Plus pays for. Convenience perks after.
   { key: "coach", icon: Bot },
-  { key: "compare", icon: Gauge },
-  { key: "coaching", icon: Timer },
-  { key: "buildCheck", icon: Hammer },
-  { key: "postMortem", icon: Swords },
-  { key: "splits", icon: ChartColumn },
   { key: "read", icon: FileText },
   { key: "pick", icon: Sparkles },
+  { key: "postMortem", icon: Swords },
+  { key: "coaching", icon: Timer },
+  { key: "buildCheck", icon: Hammer },
+  { key: "compare", icon: Gauge },
+  { key: "splits", icon: ChartColumn },
   { key: "session", icon: Activity },
   { key: "sync", icon: Zap },
   { key: "alerts", icon: Bell },
@@ -145,8 +146,60 @@ export function PlusPricing({
         </Banner>
       )}
 
+      {!available && (
+        // Not on sale yet: still show what it will cost, without a way to buy.
+        <section aria-labelledby="plus-plans" className="space-y-4">
+          <h2 id="plus-plans" className="sr-only">
+            {t("plus.page.plansTitle")}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {PLAN_ORDER.map((p) => (
+              <PlanOption key={p} plan={p} signedIn={signedIn} featured={p === "yearly"} preview />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {available && (
+        <section aria-labelledby="plus-plans" className="space-y-4">
+          <h2 id="plus-plans" className="sr-only">
+            {t("plus.page.subscribe")}
+          </h2>
+          {plan?.plus && plan.reason === "staff" ? null : plan?.plus ? (
+            <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
+              <p className="flex items-center gap-2 font-medium" role="status">
+                <Sparkles aria-hidden className="size-4 text-gold" /> {t("plus.page.youHavePlus")}
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/account#plan">{t("plus.page.manage")}</Link>
+              </Button>
+            </div>
+          ) : plan?.stillBills ? (
+            // A renewal that failed (or a paused plan) is still a subscription: fix it, don't
+            // buy a second one.
+            <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
+              <p className="max-w-xl text-sm" role="status">
+                {t("plus.page.stillBilling")}
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/account#plan">{t("plus.page.manage")}</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {offer.plans.map((p) => (
+                <PlanOption key={p} plan={p} signedIn={signedIn} featured={p === "yearly"} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <section aria-labelledby="plus-free" className="panel space-y-4 p-6">
+        <section
+          aria-labelledby="plus-free"
+          className="panel space-y-4 self-start p-6 lg:sticky lg:top-6"
+        >
           <h2 id="plus-free" className="text-lg font-semibold">
             {t("plus.page.freeTitle")}
           </h2>
@@ -183,55 +236,6 @@ export function PlusPricing({
           </ul>
         </section>
       </div>
-
-      {!available && (
-        // Not on sale yet: still show what it will cost, without a way to buy.
-        <section aria-labelledby="plus-plans" className="space-y-4">
-          <h2 id="plus-plans" className="sr-only">
-            {t("plus.page.plansTitle")}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {PLAN_ORDER.map((p) => (
-              <PlanOption key={p} plan={p} signedIn={signedIn} featured={p === "yearly"} preview />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {available && (
-        <section aria-labelledby="plus-plans" className="space-y-4">
-          <h2 id="plus-plans" className="sr-only">
-            {t("plus.page.subscribe")}
-          </h2>
-          {plan?.plus ? (
-            <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
-              <p className="flex items-center gap-2 font-medium" role="status">
-                <Sparkles aria-hidden className="size-4 text-gold" /> {t("plus.page.youHavePlus")}
-              </p>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/account#plan">{t("plus.page.manage")}</Link>
-              </Button>
-            </div>
-          ) : plan?.stillBills ? (
-            // A renewal that failed (or a paused plan) is still a subscription: fix it, don't
-            // buy a second one.
-            <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
-              <p className="max-w-xl text-sm" role="status">
-                {t("plus.page.stillBilling")}
-              </p>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/account#plan">{t("plus.page.manage")}</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {offer.plans.map((p) => (
-                <PlanOption key={p} plan={p} signedIn={signedIn} featured={p === "yearly"} />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
 
       <section aria-label={t("plus.page.faqTitle")} className="grid gap-6 lg:grid-cols-2">
         <ul className="panel space-y-3 p-6 text-sm text-muted-foreground">
