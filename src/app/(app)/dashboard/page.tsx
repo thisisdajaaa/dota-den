@@ -186,6 +186,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     <div className="space-y-6">
       {banner}
 
+      {/* First steps near the top, where a new player looks first (dismissible). */}
+      {checklist && <OnboardingChecklist steps={checklist} />}
+
       {/* Steam presence: hidden when nobody is playing or no Steam Web API key is set. */}
       <Suspense fallback={null}>
         <FriendsPlayingSection user={user} />
@@ -297,11 +300,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </>
       )}
 
-      {/* Below the numbers: first steps, the week's goals (yours) and practice plan (suggested). */}
-      {checklist ? (
-        <OnboardingChecklist steps={checklist} />
-      ) : (
-        latestSession && notify?.enabled && notify.endpoints.length === 0 && <NotificationsPrompt />
+      {/* Below the numbers: the week's goals (yours) and practice plan (suggested). */}
+      {!checklist && latestSession && notify?.enabled && notify.endpoints.length === 0 && (
+        <NotificationsPrompt />
       )}
       <CollapsibleSection storageKey="dashboard-plan" title={t("dashboard.plan.title")}>
         {/* Goals are short and practice is long: a narrower goals column, both cards the

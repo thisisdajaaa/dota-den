@@ -102,7 +102,7 @@ export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
   const isActive = useActive();
   const items = visible(enabled, true, t);
   return (
-    <nav aria-label={t("common.nav.main")} className="flex flex-col gap-3">
+    <nav aria-label={t("common.nav.main")} className="flex flex-col gap-2.5">
       {GROUPS.map((group) => {
         const groupItems = items.filter((i) => i.group === group);
         if (groupItems.length === 0) return null;
@@ -114,7 +114,7 @@ export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
             aria-labelledby={labelId}
             className={cn(
               "flex flex-col gap-0.5",
-              group === "settings" && "border-t border-white/[0.06] pt-3",
+              group === "settings" && "border-t border-white/[0.06] pt-2.5",
             )}
           >
             <p
@@ -131,7 +131,7 @@ export function SidebarNav({ enabled }: { enabled: readonly NavKey[] }) {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-1 text-sm font-medium transition-colors",
                     active
                       ? "bg-gradient-to-r from-gold/15 to-transparent text-foreground"
                       : "text-muted-foreground hover:bg-white/[0.03] hover:text-foreground",
