@@ -168,13 +168,13 @@ export default async function AdminPage() {
 
       <section aria-label={t("admin.totals.aria")} className="panel overflow-hidden">
         {/* 1px gaps over a lighter background draw the hairlines between cells at any width. */}
-        <div className="grid grid-cols-2 gap-px bg-white/[0.06] sm:grid-cols-4 xl:grid-cols-8">
+        <div className="grid grid-cols-2 gap-px bg-white/[0.06] sm:grid-cols-4 2xl:grid-cols-8">
           {metrics.map((m) => (
-            <div key={m.label} className="space-y-1 bg-card p-4">
+            <div key={m.label} className="space-y-1 bg-card p-3 sm:p-4">
               <p className="text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">
                 {m.label}
               </p>
-              <p className="text-2xl font-semibold tabular-nums">{m.value}</p>
+              <p className="text-xl font-semibold tabular-nums sm:text-2xl">{m.value}</p>
               {m.detail && <p className="text-xs text-muted-foreground">{m.detail}</p>}
             </div>
           ))}
@@ -415,26 +415,44 @@ export default async function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {usage.map((u) => (
-                      <tr key={u.feature} className="border-t border-white/[0.05]">
-                        <td className="py-2 pr-4">{t(`admin.usage.features.${u.feature}`)}</td>
-                        {[u.last7, u.last30].map((w, i) => (
+                    {[...usage]
+                      .sort((a, b) => b.last30.uses - a.last30.uses || b.last7.uses - a.last7.uses)
+                      .map((u) => (
+                        <tr key={u.feature} className="border-t border-white/[0.05]">
                           <td
-                            key={i}
                             className={cn(
-                              "py-2 text-right whitespace-nowrap tabular-nums",
-                              i === 0 ? "px-3" : "pl-3",
-                              w.uses === 0 && "text-muted-foreground",
+                              "py-2 pr-4",
+                              u.last30.uses === 0 && "text-muted-foreground",
                             )}
                           >
-                            {w.uses}
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              {plural(t, "admin.usage.players", w.players)}
-                            </span>
+                            {t(`admin.usage.features.${u.feature}`)}
                           </td>
-                        ))}
-                      </tr>
-                    ))}
+                          {[u.last7, u.last30].map((w, i) => (
+                            <td
+                              key={i}
+                              className={cn(
+                                "py-2 text-right whitespace-nowrap tabular-nums",
+                                i === 0 ? "px-3" : "pl-3",
+                                w.uses === 0 && "text-muted-foreground",
+                              )}
+                            >
+                              {w.uses === 0 ? (
+                                <>
+                                  <span aria-hidden>–</span>
+                                  <span className="sr-only">0</span>
+                                </>
+                              ) : (
+                                <>
+                                  {w.uses}
+                                  <span className="block text-xs text-muted-foreground">
+                                    {plural(t, "admin.usage.players", w.players)}
+                                  </span>
+                                </>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
