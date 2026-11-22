@@ -171,7 +171,8 @@ export default async function AdminPage() {
         <div className="grid grid-cols-2 gap-px bg-white/[0.06] sm:grid-cols-4 2xl:grid-cols-8">
           {metrics.map((m) => (
             <div key={m.label} className="space-y-1 bg-card p-3 sm:p-4">
-              <p className="text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">
+              {/* Eight across, some labels take two lines: reserve both so the numbers line up. */}
+              <p className="text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase 2xl:min-h-[2lh]">
                 {m.label}
               </p>
               <p className="text-xl font-semibold tabular-nums sm:text-2xl">{m.value}</p>
