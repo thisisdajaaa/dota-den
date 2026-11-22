@@ -7,6 +7,8 @@ const LOGIN = "/api/v1/auth/steam/login?as=76561197960466001";
 test("a hero page shows what works for you, then your timings and lanes as games are read", async ({
   page,
 }) => {
+  // Free views, then Plus views, then the splits page: longer than the default 30s.
+  test.setTimeout(120_000);
   await page.goto(LOGIN);
   await expect(page).toHaveURL(/\/dashboard$/);
   // The sign-in sync imports the 20 games, then reads a few match details in the background.
