@@ -62,7 +62,7 @@ export async function LaneBreakdownCard({
             return (
               <li key={p.position} className={cn("space-y-1.5", p.games === 0 && "opacity-50")}>
                 <div className="flex items-baseline justify-between gap-2 text-sm">
-                  <span className="min-w-0 truncate">
+                  <span className="min-w-0">
                     <span className="font-semibold">{info.short}</span>{" "}
                     <span className="text-muted-foreground">
                       {info.name} ·{" "}

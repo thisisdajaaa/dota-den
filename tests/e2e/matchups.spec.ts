@@ -25,7 +25,7 @@ test("matchups from your own games: toughest and easiest opponents, with sample 
 
   // The heroes page links to the matchups.
   await page.goto("/heroes");
-  await page.getByRole("link", { name: "Who you lose to: matchups from your games" }).click();
+  await page.getByRole("link", { name: "Who you lose to" }).click();
   await expect(page).toHaveURL(/\/heroes\/matchups$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Who you lose to");
 
