@@ -9,8 +9,14 @@ import {
   type Entitlement,
 } from "../domain/entitlement";
 import { limitFor, type Plan } from "../domain/plans";
+import { newTrial, trialEntitlement, trialStatus, type FreeTrial } from "../domain/trial";
 import type { BillingProviderName, Subscription } from "../domain/subscription";
-import type { BillingProvider, SubscriptionsPort, WebhookEventsPort } from "../plus.ports";
+import type {
+  BillingProvider,
+  SubscriptionsPort,
+  TrialsPort,
+  WebhookEventsPort,
+} from "../plus.ports";
 import type { PlanDto, PlusAdminCountsDto, PlusOfferDto } from "../dtos/responses/plus.dto";
 
 /** A pre-signed portal link is valid 24 hours from when the provider made it; keep a margin. */
@@ -29,6 +35,8 @@ export class PlusService {
     private readonly deps: {
       subscriptions: SubscriptionsPort;
       events: Pick<WebhookEventsPort, "exportForOwner" | "deleteForOwner">;
+      /** Free trials; absent means none are offered. */
+      trials?: TrialsPort;
       /** Null when no payment provider is configured: Plus doesn't exist on this server. */
       provider: BillingProvider | null;
       /** PLUS_ENABLED: false is the kill switch (everyone free, data kept). */
@@ -86,11 +94,58 @@ export class PlusService {
   async entitlement(userId: string): Promise<Entitlement> {
     if (await this.isStaff(userId)) return STAFF;
     if (!this.enabled) return entitlementFor([], this.now(), false);
-    return entitlementFor(
-      this.ours(await this.deps.subscriptions.forUser(userId)),
-      this.now(),
-      true,
-    );
+    const now = this.now();
+    const [subs, trial] = await Promise.all([
+      this.deps.subscriptions.forUser(userId),
+      this.trialOf(userId),
+    ]);
+    return withTrial(entitlementFor(this.ours(subs), now, true), trial, now);
+  }
+
+  /** The player's free trial, or null (also when trials aren't wired or the lookup fails). */
+  private async trialOf(userId: string, accountId32?: number): Promise<FreeTrial | null> {
+    if (!this.deps.trials) return null;
+    try {
+      return await this.deps.trials.find(userId, accountId32);
+    } catch (error) {
+      this.deps.logger.warn("plus_trial_lookup_failed", { error });
+      return null;
+    }
+  }
+
+  /**
+   * Starts this player's 7-day free trial: no card, nothing charged, ends by itself. Only while
+   * Plus is on sale, once per Steam account, and not for anyone who has Plus or ever had a
+   * subscription. Answers when it ends.
+   */
+  async startTrial(userId: string, accountId32: number): Promise<{ endsAt: Date }> {
+    if (!this.enabled || !this.deps.trials || this.offer().status !== "available")
+      throw new NotFoundError("The free trial isn't available here.");
+    const now = this.now();
+    const [subs, trial, staff] = await Promise.all([
+      this.deps.subscriptions.forUser(userId),
+      this.deps.trials.find(userId, accountId32),
+      this.isStaff(userId),
+    ]);
+    const ours = this.ours(subs);
+    const status = trialStatus({
+      trial,
+      now,
+      onSale: true,
+      otherPlus: staff || entitlementFor(ours, now, true).plus,
+      everSubscribed: ours.length > 0,
+    });
+    if (status === "active") throw new ConflictError("Your free trial is already running.");
+    if (status !== "available")
+      throw new ConflictError("The free trial is for players who haven't had Plus yet.", {
+        reason: "trial_used",
+      });
+    const fresh = newTrial(userId, accountId32, now);
+    if (!(await this.deps.trials.start(fresh)))
+      throw new ConflictError("The free trial is for players who haven't had Plus yet.", {
+        reason: "trial_used",
+      });
+    return { endsAt: fresh.endsAt };
   }
 
   async isPlus(userId: string): Promise<boolean> {
@@ -136,22 +191,51 @@ export class PlusService {
     return [...new Set([...paid, ...staff])];
   }
 
-  /** Users with a subscription granting Plus right now (one indexed query). */
+  /** Users with a subscription or a running free trial granting Plus right now. */
   private async paidUserIds(): Promise<string[]> {
     if (!this.enabled) return [];
     const now = this.now();
-    const subs = this.ours(await this.deps.subscriptions.possiblyEntitled());
+    const [subs, trials] = await Promise.all([
+      this.deps.subscriptions.possiblyEntitled(),
+      this.deps.trials?.activeUserIds(now).catch((error) => {
+        this.deps.logger.warn("plus_trial_lookup_failed", { error });
+        return [];
+      }) ?? [],
+    ]);
     return [
-      ...new Set(subs.filter((s) => s.userId && entitlementOf(s, now).plus).map((s) => s.userId!)),
+      ...new Set([
+        ...this.ours(subs)
+          .filter((s) => s.userId && entitlementOf(s, now).plus)
+          .map((s) => s.userId!),
+        ...trials,
+      ]),
     ];
   }
 
   async plan(userId: string): Promise<PlanDto> {
-    const subs = this.configured ? this.ours(await this.deps.subscriptions.forUser(userId)) : [];
+    const [subs, trial, staff] = await Promise.all([
+      this.configured
+        ? this.deps.subscriptions.forUser(userId).then((all) => this.ours(all))
+        : Promise.resolve([]),
+      this.configured ? this.trialOf(userId) : Promise.resolve(null),
+      this.isStaff(userId),
+    ]);
     const now = this.now();
     const s = summarise(subs, now, this.enabled);
-    const entitlement = !s.entitlement.plus && (await this.isStaff(userId)) ? STAFF : s.entitlement;
+    const paid = !s.entitlement.plus && staff ? STAFF : s.entitlement;
+    const entitlement = this.enabled ? withTrial(paid, trial, now) : paid;
+    const trialEnd = entitlement.reason === "free_trial" ? trial!.endsAt.toISOString() : null;
     return {
+      trial: {
+        status: trialStatus({
+          trial,
+          now,
+          onSale: this.offer().status === "available" && Boolean(this.deps.trials),
+          otherPlus: paid.plus,
+          everSubscribed: subs.length > 0,
+        }),
+        endsAt: trialEnd,
+      },
       plus: entitlement.plus,
       reason: entitlement.reason,
       until: entitlement.until?.toISOString() ?? null,
@@ -177,7 +261,9 @@ export class PlusService {
     const provider = this.deps.provider;
     if (!this.enabled || !provider || !provider.plans.includes(plan))
       throw new NotFoundError("Plus isn't available here yet.");
-    if (await this.isPlus(userId))
+    // A free trial doesn't block buying: subscribing during it keeps Plus going after it ends.
+    const current = await this.entitlement(userId);
+    if (current.plus && current.reason !== "free_trial")
       throw new ConflictError("You already have Plus. Manage it from your account page.");
     if (stillBills(this.ours(await this.deps.subscriptions.forUser(userId))))
       throw new ConflictError(
@@ -232,9 +318,10 @@ export class PlusService {
   }
 
   async adminCounts(): Promise<PlusAdminCountsDto> {
-    const [rows, entitled] = await Promise.all([
+    const [rows, entitled, trials] = await Promise.all([
       this.deps.subscriptions.countsByStatus(this.deps.provider?.testMode ?? null),
       this.configured ? this.paidUserIds() : Promise.resolve([]),
+      this.deps.trials?.counts(this.now()).catch(() => null) ?? null,
     ]);
     const byStatus = new Map<string, number>();
     let unlinked = 0;
@@ -250,17 +337,20 @@ export class PlusService {
         .sort((a, b) => b.count - a.count || a.status.localeCompare(b.status)),
       unlinked,
       entitled: entitled.length,
+      trials,
     };
   }
 
   async exportMyData(owner: DataOwner) {
-    const [subscriptions, events] = await Promise.all([
+    const [subscriptions, events, trials] = await Promise.all([
       this.deps.subscriptions.exportForOwner(owner),
       this.deps.events.exportForOwner(owner),
+      this.deps.trials?.exportForOwner(owner) ?? [],
     ]);
     return {
       plusSubscriptions: subscriptions,
       plusBillingEvents: events,
+      plusFreeTrials: trials,
       plusBillingNote:
         "Payment details, invoices and your billing address are kept by our payment provider (the merchant of record), not by Dota Den.",
     };
@@ -271,10 +361,17 @@ export class PlusService {
    * isn't cancelled by this (the account page warns first); billing records stay with them.
    */
   async deleteMyData(owner: DataOwner) {
-    const [subscriptions, events] = await Promise.all([
+    const [subscriptions, events, trials] = await Promise.all([
       this.deps.subscriptions.deleteForOwner(owner),
       this.deps.events.deleteForOwner(owner),
+      this.deps.trials?.deleteForOwner(owner) ?? 0,
     ]);
-    return { plusSubscriptions: subscriptions, plusBillingEvents: events };
+    return { plusSubscriptions: subscriptions, plusBillingEvents: events, plusFreeTrials: trials };
   }
+}
+
+/** A paid (or staff) entitlement wins; otherwise a running free trial grants Plus. */
+function withTrial(e: Entitlement, trial: FreeTrial | null, now: Date): Entitlement {
+  if (e.plus) return e;
+  return trialEntitlement(trial, now) ?? e;
 }

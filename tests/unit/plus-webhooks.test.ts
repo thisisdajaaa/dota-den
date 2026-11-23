@@ -499,7 +499,11 @@ describe("PlusService", () => {
     const exported = await plus.exportMyData(owner);
     expect(exported.plusSubscriptions).toHaveLength(1);
     expect(exported.plusBillingNote).toMatch(/payment provider/);
-    expect(await plus.deleteMyData(owner)).toEqual({ plusSubscriptions: 1, plusBillingEvents: 1 });
+    expect(await plus.deleteMyData(owner)).toEqual({
+      plusSubscriptions: 1,
+      plusBillingEvents: 1,
+      plusFreeTrials: 0,
+    });
     expect(await plus.isPlus(USER)).toBe(false);
   });
 

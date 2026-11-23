@@ -135,6 +135,23 @@ export const plus: MessageTree<typeof en> = {
     termsLink: "mga tuntunin",
     refundsLink: "patakaran sa refund",
     privacyLink: "patakaran sa privacy",
+    trial: {
+      title: "Subukan ang Plus nang libre sa loob ng 7 araw",
+      body: "Hindi kailangan ng card. Walang sisingilin, at kusa itong matatapos pagkalipas ng 7 araw. Isang trial bawat Steam account.",
+      start: "Simulan ang libreng trial",
+      signIn: "Mag-sign in para simulan ang libreng trial",
+      activeTitle: "Naka-on ang libreng trial mo",
+      activeBody:
+        "May Plus ka hanggang {date}. Walang sisingilin at kusa itong matatapos. Mag-subscribe sa ibaba para tuloy ang Plus pagkatapos.",
+      error: {
+        used: "Nagkaroon na ng Plus o libreng trial ang account mo.",
+        unavailable: "Hindi available ang libreng trial ngayon.",
+        tooMany: "Masyadong maraming subok. Maghintay ng isang minuto at subukan ulit.",
+        signIn: "Mag-sign in ulit para simulan ang trial.",
+        network: "Hindi maabot ang Dota Den. Tingnan ang koneksyon mo at subukan ulit.",
+        down: "May nagkamali. Subukan ulit mamaya.",
+      },
+    },
     checkoutError: {
       network: "Hindi maabot ang Dota Den. Tingnan ang koneksyon mo at subukan ulit.",
       hasPlus:
@@ -164,6 +181,7 @@ export const plus: MessageTree<typeof en> = {
     disabled:
       "Naka-off muna ang mga Plus feature sa Dota Den ngayon. Hindi apektado ang subscription mo.",
     alertsOn: "Naka-on ang alerto kapag nag-live sa Notifications sa ibaba.",
+    freeTrial: "Libreng trial: may Plus hanggang {date}. Walang sisingilin; kusa itong matatapos.",
     status: {
       on_trial: "Trial",
       active: "Aktibo",
@@ -187,6 +205,8 @@ export const plus: MessageTree<typeof en> = {
     off: "Hindi naka-configure ang Plus sa server na ito.",
     disabled:
       "Naka-configure pero naka-off (hindi true ang PLUS_ENABLED): libre ang turing sa lahat.",
+    trials: "Mga libreng trial",
+    trialsDetail: "{active} tumatakbo · {started} nasimulan",
     entitled: "Mga player na may Plus",
     unlinked: "Hindi naka-link",
     unlinkedDetail: "Bayad pero hindi nakatali sa user",
@@ -224,7 +244,7 @@ export const plus: MessageTree<typeof en> = {
       },
       billing: {
         title: "Renewal at pag-cancel",
-        body: "Nagre-renew ang Plus kada buwan o taon hanggang mag-cancel ka. Puwedeng mag-cancel kahit kailan sa billing portal; may Plus ka pa hanggang matapos ang period na binayaran mo.",
+        body: "Nagre-renew ang Plus kada buwan o taon hanggang mag-cancel ka. Puwedeng mag-cancel kahit kailan sa billing portal; may Plus ka pa hanggang matapos ang period na binayaran mo. Puwedeng subukan ng mga bagong player ang Plus nang libre sa loob ng 7 araw, isang beses bawat Steam account: hindi kailangan ng card, walang sisingilin at kusa itong matatapos.",
       },
       changes: {
         title: "Mga pagbabago",

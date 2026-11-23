@@ -543,6 +543,14 @@ export default async function AdminPage() {
               {plus.unlinked > 0 && (
                 <p className="text-xs text-muted-foreground">{t("plus.admin.unlinkedDetail")}</p>
               )}
+              {plus.trials && (
+                <p className="flex items-baseline justify-between gap-3 text-sm">
+                  <span>{t("plus.admin.trials")}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {t("plus.admin.trialsDetail", plus.trials)}
+                  </span>
+                </p>
+              )}
               {plus.byStatus.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("plus.admin.none")}</p>
               ) : (

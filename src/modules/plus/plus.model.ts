@@ -5,7 +5,21 @@ export const PLUS_SCHEMA_VERSION = 1;
 export const PLUS_COLLECTIONS = {
   subscriptions: "plus_subscriptions",
   webhookEvents: "billing_webhook_events",
+  trials: "plus_trials",
 } as const;
+
+/**
+ * A free trial. `_id` is the Steam account (`steam:<accountId32>`), so each account gets one
+ * trial, ever, even when two requests race.
+ */
+export interface TrialDocument {
+  _id: string;
+  userId: string;
+  accountId32: number;
+  startedAt: Date;
+  endsAt: Date;
+  schemaVersion: number;
+}
 
 /**
  * One subscription at the payment provider, as its latest webhook described it. No names,
