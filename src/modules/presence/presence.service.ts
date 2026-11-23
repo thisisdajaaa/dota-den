@@ -115,10 +115,13 @@ export class PresenceService {
       source = "tracked_and_teammates";
       const teammates = await this.deps.known
         .teammates(viewer.accountId32)
-        .catch(() => null)
         .then((rows) => {
           if (!rows) this.deps.logger.warn("presence_teammates_failed", {});
           return rows ?? [];
+        })
+        .catch((error: unknown) => {
+          this.deps.logger.warn("presence_teammates_failed", { error });
+          return [];
         });
       const frequent = teammates
         .filter((t) => t.withGames >= MIN_TEAMMATE_GAMES)
