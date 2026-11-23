@@ -6,6 +6,7 @@ import type {
   SubscriptionSnapshot,
   SubscriptionStatus,
 } from "./domain/subscription";
+import type { FreeTrial } from "./domain/trial";
 import type { WebhookEventOutcome } from "./plus.model";
 
 /** A verified, parsed webhook event in provider-neutral terms. */
@@ -78,6 +79,21 @@ export interface SubscriptionsPort {
   countsByStatus(
     testMode: boolean | null,
   ): Promise<{ status: SubscriptionStatus; linked: boolean; count: number }[]>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+export interface TrialsPort {
+  /** This player's trial, by user or by Steam account (either one blocks a second trial). */
+  find(userId: string, accountId32?: number): Promise<FreeTrial | null>;
+  /** Records a new trial; false when this account already had one. */
+  start(trial: FreeTrial): Promise<boolean>;
+  /** Trials ending after `from` and at or before `to` (reminders), soonest first. */
+  endingBetween(from: Date, to: Date): Promise<FreeTrial[]>;
+  /** Users whose trial is running at `now`. */
+  activeUserIds(now: Date): Promise<string[]>;
+  /** Trials started, and running at `now` (admin). */
+  counts(now: Date): Promise<{ started: number; active: number }>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }

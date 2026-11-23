@@ -138,6 +138,23 @@ export const plus = {
     termsLink: "terms",
     refundsLink: "refund policy",
     privacyLink: "privacy policy",
+    trial: {
+      title: "Try Plus free for 7 days",
+      body: "No card needed. Nothing is charged, and it ends by itself after 7 days. One trial per Steam account.",
+      start: "Start free trial",
+      signIn: "Sign in to start a free trial",
+      activeTitle: "Your free trial is on",
+      activeBody:
+        "You have Plus until {date}. Nothing is charged and it ends by itself. Subscribe below to keep Plus after that.",
+      error: {
+        used: "Your account has already had Plus or a free trial.",
+        unavailable: "The free trial isn't available right now.",
+        tooMany: "Too many tries. Wait a minute and try again.",
+        signIn: "Sign in again to start the trial.",
+        network: "Couldn't reach Dota Den. Check your connection and try again.",
+        down: "Something went wrong. Try again in a moment.",
+      },
+    },
     checkoutError: {
       network: "Couldn't reach Dota Den. Check your connection and try again.",
       hasPlus:
@@ -166,6 +183,7 @@ export const plus = {
     disabled:
       "Plus features are switched off on Dota Den right now. Your subscription isn't affected.",
     alertsOn: "Go-live alerts are on in Notifications below.",
+    freeTrial: "Free trial: Plus until {date}. Nothing is charged; it ends by itself.",
     status: {
       on_trial: "Trial",
       active: "Active",
@@ -189,6 +207,8 @@ export const plus = {
     off: "Plus isn't configured on this server.",
     disabled:
       "Configured, but switched off (PLUS_ENABLED isn't true): everyone is treated as free.",
+    trials: "Free trials",
+    trialsDetail: "{active} running · {started} started",
     entitled: "Players with Plus",
     unlinked: "Unlinked",
     unlinkedDetail: "Paid but not tied to a user",
@@ -226,7 +246,7 @@ export const plus = {
       },
       billing: {
         title: "Renewal and cancelling",
-        body: "Plus renews every month or year until you cancel. Cancel anytime in the billing portal; you keep Plus until the end of the period you paid for.",
+        body: "Plus renews every month or year until you cancel. Cancel anytime in the billing portal; you keep Plus until the end of the period you paid for. New players can try Plus free for 7 days, once per Steam account: no card is needed, nothing is charged and it ends by itself.",
       },
       changes: {
         title: "Changes",

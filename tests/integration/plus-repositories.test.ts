@@ -4,7 +4,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Subscription } from "@/modules/plus/domain/subscription";
 import { PolarProvider } from "@/modules/plus/infrastructure/polar-provider";
 import { PLUS_COLLECTIONS } from "@/modules/plus/plus.model";
+import { newTrial } from "@/modules/plus/domain/trial";
 import { SubscriptionsRepository } from "@/modules/plus/repositories/subscriptions.repository";
+import { TrialsRepository } from "@/modules/plus/repositories/trials.repository";
 import { WebhookEventsRepository } from "@/modules/plus/repositories/webhook-events.repository";
 import { BillingWebhookService } from "@/modules/plus/services/billing-webhook.service";
 import { polarSubscriptionEvent } from "../support/plus-fakes";
@@ -17,6 +19,7 @@ beforeAll(async () => {
   ({ db, teardown } = await createTestDb());
   await new SubscriptionsRepository(async () => db).ensureIndexes();
   await new WebhookEventsRepository(async () => db).ensureIndexes();
+  await new TrialsRepository(async () => db).ensureIndexes();
 });
 afterAll(async () => teardown?.());
 
@@ -136,6 +139,36 @@ describe("SubscriptionsRepository (Mongo)", () => {
     expect(await repo.deleteForOwner(owner)).toBe(1);
     expect(await repo.forUser("gdpr")).toEqual([]);
     expect(await repo.forUser("keep")).toHaveLength(1);
+  });
+});
+
+describe("TrialsRepository (Mongo)", () => {
+  it("records one trial per Steam account, even when two starts race", async () => {
+    const repo = new TrialsRepository(async () => db);
+    const now = at("2026-11-23T12:00:00Z");
+    const results = await Promise.all([
+      repo.start(newTrial("t1", 901, now)),
+      repo.start(newTrial("t1", 901, now)),
+      repo.start(newTrial("t2", 901, now)),
+    ]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(await repo.find("t1", 901)).toMatchObject({ accountId32: 901 });
+    // Another user id on the same account finds it through the account.
+    expect(await repo.find("someone-else", 901)).not.toBeNull();
+    expect(await repo.find("nobody")).toBeNull();
+
+    await repo.start(newTrial("t3", 902, at("2026-11-01T00:00:00Z"))); // ended on the 8th
+    expect(await repo.activeUserIds(now)).toEqual([expect.stringMatching(/^t[12]$/)]);
+    expect(await repo.counts(now)).toMatchObject({ active: 1 });
+
+    const owner = { userId: "t3", accountId32: 902 };
+    expect(await repo.exportForOwner(owner)).toEqual([
+      expect.objectContaining({ id: "steam:902", userId: "t3" }),
+    ]);
+    expect(await repo.deleteForOwner(owner)).toBe(1);
+    expect(await db.collection(PLUS_COLLECTIONS.trials).countDocuments({ accountId32: 902 })).toBe(
+      0,
+    );
   });
 });
 

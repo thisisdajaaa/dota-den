@@ -36,6 +36,10 @@ export const notifications: MessageTree<typeof en> = {
     dismiss: "Itago ito",
   },
   kinds: {
+    plus_trial: {
+      label: "Pagtatapos ng libreng Plus trial",
+      help: "Isang beses, isang araw bago matapos ang libreng Plus trial mo.",
+    },
     session_recap: {
       label: "Recap ng session",
       help: "Pagkatapos ng session: ang record mo at link sa recap.",
@@ -70,6 +74,10 @@ export const notifications: MessageTree<typeof en> = {
     },
   },
   push: {
+    trial: {
+      title: "Malapit nang matapos ang libreng Plus trial mo",
+      body: "Matatapos ito {when}. Mag-subscribe para tuloy ang AI coach, ang 100 tanong kada araw sa Ask Den at ang splits mo.",
+    },
     session: {
       title: "Huling session: {wins}W {losses}L",
       body: "{games} gamit si {heroes}. Tingnan kung ano ang maganda at ano ang hindi.",

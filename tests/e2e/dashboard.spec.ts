@@ -19,6 +19,13 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   const stats = page.getByRole("region", { name: "Key stats" });
   await expect(stats).toContainText("6 solo games");
   await expect(stats).toContainText("4 party games");
+  // The detail cards are on the Stats tab (the filters and headline numbers stay on both).
+  await page
+    .getByRole("navigation", { name: "Dashboard sections" })
+    .getByRole("link", { name: "Stats" })
+    .click();
+  await expect(page).toHaveURL(/\/dashboard\?view=stats$/);
+  await expect(page.getByRole("region", { name: "Key stats" })).toContainText("6 solo games");
   const split = page.getByRole("region", { name: "Win rate by queue" });
   await expect(split).toContainText("Queue known for 10 of 12 games");
   await expect(split).toContainText("never assumed to be solo");
@@ -31,6 +38,12 @@ test("dashboard auto-syncs matches and links to an in-app match page", async ({ 
   await pool.getByRole("radio", { name: "Win rate" }).click();
   await expect(pool).toContainText("No hero has 10+ games");
   await pool.getByRole("radio", { name: "Most played" }).click();
+
+  await page
+    .getByRole("navigation", { name: "Dashboard sections" })
+    .getByRole("link", { name: "Overview" })
+    .click();
+  await expect(page).toHaveURL(/\/dashboard$/);
 
   // Match rows open our own match page, not an external site.
   const recent = page.getByRole("region", { name: "Recent matches" });
@@ -243,7 +256,7 @@ test("the overview shows achievements from your own games", async ({ page }) => 
   await expect(page.getByText("Showing 12 of your 12 matches").first()).toBeVisible({
     timeout: 20_000,
   });
-  await page.reload();
+  await page.goto("/dashboard?view=progress");
   const ach = page.getByRole("region", { name: "Achievements" });
   await expect(ach.getByRole("listitem", { name: /^Veteran/ })).toContainText("12 / 100");
   await expect(ach).toContainText(/\d+ of \d+ tiers/);

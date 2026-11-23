@@ -1,6 +1,13 @@
 /** UI copy for the overview (dashboard) page. */
 export const dashboard = {
   title: "Dashboard",
+  tabs: {
+    label: "Dashboard sections",
+    overview: "Overview",
+    stats: "Stats",
+    friends: "Friends",
+    progress: "Goals",
+  },
   loading: "Loading dashboard",
   showing: {
     one: "Showing {shown} of your 1 match",

@@ -55,12 +55,10 @@ test("hides the strip when no friend is in Dota 2", async ({ page }) => {
     success: true,
     data: { enabled: true, source: "steam_friends", friends: [] },
   });
-  // The rest of the overview (a first-run one: this identity has no games) has streamed in,
-  // and no strip with it.
+  // The rest of the overview has streamed in (first-run or, once the sync lands, the full
+  // Overview tab), and no strip with it.
   await expect(page.getByRole("region", { name: "Player" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Weekly goals" })).toBeVisible({
-    timeout: 20_000,
-  });
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("region", { name: "Friends playing now" })).toHaveCount(0);
 });
 

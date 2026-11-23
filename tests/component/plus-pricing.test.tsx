@@ -17,6 +17,7 @@ const freePlan: PlanDto = {
   endsAt: null,
   canManage: false,
   stillBills: false,
+  trial: { status: "none", endsAt: null },
 };
 
 describe("PlusPricing", () => {
@@ -219,6 +220,74 @@ describe("PlusPricing", () => {
     );
     expect(screen.getByText(/You have Plus/)).toBeVisible();
     expect(screen.queryByRole("button", { name: /get plus/i })).not.toBeInTheDocument();
+  });
+
+  it("offers the free trial, starts it with a same-origin POST and reloads", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload });
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            message: "Trial started",
+            data: { endsAt: "2026-11-30T12:00:00.000Z" },
+            statusCode: 200,
+          }),
+          { status: 200 },
+        ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    try {
+      render(
+        <PlusPricing
+          offer={{ status: "available", plans: ["monthly"], provider: "polar" }}
+          signedIn
+          plan={{ ...freePlan, trial: { status: "available", endsAt: null } }}
+          limits={limits}
+        />,
+      );
+      const trial = screen.getByRole("region", { name: "Try Plus free for 7 days" });
+      expect(trial).toHaveTextContent("No card needed. Nothing is charged");
+      fireEvent.click(within(trial).getByRole("button", { name: "Start free trial" }));
+      await waitFor(() => expect(reload).toHaveBeenCalled());
+      const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe("/api/v1/plus/trial");
+      expect(init.method).toBe("POST");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("shows a running trial with its end date and still offers the plans; hides a used one", () => {
+    const { unmount } = render(
+      <PlusPricing
+        offer={{ status: "available", plans: ["monthly"], provider: "polar" }}
+        signedIn
+        plan={{
+          ...freePlan,
+          plus: true,
+          reason: "free_trial",
+          until: "2026-11-30T12:00:00.000Z",
+          trial: { status: "active", endsAt: "2026-11-30T12:00:00.000Z" },
+        }}
+        limits={limits}
+      />,
+    );
+    expect(screen.getByText("Your free trial is on")).toBeVisible();
+    expect(screen.getByText(/You have Plus until .*30.*2026/)).toBeVisible();
+    expect(screen.getByRole("button", { name: /get plus monthly/i })).toBeVisible();
+    expect(screen.queryByText(/You have Plus\. Thank you/)).not.toBeInTheDocument();
+    unmount();
+    render(
+      <PlusPricing
+        offer={{ status: "available", plans: ["monthly"], provider: "polar" }}
+        signedIn
+        plan={{ ...freePlan, trial: { status: "used", endsAt: null } }}
+        limits={limits}
+      />,
+    );
+    expect(screen.queryByText("Try Plus free for 7 days")).not.toBeInTheDocument();
   });
 
   it("sends a player whose subscription still bills to their account, not to a second checkout", () => {

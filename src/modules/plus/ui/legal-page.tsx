@@ -11,7 +11,7 @@ import type { BillingProviderName } from "../domain/subscription";
  */
 
 /** When the texts last changed (shown on the page). Update with every edit. */
-export const LEGAL_UPDATED = "2026-11-18";
+export const LEGAL_UPDATED = "2026-11-23";
 
 const SECTIONS = {
   terms: ["about", "account", "data", "free", "payments", "billing", "changes", "warranty"],

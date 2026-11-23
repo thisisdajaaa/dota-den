@@ -7,6 +7,8 @@ const API_LOGIN = "/api/v1/auth/steam/login?as=76561197960456667";
 test("set weekly goals, mark a custom one done, then clear them", async ({ page }) => {
   await page.goto(LOGIN);
   await expect(page).toHaveURL(/\/dashboard$/);
+  // Goals tab (a first-run dashboard shows goals too, whichever this identity gets).
+  await page.goto("/dashboard?view=progress");
   const card = page.getByRole("region", { name: "Weekly goals" });
   await expect(card).toBeVisible();
 

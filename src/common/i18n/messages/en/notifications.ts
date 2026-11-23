@@ -33,6 +33,10 @@ export const notifications = {
     dismiss: "Hide this",
   },
   kinds: {
+    plus_trial: {
+      label: "Plus free trial ending",
+      help: "Once, the day before your free Plus trial ends.",
+    },
     session_recap: {
       label: "Session recap",
       help: "After a session ends: your record and a link to the recap.",
@@ -67,6 +71,10 @@ export const notifications = {
     },
   },
   push: {
+    trial: {
+      title: "Your free Plus trial ends soon",
+      body: "It ends {when}. Subscribe to keep the AI coach, Ask Den's 100 questions a day and your splits.",
+    },
     session: {
       title: "Last session: {wins}W {losses}L",
       body: "{games} on {heroes}. See what went well and what didn't.",

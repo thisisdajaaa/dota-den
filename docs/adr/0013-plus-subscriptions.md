@@ -280,3 +280,26 @@ documented; that the account's webhook secret is the Standard Webhooks kind; tha
 email already belongs to a Polar customer can still check out with a new `external_customer_id`;
 the checkout URL's host; and where replies to Polar's receipt emails go (the contact fallback on
 the legal pages tells buyers to reply to their receipt).
+
+## Free trial (2026-11-23)
+
+Approved by the owner on 2026-11-23: a 7-day free trial, one per account, no card, ending by
+itself.
+
+- **Ours, not the provider's.** The trial lives in Dota Den (`plus_trials`), not in Polar, so no
+  card is taken and nothing can charge or renew afterwards. A provider trial would need a card.
+- **Who.** Started by the player from `/plus` (`POST /api/v1/plus/trial`, signed in, same-origin,
+  rate-limited). Only while Plus is on sale, and only for players with no Plus now (staff
+  included) and no subscription of this deployment's mode, ever. One per Steam account: `_id` is
+  `steam:<accountId32>`, so racing requests start one trial.
+- **What it grants.** Entitlement reason `free_trial`, Plus until `endsAt` (start + 7 days),
+  ranked below every paid state. Trial players count in `plusUserIds()` (the Plus features that
+  run for Plus players) and in the admin total, but get no supporter badge: they aren't paying.
+  The kill switch turns trials off like everything else. Expiry is just the clock: no job.
+- **Buying during the trial** is allowed (checkout refuses only paid or staff Plus); the
+  subscription then takes over and the trial shows as used.
+- **Shared database.** Trials aren't tied to a billing mode, so a trial started on staging is the
+  same account's trial in production. Only the owner uses staging, so this is accepted.
+- **Privacy.** The trial record (user id, account, start, end) is exported with the account and
+  deleted with it. Deleting an account therefore also forgets its trial; losing every stored game
+  to get another week of Plus is an acceptable gap.

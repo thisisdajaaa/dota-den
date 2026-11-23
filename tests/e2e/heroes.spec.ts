@@ -13,6 +13,7 @@ test("the overview shows where you play, with the sample it's based on", async (
   await signIn(page);
 
   // Fixture: 8 safe-lane Anti-Mage games (6 won), 4 off-lane Pudge games (1 won).
+  await page.goto("/dashboard?view=stats");
   const lanes = page.getByRole("region", { name: "Where you play" });
   const positions = lanes.getByRole("list", { name: "Positions" });
   await expect(positions.getByRole("listitem").nth(0)).toContainText("Pos 1");
@@ -27,7 +28,8 @@ test("the overview shows where you play, with the sample it's based on", async (
 test("a hero page shows your record, trend, matchups, items and recent games", async ({ page }) => {
   await signIn(page);
 
-  // The overview's hero pool links to each hero page.
+  // The dashboard's hero pool (Stats tab) links to each hero page.
+  await page.goto("/dashboard?view=stats");
   const pool = page.getByRole("region", { name: "Your heroes" });
   await pool
     .getByRole("link", { name: /Anti-Mage/ })

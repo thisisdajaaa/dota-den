@@ -12,12 +12,14 @@ import { PolarProvider } from "./infrastructure/polar-provider";
 import { PlusController } from "./plus.controller";
 import type { BillingProvider } from "./plus.ports";
 import { SubscriptionsRepository } from "./repositories/subscriptions.repository";
+import { TrialsRepository } from "./repositories/trials.repository";
 import { WebhookEventsRepository } from "./repositories/webhook-events.repository";
 import { BillingWebhookService } from "./services/billing-webhook.service";
 import { PlusService } from "./services/plus.service";
 
 export const subscriptionsRepository = new SubscriptionsRepository(getDb);
 export const webhookEventsRepository = new WebhookEventsRepository(getDb);
+export const trialsRepository = new TrialsRepository(getDb);
 
 /** The configured payment provider, or null: without it Plus doesn't exist (ADR 0013). */
 function billingProvider(): BillingProvider | null {
@@ -60,6 +62,7 @@ export const plusService = lazy(
     new PlusService({
       subscriptions: subscriptionsRepository,
       events: webhookEventsRepository,
+      trials: trialsRepository,
       provider: provider.current,
       enabled: () => env().PLUS_ENABLED,
       staff: {

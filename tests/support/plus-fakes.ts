@@ -1,7 +1,8 @@
 import type { DataOwner } from "@/common/privacy/user-data";
 import { subscriptionKey, type Subscription } from "@/modules/plus/domain/subscription";
 import type { WebhookEventOutcome } from "@/modules/plus/plus.model";
-import type { SubscriptionsPort, WebhookEventsPort } from "@/modules/plus/plus.ports";
+import type { FreeTrial } from "@/modules/plus/domain/trial";
+import type { SubscriptionsPort, TrialsPort, WebhookEventsPort } from "@/modules/plus/plus.ports";
 import { POSSIBLY_ENTITLED } from "@/modules/plus/domain/entitlement";
 
 /** A Polar subscription webhook body, shaped like the 2026-10 OpenAPI schema (`Subscription`). */
@@ -199,6 +200,42 @@ export class MemoryWebhookEvents implements WebhookEventsPort {
   async deleteForOwner(owner: DataOwner) {
     let n = 0;
     for (const [k, e] of this.events) if (e.userId === owner.userId && this.events.delete(k)) n++;
+    return n;
+  }
+}
+
+export class MemoryTrials implements TrialsPort {
+  readonly docs = new Map<number, FreeTrial>();
+
+  async find(userId: string, accountId32?: number) {
+    return (
+      [...this.docs.values()].find(
+        (t) => t.userId === userId || (accountId32 !== undefined && t.accountId32 === accountId32),
+      ) ?? null
+    );
+  }
+  async start(trial: FreeTrial) {
+    if (this.docs.has(trial.accountId32)) return false;
+    this.docs.set(trial.accountId32, trial);
+    return true;
+  }
+  async endingBetween(from: Date, to: Date) {
+    return [...this.docs.values()]
+      .filter((t) => t.endsAt > from && t.endsAt <= to)
+      .sort((a, b) => a.endsAt.getTime() - b.endsAt.getTime());
+  }
+  async activeUserIds(now: Date) {
+    return [...this.docs.values()].filter((t) => t.endsAt > now).map((t) => t.userId);
+  }
+  async counts(now: Date) {
+    return { started: this.docs.size, active: (await this.activeUserIds(now)).length };
+  }
+  async exportForOwner(owner: DataOwner) {
+    return [...this.docs.values()].filter((t) => t.userId === owner.userId).map((t) => ({ ...t }));
+  }
+  async deleteForOwner(owner: DataOwner) {
+    let n = 0;
+    for (const [k, t] of this.docs) if (t.userId === owner.userId && this.docs.delete(k)) n++;
     return n;
   }
 }

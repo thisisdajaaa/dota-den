@@ -134,6 +134,23 @@ export const plus: MessageTree<typeof en> = {
     termsLink: "mga termino",
     refundsLink: "palisiya sa refund",
     privacyLink: "palisiya sa privacy",
+    trial: {
+      title: "Sulayi ang Plus nga libre sulod sa 7 ka adlaw",
+      body: "Dili kinahanglan ug card. Walay singil, ug kusa kining mahuman human sa 7 ka adlaw. Usa ka trial matag Steam account.",
+      start: "Sugdi ang libre nga trial",
+      signIn: "Mag-sign in aron sugdan ang libre nga trial",
+      activeTitle: "Naka-on ang imong libre nga trial",
+      activeBody:
+        "Naa kay Plus hangtod {date}. Walay singil ug kusa kining mahuman. Mag-subscribe sa ubos aron magpadayon ang Plus human niana.",
+      error: {
+        used: "Ang imong account naka-Plus na o nakalibre nga trial na.",
+        unavailable: "Dili available ang libre nga trial karon.",
+        tooMany: "Daghan kaayong sulay. Paghulat ug usa ka minuto ug sulayi pag-usab.",
+        signIn: "Mag-sign in pag-usab aron sugdan ang trial.",
+        network: "Dili maabot ang Dota Den. Susiha ang imong koneksyon ug sulayi pag-usab.",
+        down: "Naay sayop. Sulayi pag-usab unya.",
+      },
+    },
     checkoutError: {
       network: "Dili maabot ang Dota Den. Susiha ang imong koneksyon ug sulayi pag-usab.",
       hasPlus:
@@ -163,6 +180,7 @@ export const plus: MessageTree<typeof en> = {
     disabled:
       "Naka-off sa pagkakaron ang mga Plus feature sa Dota Den. Dili apektado ang imong subscription.",
     alertsOn: "Naka-on ang alerto kung mag-live sa Notifications sa ubos.",
+    freeTrial: "Libre nga trial: naay Plus hangtod {date}. Walay singil; kusa kining mahuman.",
     status: {
       on_trial: "Trial",
       active: "Aktibo",
@@ -185,6 +203,8 @@ export const plus: MessageTree<typeof en> = {
     title: "Mga Plus subscription",
     off: "Wala na-configure ang Plus niining server.",
     disabled: "Na-configure apan naka-off (dili true ang PLUS_ENABLED): libre ang tanan.",
+    trials: "Mga libre nga trial",
+    trialsDetail: "{active} nagdagan · {started} nasugdan",
     entitled: "Mga player nga naay Plus",
     unlinked: "Wala na-link",
     unlinkedDetail: "Bayad apan wala nahigot sa user",
@@ -222,7 +242,7 @@ export const plus: MessageTree<typeof en> = {
       },
       billing: {
         title: "Renewal ug pag-cancel",
-        body: "Mo-renew ang Plus matag bulan o tuig hangtod mag-cancel ka. Pwede mag-cancel bisan kanus-a sa billing portal; naa gihapon kay Plus hangtod matapos ang period nga imong gibayran.",
+        body: "Mo-renew ang Plus matag bulan o tuig hangtod mag-cancel ka. Pwede mag-cancel bisan kanus-a sa billing portal; naa gihapon kay Plus hangtod matapos ang period nga imong gibayran. Ang bag-ong mga player makasulay sa Plus nga libre sulod sa 7 ka adlaw, kausa matag Steam account: dili kinahanglan ug card, walay singil ug kusa kining mahuman.",
       },
       changes: {
         title: "Mga kausaban",

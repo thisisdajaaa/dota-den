@@ -40,6 +40,8 @@ export class NotificationTriggersService {
       weekly: WeeklyRecordSource;
       patches: PatchDigestSource;
       heroes: HeroNames;
+      /** Optional: free Plus trials ending soon (from plus), for one reminder each. */
+      trials?: { endingSoon(): Promise<{ userId: string; endsAt: Date }[]> };
       logger: Pick<Logger, "warn">;
       now?: () => Date;
     },
@@ -54,6 +56,7 @@ export class NotificationTriggersService {
       sessionRecaps: 0,
       weeklyRecaps: 0,
       patchHeroes: 0,
+      trialReminders: 0,
       failed: 0,
       stoppedEarly: false,
     };
@@ -61,6 +64,9 @@ export class NotificationTriggersService {
     const ids = await this.deps.notifications.subscribedUserIds();
     const users = await this.deps.users.byIds(ids);
     const heroes = await this.deps.heroes.names().catch(() => new Map<number, string>());
+    const ending = new Map(
+      (await this.deps.trials?.endingSoon().catch(() => []))?.map((e) => [e.userId, e.endsAt]),
+    );
     for (const user of users) {
       if (Date.now() - started > opts.budgetMs) {
         run.stoppedEarly = true;
@@ -87,6 +93,9 @@ export class NotificationTriggersService {
         run.weeklyRecaps += await attempt("weekly_recap", () => this.weeklyRecap(user, t));
       if (wants.patch_heroes)
         run.patchHeroes += await attempt("patch_heroes", () => this.patchHeroes(user, t, heroes));
+      const endsAt = ending.get(user.id);
+      if (endsAt && wants.plus_trial)
+        run.trialReminders += await attempt("plus_trial", () => this.trialEnding(user, t, endsAt));
     }
     return run;
   }
@@ -143,6 +152,29 @@ export class NotificationTriggersService {
       url: `/sessions/${encodeURIComponent(s.id)}`,
       tag: "session-recap",
     };
+  }
+
+  /** Once per trial: when it ends (the player's time) and what Plus keeps. */
+  private async trialEnding(user: NotifiedUser, t: Translator<Messages>, endsAt: Date) {
+    const tz = user.timeZone && isValidTimeZone(user.timeZone) ? user.timeZone : FALLBACK_TIME_ZONE;
+    const locale = isLocale(user.language) ? user.language : DEFAULT_LOCALE;
+    const when = new Intl.DateTimeFormat(locale === "en" ? "en-US" : locale, {
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: tz,
+    }).format(endsAt);
+    return this.deps.notifications.notifyOnce(
+      user.id,
+      "plus_trial",
+      endsAt.toISOString(),
+      async () => ({
+        title: t("notifications.push.trial.title"),
+        body: t("notifications.push.trial.body", { when }),
+        url: "/plus",
+        tag: "plus-trial",
+      }),
+    );
   }
 
   private async weeklyRecap(user: NotifiedUser, t: Translator<Messages>) {
