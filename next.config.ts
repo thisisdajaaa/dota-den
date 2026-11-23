@@ -27,8 +27,8 @@ const nextConfig: NextConfig = {
     // reloads every page over and over ("HMR hash mismatch") once sources have changed.
     turbopackFileSystemCacheForDev: !process.env.NEXT_DIST_DIR?.startsWith(".next-e2e"),
   },
-  // Keep the dev-mode badge away from the sidebar's account chip.
-  devIndicators: { position: "bottom-right" },
+  // Keep the dev-mode badge away from the sidebar's account chip and the Ask Den button.
+  devIndicators: { position: "top-right" },
   images: {
     // Served straight from Valve's and Steam's CDNs, which already send small, cached
     // images. Vercel's optimizer added nothing but a monthly quota: when it ran out, every

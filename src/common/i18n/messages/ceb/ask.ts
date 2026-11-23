@@ -90,4 +90,12 @@ export const ask: MessageTree<typeof en> = {
     question: "Kumusta akong duwa diri, ug unsa may angay nakong ayohon sa sunod?",
     context: "Bahin sa match {id}",
   },
+  fab: {
+    open: "Pangutan-a si Den",
+    close: "Sirad-i ang Ask Den",
+    fullPage: "Ablihi sa tibuok panid",
+    loading: "Gina-abli ang imong mga chat…",
+    failed: "Dili maabli ang Ask Den.",
+    retry: "Sulayi pag-usab",
+  },
 };

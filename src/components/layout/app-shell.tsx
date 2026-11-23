@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/modules/identity";
 import { parseRankTier } from "@/modules/matches/domain/rank-tier";
 import { RankMedal, rankLabel } from "@/modules/matches/ui/rank-medal";
+import { askService } from "@/modules/assistant";
+import { AskFab } from "@/modules/assistant/ui/ask-fab";
 import { playersService } from "@/modules/players";
 import { plusService } from "@/modules/plus";
 import { PlusBadge } from "@/modules/plus/ui/plus-badge";
@@ -204,6 +206,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
       </div>
       <MobileTabBar enabled={nav} signedIn />
+      {askService.enabled && <AskFab plusOnSale={onSale} />}
       <TimeZoneSync current={tz.known ? tz.timeZone : null} />
     </>
   );

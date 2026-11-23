@@ -55,7 +55,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <I18nProvider locale={locale} messages={MESSAGES[locale]} fallback={englishMessages}>
           <TooltipProvider>
             <AppShell>{children}</AppShell>
-            <Toaster />
+            {/* Above the bottom tab bar and the Ask Den button. */}
+            <Toaster
+              offset={{ bottom: "6.5rem" }}
+              mobileOffset={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))" }}
+            />
             <ServiceWorker />
           </TooltipProvider>
         </I18nProvider>

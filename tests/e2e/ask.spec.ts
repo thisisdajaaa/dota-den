@@ -131,3 +131,29 @@ test("free players get 5 questions a day, then a Plus offer", async ({ page }) =
   await expect(region.getByRole("link", { name: "See Plus" })).toHaveAttribute("href", "/plus");
   await expect(region.getByRole("textbox", { name: "Your question" })).toHaveCount(0);
 });
+
+test("the Ask Den button opens the chat over any page, and isn't on /ask itself", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  // Only opens the panel (no question), so it doesn't use a free question.
+  await page.goto(`/api/v1/auth/steam/login?as=${attemptSteamId("76561197960466004")}`);
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 });
+  const fab = page.getByRole("button", { name: "Ask Den", exact: true });
+  const panel = page.getByRole("dialog", { name: "Ask Den" });
+  // Until it's hydrated a click does nothing; the button toggles, so only click while closed.
+  await expect(async () => {
+    if (!(await panel.isVisible())) await fab.click({ timeout: 2_000 });
+    await expect(panel).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(panel).toContainText(/\d questions? left today/, { timeout: 15_000 });
+  await expect(panel.getByRole("button", { name: "What should I build on Lion?" })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+
+  await page.goto("/ask");
+  await expect(page.getByRole("heading", { level: 1, name: "Ask Den" })).toBeVisible();
+  await expect(fab).toHaveCount(0);
+});

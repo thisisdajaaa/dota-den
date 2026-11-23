@@ -70,6 +70,8 @@ export function AskChat({
   plusOnSale,
   matchId,
   initialQuestion,
+  variant = "page",
+  onConversation,
 }: {
   initialConversations: AskConversationListItemDto[];
   initialConversationId: string | null;
@@ -80,8 +82,21 @@ export function AskChat({
   plusOnSale: boolean;
   matchId?: string;
   initialQuestion?: string;
+  /**
+   * "page" is the /ask page (the open chat is kept in the address bar, chats listed beside it
+   * on wide screens); "panel" is the chat button's panel, which fills its container, folds the
+   * chats away at every size and leaves the address bar alone.
+   */
+  variant?: "page" | "panel";
+  /** Told which chat is open (null for a new one), e.g. for the panel's full-page link. */
+  onConversation?: (id: string | null) => void;
 }) {
   const t = useT();
+  const panel = variant === "panel";
+  const remember = (id: string | null) => {
+    if (!panel) rememberInUrl(id);
+    onConversation?.(id);
+  };
   const [conversations, setConversations] = useState(initialConversations);
   const [conversationId, setConversationId] = useState(initialConversationId);
   const [listOpen, setListOpen] = useState(false);
@@ -199,7 +214,7 @@ export function AskChat({
           const c = event.data.conversation;
           if (c) {
             setConversationId(c.id);
-            rememberInUrl(c.id);
+            remember(c.id);
             setConversations((list) => {
               const prev = list.find((x) => x.id === c.id);
               const item: AskConversationListItemDto = {
@@ -250,7 +265,7 @@ export function AskChat({
     setMessages([]);
     setProblem(null);
     setListOpen(false);
-    rememberInUrl(null);
+    remember(null);
   }
 
   async function open(id: string) {
@@ -265,7 +280,7 @@ export function AskChat({
       setConversationId(res.conversationId);
       setMessages(res.messages);
       setListOpen(false);
-      rememberInUrl(res.conversationId);
+      remember(res.conversationId);
     } catch (e) {
       if (e instanceof ApiClientError && e.status === 404) {
         forget(id);
@@ -346,17 +361,30 @@ export function AskChat({
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="hidden lg:sticky lg:top-4 lg:block lg:self-start">{list}</aside>
+    <div
+      className={
+        panel ? "flex h-full min-h-0 flex-col" : "grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]"
+      }
+    >
+      {!panel && <aside className="hidden lg:sticky lg:top-4 lg:block lg:self-start">{list}</aside>}
       <section
-        aria-labelledby="ask-chat"
-        // The chat fits the screen: messages scroll inside it, the question box stays in view.
-        className="panel flex h-[calc(100dvh-22rem)] max-h-[60rem] min-h-[24rem] min-w-0 flex-col gap-3 p-4 sm:p-5 lg:h-[calc(100dvh-16rem)]"
+        aria-labelledby={panel ? undefined : "ask-chat"}
+        aria-label={panel ? t("ask.title") : undefined}
+        // The chat fits the screen (or the panel): messages scroll inside it, the question box
+        // stays in view.
+        className={cn(
+          "flex min-w-0 flex-col gap-3",
+          panel
+            ? "h-full min-h-0 flex-1"
+            : "panel h-[calc(100dvh-22rem)] max-h-[60rem] min-h-[24rem] p-4 sm:p-5 lg:h-[calc(100dvh-16rem)]",
+        )}
       >
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-          <h2 id="ask-chat" className="flex items-center gap-2 text-base font-semibold">
-            <BotMessageSquare aria-hidden className="size-4 text-gold" /> {t("ask.den")}
-          </h2>
+          {!panel && (
+            <h2 id="ask-chat" className="flex items-center gap-2 text-base font-semibold">
+              <BotMessageSquare aria-hidden className="size-4 text-gold" /> {t("ask.den")}
+            </h2>
+          )}
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
               {plural(t, "ask.quota.left", quota.remaining)}
@@ -375,7 +403,7 @@ export function AskChat({
         </div>
 
         {/* Phones and tablets: the chats fold away above the conversation. */}
-        <div className="shrink-0 space-y-2 lg:hidden">
+        <div className={cn("shrink-0 space-y-2", !panel && "lg:hidden")}>
           <div className="flex gap-2">
             <Button
               variant="outline"
