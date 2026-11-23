@@ -24,7 +24,9 @@ export const presenceService = lazy(
           followService.list(ownerOf({ id: viewer.userId, accountId32: viewer.accountId32 })),
         teammates: async (accountId32) => {
           const res = await playerDirectory.peers(accountId32);
-          return res.ok ? res.value : null;
+          // The cause (rate limited, timeout…) goes to the warning the service logs.
+          if (!res.ok) throw new Error(`opendota peers: ${res.error.type}`);
+          return res.value;
         },
       },
       live: { liveMatchIds: (ids) => liveService.liveMatchIds(ids) },
