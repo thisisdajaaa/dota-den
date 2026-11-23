@@ -43,9 +43,12 @@ export default async function TogetherPage() {
         description={t("together.page.description")}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
+        {/* Friends and your groups on the left, what the parties add up to on the right:
+            both columns about the same height whatever the friend list's length. */}
+        <div className="space-y-6 lg:col-span-3">
           <FriendList friends={friends} now={now} error={peersErrorCopy} />
+          <TogetherGroupsCard groups={groups} />
         </div>
         <div className="space-y-6 lg:col-span-2">
           <StacksCard
@@ -54,7 +57,6 @@ export default async function TogetherPage() {
             unknownPartyGames={overview.unknownPartyGames}
           />
           <TriosCard trios={overview.trios} members={members} />
-          <TogetherGroupsCard groups={groups} />
           <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="how">
             <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
             <div className="space-y-1">
