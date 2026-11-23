@@ -405,20 +405,23 @@ export function AskChat({
         {/* Phones and tablets: the chats fold away above the conversation. */}
         <div className={cn("shrink-0 space-y-2", !panel && "lg:hidden")}>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              aria-expanded={listOpen}
-              onClick={() => setListOpen((o) => !o)}
-            >
-              <ChevronDown
-                aria-hidden
-                className={cn("size-4 transition-transform", listOpen && "rotate-180")}
-              />
-              {listOpen
-                ? t("ask.conversations.hide")
-                : t("ask.conversations.show", { n: conversations.length })}
-            </Button>
+            {/* Nothing to list before the first chat (but an open list can always be closed). */}
+            {(conversations.length > 0 || listOpen) && (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-expanded={listOpen}
+                onClick={() => setListOpen((o) => !o)}
+              >
+                <ChevronDown
+                  aria-hidden
+                  className={cn("size-4 transition-transform", listOpen && "rotate-180")}
+                />
+                {listOpen
+                  ? t("ask.conversations.hide")
+                  : t("ask.conversations.show", { n: conversations.length })}
+              </Button>
+            )}
             {!listOpen && (
               <Button variant="outline" size="sm" onClick={startNew} disabled={busy}>
                 <MessageSquarePlus aria-hidden className="size-4" />{" "}

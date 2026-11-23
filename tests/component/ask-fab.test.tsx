@@ -59,6 +59,7 @@ describe("AskFab", () => {
     const dialog = await screen.findByRole("dialog", { name: "Ask Den" });
     await waitFor(() => expect(screen.getByRole("log")).toHaveTextContent("Where do I ward?"));
     expect(dialog).toHaveTextContent("4 questions left today");
+    expect(screen.getByRole("button", { name: "Chats (1)" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute(
       "href",
       "/ask?c=11111111-1111-4111-8111-111111111111",
@@ -88,6 +89,8 @@ describe("AskFab", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't open Ask Den.");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Try asking")).toBeInTheDocument();
+    // No chats yet: nothing to list.
+    expect(screen.queryByRole("button", { name: /^Chats/ })).toBeNull();
     expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute("href", "/ask");
   });
 });
