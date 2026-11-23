@@ -85,4 +85,12 @@ export const ask = {
     question: "How did I play in this match, and what should I do better next time?",
     context: "About match {id}",
   },
+  fab: {
+    open: "Ask Den",
+    close: "Close Ask Den",
+    fullPage: "Open full page",
+    loading: "Opening your chats…",
+    failed: "Couldn't open Ask Den.",
+    retry: "Try again",
+  },
 };
