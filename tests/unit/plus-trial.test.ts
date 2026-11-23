@@ -117,7 +117,7 @@ describe("PlusService free trial", () => {
     expect(await plus.plusUserIds()).toEqual([USER]);
     // ...but no supporter badge: they aren't paying.
     expect(await plus.supporters([7])).toEqual(new Set());
-    expect((await plus.adminCounts()).trials).toEqual({ started: 1, active: 1 });
+    expect((await plus.adminCounts()).trials).toEqual({ started: 1, active: 1, subscribed: 0 });
 
     await expect(plus.startTrial(USER, 7)).rejects.toMatchObject({ statusCode: 409 });
 

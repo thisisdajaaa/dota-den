@@ -206,7 +206,8 @@ export const plus: MessageTree<typeof en> = {
     disabled:
       "Naka-configure pero naka-off (hindi true ang PLUS_ENABLED): libre ang turing sa lahat.",
     trials: "Mga libreng trial",
-    trialsDetail: "{active} tumatakbo · {started} nasimulan",
+    trialsDetail:
+      "{active} tumatakbo · {started} nasimulan · {subscribed} nag-subscribe pagkatapos",
     entitled: "Mga player na may Plus",
     unlinked: "Hindi naka-link",
     unlinkedDetail: "Bayad pero hindi nakatali sa user",
