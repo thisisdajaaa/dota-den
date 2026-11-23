@@ -4,6 +4,54 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-11-24
+
+- Ask Den from any page: a chat button in the lower right (above the tab bar on phones) opens the chat in a panel, full screen on phones; your chat stays open while you move between pages, and "Open full page" goes to /ask
+- Player and guide pages load for signed-out visitors more often: the daily OpenDota allowance went from 3,000 to 15,000 calls now that Dota Den uses a paid OpenDota key
+
+## 2026-11-23
+
+- Plus: try it free for 7 days, no card needed and nothing charged; one trial per Steam account, it ends by itself, and a notification reminds you the day before
+- Overview: four tabs (Overview, Stats, Friends, Goals) instead of one long page; links keep the tab you were on
+- Account: a section index (sticky chips on phones, a side list on wide screens) to jump to plan, stop-loss, notifications, email, Discord, shares and your data
+- Live: two streams side by side on phones; Together: groups sit under your friends list; the draft record card stays three across on phones
+- Admin: totals line up on wide screens, the usage table is sorted by use, and the Plus box counts trials (running, started, subscribed after)
+- Fix: Ask Den failed on some patch questions ("which version?") when the AI left the version empty
+- Fix: when the "friends in game" lookup fails, the log now says why
+
+## 2026-11-22
+
+- Sidebar, hero page header, Plus page (AI perks first) and the overview's first steps tidied up
+
+## 2026-11-20
+
+- Plus: your splits (/heroes/splits): win rate and games by patch, position, time of day, lane partner and game length
+- Plus: draft post-mortem on match pages: lanes at 10 minutes against the draft, where the gold lead was won, and which counters it liked
+- Guides: late-game items, the 7.42 map with zoom, current skills and talents, an affordable starting build, and the 7.42 ward map
+- Fix: long Ask Den chats no longer stretch the page below the footer
+
+## 2026-11-19
+
+- Ask Den, the AI chat (/ask): ask about your games, heroes, builds, wards and the meta in English, Filipino or Bisaya; answers come only from your data and our stats, with numbers and names checked. Free: 5 questions a day; Plus: 100. Several chats per player, kept 30 days; the chat scrolls inside a screen-sized panel
+- Plus: Monday AI weekly coach: a note on the battle report and a push every Monday at 07:00 Manila time
+- Plus: faster hero coaching (up to 100 parsed games read a day; free stays at 10) and a build check against Legend–Immortal item timings on hero pages
+- Discord bot: `/den coach`, `/den ask` and `/den pick` for Plus, a server recap, and stop-loss and tilt nudges (on once the Discord app is set up)
+- Stack planner on group pages: tick who's in tonight for a lineup from everyone's last 30 days (free); Plus adds hero options and posting to Discord
+- Plus price: ₱149 a month or ₱1,490 a year
+- Dark, slim scrollbars everywhere
+- Fix: failed match backfills and the patch-notes job (job ids QStash refused); hero coaching's daily cap could be passed when two runs overlapped
+
+## 2026-11-18
+
+- Plus is on sale, with payments through Polar (merchant of record); checkout needs you signed in
+- Share cards in English, Filipino and Bisaya: win streak, session recap, standout game, weekly recap and rank journey, as link previews and square posts, with copy link, download and Facebook share
+- Guides: in-game style build path with item timings, skill build, talents and ward spots (support guides and /guides/wards)
+- Meta for your bracket: pick Herald–Guardian up to Divine–Immortal; defaults to your own bracket when signed in (free)
+- Stop-loss: set your own limits (losses, losses in a row, games per session); the overview shows where you are and a push reminds you once per limit (free)
+- Faster first import, and a clear fix when your match data is private
+- Security update to Next.js 16.4.6
+- Fix: `robots.txt` named localhost instead of dota-den.com
+
 ## 2026-10-27
 
 - Plus page shows the monthly and yearly prices before Plus is on sale (with an "Opens soon" button), and the footer always links to it

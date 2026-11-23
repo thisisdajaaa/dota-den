@@ -10,13 +10,12 @@ key or account setup, not on code.
 ## Turn on (code done, needs a key)
 
 These are built and tested; each starts working when its keys are set in Vercel (see
-[configuration](configuration.md)). Push notifications, Twitch, Kick, Steam, QStash and STRATZ
-keys are set.
+[configuration](configuration.md)). Push notifications, Twitch, Kick, Steam, QStash, STRATZ and
+OpenDota (paid key, daily cap 15,000 calls) keys are set.
 
 | Feature                                   | Still needed                                                                                                                                                                                                                                                                     | Issue                                                                                                                |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Weekly email digest and bounce handling   | A Resend account and verified sending domain: `RESEND_API_KEY`, `EMAIL_FROM`, `RESEND_WEBHOOK_SECRET` (`EMAIL_TOKEN_SECRET` is set)                                                                                                                                              | [#10](https://github.com/thisisdajaaa/dota-den/issues/10), [#24](https://github.com/thisisdajaaa/dota-den/issues/24) |
-| Higher OpenDota limits                    | `OPENDOTA_API_KEY`                                                                                                                                                                                                                                                               | [#14](https://github.com/thisisdajaaa/dota-den/issues/14)                                                            |
 | Discord: Connect Discord + the `/den` bot | A Discord application: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_PUBLIC_KEY` in Vercel; interactions URL `https://www.dota-den.com/api/v1/discord/interactions`; `DISCORD_BOT_TOKEN` (recap, nudges); then `npm run discord:commands`. Steps: docs/discord-setup.md |                                                                                                                      |
 
 ## Plus: what's next (plan of 2026-10-25)

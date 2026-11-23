@@ -87,4 +87,12 @@ export const ask: MessageTree<typeof en> = {
     question: "Kumusta ang laro ko rito, at ano ang dapat kong pagbutihin sa susunod?",
     context: "Tungkol sa match {id}",
   },
+  fab: {
+    open: "Tanungin si Den",
+    close: "Isara ang Ask Den",
+    fullPage: "Buksan nang buong pahina",
+    loading: "Binubuksan ang mga chat mo…",
+    failed: "Hindi mabuksan ang Ask Den.",
+    retry: "Subukan ulit",
+  },
 };
