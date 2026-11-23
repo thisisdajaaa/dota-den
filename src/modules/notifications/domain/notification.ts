@@ -17,6 +17,7 @@ export const NOTIFICATION_KINDS = [
   "session_live",
   "stop_loss",
   "weekly_coach",
+  "plus_trial",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -32,6 +33,7 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   session_live: true,
   stop_loss: true,
   weekly_coach: true,
+  plus_trial: true,
 };
 
 /** Kinds only Plus players get (the settings hide them for everyone else). */

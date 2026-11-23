@@ -36,6 +36,10 @@ export const notifications: MessageTree<typeof en> = {
     dismiss: "Itago kini",
   },
   kinds: {
+    plus_trial: {
+      label: "Paghuman sa libre nga Plus trial",
+      help: "Kausa, usa ka adlaw sa wala pa mahuman ang imong libre nga Plus trial.",
+    },
     session_recap: {
       label: "Recap sa session",
       help: "Human sa session: ang imong record ug link sa recap.",
@@ -70,6 +74,10 @@ export const notifications: MessageTree<typeof en> = {
     },
   },
   push: {
+    trial: {
+      title: "Hapit na mahuman ang imong libre nga Plus trial",
+      body: "Mahuman kini {when}. Mag-subscribe aron magpadayon ang AI coach, ang 100 ka pangutana matag adlaw sa Ask Den ug ang imong splits.",
+    },
     session: {
       title: "Katapusang session: {wins}W {losses}L",
       body: "{games} gamit si {heroes}. Tan-awa kung unsay nindot ug unsay dili.",

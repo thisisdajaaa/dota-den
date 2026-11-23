@@ -55,6 +55,17 @@ export class TrialsRepository implements TrialsPort {
     }
   }
 
+  async endingBetween(from: Date, to: Date) {
+    const docs = await (
+      await this.col()
+    )
+      .find({ endsAt: { $gt: from, $lte: to } })
+      .sort({ endsAt: 1 })
+      .limit(10_000)
+      .toArray();
+    return docs.map(toTrial);
+  }
+
   async activeUserIds(now: Date) {
     const docs = await (
       await this.col()

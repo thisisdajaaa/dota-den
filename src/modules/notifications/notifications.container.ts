@@ -7,6 +7,7 @@ import { usersService } from "@/modules/identity";
 import { matchesService } from "@/modules/matches";
 import { mmrInsightsService } from "@/modules/mmr";
 import { patchesService } from "@/modules/patches";
+import { plusService } from "@/modules/plus";
 import { sessionService } from "@/modules/sessions";
 import { PUSH_SERVICE_HOSTS } from "./domain/notification";
 import { WebPushSender } from "./infrastructure/web-push-sender";
@@ -51,6 +52,7 @@ export const notificationTriggers = lazy(
   () =>
     new NotificationTriggersService({
       notifications: notificationService,
+      trials: { endingSoon: () => plusService.trialsEndingSoon() },
       users: {
         byIds: async (ids) =>
           (await usersService.findByIds(ids)).map((u) => ({

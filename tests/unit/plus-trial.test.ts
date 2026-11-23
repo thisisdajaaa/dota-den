@@ -187,3 +187,22 @@ describe("PlusService free trial", () => {
     expect(trials.docs.size).toBe(0);
   });
 });
+
+describe("trials ending soon (reminders)", () => {
+  it("lists trials ending within 36 hours whose players still rely on them", async () => {
+    const { plus, trials, subscriptions, later } = setup();
+    await plus.startTrial(USER, 7);
+    await trials.start(newTrial(OTHER, 8, NOW));
+    expect(await plus.trialsEndingSoon()).toEqual([]);
+
+    later(6 * DAY); // both end in 24 hours
+    expect((await plus.trialsEndingSoon()).map((t) => t.userId).sort()).toEqual([USER, OTHER]);
+
+    // A player who subscribed meanwhile isn't reminded.
+    await subscriptions.upsertIfNewer(subscription({ userId: OTHER, accountId32: 8 }));
+    expect((await plus.trialsEndingSoon()).map((t) => t.userId)).toEqual([USER]);
+
+    later(DAY); // ended
+    expect(await plus.trialsEndingSoon()).toEqual([]);
+  });
+});
