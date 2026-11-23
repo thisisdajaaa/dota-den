@@ -15,6 +15,16 @@ const hero = z
   .min(1)
   .max(40)
   .describe('Hero name as the player wrote it, e.g. "Pudge", "Anti-Mage", "AM", "lion"');
+/**
+ * An optional hero. "" counts as "not given": models sometimes send an empty string for "omit",
+ * and the AI provider checks calls against these schemas, so "" must be valid here.
+ */
+const optionalHero = z
+  .string()
+  .trim()
+  .max(40)
+  .transform((v) => v || undefined)
+  .optional();
 const position = z
   .number()
   .int()
@@ -32,7 +42,7 @@ export const ASK_TOOL_SCHEMAS = {
         .max(50)
         .optional()
         .describe("How many of the newest games (default 20)"),
-      hero: hero.optional().describe("Only games on this hero"),
+      hero: optionalHero.describe("Only games on this hero"),
       ranked_only: z.boolean().optional().describe("Only ranked games"),
     })
     .strict(),
@@ -79,17 +89,18 @@ export const ASK_TOOL_SCHEMAS = {
     .strict(),
   patch_notes: z
     .object({
-      hero: hero.optional().describe("What changed for this hero"),
+      hero: optionalHero.describe("What changed for this hero"),
       item: z
         .string()
         .trim()
-        .min(1)
         .max(40)
+        .transform((v) => v || undefined)
         .optional()
         .describe('What changed for this item, e.g. "Black King Bar", "BKB"'),
       version: z
         .string()
-        .regex(/^\d{1,2}\.\d{2}[a-z]?$/)
+        .regex(/^(?:\d{1,2}\.\d{2}[a-z]?)?$/)
+        .transform((v) => v || undefined)
         .optional()
         .describe('A patch version like "7.42" or "7.41c"; omit for the latest'),
     })
