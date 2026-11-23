@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { afterResponse } from "@/common/http/after-response";
 import { getT } from "@/common/i18n/server";
 import { plural } from "@/common/i18n/translate";
-import { CollapsibleSection } from "@/components/collapsible-section";
 import { StatTile } from "@/components/stat-tile";
 import { getCurrentUser } from "@/modules/identity";
 import { MatchSyncService, SYNC_COOLDOWN_MS, matchSyncService } from "@/modules/matches";
@@ -31,6 +30,7 @@ import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
 import { StandingSkeleton } from "@/modules/leaderboards/ui/standing-card";
 import { AchievementsSection } from "./achievements-section";
 import { CompareSection } from "./compare-section";
+import { DashboardTabs, parseView } from "./dashboard-tabs";
 import { FirstRunStatus, WhileYouWait, type FirstRunStage } from "./first-run";
 import { FriendsPlayingSection } from "./friends-playing-section";
 import { GoalsSection } from "./goals-section";
@@ -66,14 +66,16 @@ function parseFilter(params: Record<string, string | string[] | undefined>): Das
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const user = await getCurrentUser();
   if (!user) return null;
-  const filter = parseFilter(await searchParams);
+  const params = await searchParams;
+  const filter = parseFilter(params);
+  const view = parseView(params.view);
   const now = new Date();
   const t = await getT();
 
   const queries = matchQueries;
   const owner = { userId: user.id, accountId32: user.accountId32 };
   const timeZone = getViewerTimeZone();
-  const [status, view, quick, heroes, latestSession, tz, notify, checklist, syncPolicy] =
+  const [status, dashView, quick, heroes, latestSession, tz, notify, checklist, syncPolicy] =
     await Promise.all([
       queries.importStatus(user.accountId32),
       queries.dashboardView(user.accountId32, filter, now, RECENT_MATCHES),
@@ -98,7 +100,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const stopLoss = latestSession
     ? await sessionService.stopLoss(owner, latestSession.session, now).catch(() => null)
     : null;
-  const { facts, recent, latestPatch } = view;
+  const { facts, recent, latestPatch } = dashView;
   const profile = quick.profile;
   // Medal history needs no typing: note the medal each visit (after the page is sent), from a
   // live profile only. A saved banner copy is refreshed first.
@@ -182,9 +184,153 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     );
   }
 
+  const tabs = <DashboardTabs active={view} filter={filter} />;
+  const filters = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <DashboardFilters
+        filter={filter}
+        latestPatch={latestPatch}
+        view={view === "overview" ? undefined : view}
+      />
+      <p className="text-xs text-muted-foreground tabular-nums">
+        {plural(t, "dashboard.showing", status.totals.all, {
+          shown: overall.games.toLocaleString("en-US"),
+        })}
+      </p>
+    </div>
+  );
+  const noneInView = (
+    <div className="panel p-8 text-center text-sm text-muted-foreground">
+      {t("dashboard.noneInView")}
+    </div>
+  );
+  const keyStats = (
+    <section aria-label={t("dashboard.keyStats")} className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <StatTile
+        label={t("dashboard.winRate")}
+        value={formatPercent(overall.winRate)}
+        meter={overall.winRate}
+        tone={overall.winRate !== null && overall.winRate >= 0.5 ? "win" : "loss"}
+        detail={`${plural(t, "dashboard.wins", overall.wins)} · ${plural(t, "dashboard.losses", overall.losses)}`}
+      />
+      <StatTile
+        label={t("dashboard.soloWinRate")}
+        value={formatPercent(byQueue.solo.winRate)}
+        meter={byQueue.solo.winRate}
+        tone={byQueue.solo.lowSample ? "muted" : "gold"}
+        detail={`${plural(t, "dashboard.soloGames", byQueue.solo.games)}${byQueue.solo.lowSample ? t("dashboard.tooFew") : ""}`}
+      />
+      <StatTile
+        label={t("dashboard.partyWinRate")}
+        value={formatPercent(byQueue.party.winRate)}
+        meter={byQueue.party.winRate}
+        tone={byQueue.party.lowSample ? "muted" : "gold"}
+        detail={`${plural(t, "dashboard.partyGames", byQueue.party.games)}${byQueue.party.lowSample ? t("dashboard.tooFew") : ""}`}
+      />
+      <StatTile
+        label={t("dashboard.kdaRatio")}
+        value={averages ? averages.kda.toFixed(2) : "—"}
+        detail={
+          averages
+            ? t("dashboard.averages", {
+                kills: averages.kills.toFixed(1),
+                deaths: averages.deaths.toFixed(1),
+                assists: averages.assists.toFixed(1),
+              })
+            : undefined
+        }
+      />
+    </section>
+  );
+
+  if (view === "stats")
+    return (
+      <div className="space-y-6">
+        {banner}
+        {tabs}
+        {filters}
+        {overall.games === 0 ? (
+          noneInView
+        ) : (
+          <>
+            {keyStats}
+            {/* Queue split and recent form on the left, the (tall) hero pool and your gap
+                against your rank on the right: both columns about the same height. */}
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
+              <div className="space-y-6 lg:col-span-3">
+                <QueueSplitCard summary={summary} />
+                <FormStrip form={summary.form} heroes={heroes} />
+              </div>
+              <div className="space-y-6 lg:col-span-2">
+                <HeroPoolCard
+                  rows={summary.heroes.map((h) => ({
+                    ...h,
+                    lastPlayed: h.lastPlayed.toISOString(),
+                  }))}
+                  heroes={summary.heroes
+                    .map((h) => heroes.get(h.heroId))
+                    .filter((h) => h !== undefined)}
+                  now={now.toISOString()}
+                />
+                <Suspense fallback={null}>
+                  <CompareSection user={user} heroes={heroes} />
+                </Suspense>
+              </div>
+            </div>
+          </>
+        )}
+        {/* From OpenDota's lane data (last 60 days), not the filters above. */}
+        <Suspense fallback={<LanesSkeleton />}>
+          <LanesSection accountId32={user.accountId32} />
+        </Suspense>
+        <Suspense fallback={<PatchDigestSkeleton />}>
+          <PatchDigestSection user={user} />
+        </Suspense>
+      </div>
+    );
+
+  if (view === "friends")
+    return (
+      <div className="space-y-6">
+        {banner}
+        {tabs}
+        {/* From OpenDota, not the match filters: streams in without holding up the page. */}
+        <Suspense fallback={<TeammatesSkeleton />}>
+          <TeammatesSection user={user} />
+        </Suspense>
+        {/* Your all-time rank on each friends leaderboard. */}
+        <Suspense fallback={<StandingSkeleton />}>
+          <StandingSection user={user} />
+        </Suspense>
+      </div>
+    );
+
+  if (view === "progress")
+    return (
+      <div className="space-y-6">
+        {banner}
+        {tabs}
+        {/* Goals are short and practice is long: a narrower goals column, both cards the row's
+            height. Either may render nothing; the other then takes the full width. */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:[&:has(>:empty)>*]:col-span-5">
+          <div className="empty:hidden lg:col-span-2 lg:[&>section]:h-full">{goals}</div>
+          <div className="empty:hidden lg:col-span-3 lg:[&>section]:h-full">
+            <Suspense fallback={null}>
+              <PracticeSection user={user} heroes={heroes} timeZone={tz.timeZone} />
+            </Suspense>
+          </div>
+        </div>
+        <Suspense fallback={null}>
+          <AchievementsSection user={user} timeZone={tz.timeZone} />
+        </Suspense>
+      </div>
+    );
+
+  // Overview: what's happening now, the headline numbers and the latest games.
   return (
     <div className="space-y-6">
       {banner}
+      {tabs}
 
       {/* First steps near the top, where a new player looks first (dismissible). */}
       {checklist && <OnboardingChecklist steps={checklist} />}
@@ -219,128 +365,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         <MmrPromptSection user={user} />
       </Suspense>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <DashboardFilters filter={filter} latestPatch={latestPatch} />
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {plural(t, "dashboard.showing", status.totals.all, {
-            shown: overall.games.toLocaleString("en-US"),
-          })}
-        </p>
-      </div>
+      {filters}
+      {overall.games === 0 ? noneInView : keyStats}
 
-      {overall.games === 0 ? (
-        <div className="panel p-8 text-center text-sm text-muted-foreground">
-          {t("dashboard.noneInView")}
-        </div>
-      ) : (
-        <>
-          <section
-            aria-label={t("dashboard.keyStats")}
-            className="grid grid-cols-2 gap-3 md:grid-cols-4"
-          >
-            <StatTile
-              label={t("dashboard.winRate")}
-              value={formatPercent(overall.winRate)}
-              meter={overall.winRate}
-              tone={overall.winRate !== null && overall.winRate >= 0.5 ? "win" : "loss"}
-              detail={`${plural(t, "dashboard.wins", overall.wins)} · ${plural(t, "dashboard.losses", overall.losses)}`}
-            />
-            <StatTile
-              label={t("dashboard.soloWinRate")}
-              value={formatPercent(byQueue.solo.winRate)}
-              meter={byQueue.solo.winRate}
-              tone={byQueue.solo.lowSample ? "muted" : "gold"}
-              detail={`${plural(t, "dashboard.soloGames", byQueue.solo.games)}${byQueue.solo.lowSample ? t("dashboard.tooFew") : ""}`}
-            />
-            <StatTile
-              label={t("dashboard.partyWinRate")}
-              value={formatPercent(byQueue.party.winRate)}
-              meter={byQueue.party.winRate}
-              tone={byQueue.party.lowSample ? "muted" : "gold"}
-              detail={`${plural(t, "dashboard.partyGames", byQueue.party.games)}${byQueue.party.lowSample ? t("dashboard.tooFew") : ""}`}
-            />
-            <StatTile
-              label={t("dashboard.kdaRatio")}
-              value={averages ? averages.kda.toFixed(2) : "—"}
-              detail={
-                averages
-                  ? t("dashboard.averages", {
-                      kills: averages.kills.toFixed(1),
-                      deaths: averages.deaths.toFixed(1),
-                      assists: averages.assists.toFixed(1),
-                    })
-                  : undefined
-              }
-            />
-          </section>
-
-          {/* Queue split and recent form on the left, the (tall) hero pool and your gap against
-              your rank on the right: both columns about the same height, nothing stretched. */}
-          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
-            <div className="space-y-6 lg:col-span-3">
-              <QueueSplitCard summary={summary} />
-              <FormStrip form={summary.form} heroes={heroes} />
-            </div>
-            <div className="space-y-6 lg:col-span-2">
-              <HeroPoolCard
-                rows={summary.heroes.map((h) => ({
-                  ...h,
-                  lastPlayed: h.lastPlayed.toISOString(),
-                }))}
-                heroes={summary.heroes
-                  .map((h) => heroes.get(h.heroId))
-                  .filter((h) => h !== undefined)}
-                now={now.toISOString()}
-              />
-              <Suspense fallback={null}>
-                <CompareSection user={user} heroes={heroes} />
-              </Suspense>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Below the numbers: the week's goals (yours) and practice plan (suggested). */}
       {!checklist && latestSession && notify?.enabled && notify.endpoints.length === 0 && (
         <NotificationsPrompt />
       )}
-      <CollapsibleSection storageKey="dashboard-plan" title={t("dashboard.plan.title")}>
-        {/* Goals are short and practice is long: a narrower goals column, both cards the
-            row's height. Either may render nothing; the other then takes the full width. */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:[&:has(>:empty)>*]:col-span-5">
-          <div className="empty:hidden lg:col-span-2 lg:[&>section]:h-full">{goals}</div>
-          <div className="empty:hidden lg:col-span-3 lg:[&>section]:h-full">
-            <Suspense fallback={null}>
-              <PracticeSection user={user} heroes={heroes} timeZone={tz.timeZone} />
-            </Suspense>
-          </div>
-        </div>
-      </CollapsibleSection>
 
       {overall.games > 0 && <RecentMatchesCard matches={recent} heroes={heroes} now={now} />}
-
-      {/* From OpenDota's lane data (last 60 days), not the filters above. */}
-      <Suspense fallback={<PatchDigestSkeleton />}>
-        <PatchDigestSection user={user} />
-      </Suspense>
-
-      <Suspense fallback={<LanesSkeleton />}>
-        <LanesSection accountId32={user.accountId32} />
-      </Suspense>
-
-      {/* From OpenDota, not the filters above: streams in without holding up the page. */}
-      <Suspense fallback={<TeammatesSkeleton />}>
-        <TeammatesSection user={user} />
-      </Suspense>
-
-      {/* Your all-time rank on each friends leaderboard. */}
-      <Suspense fallback={<StandingSkeleton />}>
-        <StandingSection user={user} />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <AchievementsSection user={user} timeZone={tz.timeZone} />
-      </Suspense>
     </div>
   );
 }

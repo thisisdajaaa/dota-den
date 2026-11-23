@@ -149,8 +149,8 @@ test("a friend sees your challenge answers and finished drafts on the leaderboar
   await heroPage.goto("/leaderboards?board=rooms");
   await expect(board(heroPage, "Friend rooms")).toContainText("self-reported");
 
-  // The overview shows your standing among friends.
-  await heroPage.goto("/dashboard");
+  // The dashboard's Friends tab shows your standing among friends.
+  await heroPage.goto("/dashboard?view=friends");
   const standing = heroPage.getByRole("region", { name: "Your standing" });
   await expect(standing).toContainText("Draft games");
   await expect(standing).toContainText(/#\d+/);

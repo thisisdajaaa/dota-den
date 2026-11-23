@@ -3,6 +3,13 @@ import type { dashboard as en } from "../en/dashboard";
 
 export const dashboard: MessageTree<typeof en> = {
   title: "Dashboard",
+  tabs: {
+    label: "Mga bahin sa dashboard",
+    overview: "Overview",
+    stats: "Stats",
+    friends: "Mga higala",
+    progress: "Goals",
+  },
   loading: "Gi-load ang dashboard",
   showing: {
     one: "Gipakita ang {shown} sa imong 1 ka duwa",

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("the overview lists your teammates with honest comparisons and a rival", async ({ page }) => {
   await page.goto("/api/v1/auth/steam/login");
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?view=friends");
 
   const section = page.getByRole("region", { name: "Teammates" });
   await expect(section.getByRole("heading", { name: "Who you play with" })).toBeVisible();

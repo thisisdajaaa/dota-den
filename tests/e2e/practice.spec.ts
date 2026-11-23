@@ -9,7 +9,7 @@ test("the overview suggests a practice plan you can review, swap and dismiss", a
     timeout: 20_000,
   });
   // The plan is built from synced games, so look again once the sync is in.
-  await page.reload();
+  await page.goto("/dashboard?view=progress");
   const card = page.getByRole("region", { name: "Practice plan" });
   await expect(card).toBeVisible({ timeout: 20_000 });
   const steps = card.getByRole("listitem");
@@ -31,7 +31,7 @@ test("the overview suggests a practice plan you can review, swap and dismiss", a
   await notes.getByRole("button", { name: "Save" }).click();
   await expect(notes.getByRole("button", { name: "Saved" })).toBeDisabled();
 
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?view=progress");
   await expect(card.getByText("Reviewed", { exact: true })).toBeVisible();
 
   // Swap the hero for the next suggestion, then dismiss the review step.
