@@ -14,6 +14,8 @@ export interface TriggerRunDto {
   sessionRecaps: number;
   weeklyRecaps: number;
   patchHeroes: number;
+  /** "Your free Plus trial ends soon" reminders sent. */
+  trialReminders: number;
   failed: number;
   stoppedEarly: boolean;
 }

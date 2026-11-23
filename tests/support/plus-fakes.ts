@@ -219,6 +219,11 @@ export class MemoryTrials implements TrialsPort {
     this.docs.set(trial.accountId32, trial);
     return true;
   }
+  async endingBetween(from: Date, to: Date) {
+    return [...this.docs.values()]
+      .filter((t) => t.endsAt > from && t.endsAt <= to)
+      .sort((a, b) => a.endsAt.getTime() - b.endsAt.getTime());
+  }
   async activeUserIds(now: Date) {
     return [...this.docs.values()].filter((t) => t.endsAt > now).map((t) => t.userId);
   }

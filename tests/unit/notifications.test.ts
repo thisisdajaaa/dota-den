@@ -219,6 +219,7 @@ function triggers(opts: {
   patch?: { version: string; publishedAt: Date; heroIds: number[] } | null;
   language?: string | null;
   failSessions?: boolean;
+  trials?: { userId: string; endsAt: Date }[];
 }) {
   const f = fakes();
   const svc = new NotificationTriggersService({
@@ -250,6 +251,7 @@ function triggers(opts: {
           [5, "Crystal Maiden"],
         ]),
     },
+    trials: opts.trials ? { endingSoon: async () => opts.trials! } : undefined,
     logger: { warn: () => {} },
     now: () => opts.now,
   });
@@ -270,6 +272,26 @@ describe("NotificationTriggersService", () => {
     wins: 3,
     heroIds: [2, 1, 2],
   };
+
+  it("reminds a player once that their free Plus trial ends, in their time and language", async () => {
+    // Ends Friday 2026-10-09 at 22:00 Manila time.
+    const endsAt = new Date("2026-10-09T14:00:00Z");
+    const { svc, sent } = triggers({ now: THURSDAY, trials: [{ userId: "u1", endsAt }] });
+    expect((await svc.runDaily({ budgetMs: 10_000 })).trialReminders).toBe(1);
+    expect(sent[0].message).toEqual({
+      title: "Your free Plus trial ends soon",
+      body: "It ends Fri 10:00 PM. Subscribe to keep the AI coach, Ask Den's 100 questions a day and your splits.",
+      url: "/plus",
+      tag: "plus-trial",
+    });
+    // Once per trial, even though the next day's run still sees it ending soon.
+    expect((await svc.runDaily({ budgetMs: 10_000 })).trialReminders).toBe(0);
+
+    // Turned off in the settings: nothing.
+    const off = triggers({ now: THURSDAY, trials: [{ userId: "u1", endsAt }] });
+    off.prefs.set("u1", { ...(await off.service.prefs("u1")), plus_trial: false });
+    expect((await off.svc.runDaily({ budgetMs: 10_000 })).trialReminders).toBe(0);
+  });
 
   it("recaps yesterday's finished session once, linking to it", async () => {
     const { svc, sent } = triggers({ now: THURSDAY, session });
@@ -381,6 +403,7 @@ it("gives settings saved before a kind existed that kind's default (Plus kinds o
     session_live: true,
     stop_loss: true,
     weekly_coach: true,
+    plus_trial: true,
   });
   expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
 });
@@ -396,6 +419,7 @@ it("has a default for every kind", () => {
     "session_live",
     "stop_loss",
     "weekly_coach",
+    "plus_trial",
   ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });

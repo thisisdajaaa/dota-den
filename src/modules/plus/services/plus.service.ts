@@ -9,7 +9,13 @@ import {
   type Entitlement,
 } from "../domain/entitlement";
 import { limitFor, type Plan } from "../domain/plans";
-import { newTrial, trialEntitlement, trialStatus, type FreeTrial } from "../domain/trial";
+import {
+  newTrial,
+  TRIAL_REMINDER_WINDOW_MS,
+  trialEntitlement,
+  trialStatus,
+  type FreeTrial,
+} from "../domain/trial";
 import type { BillingProviderName, Subscription } from "../domain/subscription";
 import type {
   BillingProvider,
@@ -110,6 +116,29 @@ export class PlusService {
     } catch (error) {
       this.deps.logger.warn("plus_trial_lookup_failed", { error });
       return null;
+    }
+  }
+
+  /**
+   * Trials ending within the reminder window whose players still depend on them (not those who
+   * subscribed or became staff meanwhile). Empty when Plus is off or the lookup fails.
+   */
+  async trialsEndingSoon(): Promise<{ userId: string; endsAt: Date }[]> {
+    if (!this.enabled || !this.deps.trials) return [];
+    const now = this.now();
+    try {
+      const ending = await this.deps.trials.endingBetween(
+        now,
+        new Date(now.getTime() + TRIAL_REMINDER_WINDOW_MS),
+      );
+      const out: { userId: string; endsAt: Date }[] = [];
+      for (const trial of ending)
+        if ((await this.entitlement(trial.userId)).reason === "free_trial")
+          out.push({ userId: trial.userId, endsAt: trial.endsAt });
+      return out;
+    } catch (error) {
+      this.deps.logger.warn("plus_trial_reminders_failed", { error });
+      return [];
     }
   }
 

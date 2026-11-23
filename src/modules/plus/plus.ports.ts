@@ -88,6 +88,8 @@ export interface TrialsPort {
   find(userId: string, accountId32?: number): Promise<FreeTrial | null>;
   /** Records a new trial; false when this account already had one. */
   start(trial: FreeTrial): Promise<boolean>;
+  /** Trials ending after `from` and at or before `to` (reminders), soonest first. */
+  endingBetween(from: Date, to: Date): Promise<FreeTrial[]>;
   /** Users whose trial is running at `now`. */
   activeUserIds(now: Date): Promise<string[]>;
   /** Trials started, and running at `now` (admin). */

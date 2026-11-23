@@ -15,6 +15,12 @@ export interface FreeTrial {
   endsAt: Date;
 }
 
+/**
+ * The daily job reminds a player once when their trial ends within this long. It runs once a
+ * day, so every trial is caught by one run (a run that's missed just skips that reminder).
+ */
+export const TRIAL_REMINDER_WINDOW_MS = 36 * 3_600_000;
+
 /** A new trial starting at `now`. */
 export function newTrial(userId: string, accountId32: number, now: Date): FreeTrial {
   return { userId, accountId32, startedAt: now, endsAt: new Date(now.getTime() + TRIAL_MS) };
