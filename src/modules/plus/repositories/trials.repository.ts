@@ -76,13 +76,43 @@ export class TrialsRepository implements TrialsPort {
     return docs.map((d) => d.userId);
   }
 
-  async counts(now: Date) {
+  async counts(now: Date, testMode: boolean | null) {
     const col = await this.col();
-    const [started, active] = await Promise.all([
+    const [started, active, subscribed] = await Promise.all([
       col.estimatedDocumentCount(),
       col.countDocuments({ endsAt: { $gt: now } }),
+      // Trial players with a subscription made after their trial started (this mode only:
+      // staging and production share the database).
+      col
+        .aggregate<{ n: number }>([
+          {
+            $lookup: {
+              from: PLUS_COLLECTIONS.subscriptions,
+              let: { user: "$userId", from: "$startedAt" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$userId", "$$user"] },
+                        { $gte: ["$createdAt", "$$from"] },
+                        ...(testMode === null ? [] : [{ $eq: ["$testMode", testMode] }]),
+                      ],
+                    },
+                  },
+                },
+                { $limit: 1 },
+              ],
+              as: "subs",
+            },
+          },
+          { $match: { "subs.0": { $exists: true } } },
+          { $count: "n" },
+        ])
+        .toArray()
+        .then((r) => r[0]?.n ?? 0),
     ]);
-    return { started, active };
+    return { started, active, subscribed };
   }
 
   async exportForOwner(owner: DataOwner) {

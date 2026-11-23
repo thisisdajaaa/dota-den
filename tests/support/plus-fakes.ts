@@ -227,8 +227,14 @@ export class MemoryTrials implements TrialsPort {
   async activeUserIds(now: Date) {
     return [...this.docs.values()].filter((t) => t.endsAt > now).map((t) => t.userId);
   }
+  /** Set by a test: what the subscribed count reads (the fake has no subscriptions). */
+  subscribed = 0;
   async counts(now: Date) {
-    return { started: this.docs.size, active: (await this.activeUserIds(now)).length };
+    return {
+      started: this.docs.size,
+      active: (await this.activeUserIds(now)).length,
+      subscribed: this.subscribed,
+    };
   }
   async exportForOwner(owner: DataOwner) {
     return [...this.docs.values()].filter((t) => t.userId === owner.userId).map((t) => ({ ...t }));

@@ -159,7 +159,30 @@ describe("TrialsRepository (Mongo)", () => {
 
     await repo.start(newTrial("t3", 902, at("2026-11-01T00:00:00Z"))); // ended on the 8th
     expect(await repo.activeUserIds(now)).toEqual([expect.stringMatching(/^t[12]$/)]);
-    expect(await repo.counts(now)).toMatchObject({ active: 1 });
+    expect(await repo.counts(now, false)).toMatchObject({ active: 1, subscribed: 0 });
+
+    // t3 subscribed (live) after their trial; a test-mode subscription doesn't count in live.
+    const subs = new SubscriptionsRepository(async () => db);
+    await subs.upsertIfNewer(
+      sub({
+        subscriptionId: "trial-conv-1",
+        userId: "t3",
+        accountId32: 902,
+        createdAt: at("2026-11-05T00:00:00Z"),
+      }),
+    );
+    await subs.upsertIfNewer(
+      sub({
+        subscriptionId: "trial-conv-2",
+        userId: "t3",
+        accountId32: 902,
+        testMode: true,
+        createdAt: at("2026-11-05T00:00:00Z"),
+      }),
+    );
+    expect((await repo.counts(now, false)).subscribed).toBe(1);
+    expect((await repo.counts(now, true)).subscribed).toBe(1);
+    await (await db.collection(PLUS_COLLECTIONS.subscriptions)).deleteMany({ userId: "t3" });
 
     const owner = { userId: "t3", accountId32: 902 };
     expect(await repo.exportForOwner(owner)).toEqual([

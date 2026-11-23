@@ -208,7 +208,7 @@ export const plus = {
     disabled:
       "Configured, but switched off (PLUS_ENABLED isn't true): everyone is treated as free.",
     trials: "Free trials",
-    trialsDetail: "{active} running · {started} started",
+    trialsDetail: "{active} running · {started} started · {subscribed} subscribed after",
     entitled: "Players with Plus",
     unlinked: "Unlinked",
     unlinkedDetail: "Paid but not tied to a user",
