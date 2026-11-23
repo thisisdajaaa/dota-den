@@ -26,7 +26,7 @@ test("new players get a checklist that ticks from their data and can be hidden",
 
   await checklist.getByRole("button", { name: "Hide the checklist" }).click();
   await expect(checklist).toHaveCount(0);
-  await page.goto("/dashboard");
+  await page.goto("/dashboard?view=progress");
   await expect(page.getByRole("heading", { name: "Weekly goals" })).toBeVisible();
   await expect(checklist).toHaveCount(0);
 });
