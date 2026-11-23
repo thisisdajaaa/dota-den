@@ -2,6 +2,16 @@ import type { MessageTree } from "../../translate";
 import type { privacy as en } from "../en/privacy";
 
 export const privacy: MessageTree<typeof en> = {
+  nav: {
+    label: "Mga bahin sa account",
+    plan: "Plan",
+    stopLoss: "Stop-loss",
+    notifications: "Notifications",
+    email: "Senemanang email",
+    discord: "Discord",
+    shares: "Mga shared link",
+    data: "Imong data",
+  },
   loading: "Gi-load ang imong account",
   title: "Account",
   kicker: "Settings ug data",

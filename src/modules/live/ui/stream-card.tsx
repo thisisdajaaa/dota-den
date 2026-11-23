@@ -104,8 +104,11 @@ export function StreamCard({
               )}
             </span>
           </div>
-          <div className="flex gap-3 p-3">
-            <ChannelAvatar url={stream.avatarUrl} name={stream.displayName} />
+          <div className="flex gap-3 p-2.5 sm:p-3">
+            {/* Two cards a row on phones: the title gets the width, the avatar waits for sm. */}
+            <span className="hidden sm:contents">
+              <ChannelAvatar url={stream.avatarUrl} name={stream.displayName} />
+            </span>
             <div className="min-w-0">
               <p id={titleId} className="line-clamp-2 text-sm leading-snug font-medium break-words">
                 {stream.title || stream.displayName}
