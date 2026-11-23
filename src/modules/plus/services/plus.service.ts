@@ -350,7 +350,9 @@ export class PlusService {
     const [rows, entitled, trials] = await Promise.all([
       this.deps.subscriptions.countsByStatus(this.deps.provider?.testMode ?? null),
       this.configured ? this.paidUserIds() : Promise.resolve([]),
-      this.deps.trials?.counts(this.now()).catch(() => null) ?? null,
+      this.deps.trials
+        ?.counts(this.now(), this.deps.provider?.testMode ?? null)
+        .catch(() => null) ?? null,
     ]);
     const byStatus = new Map<string, number>();
     let unlinked = 0;

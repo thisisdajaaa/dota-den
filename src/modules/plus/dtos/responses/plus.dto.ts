@@ -43,7 +43,7 @@ export interface PlusAdminCountsDto {
   /** Players with Plus right now (free trials included). */
   entitled: number;
   /** Free trials started, and running now; null when unknown. */
-  trials: { started: number; active: number } | null;
+  trials: { started: number; active: number; subscribed: number } | null;
 }
 
 export interface WebhookResultDto {

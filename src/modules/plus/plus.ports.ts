@@ -92,8 +92,14 @@ export interface TrialsPort {
   endingBetween(from: Date, to: Date): Promise<FreeTrial[]>;
   /** Users whose trial is running at `now`. */
   activeUserIds(now: Date): Promise<string[]>;
-  /** Trials started, and running at `now` (admin). */
-  counts(now: Date): Promise<{ started: number; active: number }>;
+  /**
+   * Trials started, running at `now`, and whose players subscribed after starting one (of
+   * `testMode`'s subscriptions, or any when null). Admin.
+   */
+  counts(
+    now: Date,
+    testMode: boolean | null,
+  ): Promise<{ started: number; active: number; subscribed: number }>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }
