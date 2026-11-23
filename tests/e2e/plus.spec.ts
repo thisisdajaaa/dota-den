@@ -228,3 +228,44 @@ test("go-live alerts check followed channels for Plus players", async ({
   expect(data.live).toBeGreaterThanOrEqual(1);
   expect(data.failed).toBe(0);
 });
+
+test("a new player starts the free 7-day trial once: Plus now, no card, nothing to buy twice", async ({
+  page,
+}) => {
+  await page.goto(login("76561197960461003"));
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  // Free: a Plus page is locked.
+  await page.goto("/heroes/splits");
+  await expect(page.getByRole("region", { name: "A Plus feature" })).toBeVisible();
+
+  await page.goto("/plus");
+  const trial = page.getByRole("region", { name: "Try Plus free for 7 days" });
+  await expect(trial).toContainText("No card needed");
+  await trial.getByRole("button", { name: "Start free trial" }).click();
+
+  // Reloaded with Plus on: the trial banner with its end date, the plans still offered.
+  await expect(page.getByText("Your free trial is on")).toBeVisible();
+  await expect(trial).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /get plus monthly/i })).toBeVisible();
+
+  await page.goto("/heroes/splits");
+  await expect(page.getByRole("region", { name: "A Plus feature" })).toHaveCount(0);
+  await page.goto("/account");
+  await expect(page.getByRole("region", { name: "Your plan" })).toContainText(
+    /Free trial: Plus until .* Nothing is charged/,
+  );
+
+  // Once per account: a second start is refused, and a cross-site one never starts.
+  const origin = new URL(page.url()).origin;
+  expect((await page.request.post("/api/v1/plus/trial", { headers: { origin } })).status()).toBe(
+    409,
+  );
+  expect(
+    (
+      await page.request.post("/api/v1/plus/trial", { headers: { origin: "https://evil.test" } })
+    ).status(),
+  ).toBe(403);
+  // A trial player can still subscribe (it keeps Plus after the trial).
+  expect((await startCheckout(page, "monthly")).status()).toBe(200);
+});

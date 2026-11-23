@@ -42,6 +42,20 @@ export class PlusController {
     },
   );
 
+  /**
+   * POST /api/v1/plus/trial: starts the signed-in player's free 7-day trial (no card, nothing
+   * charged). Same-origin. 404 when Plus isn't on sale, 409 when it's running or was used.
+   */
+  trial = handler(
+    { guard: requireUser, rateLimit: { name: "plus:trial", limit: 10, windowMs: 60_000 } },
+    async ({ user }) => {
+      const { endsAt } = await this.deps.plus.startTrial(user.id, user.accountId32);
+      return ServiceResponse.success({ endsAt: endsAt.toISOString() }, "Trial started").withHeaders(
+        { "cache-control": "private, no-store" },
+      );
+    },
+  );
+
   /** GET /api/v1/me/plus/portal: the provider's billing portal (manage, update card, cancel). */
   portal = handler(
     { guard: requireUser, rateLimit: { name: "plus:portal", limit: 20, windowMs: 60_000 } },

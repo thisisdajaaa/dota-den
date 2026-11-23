@@ -9,6 +9,7 @@ import {
   Bot,
   Check,
   Clock,
+  Gift,
   FileText,
   Gauge,
   Hammer,
@@ -24,12 +25,13 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { ApiClientError, apiRequest } from "@/common/http/api-client";
-import { useT } from "@/common/i18n/client";
+import { useLocale, useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { signInHref } from "@/modules/identity/domain/return-path";
 import { PLAN_PRICES, PLANS as PLAN_ORDER, type Plan } from "../domain/plans";
 import type { PlanDto, PlusOfferDto } from "../dtos/responses/plus.dto";
+import { formatBillingDate } from "./format";
 import { PlusBadge } from "./plus-badge";
 
 const FREE_KEYS = [
@@ -146,6 +148,13 @@ export function PlusPricing({
         </Banner>
       )}
 
+      {available && (!signedIn || plan?.trial.status === "available") && (
+        <TrialOffer signedIn={signedIn} />
+      )}
+      {available && plan?.trial.status === "active" && plan.trial.endsAt && (
+        <TrialRunning endsAt={plan.trial.endsAt} />
+      )}
+
       {!available && (
         // Not on sale yet: still show what it will cost, without a way to buy.
         <section aria-labelledby="plus-plans" className="space-y-4">
@@ -165,7 +174,8 @@ export function PlusPricing({
           <h2 id="plus-plans" className="sr-only">
             {t("plus.page.subscribe")}
           </h2>
-          {plan?.plus && plan.reason === "staff" ? null : plan?.plus ? (
+          {plan?.plus && plan.reason === "staff" ? null : plan?.plus &&
+            plan.reason !== "free_trial" ? (
             <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
               <p className="flex items-center gap-2 font-medium" role="status">
                 <Sparkles aria-hidden className="size-4 text-gold" /> {t("plus.page.youHavePlus")}
@@ -402,6 +412,86 @@ function CheckoutButton({ plan, featured }: { plan: Plan; featured: boolean }) {
         </p>
       )}
     </div>
+  );
+}
+
+type TrialErrorKey = "used" | "unavailable" | "tooMany" | "signIn" | "network" | "down";
+
+function trialError(e: unknown): TrialErrorKey {
+  if (!(e instanceof ApiClientError)) return "network";
+  if (e.status === 409) return "used";
+  if (e.status === 404) return "unavailable";
+  if (e.status === 429) return "tooMany";
+  if (e.status === 401) return "signIn";
+  return "down";
+}
+
+/**
+ * The free 7-day trial: no card, nothing charged, ends by itself. Signed out, it asks to sign
+ * in; signed in, it starts the trial on our server and reloads with Plus on.
+ */
+function TrialOffer({ signedIn }: { signedIn: boolean }) {
+  const t = useT();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<TrialErrorKey | null>(null);
+  const start = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      await apiRequest<{ endsAt: string }>("/api/v1/plus/trial", { method: "POST" });
+      window.location.reload();
+    } catch (e) {
+      setError(trialError(e));
+      setPending(false);
+    }
+  };
+  return (
+    <section
+      aria-labelledby="plus-trial"
+      className="panel flex flex-wrap items-center justify-between gap-4 border-gold/30 p-5"
+    >
+      <div className="flex max-w-2xl items-start gap-3">
+        <Gift aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
+        <div className="space-y-1">
+          <h2 id="plus-trial" className="font-semibold">
+            {t("plus.page.trial.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("plus.page.trial.body")}</p>
+          {error && (
+            <p role="alert" className="text-sm text-loss">
+              {t(`plus.page.trial.error.${error}`)}
+            </p>
+          )}
+        </div>
+      </div>
+      {signedIn ? (
+        <Button
+          type="button"
+          className="gap-2"
+          disabled={pending}
+          aria-busy={pending}
+          onClick={start}
+        >
+          <Gift aria-hidden className="size-4" /> {t("plus.page.trial.start")}
+        </Button>
+      ) : (
+        <Button asChild variant="outline" className="gap-2">
+          <a href={signInHref("/plus")}>
+            <SteamIcon className="size-4" /> {t("plus.page.trial.signIn")}
+          </a>
+        </Button>
+      )}
+    </section>
+  );
+}
+
+function TrialRunning({ endsAt }: { endsAt: string }) {
+  const t = useT();
+  const locale = useLocale();
+  return (
+    <Banner icon={Gift} title={t("plus.page.trial.activeTitle")}>
+      {t("plus.page.trial.activeBody", { date: formatBillingDate(endsAt, locale) })}
+    </Banner>
   );
 }
 

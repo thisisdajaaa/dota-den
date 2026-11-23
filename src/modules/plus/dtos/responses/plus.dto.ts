@@ -1,6 +1,7 @@
 import type { EntitlementReason } from "../../domain/entitlement";
 import type { Plan } from "../../domain/plans";
 import type { BillingProviderName, SubscriptionStatus } from "../../domain/subscription";
+import type { TrialStatus } from "../../domain/trial";
 
 /**
  * Whether Plus can be bought here: "off" (not configured: the pricing page says "coming soon"
@@ -28,6 +29,8 @@ export interface PlanDto {
   canManage: boolean;
   /** Deleting the account doesn't stop billing: show the warning. */
   stillBills: boolean;
+  /** The free 7-day trial: whether it can be started, and when a running one ends (ISO). */
+  trial: { status: TrialStatus; endsAt: string | null };
 }
 
 /** Admin: subscriptions by status (no personal data). */
@@ -37,8 +40,10 @@ export interface PlusAdminCountsDto {
   byStatus: { status: SubscriptionStatus; count: number }[];
   /** Subscriptions we couldn't tie to a user (missing or unknown custom data). */
   unlinked: number;
-  /** Players with Plus right now. */
+  /** Players with Plus right now (free trials included). */
   entitled: number;
+  /** Free trials started, and running now; null when unknown. */
+  trials: { started: number; active: number } | null;
 }
 
 export interface WebhookResultDto {
