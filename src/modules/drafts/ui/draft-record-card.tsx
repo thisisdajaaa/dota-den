@@ -46,15 +46,22 @@ export async function DraftRecordCard({ view }: { view: DraftRecordView }) {
           })}
         </p>
       </div>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Three across on phones too (it sits above the match list): compact cells, values
+          pinned to the bottom so they line up when a label wraps. */}
+      <ul className="grid grid-cols-3 gap-2 sm:gap-3">
         {rows.map((x) => (
-          <li key={x.label} className="rounded-lg border border-white/[0.06] p-3">
-            <p className="text-sm font-medium">{x.label}</p>
-            <p className="text-xs text-muted-foreground">{x.hint}</p>
-            <p className={cn("mt-1 text-2xl font-semibold tabular-nums", x.tone)}>
+          <li
+            key={x.label}
+            className="flex flex-col rounded-lg border border-white/[0.06] p-2.5 sm:p-3"
+          >
+            <p className="text-xs font-medium sm:text-sm">{x.label}</p>
+            <p className="text-[0.65rem] text-muted-foreground sm:text-xs">{x.hint}</p>
+            <p
+              className={cn("mt-auto pt-1 text-xl font-semibold tabular-nums sm:text-2xl", x.tone)}
+            >
               {x.r.games ? `${x.r.wins}–${x.r.games - x.r.wins}` : "—"}
             </p>
-            <p className="text-xs text-muted-foreground tabular-nums">
+            <p className="text-[0.65rem] text-muted-foreground tabular-nums sm:text-xs">
               {x.r.games
                 ? t("drafts.record.won", {
                     pct: pct(x.r),

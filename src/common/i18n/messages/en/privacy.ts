@@ -5,6 +5,16 @@
  * advice. It must match what the code stores (see src/modules/privacy/ui/privacy-policy.tsx).
  */
 export const privacy = {
+  nav: {
+    label: "Account sections",
+    plan: "Plan",
+    stopLoss: "Stop-loss",
+    notifications: "Notifications",
+    email: "Weekly email",
+    discord: "Discord",
+    shares: "Shared links",
+    data: "Your data",
+  },
   loading: "Loading your account",
   title: "Account",
   kicker: "Settings and data",
