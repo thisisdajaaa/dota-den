@@ -70,4 +70,25 @@ describe("Ask Den tool schemas sent to the model", () => {
       args: { match_id: undefined },
     });
   });
+
+  it("treat empty hero, item and version as omitted, in our parser and in the schema the provider checks", () => {
+    expect(parseToolArgs("patch_notes", '{"hero":"","item":"","version":""}')).toEqual({
+      ok: true,
+      name: "patch_notes",
+      args: { hero: undefined, item: undefined, version: undefined },
+    });
+    expect(parseToolArgs("my_recent_games", '{"hero":""}')).toMatchObject({ ok: true });
+    expect(parseToolArgs("patch_notes", '{"version":"7.41c"}')).toMatchObject({
+      ok: true,
+      args: { version: "7.41c" },
+    });
+    expect(parseToolArgs("patch_notes", '{"version":"latest"}')).toMatchObject({ ok: false });
+
+    // The AI provider validates calls against the JSON schema before we see them: "" must pass.
+    const props = ASK_TOOL_DEFINITIONS.find((d) => d.name === "patch_notes")!.parameters
+      .properties as Record<string, { pattern?: string; minLength?: number }>;
+    expect(new RegExp(props.version.pattern!).test("")).toBe(true);
+    expect(props.hero.minLength ?? 0).toBe(0);
+    expect(props.item.minLength ?? 0).toBe(0);
+  });
 });
