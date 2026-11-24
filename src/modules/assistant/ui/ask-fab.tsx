@@ -9,7 +9,7 @@ import { useT } from "@/common/i18n/client";
 import { apiRequest } from "@/common/http/api-client";
 import { Button } from "@/components/ui/button";
 import type { AskStateDto } from "../dtos/responses/ask.dto";
-import { AskChat } from "./ask-chat";
+import { AskChat, type ChatPerson } from "./ask-chat";
 
 /**
  * Ask Den from any page: a chat button in the lower right (above the tab bar on phones) that
@@ -21,7 +21,7 @@ import { AskChat } from "./ask-chat";
  * dialog: kept mounted while closed, Radix's focus guards would stay in the tab order. The panel stays mounted while
  * closed, so the conversation is still there when it reopens.
  */
-export function AskFab({ plusOnSale }: { plusOnSale: boolean }) {
+export function AskFab({ plusOnSale, me }: { plusOnSale: boolean; me?: ChatPerson }) {
   const t = useT();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -145,6 +145,7 @@ export function AskFab({ plusOnSale }: { plusOnSale: boolean }) {
                 plusLimit={state.plusLimit}
                 plusOnSale={plusOnSale}
                 onConversation={setConversationId}
+                me={me}
               />
             ) : (
               <p className="text-sm text-muted-foreground">{t("ask.off")}</p>

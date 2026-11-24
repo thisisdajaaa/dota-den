@@ -35,58 +35,85 @@ export const plus: MessageTree<typeof en> = {
       coach: {
         title: "Walang limit na AI coach",
         body: "Coach review ng kahit anong na-parse mong match, kahit ilang beses (libre: isang bagong review kada linggo). Mula lang sa mga numero ng match na iyon ito isinusulat, at puwede itong magkamali. Awtomatiko ring nirerebyu ang pinakabago mong ranked game pagkatapos ng bawat sync, at may notification kapag handa na ang review.",
+        where: "Matches → buksan ang isa sa mga laro mo → AI coach → “Write my review”.",
+      },
+      ask: {
+        title: "Ask Den: {plus} tanong kada araw",
+        body: "Magtanong tungkol sa mga laro mo, heroes, builds at patch, sinasagot mula sa sarili mong data at sa amin ({free} kada araw nang libre).",
+        where:
+          "Ang gintong chat button sa kanang ibaba ng kahit anong page, o Ask Den sa menu. Itanong ang kahit ano tungkol sa laro mo, heroes o meta.",
       },
       compare: {
         title: "Paano ka ikumpara, sa bawat hero",
         body: "Ang last hits, kills + assists at deaths mo sa bawat hero laban sa mga player na kapareho mo ng rank (o mas mataas), sa parehong haba ng laro, kasama ang pinakamalaking kulang mo (libre: ang pinakamadalas mong hero).",
+        where:
+          "Heroes → How you compare. Pumili ng hero na nilalaro mo para makita ang pinakamalaking kulang mo.",
       },
       coaching: {
         title: "Mas mabilis na hero coaching",
         body: "Item timings at lane results para sa buong recent history mo sa bawat hero: hanggang 100 sa mga parsed game mo ang nasusuri bawat araw (libre: 10 bawat araw).",
+        where:
+          "Heroes → buksan ang isa sa mga hero mo → ang mga Coaching section (item timings at lanes).",
       },
       buildCheck: {
         title: "Build check laban sa high-rank",
         body: "Sa bawat hero page, ang item timings mo laban sa mga Legend–Immortal player sa posisyon mo noong nakaraang linggo, kasama ang isang susubukan (libre: ang sarili mong timings).",
+        where: "Heroes → buksan ang isa sa mga hero mo → Build check vs high-rank.",
       },
       splits: {
         title: "Iyong splits",
         body: "Ang buong history mo ayon sa patch, posisyon, oras ng araw, haba ng laro, resulta ng lane at lane partner, bawat isa laban sa average mo (libre: heroes, lanes at matchups mo).",
+        where: "Heroes → Your splits.",
       },
       postMortem: {
         title: "Post-mortem ng draft",
         body: "Sa mga match page, kung paano lumabas ang draft: mga lane sa 10 minuto kumpara sa inasahan ng draft, saan nakuha ang gold lead, at ang mga counter na nagustuhan nito (libre: ang basa sa draft).",
+        where:
+          "Matches → buksan ang isang ranked na laro → ang Draft post-mortem, sa ilalim ng draft.",
       },
       read: {
         title: "AI read ng battle report mo",
         body: "Pumili ng kahit anong panahon sa battle report mo at makakuha ng ilang obserbasyon at isang dapat pagtuunan, isinulat mula lang sa mga numero ng page na iyon (nakalista ang mga ginamit na numero).",
+        where: "Battle report → pumili ng panahon → “What this period says” → “Write my read”.",
       },
       pick: {
         title: "Pumili para sa akin: ang top five mo",
         body: "Sa totoong ranked draft, idagdag ang mga pick ng kalaban at makita ang limang pinakamagandang hero mo laban sa kanila, kasama ang record mo at bawat matchup (libre: ang pinakamaganda).",
+        where:
+          "Draft → Pick for me. Habang nasa totoong ranked draft ka, ilagay ang picks ng kalaban habang nagla-lock sila.",
       },
       session: {
         title: "Kasama sa session",
         body: "Habang naglalaro ka, may notification pagkatapos ng bawat laro: ang resulta, ang record mo ngayong session at, kapag ipinapakita ng sarili mong history na mas madalas kang matalo pagkatapos ng sunod-sunod na talo, paalala na magpahinga muna.",
+        where:
+          "Account → Notifications: i-on ang notifications, tapos panatilihing naka-on ang “Live session updates”. Gumagana habang ipinapakita ng Steam na nasa Dota ka.",
       },
       sync: {
         title: "Priority sync",
         body: "Mas mabilis ma-import ang mahabang match history: mas maikling paghihintay at mas malalaking batch, at ipinapa-parse sa OpenDota ang pinakabago mong hindi pa na-parse na laro (hanggang 3 kada sync). Iisang OpenDota budget pa rin ang gamit ng lahat, kaya hindi bumabagal ang mga libreng player.",
+        where: "Wala kang gagawin: awtomatiko ito kapag nagsi-sync ang mga laro mo sa Overview.",
       },
       alerts: {
         title: "Alerto kapag nag-live",
         body: "Notification sa loob ng ilang minuto kapag nag-stream ang streamer na fina-follow mo sa /live. Isang beses kada stream, at puwede mo itong i-off.",
+        where:
+          "Live → i-follow ang isang channel, at i-on ang notifications sa Account → Notifications.",
       },
       badge: {
         title: "Supporter badge",
         body: "Maliit na Plus badge sa tabi ng pangalan mo sa app at sa leaderboards.",
+        where: "Awtomatiko: katabi ng pangalan mo sa menu at sa leaderboards.",
       },
       limits: {
         title: "Mas maraming puwang",
         body: "Mag-track ng hanggang {players} player, mag-follow ng {streamers} channel at sumali sa {groups} grupo (doble ng libreng limit).",
+        where:
+          "Players → mag-track ng players; Live → mag-follow ng channels; Groups → gumawa o sumali.",
       },
       thanks: {
         title: "Manatiling independent",
         body: "May gastos buwan-buwan ang server, data at AI. Ang Plus ang nagbabayad dito, nang walang ads.",
+        where: "Wala kang gagawin. Salamat!",
       },
     },
     monthly: "Buwanan",
