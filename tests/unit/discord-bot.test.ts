@@ -69,20 +69,28 @@ describe("Discord interaction signatures", () => {
   const ts = "1761393600";
   const sig = sign(null, Buffer.from(ts + body), privateKey).toString("hex");
 
+  const now = Number(ts) * 1000 + 2_000;
+
   it("accepts Discord's signature over the timestamp and raw body only", () => {
-    expect(verifyInteraction(hex, sig, ts, body)).toBe(true);
-    expect(verifyInteraction(hex, sig, ts, body + " ")).toBe(false);
-    expect(verifyInteraction(hex, sig, "1761393601", body)).toBe(false);
-    expect(verifyInteraction(hex, null, ts, body)).toBe(false);
-    expect(verifyInteraction(hex, sig, null, body)).toBe(false);
-    expect(verifyInteraction(hex, "zz", ts, body)).toBe(false);
+    expect(verifyInteraction(hex, sig, ts, body, now)).toBe(true);
+    expect(verifyInteraction(hex, sig, ts, body + " ", now)).toBe(false);
+    expect(verifyInteraction(hex, sig, "1761393601", body, now)).toBe(false);
+    expect(verifyInteraction(hex, null, ts, body, now)).toBe(false);
+    expect(verifyInteraction(hex, sig, null, body, now)).toBe(false);
+    expect(verifyInteraction(hex, "zz", ts, body, now)).toBe(false);
+  });
+
+  it("refuses a correctly signed request more than five minutes old (a replay)", () => {
+    expect(verifyInteraction(hex, sig, ts, body, Number(ts) * 1000 + 299_000)).toBe(true);
+    expect(verifyInteraction(hex, sig, ts, body, Number(ts) * 1000 + 301_000)).toBe(false);
+    expect(verifyInteraction(hex, sig, ts, body, Number(ts) * 1000 - 301_000)).toBe(false);
   });
 
   it("refuses a signature made with another key, and a malformed public key", () => {
     const other = generateKeyPairSync("ed25519").privateKey;
     const forged = sign(null, Buffer.from(ts + body), other).toString("hex");
-    expect(verifyInteraction(hex, forged, ts, body)).toBe(false);
-    expect(verifyInteraction("abcd", sig, ts, body)).toBe(false);
+    expect(verifyInteraction(hex, forged, ts, body, now)).toBe(false);
+    expect(verifyInteraction("abcd", sig, ts, body, now)).toBe(false);
   });
 });
 

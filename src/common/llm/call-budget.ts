@@ -43,9 +43,14 @@ let lastErrorLogAt = 0;
 /**
  * A daily cap on one feature's model calls, shared by every instance through Redis (per
  * instance without it). Logs `llm_budget_usage` at 50%, 80% and 100% of the cap and
- * `llm_budget_exhausted` for each refused call. If the counter store fails, calls go ahead.
+ * `llm_budget_exhausted` for each refused call. If the counter store fails, calls go ahead
+ * unless `failClosed` is set (budgets anyone can spend without signing in).
  */
-export function dailyCallBudget(name: string, perDay: number): CallBudget {
+export function dailyCallBudget(
+  name: string,
+  perDay: number,
+  opts: { failClosed?: boolean } = {},
+): CallBudget {
   const redis = getRedis() as unknown as RedisLike | null;
   const store = redis ?? (globalForBudget.__ddLlmCounters ??= new MemoryCounters());
   const budget = new RedisUpstreamBudget(store, {
@@ -65,7 +70,7 @@ export function dailyCallBudget(name: string, perDay: number): CallBudget {
           lastErrorLogAt = Date.now();
           logger.warn("llm_budget_store_unavailable", { budget: name, error });
         }
-        return true;
+        return !opts.failClosed;
       }
     },
   };
@@ -78,4 +83,20 @@ export function dailyCallBudget(name: string, perDay: number): CallBudget {
  */
 export function sharedAiBudget(perDay: number): CallBudget {
   return dailyCallBudget("drafts", perDay);
+}
+
+/** Share of the shared AI budget that signed-out players can spend in a day. */
+export const GUEST_AI_SHARE = 0.2;
+
+/**
+ * Model calls anyone can make without signing in (the practice draft's AI captain and review):
+ * their own lane of `perDay * GUEST_AI_SHARE`, then the shared budget too. Guests can't spend
+ * the budget Plus features need, and if the counter store fails they get no model calls.
+ */
+export function guestAiBudget(perDay: number): CallBudget {
+  const lane = dailyCallBudget("drafts-guest", Math.max(1, Math.floor(perDay * GUEST_AI_SHARE)), {
+    failClosed: true,
+  });
+  const shared = sharedAiBudget(perDay);
+  return { take: async () => (await lane.take()) && (await shared.take()) };
 }

@@ -313,19 +313,15 @@ describe("PolarProvider: parsing events", () => {
     });
   });
 
-  it("names the plan by product id, else by the product's metadata", () => {
+  it("names the plan by product id, and ignores subscriptions to any other product", () => {
     const yearly = polarSubscriptionEvent({ productId: YEARLY, productPlan: "yearly" });
     expect(parse(yearly)).toMatchObject({ snapshot: { plan: "yearly" } });
-    const unknown = polarSubscriptionEvent({
+    // Another product in the same organisation never grants Plus, whatever its metadata says.
+    const other = polarSubscriptionEvent({
       productId: "00000000-0000-4000-8000-000000000000",
       productPlan: "yearly",
     });
-    expect(parse(unknown)).toMatchObject({ snapshot: { plan: "yearly" } });
-    const neither = polarSubscriptionEvent({
-      productId: "00000000-0000-4000-8000-000000000000",
-      productPlan: "lifetime",
-    });
-    expect(parse(neither)).toMatchObject({ snapshot: { plan: null } });
+    expect(parse(other)).toMatchObject({ kind: "other" });
   });
 
   it("uses created_at when modified_at is null", () => {

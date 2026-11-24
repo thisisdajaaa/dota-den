@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import { afterResponse } from "@/common/http/after-response";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
-import { sharedAiBudget } from "@/common/llm/call-budget";
+import { guestAiBudget, sharedAiBudget } from "@/common/llm/call-budget";
 import { GroqClient, groqChatUrl } from "@/common/llm/groq-client";
 import { logger } from "@/common/logging/logger";
 import { lazy } from "@/common/utils/lazy";
@@ -93,9 +93,10 @@ function openDotaInsights(): OpenDotaDraftInsights {
  * The AI captain. Built per request because it holds the current hero catalog (a failed
  * catalog lookup must not stick for the life of the server).
  */
-export async function getAiOpponent(): Promise<AiOpponentService> {
+export async function getAiOpponent(opts: { guest?: boolean } = {}): Promise<AiOpponentService> {
   const config = env();
-  // Moves and reviews share one daily Groq budget (signed-out players can call both).
+  // Moves and reviews draw on the shared daily model budget; signed-out players get their own
+  // smaller lane of it, so they can't spend what Plus features need.
   const advisor = config.GROQ_API_KEY
     ? new BudgetedDraftAdvisor(
         new GroqDraftAdvisor(
@@ -106,7 +107,9 @@ export async function getAiOpponent(): Promise<AiOpponentService> {
             reviewTimeoutMs: config.DRAFT_AI_REVIEW_TIMEOUT_MS,
           },
         ),
-        sharedAiBudget(config.DRAFT_AI_BUDGET_PER_DAY),
+        opts.guest
+          ? guestAiBudget(config.DRAFT_AI_BUDGET_PER_DAY)
+          : sharedAiBudget(config.DRAFT_AI_BUDGET_PER_DAY),
       )
     : null;
   return new AiOpponentService({
