@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { cn } from "cn";
 import type { Messages } from "@/common/i18n/messages";
@@ -253,6 +254,22 @@ export async function CalendarCard({
     timeZone: "UTC",
   });
   const played = [...days.values()].filter((d) => d.games > 0).length;
+  // Week columns, Sunday first; blanks before the first day.
+  const cells: (string | null)[] = [...Array.from({ length: lead }, () => null), ...keys];
+  const weeks = Math.ceil(cells.length / 7);
+  const month = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
+  const monthAt = new Map<number, string>();
+  cells.forEach((k, i) => {
+    if (k && (k.endsWith("-01") || i === lead)) {
+      const w = Math.floor(i / 7);
+      // The first column only gets a name if the next month doesn't start right after it.
+      if (!monthAt.has(w)) monthAt.set(w, month.format(new Date(`${k}T12:00:00Z`)));
+    }
+  });
+  if (lead > 0 && monthAt.has(0) && monthAt.has(1)) monthAt.delete(0);
+  const weekdayFmt = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
+  // 2026-11-01 is a Sunday: row n is that date plus n days.
+  const weekdayName = (row: number) => weekdayFmt.format(new Date(Date.UTC(2026, 10, 1 + row, 12)));
   return (
     <section className="panel space-y-3 p-5" aria-labelledby="report-calendar">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -263,48 +280,68 @@ export async function CalendarCard({
           {t("report.calendar.played", { played, days: keys.length })}
         </p>
       </div>
-      <div className="overflow-x-auto">
-        <div
-          role="img"
-          aria-label={t("report.calendar.aria", {
-            from: label.format(new Date(`${from}T12:00:00Z`)),
-            to: label.format(new Date(`${to}T12:00:00Z`)),
-          })}
-          className="grid w-max grid-flow-col grid-rows-7 gap-1"
-        >
-          {Array.from({ length: lead }, (_, i) => (
-            <span key={`pad${i}`} className="size-3" />
-          ))}
-          {keys.map((k) => {
-            const d = days.get(k);
-            const winning = d && d.wins * 2 >= d.games;
-            const o = d ? 0.25 + (0.75 * d.games) / max : 0;
-            return (
-              <span
-                key={k}
-                title={
-                  d
-                    ? t("report.calendar.day", {
-                        date: label.format(new Date(`${k}T12:00:00Z`)),
-                        games: plural(t, "common.count.games", d.games),
-                        wins: d.wins,
-                        losses: d.games - d.wins,
-                      })
-                    : label.format(new Date(`${k}T12:00:00Z`))
-                }
-                className={cn("size-3 rounded-[3px]", !d && "bg-white/[0.05]")}
-                style={
-                  d
-                    ? {
-                        backgroundColor: winning ? "var(--win)" : "var(--loss)",
-                        opacity: o,
-                      }
-                    : undefined
-                }
-              />
-            );
-          })}
-        </div>
+      <div
+        role="img"
+        aria-label={t("report.calendar.aria", {
+          from: label.format(new Date(`${from}T12:00:00Z`)),
+          to: label.format(new Date(`${to}T12:00:00Z`)),
+        })}
+        className="grid max-w-2xl gap-1"
+        style={{ gridTemplateColumns: `auto repeat(${weeks}, minmax(0, 1fr))` }}
+      >
+        {/* Month names over the week their first day falls in. */}
+        <span />
+        {Array.from({ length: weeks }, (_, w) => (
+          <span
+            key={`h${w}`}
+            aria-hidden
+            className="h-4 overflow-visible text-[10px] whitespace-nowrap text-muted-foreground"
+          >
+            {monthAt.get(w) ?? ""}
+          </span>
+        ))}
+        {Array.from({ length: 7 }, (_, row) => (
+          <Fragment key={`r${row}`}>
+            <span
+              aria-hidden
+              className="pr-1.5 text-right text-[10px] leading-none text-muted-foreground"
+              style={{ alignSelf: "center" }}
+            >
+              {row % 2 === 1 ? weekdayName(row) : ""}
+            </span>
+            {Array.from({ length: weeks }, (_, w) => {
+              const k = cells[w * 7 + row];
+              if (!k) return <span key={`e${w}`} />;
+              const d = days.get(k);
+              const winning = d && d.wins * 2 >= d.games;
+              const o = d ? 0.35 + (0.65 * d.games) / max : 0;
+              return (
+                <span
+                  key={k}
+                  title={
+                    d
+                      ? t("report.calendar.day", {
+                          date: label.format(new Date(`${k}T12:00:00Z`)),
+                          games: plural(t, "common.count.games", d.games),
+                          wins: d.wins,
+                          losses: d.games - d.wins,
+                        })
+                      : label.format(new Date(`${k}T12:00:00Z`))
+                  }
+                  className={cn("aspect-square rounded-[3px]", !d && "bg-white/[0.05]")}
+                  style={
+                    d
+                      ? {
+                          backgroundColor: winning ? "var(--win)" : "var(--loss)",
+                          opacity: o,
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </Fragment>
+        ))}
       </div>
       <p className="text-xs text-muted-foreground">
         <span className="mr-1 inline-block size-2.5 rounded-sm bg-win align-middle" />{" "}
