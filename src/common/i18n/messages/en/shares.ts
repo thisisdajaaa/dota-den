@@ -33,13 +33,14 @@ export const shares = {
   account: {
     title: "Shared links",
     description:
-      "Links you made with Share. Each shows a snapshot of that session, week, win streak, game or rank journey, never your MMR. Remove one and it stops working.",
+      "Links you made with Share. Each shows a snapshot of that session, week, year, win streak, game or rank journey, never your MMR. Remove one and it stops working.",
     none: "You haven't shared anything yet.",
     sessionLabel: "Session on {date}",
     weekLabel: "Week of {date}",
     journeyLabel: "Rank journey ({range})",
     streakLabel: "Win streak ({n} in a row)",
     matchLabel: "Match {id}",
+    yearLabel: "Year in review ({year})",
     remove: "Remove",
     removeLabel: "Remove link: {link}",
     removed: "Link removed. It no longer works.",
@@ -72,6 +73,13 @@ export const shares = {
     loss: "Loss",
     open: "Open the match",
   },
+  year: {
+    title: "{who}'s {year} in Dota",
+    kicker: "Year in review · {year}",
+    played: "Time in games",
+    hours: { one: "1 hour", other: "{n} hours" },
+    heroes: { one: "1 hero", other: "{n} heroes" },
+  },
   streakPrompt: {
     kicker: "Win streak",
     title: { one: "1 win in a row", other: "{n} wins in a row" },
@@ -84,6 +92,7 @@ export const shares = {
       week: "Weekly recap",
       match: "Standout game",
       journey: "Rank journey",
+      year: "Year in review",
     },
     headline: {
       streak: {
@@ -112,6 +121,7 @@ export const shares = {
         loss: "Fought to the end on {hero}",
       },
       journey: { climbed: "Climbed to {to}!", steady: "Holding {to}" },
+      year: "My {year} in Dota",
     },
     sub: {
       streak: "{kills}/{deaths}/{assists} across the streak",
@@ -119,6 +129,7 @@ export const shares = {
       weekBest: "Best hero: {hero} ({record})",
       match: "{result} · {kills}/{deaths}/{assists} · {duration}",
       journey: "{from} → {to}",
+      year: "{games} · {hours} · {heroes}",
     },
     stat: {
       games: "Games",
@@ -131,6 +142,7 @@ export const shares = {
       peak: "Peak medal",
       ranked: "Ranked record",
       climb: "Best climb",
+      winStreak: "Best streak",
     },
     footer: "Track your games free at",
     alt: "Share card: {title}",

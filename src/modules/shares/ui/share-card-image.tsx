@@ -13,6 +13,7 @@ export type CardVisual =
   | { type: "streak"; n: number }
   | { type: "record"; wins: number; losses: number }
   | { type: "hero"; src: string | null; label: string }
+  | { type: "year"; year: number }
   | { type: "journey"; medals: Array<{ at: number; rankTier: number }>; from: number; to: number };
 
 const TONE = { win: OG.win, loss: OG.loss, gold: OG.gold } as const;
@@ -29,6 +30,8 @@ export function cardVisual(
       return { type: "streak", n: s.games };
     case "match":
       return { type: "hero", src: heroImage(s.heroId), label: resultLabel };
+    case "year":
+      return { type: "year", year: s.year };
     case "journey":
       return {
         type: "journey",
@@ -125,6 +128,31 @@ function Visual({
           }}
         >
           {v.n}
+        </span>
+      </div>
+    );
+  if (v.type === "year")
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          fontFamily: "Cinzel",
+          fontWeight: 700,
+          lineHeight: 1,
+        }}
+      >
+        <span style={{ fontSize: 120 * scale, color: OG.gold }}>{v.year}</span>
+        <span
+          style={{
+            fontSize: 30 * scale,
+            color: OG.muted,
+            letterSpacing: 8 * scale,
+            marginTop: 12 * scale,
+          }}
+        >
+          DOTA
         </span>
       </div>
     );

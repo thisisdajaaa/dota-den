@@ -6,6 +6,7 @@ import {
   isEmpty,
   toMatchShare,
   toStreakShare,
+  toYearShare,
   type MatchShare,
   type SessionShare,
   type StreakGameIn,
@@ -267,6 +268,33 @@ describe("card copy per language", () => {
     );
   });
 
+  it("sums up a year in each language", () => {
+    const year = toYearShare({
+      year: 2026,
+      games: 312,
+      wins: 170,
+      playedSec: 450_000,
+      heroesPlayed: 41,
+      topHeroes: [{ heroId: 1, games: 60, wins: 35 }],
+      longestWinStreak: { games: 7 },
+      bestGame: null,
+    });
+    const en = shareCardText(t("en"), year, opts);
+    expect(en.kicker).toBe("Year in review");
+    expect(en.headline).toBe("My 2026 in Dota");
+    expect(en.sub).toBe("312 games · 125 hours · 41 heroes");
+    expect(en.stats).toEqual([
+      { label: "Games", value: "312" },
+      { label: "Win rate", value: "54%", tone: "gold" },
+      { label: "Best streak", value: "7", tone: "win" },
+    ]);
+    expect(shareCardText(t("fil"), year, opts).headline).toBe("Ang 2026 ko sa Dota");
+    expect(shareCardText(t("ceb"), year, opts).headline).toBe("Akong 2026 sa Dota");
+    expect(cardMoment(year)).toEqual({ kind: "year" });
+    expect(cardTone(cardMoment(year))).toBe("gold");
+    expect(cardHeroIds(year)).toEqual([1]);
+  });
+
   it("has every card message in every language (no English fallback on a card)", () => {
     const leaves = (o: unknown, p = ""): string[] =>
       typeof o === "string"
@@ -298,6 +326,9 @@ describe("sharing a streak or a game", () => {
         },
         streak: async () => streak,
         match: async (_o, id) => (id === mine?.matchId ? mine : null),
+        year: async () => {
+          throw new Error("unused");
+        },
         playerName: async () => "DAJA",
       },
     });

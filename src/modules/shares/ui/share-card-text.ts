@@ -121,6 +121,25 @@ export function shareCardText(
         stats.push({ label: t("shares.card.stat.lastHits"), value: String(s.lastHits) });
       break;
     }
+    case "year": {
+      headline = t("shares.card.headline.year", { year: s.year });
+      sub = t("shares.card.sub.year", {
+        games: plural(t, "shares.games", s.games),
+        hours: plural(t, "shares.year.hours", Math.floor(s.playedSec / 3_600)),
+        heroes: plural(t, "shares.year.heroes", s.heroesPlayed),
+      });
+      stats.push(
+        { label: t("shares.card.stat.games"), value: s.games.toLocaleString("en-US") },
+        { label: t("shares.card.stat.winRate"), value: percent(winRate(s)), tone: "gold" },
+      );
+      if (s.longestWinStreak > 1)
+        stats.push({
+          label: t("shares.card.stat.winStreak"),
+          value: String(s.longestWinStreak),
+          tone: "win",
+        });
+      break;
+    }
     case "journey": {
       const first = s.medals[0];
       const last = s.medals.at(-1);

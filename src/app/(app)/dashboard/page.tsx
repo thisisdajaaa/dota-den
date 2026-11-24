@@ -24,6 +24,9 @@ import { notificationService } from "@/modules/notifications";
 import { NotificationsPrompt } from "@/modules/notifications/ui/notifications-prompt";
 import { onboardingService } from "@/modules/onboarding";
 import { OnboardingChecklist } from "@/modules/onboarding/ui/onboarding-checklist";
+import { dayKeyFormatter } from "@/common/time/day-key";
+import { yearPromptFor } from "@/modules/report/domain/year-review";
+import { YearReviewPrompt } from "@/modules/report/ui/year-review-prompt";
 import { sessionService } from "@/modules/sessions";
 import { LatestSessionCard } from "@/modules/sessions/ui/latest-session-card";
 import { TeammatesSkeleton } from "@/modules/together/ui/teammates-summary";
@@ -125,6 +128,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const signature =
     top && topHero ? { hero: topHero, games: top.games, winRate: top.winRate } : null;
   const hasAnyMatches = status.totals.all > 0;
+  // December to mid-January: the year in review, in the player's own calendar.
+  const promptYear = yearPromptFor(dayKeyFormatter(tz.timeZone)(now));
 
   const banner = (
     <PlayerBanner profile={profile} accountId32={user.accountId32} signature={signature}>
@@ -334,6 +339,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       {/* First steps near the top, where a new player looks first (dismissible). */}
       {checklist && <OnboardingChecklist steps={checklist} />}
+
+      {promptYear !== null && <YearReviewPrompt year={promptYear} />}
 
       {/* Steam presence: hidden when nobody is playing or no Steam Web API key is set. */}
       <Suspense fallback={null}>

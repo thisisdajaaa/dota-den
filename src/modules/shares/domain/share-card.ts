@@ -86,7 +86,8 @@ export type CardMoment =
   | { kind: "session"; tier: RecordTier }
   | { kind: "week"; tier: RecordTier }
   | { kind: "match"; result: "win" | "loss"; standout: Standout }
-  | { kind: "journey"; climbed: boolean };
+  | { kind: "journey"; climbed: boolean }
+  | { kind: "year" };
 
 export function cardMoment(s: ShareSnapshot): CardMoment {
   switch (s.kind) {
@@ -100,6 +101,8 @@ export function cardMoment(s: ShareSnapshot): CardMoment {
       return { kind: "match", result: s.result, standout: pickStandout(s) };
     case "journey":
       return { kind: "journey", climbed: s.climb !== null };
+    case "year":
+      return { kind: "year" };
   }
 }
 
