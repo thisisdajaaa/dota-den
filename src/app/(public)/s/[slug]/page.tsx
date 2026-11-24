@@ -86,7 +86,7 @@ const medalName = (tier: number) => {
 };
 
 /**
- * A session, week, win streak, game or rank journey a player chose to share. Only the snapshot
+ * A session, week, win streak, game, rank journey or year a player chose to share. Only the snapshot
  * they shared is shown; a journey is by medal only (never MMR), a game only the player's own line.
  */
 export default async function SharePage({ params, searchParams }: PageProps<"/s/[slug]">) {
@@ -112,9 +112,11 @@ export default async function SharePage({ params, searchParams }: PageProps<"/s/
           ? t("shares.streak.kicker", { date: dateRange(s.from, s.to) })
           : s.kind === "match"
             ? t("shares.match.kicker", { id: s.matchId, date: shortDay(s.startedAt) })
-            : t("shares.week.kicker", {
-                date: dateRange(new Date(`${s.from}T12:00:00Z`), new Date(`${s.to}T12:00:00Z`)),
-              });
+            : s.kind === "year"
+              ? t("shares.year.kicker", { year: s.year })
+              : t("shares.week.kicker", {
+                  date: dateRange(new Date(`${s.from}T12:00:00Z`), new Date(`${s.to}T12:00:00Z`)),
+                });
 
   // The card itself, as it was shared (the link's language).
   const card = (
@@ -154,7 +156,7 @@ export default async function SharePage({ params, searchParams }: PageProps<"/s/
   );
 
   const heroList =
-    s.kind === "session" || s.kind === "journey" || s.kind === "streak"
+    s.kind === "session" || s.kind === "journey" || s.kind === "streak" || s.kind === "year"
       ? s.heroes.map((h) => heroRow(t("shares.played"), h))
       : s.kind === "week"
         ? [
@@ -335,6 +337,13 @@ export default async function SharePage({ params, searchParams }: PageProps<"/s/
         <StatTile label={t("shares.wins")} value={String(s.wins)} />
         <StatTile label={t("shares.losses")} value={String(s.losses)} />
         <StatTile label={t("shares.winRate")} value={formatPercent(winRate(s))} />
+        {s.kind === "year" && (
+          <StatTile
+            label={t("shares.year.played")}
+            value={plural(t, "shares.year.hours", Math.floor(s.playedSec / 3_600))}
+            detail={plural(t, "shares.year.heroes", s.heroesPlayed)}
+          />
+        )}
         {s.kind === "session" && s.best && (
           <StatTile
             label={t("shares.session.best")}

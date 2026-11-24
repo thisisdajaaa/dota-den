@@ -101,3 +101,42 @@ test("only your own games can be shared", async ({ page, baseURL }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: "Share" })).toHaveCount(0);
 });
+
+test("share your year in Dota as a card", async ({ page, browser }) => {
+  await page.goto(LOGIN);
+  await expect(page.getByText(/Showing \d+ of your 12 matches/).first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.goto("/report/year");
+  const year = new Date().getFullYear();
+  // The fixture's games are recent: early in January there may be too few for a card.
+  test.skip(
+    await page.getByText(`Not enough games in ${year}`).isVisible(),
+    "Too few games this year yet",
+  );
+  await page.getByRole("button", { name: "Share" }).click();
+  const dialog = page.getByRole("dialog", { name: "Share this" });
+  const preview = dialog.getByRole("img", { name: "Card preview" });
+  await expect
+    .poll(() => preview.evaluate((img: HTMLImageElement) => img.naturalWidth), { timeout: 20_000 })
+    .toBe(1200);
+  const [file] = await Promise.all([
+    page.waitForEvent("download"),
+    dialog.getByRole("link", { name: "Download image" }).click(),
+  ]);
+  expect(file.suggestedFilename()).toBe("dota-den-year-wide-en.png");
+
+  const facebook = await dialog
+    .getByRole("link", { name: "Share on Facebook" })
+    .getAttribute("href");
+  const shared = new URL(new URL(facebook!).searchParams.get("u")!);
+  const guest = await browser.newPage();
+  await guest.goto(shared.pathname + shared.search);
+  await expect(guest.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    new RegExp(`My ${year} in Dota`),
+  );
+  await expect(guest.getByRole("heading", { level: 1 })).toContainText(`${year} in Dota`);
+  await expect(guest.getByRole("region", { name: "Summary" })).toContainText("Time in games");
+  await guest.close();
+});

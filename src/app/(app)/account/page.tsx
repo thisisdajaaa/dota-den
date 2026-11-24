@@ -67,7 +67,9 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
             ? t("shares.account.streakLabel", { n: s.snapshot.games })
             : s.kind === "match"
               ? t("shares.account.matchLabel", { id: s.ref })
-              : t("shares.account.weekLabel", { date: s.ref }),
+              : s.kind === "year"
+                ? t("shares.account.yearLabel", { year: s.ref })
+                : t("shares.account.weekLabel", { date: s.ref }),
   }));
   const downloads = [
     {

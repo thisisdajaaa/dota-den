@@ -47,6 +47,7 @@ export const shares: MessageTree<typeof en> = {
     journeyLabel: "Rank journey ({range})",
     streakLabel: "Win streak ({n} sunod-sunod)",
     matchLabel: "Match {id}",
+    yearLabel: "Balik-tanaw sa taon ({year})",
     remove: "Tanggalin",
     removeLabel: "Tanggalin ang link: {link}",
     removed: "Natanggal ang link. Hindi na ito gumagana.",
@@ -79,6 +80,13 @@ export const shares: MessageTree<typeof en> = {
     loss: "Talo",
     open: "Buksan ang match",
   },
+  year: {
+    title: "Ang {year} ni {who} sa Dota",
+    kicker: "Balik-tanaw sa taon · {year}",
+    played: "Oras sa laro",
+    hours: { one: "1 oras", other: "{n} oras" },
+    heroes: { one: "1 hero", other: "{n} hero" },
+  },
   streakPrompt: {
     kicker: "Win streak",
     title: { one: "1 sunod-sunod na panalo", other: "{n} sunod-sunod na panalo" },
@@ -91,6 +99,7 @@ export const shares: MessageTree<typeof en> = {
       week: "Recap ng linggo",
       match: "Matinding laro",
       journey: "Rank journey",
+      year: "Balik-tanaw sa taon",
     },
     headline: {
       streak: {
@@ -119,6 +128,7 @@ export const shares: MessageTree<typeof en> = {
         loss: "Lumaban hanggang dulo gamit si {hero}",
       },
       journey: { climbed: "Umakyat hanggang {to}!", steady: "Hawak pa rin ang {to}" },
+      year: "Ang {year} ko sa Dota",
     },
     sub: {
       streak: "{kills}/{deaths}/{assists} sa buong streak",
@@ -126,6 +136,7 @@ export const shares: MessageTree<typeof en> = {
       weekBest: "Pinakamagaling na hero: {hero} ({record})",
       match: "{result} · {kills}/{deaths}/{assists} · {duration}",
       journey: "{from} → {to}",
+      year: "{games} · {hours} · {heroes}",
     },
     stat: {
       games: "Laro",
@@ -138,6 +149,7 @@ export const shares: MessageTree<typeof en> = {
       peak: "Pinakamataas na medal",
       ranked: "Ranked record",
       climb: "Pinakamagandang akyat",
+      winStreak: "Pinakamahabang streak",
     },
     footer: "I-track ang mga laro mo nang libre sa",
     alt: "Share card: {title}",
