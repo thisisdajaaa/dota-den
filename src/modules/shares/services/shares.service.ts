@@ -35,6 +35,9 @@ export class SharesService {
     } else if (request.kind === "match") {
       snapshot = await this.deps.sources.match(owner, request.ref);
       ref = request.ref;
+    } else if (request.kind === "year") {
+      snapshot = await this.deps.sources.year(owner, request.year, timeZone);
+      ref = String(request.year);
     } else if (request.kind === "streak") {
       const streak = await this.deps.sources.streak(owner, this.now());
       // No win yet is "nothing to share", like a streak too short for a card.

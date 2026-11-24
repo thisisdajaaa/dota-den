@@ -8,6 +8,7 @@ export const CreateShareSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("journey"), range: z.enum(JOURNEY_SHARE_RANGES) }).strict(),
   z.object({ kind: z.literal("streak") }).strict(),
   z.object({ kind: z.literal("match"), ref: z.string().regex(/^\d{1,20}$/) }).strict(),
+  z.object({ kind: z.literal("year"), year: z.number().int().min(2011).max(2100) }).strict(),
 ]);
 
 export const ShareSlugParams = z.object({ slug: z.string().regex(SLUG_PATTERN) });

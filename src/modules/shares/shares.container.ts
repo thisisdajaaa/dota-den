@@ -4,8 +4,15 @@ import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { matchesService, matchQueries } from "@/modules/matches";
 import { mmrInsightsService } from "@/modules/mmr";
+import { yearReviewService } from "@/modules/report";
 import { sessionService } from "@/modules/sessions";
-import { MAX_HEROES, toJourneyShare, toMatchShare, toStreakShare } from "./domain/share";
+import {
+  MAX_HEROES,
+  toJourneyShare,
+  toMatchShare,
+  toStreakShare,
+  toYearShare,
+} from "./domain/share";
 import { SharesRepository } from "./repositories/shares.repository";
 import { SharesController } from "./shares.controller";
 import { SharesService } from "./services/shares.service";
@@ -72,6 +79,9 @@ export const sharesService = new SharesService({
       const me = res.value.players.find((p) => p.accountId32 === owner.accountId32);
       return me ? toMatchShare({ match: res.value, me }) : null;
     },
+    // The year asked for, or the newest the player can open (as the year page does).
+    year: async (owner, year, timeZone) =>
+      toYearShare((await yearReviewService.review(owner.accountId32, year, timeZone)).review),
     playerName: async (accountId32) =>
       (await matchesService.playerProfile(accountId32))?.personaName ?? null,
   },

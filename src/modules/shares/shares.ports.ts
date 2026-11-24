@@ -7,6 +7,7 @@ import type {
   ShareKind,
   StreakShare,
   WeekShare,
+  YearShare,
 } from "./domain/share";
 import type { ShareDocument } from "./shares.model";
 
@@ -35,6 +36,8 @@ export interface ShareSources {
   streak(owner: DataOwner, now: Date): Promise<{ share: StreakShare; ref: string } | null>;
   /** The owner's own line in a match, or null when they didn't play it (or it can't be read). */
   match(owner: DataOwner, matchId: string): Promise<MatchShare | null>;
+  /** The owner's calendar year (their time zone), from imported games. */
+  year(owner: DataOwner, year: number, timeZone: string): Promise<YearShare>;
   playerName(accountId32: number): Promise<string | null>;
 }
 
@@ -43,4 +46,5 @@ export type ShareRequest =
   | { kind: "week" }
   | { kind: "journey"; range: JourneyShareRange }
   | { kind: "streak" }
-  | { kind: "match"; ref: string };
+  | { kind: "match"; ref: string }
+  | { kind: "year"; year: number };

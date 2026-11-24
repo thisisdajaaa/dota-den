@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-11-24
 
+- Your year in Dota (/report/year, free): games, win rate, time in games, top and best heroes, longest streaks, busiest day, months, weekdays and the hours you play, and your best win, counted from your imported games in your time zone; earlier years too. Share it as a card in English, Filipino or Bisaya, and from December 1 to January 15 the overview links to it
 - Ask Den from any page: a chat button in the lower right (above the tab bar on phones) opens the chat in a panel, full screen on phones; your chat stays open while you move between pages, and "Open full page" goes to /ask
 - Player and guide pages load for signed-out visitors more often: the daily OpenDota allowance went from 3,000 to 15,000 calls now that Dota Den uses a paid OpenDota key
 

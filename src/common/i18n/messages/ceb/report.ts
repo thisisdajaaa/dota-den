@@ -183,6 +183,10 @@ export const report: MessageTree<typeof en> = {
     years: "Tuig",
     entry: "Ang imong {year} sa Dota",
     entryDetail: "Ang imong tuig sa mga duwa, hero ug streak.",
+    prompt: {
+      title: "Andam na ang imong {year} sa Dota",
+      body: "Ang imong mga duwa, hero, streak ug labing maayo nga daog karong tuiga, naa pay card nga ma-share.",
+    },
     empty: {
       title: "Kulang pa ang duwa sa {year}",
       body: "Duwa pag gamay pa (o hulata nga mahuman ang pag-import sa imong history) ug mogawas diri ang imong tuig.",

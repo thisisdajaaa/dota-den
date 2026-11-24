@@ -23,6 +23,7 @@ type Target =
   | { kind: "week" }
   | { kind: "streak" }
   | { kind: "match"; ref: string }
+  | { kind: "year"; year: number }
   | { kind: "journey"; range: "3m" | "6m" | "1y" | "all" };
 
 interface Link {
