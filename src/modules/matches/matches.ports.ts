@@ -161,6 +161,8 @@ export interface MatchQueries {
   rankedResults(accountId32: number, range: { from: Date; to: Date }): Promise<RankedResultRow[]>;
   /** Every imported game (all types) that started in a time range, oldest first. */
   factsBetween(accountId32: number, range: { from: Date; to: Date }): Promise<DashboardFact[]>;
+  /** When the oldest imported game started; null before the first import. */
+  firstStartedAt(accountId32: number): Promise<Date | null>;
   /** Heroes this account has imported matches on, most played first. */
   playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>>;
   dashboardFacts(accountId32: number, filter: DashboardFilter, now: Date): Promise<DashboardFacts>;

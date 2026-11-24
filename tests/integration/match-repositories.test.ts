@@ -95,6 +95,19 @@ describe("MatchReadRepository.heroFacts", () => {
   });
 });
 
+describe("MatchReadRepository.firstStartedAt", () => {
+  it("is when the oldest imported game started, or null before any import", async () => {
+    await new MatchFactsRepository(async () => db).upsertMany([
+      fact(97, "y2", 1, { startedAt: new Date("2025-03-04T10:00:00Z") }),
+      fact(97, "y1", 1, { startedAt: new Date("2024-12-31T20:00:00Z") }),
+      fact(97, "y3", 1, { startedAt: new Date("2026-01-02T10:00:00Z") }),
+    ]);
+    const read = new MatchReadRepository(async () => db);
+    expect(await read.firstStartedAt(97)).toEqual(new Date("2024-12-31T20:00:00Z"));
+    expect(await read.firstStartedAt(98)).toBeNull();
+  });
+});
+
 describe("MatchReadRepository.markParsed", () => {
   it("flips the stored rows of a match parsed after import, for those players only", async () => {
     const repo = new MatchFactsRepository(async () => db);

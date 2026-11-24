@@ -5,6 +5,7 @@ export {
   replayReadsRepository,
   reportController,
   weeklyCoachService,
+  yearReviewService,
 } from "./report.container";
 export type { WeeklyCoachView } from "./services/weekly-coach.service";
 export type {
@@ -16,3 +17,4 @@ export { toCoachNoteDto } from "./dtos/responses/weekly-coach.dto";
 export type { PeriodReadView } from "./services/period-read.service";
 export type { PeriodReadDto } from "./dtos/responses/period-read.dto";
 export type { BattleReportView, ReportReplaysView } from "./dtos/responses/battle-report.dto";
+export type { YearReviewView } from "./services/year-review.service";

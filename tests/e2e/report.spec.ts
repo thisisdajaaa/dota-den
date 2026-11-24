@@ -87,3 +87,28 @@ test.describe("custom range", () => {
     await expect(page.getByRole("region", { name: "Calendar" })).toContainText("of 5 days");
   });
 });
+
+test("your year in Dota: from the battle report, counted from imported games", async ({ page }) => {
+  await page.goto("/api/v1/auth/steam/login");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  // The year view reads imported games: wait for the import first.
+  await expect(page.getByText(/Showing \d+ of your \d+ matches/).first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.goto("/report");
+  const year = String(new Date().getFullYear());
+  await page.getByRole("link", { name: new RegExp(`^Your ${year} in Dota`) }).click();
+  await expect(page).toHaveURL(/\/report\/year$/);
+  await expect(page.getByRole("heading", { level: 1, name: `${year} in Dota` })).toBeVisible();
+  // The fixture's games are all recent: in the first days of January there may be too few.
+  await expect(
+    page
+      .getByRole("region", { name: "Your heroes" })
+      .or(page.getByText(`Not enough games in ${year}`)),
+  ).toBeVisible();
+  if (await page.getByRole("region", { name: "Your heroes" }).isVisible()) {
+    await expect(page.getByRole("region", { name: "Your heroes" })).toContainText("Anti-Mage");
+    await expect(page.getByRole("list", { name: "Games per month" })).toBeVisible();
+    await expect(page.getByText(`${year} isn't over`)).toBeVisible();
+  }
+});

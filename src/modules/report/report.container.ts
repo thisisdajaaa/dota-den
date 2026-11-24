@@ -29,6 +29,7 @@ import {
 import { BattleReportService } from "./services/battle-report.service";
 import { PeriodReadService } from "./services/period-read.service";
 import { WeeklyCoachService } from "./services/weekly-coach.service";
+import { YearReviewService } from "./services/year-review.service";
 import { addDays } from "@/common/time/day-key";
 import { usageService } from "@/modules/usage";
 
@@ -48,6 +49,26 @@ export const battleReportService = new BattleReportService({
     entries: async (owner) =>
       (await mmrJournalService.list(owner)).map((e) => ({ observedAt: e.observedAt, mmr: e.mmr })),
     rankedResults: (id, range) => matchQueries.rankedResults(id, range),
+  },
+});
+
+/** Your year in Dota: imported games only (no OpenDota calls). */
+export const yearReviewService = new YearReviewService({
+  games: {
+    games: async (id, range) =>
+      (await matchQueries.factsBetween(id, range)).map((f) => ({
+        matchId: f.matchId,
+        startedAt: f.startedAt,
+        durationSec: f.durationSec,
+        heroId: f.heroId,
+        won: f.result === "win",
+        kills: f.kills,
+        deaths: f.deaths,
+        assists: f.assists,
+        ranked: f.ranked,
+        queueClass: f.queueClass,
+      })),
+    firstStartedAt: (id) => matchQueries.firstStartedAt(id),
   },
 });
 
