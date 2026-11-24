@@ -89,3 +89,12 @@ export interface PatchDigestSource {
 export interface HeroNames {
   names(): Promise<Map<number, string>>;
 }
+
+/** A year of the player's imported games (from report), or null under the year page's minimum. */
+export interface YearSummarySource {
+  summary(
+    owner: DataOwner,
+    year: number,
+    timeZone: string,
+  ): Promise<{ games: number; wins: number; playedSec: number } | null>;
+}
