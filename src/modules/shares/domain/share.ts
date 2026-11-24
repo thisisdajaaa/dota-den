@@ -3,7 +3,9 @@
  * games, notes and MMR never leak through an old link. MMR is never part of a share.
  */
 
-export type ShareKind = "session" | "week" | "journey" | "streak" | "match";
+import { MIN_YEAR_GAMES } from "@/modules/report/domain/year-review";
+
+export type ShareKind = "session" | "week" | "journey" | "streak" | "match" | "year";
 
 export interface ShareHero {
   heroId: number;
@@ -120,7 +122,26 @@ export interface MatchShare {
   lastHits: number | null;
 }
 
-export type ShareSnapshot = SessionShare | WeekShare | JourneyShare | StreakShare | MatchShare;
+/** A calendar year of the owner's imported games (their year in review). No MMR. */
+export interface YearShare {
+  kind: "year";
+  year: number;
+  games: number;
+  wins: number;
+  losses: number;
+  /** Total game time, in seconds. */
+  playedSec: number;
+  heroesPlayed: number;
+  /** Most played first, at most MAX_HEROES. */
+  heroes: ShareHero[];
+  /** Wins in a row, the year's longest (0 without a win). */
+  longestWinStreak: number;
+  /** The win with the best K+A−D. */
+  bestGame: { heroId: number; kills: number; deaths: number; assists: number } | null;
+}
+
+export type ShareSnapshot =
+  SessionShare | WeekShare | JourneyShare | StreakShare | MatchShare | YearShare;
 
 export const MAX_HEROES = 5;
 
@@ -138,6 +159,7 @@ export function winRate(s: { games: number; wins: number }): number | null {
 export function isEmpty(s: ShareSnapshot): boolean {
   if (s.kind === "journey") return s.medals.length === 0;
   if (s.kind === "streak") return s.games < MIN_STREAK;
+  if (s.kind === "year") return s.games < MIN_YEAR_GAMES;
   return s.games === 0;
 }
 
@@ -299,5 +321,42 @@ export function toJourneyShare(j: JourneyShareInput): JourneyShare {
     wins: j.record.wins,
     losses: j.record.losses,
     heroes: j.record.heroes.slice(0, MAX_HEROES).map(hero),
+  };
+}
+
+/** What a year share is built from (the year in review, structurally). */
+export interface YearShareInput {
+  year: number;
+  games: number;
+  wins: number;
+  playedSec: number;
+  heroesPlayed: number;
+  topHeroes: ReadonlyArray<{ heroId: number; games: number; wins: number }>;
+  longestWinStreak: { games: number } | null;
+  bestGame: { heroId: number; kills: number; deaths: number; assists: number } | null;
+}
+
+/** The owner's year. Fields are copied one by one: nothing else from the review comes along. */
+export function toYearShare(r: YearShareInput): YearShare {
+  return {
+    kind: "year",
+    year: r.year,
+    games: r.games,
+    wins: r.wins,
+    losses: r.games - r.wins,
+    playedSec: r.playedSec,
+    heroesPlayed: r.heroesPlayed,
+    heroes: r.topHeroes
+      .slice(0, MAX_HEROES)
+      .map((h) => ({ heroId: h.heroId, games: h.games, wins: h.wins })),
+    longestWinStreak: r.longestWinStreak?.games ?? 0,
+    bestGame: r.bestGame
+      ? {
+          heroId: r.bestGame.heroId,
+          kills: r.bestGame.kills,
+          deaths: r.bestGame.deaths,
+          assists: r.bestGame.assists,
+        }
+      : null,
   };
 }

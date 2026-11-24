@@ -9,7 +9,7 @@ const medalName = (tier: number) => {
   return r ? rankLabel(r) : String(tier);
 };
 
-/** The headline and subtitle of a shared session, week, streak, game or journey, in the viewer's language. */
+/** The headline and subtitle of a shared session, week, streak, game, journey or year, in the viewer's language. */
 export function shareHeadline(
   t: Translator<Messages>,
   s: ShareSnapshot,
@@ -36,6 +36,11 @@ export function shareHeadline(
     return {
       title: t("shares.streak.title", { who, n: s.games }),
       games: plural(t, "shares.games", s.games),
+    };
+  if (s.kind === "year")
+    return {
+      title: t("shares.year.title", { who, year: s.year }),
+      games: `${plural(t, "shares.games", s.games)} · ${record}`,
     };
   if (s.kind === "match")
     return {

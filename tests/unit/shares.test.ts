@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildJourney } from "@/modules/mmr/domain/journey";
 import {
+  isEmpty,
   toJourneyShare,
+  toYearShare,
   type JourneyShare,
   type SessionShare,
   type WeekShare,
@@ -99,10 +101,24 @@ function setup() {
       journey: async (_o, range) => toJourneyShare(journey(range === "3m" ? "3m" : "all")),
       streak: async () => null,
       match: async () => null,
+      year: async (_o, y) => yearShare(y, 120),
       playerName: vi.fn(async () => "DAJA"),
     },
   });
   return { svc, docs };
+}
+
+function yearShare(year: number, games: number) {
+  return toYearShare({
+    year,
+    games,
+    wins: Math.floor(games / 2),
+    playedSec: games * 2_400,
+    heroesPlayed: 7,
+    topHeroes: [{ heroId: 1, games, wins: Math.floor(games / 2) }],
+    longestWinStreak: { games: 6 },
+    bestGame: { heroId: 1, kills: 12, deaths: 1, assists: 9 },
+  });
 }
 
 describe("SharesService", () => {
@@ -140,6 +156,7 @@ describe("SharesService", () => {
           ),
         streak: async () => null,
         match: async () => null,
+        year: async (_o, y) => yearShare(y, 4),
         playerName: async () => null,
       },
     });
@@ -231,6 +248,7 @@ describe("SharesService", () => {
           ),
         streak: async () => null,
         match: async () => null,
+        year: async (_o, y) => yearShare(y, 4),
         playerName: async () => null,
       },
     });
@@ -238,5 +256,77 @@ describe("SharesService", () => {
       ok: false,
       error: { type: "empty" },
     });
+  });
+
+  it("keys a year link by the year, one link per year", async () => {
+    const { svc } = setup();
+    const a = await svc.share(owner, { kind: "year", year: 2026 }, "Asia/Manila");
+    const b = await svc.share(owner, { kind: "year", year: 2026 }, "Asia/Manila");
+    if (!a.ok || !b.ok) throw new Error();
+    expect(a.value._id).toBe(b.value._id);
+    expect(a.value).toMatchObject({ kind: "year", ref: "2026" });
+    expect(a.value.snapshot).toMatchObject({ kind: "year", year: 2026, games: 120, losses: 60 });
+  });
+
+  it("refuses a year with fewer than 5 games", async () => {
+    const svc = new SharesService({
+      repository: { upsert: vi.fn() } as unknown as SharesRepositoryPort,
+      newSlug: () => "x",
+      sources: {
+        session: async () => null,
+        week: async () => week(0),
+        journey: async () => {
+          throw new Error("unused");
+        },
+        streak: async () => null,
+        match: async () => null,
+        year: async (_o, y) => yearShare(y, 4),
+        playerName: async () => null,
+      },
+    });
+    expect(await svc.share(owner, { kind: "year", year: 2026 }, "UTC")).toEqual({
+      ok: false,
+      error: { type: "empty" },
+    });
+  });
+});
+
+describe("toYearShare", () => {
+  it("copies only the year's own totals, top heroes and best win", () => {
+    const review = {
+      year: 2026,
+      games: 40,
+      wins: 22,
+      playedSec: 90_000,
+      heroesPlayed: 9,
+      topHeroes: Array.from({ length: 7 }, (_, i) => ({
+        heroId: i + 1,
+        games: 10 - i,
+        wins: 5,
+        kills: 99,
+        deaths: 1,
+        assists: 1,
+      })),
+      longestWinStreak: { games: 5, from: new Date(), to: new Date() },
+      bestGame: { matchId: "123", heroId: 2, kills: 15, deaths: 2, assists: 20, at: new Date() },
+      // Things a review might carry that must never reach a share.
+      mmr: 4_200,
+      queue: { solo: { games: 1, wins: 1 }, party: { games: 0, wins: 0 }, unknown: 39 },
+    };
+    const share = toYearShare(review);
+    expect(share).toEqual({
+      kind: "year",
+      year: 2026,
+      games: 40,
+      wins: 22,
+      losses: 18,
+      playedSec: 90_000,
+      heroesPlayed: 9,
+      heroes: [1, 2, 3, 4, 5].map((id) => ({ heroId: id, games: 11 - id, wins: 5 })),
+      longestWinStreak: 5,
+      bestGame: { heroId: 2, kills: 15, deaths: 2, assists: 20 },
+    });
+    expect(isEmpty(toYearShare({ ...review, games: 4, wins: 2 }))).toBe(true);
+    expect(isEmpty(share)).toBe(false);
   });
 });

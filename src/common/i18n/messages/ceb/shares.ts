@@ -40,13 +40,14 @@ export const shares: MessageTree<typeof en> = {
   account: {
     title: "Mga gipaambit nga link",
     description:
-      "Mga link nga imong gihimo gamit ang Share. Matag usa snapshot sa maong session, semana, win streak, duwa o rank journey, dili gyud ang imong MMR. Kung tangtangon, dili na kini molihok.",
+      "Mga link nga imong gihimo gamit ang Share. Matag usa snapshot sa maong session, semana, tuig, win streak, duwa o rank journey, dili gyud ang imong MMR. Kung tangtangon, dili na kini molihok.",
     none: "Wala ka pay gipaambit.",
     sessionLabel: "Session niadtong {date}",
     weekLabel: "Semana sa {date}",
     journeyLabel: "Rank journey ({range})",
     streakLabel: "Win streak ({n} sunod-sunod)",
     matchLabel: "Match {id}",
+    yearLabel: "Balik-lantaw sa tuig ({year})",
     remove: "Tangtanga",
     removeLabel: "Tangtanga ang link: {link}",
     removed: "Natangtang ang link. Dili na kini molihok.",
@@ -79,6 +80,13 @@ export const shares: MessageTree<typeof en> = {
     loss: "Pildi",
     open: "Ablihi ang match",
   },
+  year: {
+    title: "Ang {year} ni {who} sa Dota",
+    kicker: "Balik-lantaw sa tuig · {year}",
+    played: "Oras sa duwa",
+    hours: { one: "1 ka oras", other: "{n} ka oras" },
+    heroes: { one: "1 ka hero", other: "{n} ka hero" },
+  },
   streakPrompt: {
     kicker: "Win streak",
     title: { one: "1 ka sunod-sunod nga daog", other: "{n} ka sunod-sunod nga daog" },
@@ -91,6 +99,7 @@ export const shares: MessageTree<typeof en> = {
       week: "Recap sa semana",
       match: "Kusog nga duwa",
       journey: "Rank journey",
+      year: "Balik-lantaw sa tuig",
     },
     headline: {
       streak: {
@@ -119,6 +128,7 @@ export const shares: MessageTree<typeof en> = {
         loss: "Nakig-away hangtod sa katapusan gamit si {hero}",
       },
       journey: { climbed: "Nisaka hangtod {to}!", steady: "Naghupot gihapon sa {to}" },
+      year: "Akong {year} sa Dota",
     },
     sub: {
       streak: "{kills}/{deaths}/{assists} sa tibuok streak",
@@ -126,6 +136,7 @@ export const shares: MessageTree<typeof en> = {
       weekBest: "Labing maayo nga hero: {hero} ({record})",
       match: "{result} · {kills}/{deaths}/{assists} · {duration}",
       journey: "{from} → {to}",
+      year: "{games} · {hours} · {heroes}",
     },
     stat: {
       games: "Duwa",
@@ -138,6 +149,7 @@ export const shares: MessageTree<typeof en> = {
       peak: "Pinakataas nga medal",
       ranked: "Ranked record",
       climb: "Labing nindot nga saka",
+      winStreak: "Pinakataas nga streak",
     },
     footer: "I-track ang imong mga duwa nga libre sa",
     alt: "Share card: {title}",

@@ -16,6 +16,7 @@ import type { HeroInfo } from "@/modules/matches/domain/read-models";
 import { formatPercent } from "@/modules/matches/ui/format";
 import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { yearReviewService } from "@/modules/report";
+import { ShareButton } from "@/modules/shares/ui/share-button";
 import {
   MIN_HERO_GAMES,
   MIN_MONTH_GAMES,
@@ -103,6 +104,11 @@ export default async function YearReviewPage({ searchParams }: PageProps<"/repor
           <p className="max-w-xl text-sm text-muted-foreground">
             {t("report.year.description", { year: r.year })}
           </p>
+          {r.games >= MIN_YEAR_GAMES && (
+            <div>
+              <ShareButton target={{ kind: "year", year: r.year }} />
+            </div>
+          )}
           {years.length > 1 && (
             <SegmentedLinks
               label={t("report.year.years")}
