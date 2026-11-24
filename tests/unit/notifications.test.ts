@@ -6,6 +6,7 @@ import {
   isPushServiceEndpoint,
   isRecentPatch,
   isRecapDay,
+  yearReviewPushYear,
   isRecentSession,
   isSessionFinished,
   weekStart,
@@ -45,6 +46,14 @@ describe("notification rules", () => {
     expect(weekStart("2026-10-08")).toBe("2026-10-05");
     expect(isRecapDay("2026-10-12")).toBe(true);
     expect(isRecapDay("2026-10-11")).toBe(false);
+  });
+
+  it("pushes the year in review from December 20 to the year's end", () => {
+    expect(yearReviewPushYear("2026-12-19")).toBeNull();
+    expect(yearReviewPushYear("2026-12-20")).toBe(2026);
+    expect(yearReviewPushYear("2026-12-31")).toBe(2026);
+    expect(yearReviewPushYear("2027-01-01")).toBeNull();
+    expect(yearReviewPushYear("2026-06-20")).toBeNull();
   });
 
   it("only accepts the browsers' push services as endpoints", () => {
@@ -220,8 +229,10 @@ function triggers(opts: {
   language?: string | null;
   failSessions?: boolean;
   trials?: { userId: string; endsAt: Date }[];
+  year?: { games: number; wins: number; playedSec: number } | null;
 }) {
   const f = fakes();
+  const years: { year: number; timeZone: string }[] = [];
   const svc = new NotificationTriggersService({
     notifications: f.service,
     users: {
@@ -252,10 +263,19 @@ function triggers(opts: {
         ]),
     },
     trials: opts.trials ? { endingSoon: async () => opts.trials! } : undefined,
+    years:
+      opts.year === undefined
+        ? undefined
+        : {
+            summary: async (_owner, year, timeZone) => {
+              years.push({ year, timeZone });
+              return opts.year!;
+            },
+          },
     logger: { warn: () => {} },
     now: () => opts.now,
   });
-  return { svc, ...f };
+  return { svc, years, ...f };
 }
 
 // Thursday 2026-10-08, 14:30 in Manila.
@@ -291,6 +311,39 @@ describe("NotificationTriggersService", () => {
     const off = triggers({ now: THURSDAY, trials: [{ userId: "u1", endsAt }] });
     off.prefs.set("u1", { ...(await off.service.prefs("u1")), plus_trial: false });
     expect((await off.svc.runDaily({ budgetMs: 10_000 })).trialReminders).toBe(0);
+  });
+
+  it("tells a player once, from December 20 their time, that their year in Dota is ready", async () => {
+    const year = { games: 412, wins: 218, playedSec: 412 * 2400 };
+    // December 19, 23:30 in Manila (15:30 UTC): not yet.
+    const early = triggers({ now: new Date("2026-12-19T15:30:00Z"), year });
+    expect((await early.svc.runDaily({ budgetMs: 10_000 })).yearReviews).toBe(0);
+    expect(early.years).toEqual([]);
+
+    // December 20, 00:30 in Manila (still the 19th in UTC).
+    const { svc, sent, years } = triggers({ now: new Date("2026-12-19T16:30:00Z"), year });
+    expect((await svc.runDaily({ budgetMs: 10_000 })).yearReviews).toBe(1);
+    expect(years).toEqual([{ year: 2026, timeZone: "Asia/Manila" }]);
+    expect(sent[0].message).toEqual({
+      title: "Your 2026 in Dota is ready",
+      body: "412 games, 275 hours, 53% won. See your top heroes, best streak and biggest day.",
+      url: "/report/year?year=2026",
+      tag: "year-review-2026",
+    });
+    // Once a year.
+    expect((await svc.runDaily({ budgetMs: 10_000 })).yearReviews).toBe(0);
+  });
+
+  it("doesn't push the year in review without enough games or when it's turned off", async () => {
+    const dec = new Date("2026-12-22T06:30:00Z");
+    // The source returns null under the year page's minimum.
+    expect(
+      (await triggers({ now: dec, year: null }).svc.runDaily({ budgetMs: 10_000 })).yearReviews,
+    ).toBe(0);
+    const off = triggers({ now: dec, year: { games: 40, wins: 20, playedSec: 96_000 } });
+    off.prefs.set("u1", { ...(await off.service.prefs("u1")), year_review: false });
+    expect((await off.svc.runDaily({ budgetMs: 10_000 })).yearReviews).toBe(0);
+    expect(off.years).toEqual([]);
   });
 
   it("recaps yesterday's finished session once, linking to it", async () => {
@@ -404,6 +457,7 @@ it("gives settings saved before a kind existed that kind's default (Plus kinds o
     stop_loss: true,
     weekly_coach: true,
     plus_trial: true,
+    year_review: true,
   });
   expect(withDefaults(null)).toEqual(DEFAULT_PREFS);
 });
@@ -420,6 +474,7 @@ it("has a default for every kind", () => {
     "stop_loss",
     "weekly_coach",
     "plus_trial",
+    "year_review",
   ];
   expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([...kinds].sort());
 });

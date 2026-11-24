@@ -9,6 +9,7 @@ import {
   isRecentSession,
   isSessionFinished,
   weekStart,
+  yearReviewPushYear,
   type NotificationMessage,
 } from "../domain/notification";
 import type {
@@ -18,6 +19,7 @@ import type {
   PatchDigestSource,
   UserDirectory,
   WeeklyRecordSource,
+  YearSummarySource,
 } from "../notifications.ports";
 import type { TriggerRunDto } from "../dtos/responses/notification-status.dto";
 import type { NotificationService } from "./notification.service";
@@ -42,6 +44,8 @@ export class NotificationTriggersService {
       heroes: HeroNames;
       /** Optional: free Plus trials ending soon (from plus), for one reminder each. */
       trials?: { endingSoon(): Promise<{ userId: string; endsAt: Date }[]> };
+      /** Optional: the year in review (from report), pushed once in late December. */
+      years?: YearSummarySource;
       logger: Pick<Logger, "warn">;
       now?: () => Date;
     },
@@ -57,6 +61,7 @@ export class NotificationTriggersService {
       weeklyRecaps: 0,
       patchHeroes: 0,
       trialReminders: 0,
+      yearReviews: 0,
       failed: 0,
       stoppedEarly: false,
     };
@@ -96,6 +101,8 @@ export class NotificationTriggersService {
       const endsAt = ending.get(user.id);
       if (endsAt && wants.plus_trial)
         run.trialReminders += await attempt("plus_trial", () => this.trialEnding(user, t, endsAt));
+      if (wants.year_review)
+        run.yearReviews += await attempt("year_review", () => this.yearReview(user, t));
     }
     return run;
   }
@@ -175,6 +182,29 @@ export class NotificationTriggersService {
         tag: "plus-trial",
       }),
     );
+  }
+
+  /** Once a year, from December 20: the year page is ready (only with enough games to show). */
+  private async yearReview(user: NotifiedUser, t: Translator<Messages>) {
+    if (!this.deps.years) return 0;
+    const tz = user.timeZone && isValidTimeZone(user.timeZone) ? user.timeZone : FALLBACK_TIME_ZONE;
+    const year = yearReviewPushYear(dayKeyFormatter(tz)(this.now()));
+    if (year === null) return 0;
+    const years = this.deps.years;
+    return this.deps.notifications.notifyOnce(user.id, "year_review", String(year), async () => {
+      const s = await years.summary(this.owner(user), year, tz);
+      if (!s || s.games === 0) return null;
+      return {
+        title: t("notifications.push.year.title", { year }),
+        body: t("notifications.push.year.body", {
+          games: plural(t, "notifications.push.games", s.games),
+          hours: Math.round(s.playedSec / 3600),
+          rate: Math.round((s.wins / s.games) * 100),
+        }),
+        url: `/report/year?year=${year}`,
+        tag: `year-review-${year}`,
+      };
+    });
   }
 
   private async weeklyRecap(user: NotifiedUser, t: Translator<Messages>) {

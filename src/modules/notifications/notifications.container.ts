@@ -8,6 +8,7 @@ import { matchesService } from "@/modules/matches";
 import { mmrInsightsService } from "@/modules/mmr";
 import { patchesService } from "@/modules/patches";
 import { plusService } from "@/modules/plus";
+import { MIN_YEAR_GAMES, yearReviewService } from "@/modules/report";
 import { sessionService } from "@/modules/sessions";
 import { PUSH_SERVICE_HOSTS } from "./domain/notification";
 import { WebPushSender } from "./infrastructure/web-push-sender";
@@ -53,6 +54,13 @@ export const notificationTriggers = lazy(
     new NotificationTriggersService({
       notifications: notificationService,
       trials: { endingSoon: () => plusService.trialsEndingSoon() },
+      years: {
+        summary: async (owner, year, timeZone) => {
+          const { review } = await yearReviewService.review(owner.accountId32, year, timeZone);
+          if (review.year !== year || review.games < MIN_YEAR_GAMES) return null;
+          return { games: review.games, wins: review.wins, playedSec: review.playedSec };
+        },
+      },
       users: {
         byIds: async (ids) =>
           (await usersService.findByIds(ids)).map((u) => ({

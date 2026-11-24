@@ -33,6 +33,10 @@ export const notifications = {
     dismiss: "Hide this",
   },
   kinds: {
+    year_review: {
+      label: "Your year in Dota",
+      help: "Once a year, around December 20: your year in review is ready.",
+    },
     plus_trial: {
       label: "Plus free trial ending",
       help: "Once, the day before your free Plus trial ends.",
@@ -71,6 +75,10 @@ export const notifications = {
     },
   },
   push: {
+    year: {
+      title: "Your {year} in Dota is ready",
+      body: "{games}, {hours} hours, {rate}% won. See your top heroes, best streak and biggest day.",
+    },
     trial: {
       title: "Your free Plus trial ends soon",
       body: "It ends {when}. Subscribe to keep the AI coach, Ask Den's 100 questions a day and your splits.",

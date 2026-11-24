@@ -36,6 +36,10 @@ export const notifications: MessageTree<typeof en> = {
     dismiss: "Itago ito",
   },
   kinds: {
+    year_review: {
+      label: "Ang taon mo sa Dota",
+      help: "Isang beses kada taon, bandang Disyembre 20: handa na ang buod ng taon mo.",
+    },
     plus_trial: {
       label: "Pagtatapos ng libreng Plus trial",
       help: "Isang beses, isang araw bago matapos ang libreng Plus trial mo.",
@@ -74,6 +78,10 @@ export const notifications: MessageTree<typeof en> = {
     },
   },
   push: {
+    year: {
+      title: "Handa na ang {year} mo sa Dota",
+      body: "{games}, {hours} oras, {rate}% panalo. Tingnan ang top heroes mo, pinakamahabang winning streak at pinakamaraming laro sa isang araw.",
+    },
     trial: {
       title: "Malapit nang matapos ang libreng Plus trial mo",
       body: "Matatapos ito {when}. Mag-subscribe para tuloy ang AI coach, ang 100 tanong kada araw sa Ask Den at ang splits mo.",

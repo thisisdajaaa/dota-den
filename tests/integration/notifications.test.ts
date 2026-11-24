@@ -88,6 +88,7 @@ describe("NotificationSettingsRepository", () => {
       stop_loss: false,
       weekly_coach: false,
       plus_trial: true,
+      year_review: false,
     };
     await settings.savePrefs("u1", prefs, now);
     expect(await settings.prefs("u1")).toEqual(prefs);
