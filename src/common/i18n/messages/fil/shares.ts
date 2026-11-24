@@ -40,7 +40,7 @@ export const shares: MessageTree<typeof en> = {
   account: {
     title: "Mga ibinahaging link",
     description:
-      "Mga link na ginawa mo gamit ang Share. Bawat isa ay snapshot ng session, linggo, win streak, laro o rank journey na iyon, hindi kailanman ang MMR mo. Kapag tinanggal, hindi na ito gagana.",
+      "Mga link na ginawa mo gamit ang Share. Bawat isa ay snapshot ng session, linggo, taon, win streak, laro o rank journey na iyon, hindi kailanman ang MMR mo. Kapag tinanggal, hindi na ito gagana.",
     none: "Wala ka pang ibinahagi.",
     sessionLabel: "Session noong {date}",
     weekLabel: "Linggo ng {date}",

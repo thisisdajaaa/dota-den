@@ -33,7 +33,7 @@ export const shares = {
   account: {
     title: "Shared links",
     description:
-      "Links you made with Share. Each shows a snapshot of that session, week, win streak, game or rank journey, never your MMR. Remove one and it stops working.",
+      "Links you made with Share. Each shows a snapshot of that session, week, year, win streak, game or rank journey, never your MMR. Remove one and it stops working.",
     none: "You haven't shared anything yet.",
     sessionLabel: "Session on {date}",
     weekLabel: "Week of {date}",

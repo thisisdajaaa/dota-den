@@ -40,7 +40,7 @@ export const shares: MessageTree<typeof en> = {
   account: {
     title: "Mga gipaambit nga link",
     description:
-      "Mga link nga imong gihimo gamit ang Share. Matag usa snapshot sa maong session, semana, win streak, duwa o rank journey, dili gyud ang imong MMR. Kung tangtangon, dili na kini molihok.",
+      "Mga link nga imong gihimo gamit ang Share. Matag usa snapshot sa maong session, semana, tuig, win streak, duwa o rank journey, dili gyud ang imong MMR. Kung tangtangon, dili na kini molihok.",
     none: "Wala ka pay gipaambit.",
     sessionLabel: "Session niadtong {date}",
     weekLabel: "Semana sa {date}",
