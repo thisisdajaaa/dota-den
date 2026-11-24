@@ -178,6 +178,10 @@ export const report = {
     years: "Year",
     entry: "Your {year} in Dota",
     entryDetail: "Your year in games, heroes and streaks.",
+    prompt: {
+      title: "Your {year} in Dota is ready",
+      body: "Your games, heroes, streaks and best win of the year, with a card to share.",
+    },
     empty: {
       title: "Not enough games in {year}",
       body: "Play a few more (or let your history finish importing) and your year shows up here.",

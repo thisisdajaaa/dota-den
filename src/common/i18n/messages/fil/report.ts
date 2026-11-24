@@ -183,6 +183,10 @@ export const report: MessageTree<typeof en> = {
     years: "Taon",
     entry: "Ang {year} mo sa Dota",
     entryDetail: "Ang taon mo sa mga laro, hero at streak.",
+    prompt: {
+      title: "Handa na ang {year} mo sa Dota",
+      body: "Ang mga laro, hero, streak at pinakamagandang panalo mo ngayong taon, may card pang maibabahagi.",
+    },
     empty: {
       title: "Kulang pa ang laro sa {year}",
       body: "Maglaro pa nang kaunti (o hintaying matapos ang pag-import ng history mo) at lalabas dito ang taon mo.",

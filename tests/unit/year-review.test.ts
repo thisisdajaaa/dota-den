@@ -3,6 +3,7 @@ import { dayKeyFormatter } from "@/common/time/day-key";
 import {
   MIN_HERO_GAMES,
   reviewYears,
+  yearPromptFor,
   yearReview,
   type YearGame,
 } from "@/modules/report/domain/year-review";
@@ -122,5 +123,15 @@ describe("reviewYears", () => {
       2026, 2025, 2024,
     ]);
     expect(reviewYears(null, "2026-11-24", dayKey)).toEqual([2026]);
+  });
+});
+
+describe("yearPromptFor", () => {
+  it("offers this year in December and last year until January 15", () => {
+    expect(yearPromptFor("2026-11-30")).toBeNull();
+    expect(yearPromptFor("2026-12-01")).toBe(2026);
+    expect(yearPromptFor("2026-12-31")).toBe(2026);
+    expect(yearPromptFor("2027-01-15")).toBe(2026);
+    expect(yearPromptFor("2027-01-16")).toBeNull();
   });
 });
