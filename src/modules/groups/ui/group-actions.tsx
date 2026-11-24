@@ -46,7 +46,9 @@ export function GroupActions({
     try {
       await apiRequest(`/api/v1/groups/${groupId}`, { method: "DELETE" });
       toast.success(t("groups.manage.deleted"));
+      // Refresh too: a /groups page cached earlier in the session still lists this group.
       router.push("/groups");
+      router.refresh();
     } catch (err) {
       toast.error(errorMessage(err, t("groups.manage.deleteFailed")));
       setBusy(false);
@@ -58,7 +60,9 @@ export function GroupActions({
     try {
       await apiRequest(`/api/v1/groups/${groupId}/leave`, { method: "POST" });
       toast.success(t("groups.manage.left"));
+      // Refresh too: a /groups page cached earlier in the session still lists this group.
       router.push("/groups");
+      router.refresh();
     } catch (err) {
       toast.error(errorMessage(err, t("groups.manage.leaveFailed")));
       setBusy(false);
