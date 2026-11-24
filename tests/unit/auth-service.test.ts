@@ -4,6 +4,7 @@ import {
   type AuthServiceDeps,
   PERSONA_REFRESH_MS,
   PERSONA_TIMEOUT_MS,
+  SESSION_MAX_AGE_MS,
   SESSION_ROTATE_AFTER_MS,
   SESSION_TTL_MS,
 } from "@/modules/identity/services/auth.service";
@@ -195,6 +196,38 @@ describe("AuthService", () => {
     expect((await ctx.service.resolveSession(resolved!.rotated!.token))?.user.id).toBe(
       resolved!.user.id,
     );
+  });
+
+  it("ends a session 90 days after sign-in, however often it's used and rotated", async () => {
+    const ctx = setup();
+    const signedIn = await signIn(ctx);
+    if (!signedIn.ok) throw new Error("sign-in failed");
+    let token = signedIn.value.session.token;
+    // Used every few days: rotated, never idle long enough to expire.
+    for (let day = 0; day < 88; day += 4) {
+      ctx.advance(4 * 24 * 3_600_000);
+      const r = await ctx.service.resolveSession(token, { rotate: true });
+      expect(r).not.toBeNull();
+      if (r?.rotated) {
+        token = r.rotated.token;
+        expect(r.rotated.expiresAt.getTime()).toBeLessThanOrEqual(
+          new Date("2026-09-29T12:00:00Z").getTime() + SESSION_MAX_AGE_MS,
+        );
+      }
+    }
+    ctx.advance(3 * 24 * 3_600_000);
+    expect(await ctx.service.resolveSession(token)).toBeNull();
+  });
+
+  it("takes admin from ADMIN_STEAM_IDS on every request, so removal is immediate", async () => {
+    const admins = [STEAM_ID as string];
+    const ctx = setup({ admins });
+    const signedIn = await signIn(ctx);
+    if (!signedIn.ok) throw new Error("sign-in failed");
+    const token = signedIn.value.session.token;
+    expect((await ctx.service.resolveSession(token))?.user.roles).toEqual(["admin"]);
+    admins.length = 0;
+    expect((await ctx.service.resolveSession(token))?.user.roles).toEqual([]);
   });
 
   it("revokes the session on sign-out", async () => {

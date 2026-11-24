@@ -13,7 +13,7 @@ const directive = (csp: string, name: string) =>
     .slice(1) ?? [];
 
 describe("security headers", () => {
-  it("sends the baseline headers, with the CSP as report-only", () => {
+  it("sends the baseline headers: a small enforced CSP, the full one report-only", () => {
     const headers = Object.fromEntries(
       securityHeaders({ dev: false }).map((h) => [h.key, h.value]),
     );
@@ -24,7 +24,9 @@ describe("security headers", () => {
       "Strict-Transport-Security": "max-age=63072000",
     });
     expect(headers["Content-Security-Policy-Report-Only"]).toBeTruthy();
-    expect(headers["Content-Security-Policy"]).toBeUndefined();
+    expect(headers["Content-Security-Policy"]).toBe(
+      "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+    );
   });
 
   it("allows the embedded stream players and the image CDNs we hotlink", () => {

@@ -1,6 +1,6 @@
 import { isIP } from "node:net";
 import { UpstreamUnavailableError } from "@/common/errors/app-error";
-import { isPlan, PLANS, USER_ID_PATTERN, type Plan } from "../domain/plans";
+import { PLANS, USER_ID_PATTERN, type Plan } from "../domain/plans";
 import type { SubscriptionSnapshot, SubscriptionStatus } from "../domain/subscription";
 import { verifyPolarSignature, webhookEventId } from "../domain/webhook-signature";
 import type { BillingEvent, BillingProvider } from "../plus.ports";
@@ -243,15 +243,16 @@ export class PolarProvider implements BillingProvider {
     const state = polarStatus(s, providerUpdatedAt);
     if (!state) return other(s.id);
     const productId = s.product_id ?? s.product?.id ?? null;
-    const plan =
-      PLANS.find((p) => productId !== null && this.config.productIds[p] === productId) ??
-      s.product?.metadata?.plan;
+    // Only our configured Plus products grant Plus: another product in the same Polar
+    // organisation (a free or cheaper one added later) must never unlock it.
+    const plan = PLANS.find((p) => productId !== null && this.config.productIds[p] === productId);
+    if (!plan) return other(s.id);
     const snapshot: SubscriptionSnapshot = {
       provider: this.name,
       subscriptionId: s.id,
       userId: ourUserId(s.metadata, s.customer?.external_id),
       status: state.status,
-      plan: isPlan(plan) ? plan : null,
+      plan,
       variantId: productId,
       customerId: s.customer_id ?? null,
       renewsAt: state.renewsAt,

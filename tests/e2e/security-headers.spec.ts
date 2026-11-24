@@ -9,6 +9,9 @@ test("every response carries the security headers", async ({ request }) => {
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["permissions-policy"]).toContain("camera=()");
     expect(headers["content-security-policy-report-only"]).toContain("frame-ancestors 'none'");
+    expect(headers["content-security-policy"]).toBe(
+      "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+    );
   }
 });
 

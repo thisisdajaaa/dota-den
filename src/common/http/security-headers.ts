@@ -81,6 +81,13 @@ export const PERMISSIONS_POLICY = [
   "browsing-topics=()",
 ].join(", ");
 
+/**
+ * The part of the policy that is enforced today: no framing, no plugins, no <base> tag
+ * rewriting links. None of these can break a page of ours; the full policy above stays
+ * report-only until it's been seen not to.
+ */
+export const ENFORCED_CSP = "frame-ancestors 'none'; object-src 'none'; base-uri 'self'";
+
 /** The headers for every response. */
 export function securityHeaders(opts: { dev: boolean }): Array<{ key: string; value: string }> {
   return [
@@ -92,6 +99,7 @@ export function securityHeaders(opts: { dev: boolean }): Array<{ key: string; va
     // Two years. Browsers ignore it over plain http (local `next start`). No includeSubDomains:
     // other hosts on the domain aren't ours to force onto https.
     { key: "Strict-Transport-Security", value: "max-age=63072000" },
+    { key: "Content-Security-Policy", value: ENFORCED_CSP },
     { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy(opts) },
   ];
 }
