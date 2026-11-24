@@ -79,13 +79,20 @@ export default async function JourneyPage({ searchParams }: PageProps<"/mmr/jour
   const empty = j.medals.length === 0 && j.mmr.length === 0;
 
   const bands: JourneyChartBand[] = [];
-  for (const [s, tone, lane] of [
-    [j.medalClimb, "win", "medal"],
-    [j.medalSlide, "loss", "medal"],
-    [j.mmrClimb, "win", "mmr"],
-    [j.mmrSlide, "loss", "mmr"],
+  for (const [s, tone, lane, key] of [
+    [j.medalClimb, "win", "medal", "medalClimb"],
+    [j.medalSlide, "loss", "medal", "medalSlide"],
+    [j.mmrClimb, "win", "mmr", "mmrClimb"],
+    [j.mmrSlide, "loss", "mmr", "mmrSlide"],
   ] as const)
-    if (s) bands.push({ from: s.from.at.getTime(), to: s.to.at.getTime(), tone, lane });
+    if (s)
+      bands.push({
+        from: s.from.at.getTime(),
+        to: s.to.at.getTime(),
+        tone,
+        lane,
+        label: t(`mmr.journey.${key}`),
+      });
 
   type Row = { at: Date; what: string; value: string };
   const rows: Row[] = [
