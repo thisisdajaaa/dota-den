@@ -36,6 +36,10 @@ export const notifications: MessageTree<typeof en> = {
     dismiss: "Itago kini",
   },
   kinds: {
+    year_review: {
+      label: "Ang imong tuig sa Dota",
+      help: "Kausa matag tuig, mga Disyembre 20: andam na ang sumaryo sa imong tuig.",
+    },
     plus_trial: {
       label: "Paghuman sa libre nga Plus trial",
       help: "Kausa, usa ka adlaw sa wala pa mahuman ang imong libre nga Plus trial.",
@@ -74,6 +78,10 @@ export const notifications: MessageTree<typeof en> = {
     },
   },
   push: {
+    year: {
+      title: "Andam na ang imong {year} sa Dota",
+      body: "{games}, {hours} ka oras, {rate}% daog. Tan-awa ang imong top heroes, pinakataas nga winning streak ug pinakadaghang duwa sa usa ka adlaw.",
+    },
     trial: {
       title: "Hapit na mahuman ang imong libre nga Plus trial",
       body: "Mahuman kini {when}. Mag-subscribe aron magpadayon ang AI coach, ang 100 ka pangutana matag adlaw sa Ask Den ug ang imong splits.",

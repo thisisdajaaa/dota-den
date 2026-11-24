@@ -6,7 +6,8 @@ import { addDays, weekday, type DayKey } from "@/common/time/day-key";
  * game is ready) are Plus features (ADR 0013): only sent to Plus players, like `weekly_coach`
  * (Monday's AI note about last week). Turning `coach_review` or `weekly_coach` off also stops
  * them being written automatically. `stop_loss` (a limit
- * the player set for their session was reached) is free.
+ * the player set for their session was reached) and `year_review` (late December: your year
+ * in Dota is ready) are free.
  */
 export const NOTIFICATION_KINDS = [
   "session_recap",
@@ -18,6 +19,7 @@ export const NOTIFICATION_KINDS = [
   "stop_loss",
   "weekly_coach",
   "plus_trial",
+  "year_review",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -34,6 +36,7 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   stop_loss: true,
   weekly_coach: true,
   plus_trial: true,
+  year_review: true,
 };
 
 /** Kinds only Plus players get (the settings hide them for everyone else). */
@@ -81,6 +84,16 @@ export function weekStart(today: DayKey): DayKey {
 /** The weekly recap goes out on Mondays (in the player's time zone), about last week. */
 export function isRecapDay(today: DayKey): boolean {
   return weekday(today) === 1;
+}
+
+/** The year in review push goes out from this day of December (the player's time zone). */
+export const YEAR_REVIEW_PUSH_DAY = 20;
+
+/** The year whose review is pushed today: this year from December 20, otherwise none. */
+export function yearReviewPushYear(today: DayKey): number | null {
+  const month = Number(today.slice(5, 7));
+  const day = Number(today.slice(8, 10));
+  return month === 12 && day >= YEAR_REVIEW_PUSH_DAY ? Number(today.slice(0, 4)) : null;
 }
 
 /** Patch news is only news for a week after the patch. */

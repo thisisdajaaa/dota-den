@@ -16,6 +16,8 @@ export interface TriggerRunDto {
   patchHeroes: number;
   /** "Your free Plus trial ends soon" reminders sent. */
   trialReminders: number;
+  /** "Your year in Dota is ready" pushes sent (late December). */
+  yearReviews: number;
   failed: number;
   stoppedEarly: boolean;
 }
