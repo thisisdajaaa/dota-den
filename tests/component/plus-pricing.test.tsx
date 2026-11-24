@@ -6,7 +6,7 @@ import { PlusPricing } from "@/modules/plus/ui/plus-pricing";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 
-const limits = { players: 200, streamers: 200, groups: 10 };
+const limits = { players: 200, streamers: 200, groups: 10, askFree: 5, askPlus: 100 };
 const freePlan: PlanDto = {
   plus: false,
   reason: "none",
@@ -382,5 +382,29 @@ describe("PlanCard", () => {
       />,
     );
     expect(screen.getByRole("status")).toHaveTextContent(/Update your card by Oct 30, 2026/);
+  });
+});
+
+describe("Plus perks", () => {
+  it("link to where each feature lives, and say how to get there", () => {
+    render(
+      <PlusPricing
+        offer={{ status: "off", plans: [], provider: null }}
+        signedIn
+        plan={null}
+        limits={limits}
+      />,
+    );
+    const coach = screen.getByRole("link", { name: /Unlimited AI coach/ });
+    expect(coach).toHaveAttribute("href", "/matches");
+    expect(coach).toHaveTextContent("Write my review");
+    expect(screen.getByRole("link", { name: /Ask Den: 100 questions a day/ })).toHaveAttribute(
+      "href",
+      "/ask",
+    );
+    expect(screen.getByRole("link", { name: /Your splits/ })).toHaveAttribute(
+      "href",
+      "/heroes/splits",
+    );
   });
 });

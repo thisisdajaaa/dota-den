@@ -6,6 +6,7 @@ import { askService } from "@/modules/assistant";
 import { CONVERSATION_ID } from "@/modules/assistant/domain/ask-chat";
 import { AskChat } from "@/modules/assistant/ui/ask-chat";
 import { getCurrentUser } from "@/modules/identity";
+import { playersService } from "@/modules/players";
 import { plusService } from "@/modules/plus";
 import { BotMessageSquare } from "lucide-react";
 
@@ -25,7 +26,11 @@ export default async function AskPage({ searchParams }: PageProps<"/ask">) {
   // From a match page a new chat starts; otherwise the asked-for (or newest) chat opens.
   const open = typeof c === "string" && CONVERSATION_ID.test(c) ? c : undefined;
   const owner = { userId: user.id, accountId32: user.accountId32 };
-  const state = await askService.state(owner, matchId ? undefined : open).catch(() => null);
+  const [state, quick] = await Promise.all([
+    askService.state(owner, matchId ? undefined : open).catch(() => null),
+    // The saved profile (no OpenDota wait), for the avatar beside the player's messages.
+    playersService.quickProfile(user.accountId32).catch(() => null),
+  ]);
   const fresh = matchId !== undefined;
 
   return (
@@ -45,6 +50,10 @@ export default async function AskPage({ searchParams }: PageProps<"/ask">) {
           plusOnSale={plusService.offer().status === "available"}
           matchId={matchId}
           initialQuestion={matchId ? t("ask.match.question") : undefined}
+          me={{
+            name: quick?.profile?.personaName ?? t("system.shell.player", { id: user.accountId32 }),
+            avatarUrl: quick?.profile?.avatarUrl ?? null,
+          }}
         />
       ) : (
         <EmptyState icon={BotMessageSquare} title={t("ask.off")} />

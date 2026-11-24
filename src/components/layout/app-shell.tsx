@@ -206,7 +206,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <div aria-hidden className="h-[calc(4.25rem+env(safe-area-inset-bottom))] lg:hidden" />
       </div>
       <MobileTabBar enabled={nav} signedIn />
-      {askService.enabled && <AskFab plusOnSale={onSale} />}
+      {askService.enabled && (
+        <AskFab plusOnSale={onSale} me={{ name, avatarUrl: profile?.avatarUrl ?? null }} />
+      )}
       <TimeZoneSync current={tz.known ? tz.timeZone : null} />
     </>
   );

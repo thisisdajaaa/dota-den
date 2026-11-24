@@ -38,58 +38,80 @@ export const plus = {
       coach: {
         title: "Unlimited AI coach",
         body: "A coach review of any of your parsed matches, as often as you like (free: one new review a week). It's written from that match's numbers only, and it can be wrong. Your newest ranked games are also reviewed automatically after each sync, with a notification when the review is ready.",
+        where: "Matches → open one of your games → AI coach → “Write my review”.",
+      },
+      ask: {
+        title: "Ask Den: {plus} questions a day",
+        body: "Ask about your games, heroes, builds and the patch, answered from your own data and ours ({free} a day free).",
+        where:
+          "The gold chat button at the bottom right of any page, or Ask Den in the menu. Ask anything about your games, heroes or the meta.",
       },
       compare: {
         title: "How you compare, on every hero",
         body: "Your last hits, kills + assists and deaths on each of your heroes against players at your rank (or the rank above), at the same game length, with your biggest gap to work on (free: your most played hero).",
+        where: "Heroes → How you compare. Pick any hero you play to see your biggest gap.",
       },
       coaching: {
         title: "Faster hero coaching",
         body: "Item timings and lane results for your whole recent history on every hero: up to 100 of your parsed games are read each day (free: 10 a day).",
+        where: "Heroes → open one of your heroes → the Coaching sections (item timings and lanes).",
       },
       buildCheck: {
         title: "Build check vs high-rank",
         body: "On each hero page, your item timings against Legend–Immortal players at your position last week, with one thing to try (free: your own timings).",
+        where: "Heroes → open one of your heroes → Build check vs high-rank.",
       },
       splits: {
         title: "Your splits",
         body: "Your whole history by patch, position, time of day, game length, lane result and lane partner, each against your average (free: your heroes, lanes and matchups).",
+        where: "Heroes → Your splits.",
       },
       postMortem: {
         title: "Draft post-mortem",
         body: "On ranked match pages, how the draft played out: lanes at 10 minutes against what the draft expected, where the gold lead was won, and the counters it liked (free: the draft read).",
+        where: "Matches → open a ranked game → the Draft post-mortem section, below the draft.",
       },
       read: {
         title: "AI read of your battle report",
         body: "Pick any period on your battle report and get a few observations about it and one thing to focus on, written from that page's numbers only (each lists the numbers it uses).",
+        where: "Battle report → pick a period → “What this period says” → “Write my read”.",
       },
       pick: {
         title: "Pick for me: your top five",
         body: "During a real ranked draft, add the enemy picks and see your five best heroes against them, with your record and each matchup (free: the best one).",
+        where:
+          "Draft → Pick for me. During your real ranked draft, add the enemy picks as they lock in.",
       },
       session: {
         title: "Session companion",
         body: "While you play, a notification after each game with the result, your record this session and, when your own history shows you lose more after a losing streak, a heads-up to take a break.",
+        where:
+          "Account → Notifications: turn notifications on, then keep “Live session updates” on. Works while Steam shows you in Dota.",
       },
       sync: {
         title: "Priority sync",
         body: "A long match history imports faster: shorter waits and bigger chunks between imports, and your newest unparsed games are sent to OpenDota for parsing (up to 3 per sync). It shares the same OpenDota budget as everyone, so free players aren't slowed down.",
+        where: "Nothing to do: it's automatic when your games sync on the Overview.",
       },
       alerts: {
         title: "Go-live alerts",
         body: "A notification within a few minutes when a streamer you follow on /live starts streaming. Once per stream, and you can turn it off.",
+        where: "Live → follow a channel, and turn on notifications in Account → Notifications.",
       },
       badge: {
         title: "Supporter badge",
         body: "A small Plus badge next to your name in the app and on leaderboards.",
+        where: "Automatic: next to your name in the menu and on leaderboards.",
       },
       limits: {
         title: "Room for more",
         body: "Track up to {players} players, follow {streamers} channels and be in {groups} groups (double the free limits).",
+        where: "Players → track players; Live → follow channels; Groups → create or join.",
       },
       thanks: {
         title: "Keep it independent",
         body: "Servers, data and AI calls cost money every month. Plus pays for them, without ads.",
+        where: "Nothing to do. Thank you!",
       },
     },
     monthly: "Monthly",

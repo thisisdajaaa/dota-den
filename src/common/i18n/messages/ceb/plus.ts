@@ -35,58 +35,85 @@ export const plus: MessageTree<typeof en> = {
       coach: {
         title: "Walay limit nga AI coach",
         body: "Coach review sa bisan unsang na-parse nimo nga duwa, bisan pila ka higayon (libre: usa ka bag-ong review kada semana). Gikan ra sa mga numero niadtong duwa kini isulat, ug mahimo kining masayop. Awtomatiko usab nga gi-review ang imong pinakabag-o nga ranked nga duwa human sa matag sync, ug adunay notification kung andam na ang review.",
+        where: "Matches → ablihi ang usa sa imong mga duwa → AI coach → “Write my review”.",
+      },
+      ask: {
+        title: "Ask Den: {plus} ka pangutana matag adlaw",
+        body: "Pangutana bahin sa imong mga duwa, heroes, builds ug patch, gitubag gikan sa imong kaugalingong data ug sa amoa ({free} matag adlaw nga libre).",
+        where:
+          "Ang bulawan nga chat button sa tuo nga ubos sa bisan unsang page, o Ask Den sa menu. Pangutan-a bisan unsa bahin sa imong mga duwa, heroes o meta.",
       },
       compare: {
         title: "Unsaon ka ikumpara, sa matag hero",
         body: "Imong last hits, kills + assists ug deaths sa matag hero batok sa mga player nga parehas nimo og rank (o mas taas), sa parehas nga gitas-on sa duwa, uban ang imong pinakadakong kulang (libre: imong labing kanunay nga hero).",
+        where:
+          "Heroes → How you compare. Pili og hero nga imong gidula aron makita ang imong pinakadakong kulang.",
       },
       coaching: {
         title: "Mas paspas nga hero coaching",
         body: "Item timings ug lane results para sa tibuok nimong recent history sa matag hero: hangtod 100 sa imong mga parsed nga duwa ang masusi matag adlaw (libre: 10 matag adlaw).",
+        where:
+          "Heroes → ablihi ang usa sa imong mga hero → ang mga Coaching section (item timings ug lanes).",
       },
       buildCheck: {
         title: "Build check batok sa high-rank",
         body: "Sa matag hero page, imong item timings batok sa mga Legend–Immortal player sa imong posisyon sa miaging semana, uban ang usa ka sulayan (libre: imong kaugalingong timings).",
+        where: "Heroes → ablihi ang usa sa imong mga hero → Build check vs high-rank.",
       },
       splits: {
         title: "Imong splits",
         body: "Ang tibuok nimong history sumala sa patch, posisyon, oras sa adlaw, gitas-on sa dula, resulta sa lane ug lane partner, matag usa batok sa imong average (libre: imong heroes, lanes ug matchups).",
+        where: "Heroes → Your splits.",
       },
       postMortem: {
         title: "Post-mortem sa draft",
         body: "Sa mga match page, giunsa ang draft: mga lane sa 10 minutos itandi sa gipaabot sa draft, asa nakuha ang gold lead, ug ang mga counter nga nagustohan niini (libre: ang basa sa draft).",
+        where:
+          "Matches → ablihi ang usa ka ranked nga duwa → ang Draft post-mortem, ubos sa draft.",
       },
       read: {
         title: "AI read sa imong battle report",
         body: "Pagpili og bisan unsang panahon sa imong battle report ug makakuha og pipila ka obserbasyon ug usa ka angay tutokan, gisulat gikan lang sa mga numero sa maong page (nakalista ang mga numero nga gigamit).",
+        where: "Battle report → pili og panahon → “What this period says” → “Write my read”.",
       },
       pick: {
         title: "Pilii para nako: imong top five",
         body: "Sa tinuod nga ranked draft, idugang ang mga pick sa kaaway ug tan-awa ang imong lima ka labing maayong hero batok kanila, uban ang imong record ug matag matchup (libre: ang labing maayo).",
+        where:
+          "Draft → Pick for me. Samtang naa ka sa tinuod nga ranked draft, ibutang ang picks sa kontra samtang mag-lock sila.",
       },
       session: {
         title: "Kauban sa session",
         body: "Samtang nagdula ka, adunay notification human sa matag dula: ang resulta, ang imong record karong session ug, kung ipakita sa imong kaugalingong history nga mas kanunay kang mapildi human sa sunod-sunod nga pildi, pahinumdom nga mopahulay usa.",
+        where:
+          "Account → Notifications: i-on ang notifications, dayon ipabilin nga naka-on ang “Live session updates”. Molihok samtang gipakita sa Steam nga naa ka sa Dota.",
       },
       sync: {
         title: "Priority sync",
         body: "Mas paspas ma-import ang taas nga match history: mas mubo nga paghulat ug mas dagkong batch, ug ipa-parse sa OpenDota ang imong pinakabag-o nga wala pa na-parse nga duwa (hangtod 3 kada sync). Usa ra gihapon ang OpenDota budget sa tanan, mao nga dili mohinay ang mga libreng player.",
+        where: "Wala kay buhaton: awtomatiko kini inig sync sa imong mga duwa sa Overview.",
       },
       alerts: {
         title: "Alerto kung mag-live",
         body: "Notification sulod sa pipila ka minuto kung mosugod og stream ang streamer nga imong gi-follow sa /live. Kausa matag stream, ug pwede nimo kining i-off.",
+        where:
+          "Live → i-follow ang usa ka channel, ug i-on ang notifications sa Account → Notifications.",
       },
       badge: {
         title: "Supporter badge",
         body: "Gamay nga Plus badge tupad sa imong ngalan sa app ug sa leaderboards.",
+        where: "Awtomatiko: tupad sa imong ngalan sa menu ug sa leaderboards.",
       },
       limits: {
         title: "Mas daghang lugar",
         body: "Mag-track hangtod {players} ka player, mag-follow og {streamers} ka channel ug mosulod sa {groups} ka grupo (doble sa libreng limit).",
+        where:
+          "Players → pag-track og players; Live → pag-follow og channels; Groups → paghimo o pag-apil.",
       },
       thanks: {
         title: "Magpabilin nga independent",
         body: "Naay gasto matag bulan ang server, data ug AI. Ang Plus ang mobayad niini, nga walay ads.",
+        where: "Wala kay buhaton. Salamat!",
       },
     },
     monthly: "Binulan",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { env } from "@/common/config/env";
 import { getT } from "@/common/i18n/server";
 import { MAX_GROUPS_PER_USER } from "@/modules/groups/domain/group";
 import { getCurrentUser } from "@/modules/identity";
@@ -28,6 +29,8 @@ export default async function PlusPage() {
         players: limitFor(MAX_FOLLOWS_PER_USER, true),
         streamers: limitFor(MAX_STREAMER_FOLLOWS, true),
         groups: limitFor(MAX_GROUPS_PER_USER, true),
+        askFree: env().ASK_FREE_PER_DAY,
+        askPlus: env().ASK_PLUS_PER_DAY,
       }}
     />
   );

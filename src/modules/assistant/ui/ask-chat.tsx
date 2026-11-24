@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { AskQuota } from "../domain/ask-quota";
 import type { AskSource } from "../domain/ask-sources";
+import { ReplyText } from "./reply-text";
 import type {
   AskConversationListItemDto,
   AskEventDto,
@@ -72,6 +74,7 @@ export function AskChat({
   initialQuestion,
   variant = "page",
   onConversation,
+  me,
 }: {
   initialConversations: AskConversationListItemDto[];
   initialConversationId: string | null;
@@ -90,6 +93,8 @@ export function AskChat({
   variant?: "page" | "panel";
   /** Told which chat is open (null for a new one), e.g. for the panel's full-page link. */
   onConversation?: (id: string | null) => void;
+  /** The signed-in player, for their avatar beside their messages. */
+  me?: ChatPerson;
 }) {
   const t = useT();
   const panel = variant === "panel";
@@ -453,7 +458,7 @@ export function AskChat({
         >
           <div role="log" aria-label={t("ask.title")} className="flex flex-col gap-3">
             {messages.map((m, i) => (
-              <Message key={`${m.at}-${i}`} message={m} />
+              <Message key={`${m.at}-${i}`} message={m} me={me} />
             ))}
             {loading && (
               <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
@@ -461,10 +466,16 @@ export function AskChat({
               </p>
             )}
             {busy && (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-                <Loader2 aria-hidden className="size-4 animate-spin" />
-                {status ? t(`ask.status.${status}`) : t("ask.thinking")}
-              </p>
+              <div className="flex items-end gap-2">
+                <Avatar mine={false} />
+                <p
+                  className="flex items-center gap-2 rounded-2xl rounded-bl-sm border border-white/[0.06] bg-white/[0.04] px-3.5 py-2.5 text-sm text-muted-foreground"
+                  role="status"
+                >
+                  <Loader2 aria-hidden className="size-4 animate-spin" />
+                  {status ? t(`ask.status.${status}`) : t("ask.thinking")}
+                </p>
+              </div>
             )}
           </div>
 
@@ -549,25 +560,62 @@ export function AskChat({
   );
 }
 
-function Message({ message }: { message: AskMessageDto }) {
+export interface ChatPerson {
+  name: string;
+  avatarUrl: string | null;
+}
+
+/** Den's mark, or the player's Steam avatar (their initial when there's none). */
+function Avatar({ mine, me }: { mine: boolean; me?: ChatPerson }) {
+  if (!mine)
+    return (
+      <span
+        aria-hidden
+        className="grid size-8 shrink-0 place-items-center rounded-full bg-gold/15 text-gold ring-1 ring-gold/40"
+      >
+        <BotMessageSquare className="size-4" />
+      </span>
+    );
+  return (
+    <span
+      aria-hidden
+      className="relative grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.08] text-xs font-semibold text-foreground ring-1 ring-white/15"
+    >
+      {me?.avatarUrl ? (
+        <Image src={me.avatarUrl} alt="" fill sizes="32px" className="object-cover" />
+      ) : (
+        (me?.name.trim()[0]?.toUpperCase() ?? "?")
+      )}
+    </span>
+  );
+}
+
+function Message({ message, me }: { message: AskMessageDto; me?: ChatPerson }) {
   const t = useT();
   const mine = message.role === "user";
   return (
-    <div className={cn("flex flex-col gap-1.5", mine ? "items-end" : "items-start")}>
-      <p className="sr-only">{mine ? t("ask.you") : t("ask.den")}</p>
-      <div
-        className={cn(
-          "max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm break-words whitespace-pre-wrap sm:max-w-[80%]",
-          mine ? "rounded-br-sm bg-gold/15" : "rounded-bl-sm bg-white/[0.05]",
-        )}
-      >
-        {message.fallback ? (
-          <span className="text-muted-foreground">{t("ask.fallback")}</span>
-        ) : (
-          message.text
-        )}
+    <div className={cn("flex items-end gap-2", mine && "flex-row-reverse")}>
+      <Avatar mine={mine} me={me} />
+      <div className={cn("flex min-w-0 flex-col gap-1.5", mine ? "items-end" : "items-start")}>
+        <p className="sr-only">{mine ? t("ask.you") : t("ask.den")}</p>
+        <div
+          className={cn(
+            "max-w-full rounded-2xl px-3.5 py-2.5 text-sm break-words sm:max-w-[85%]",
+            mine
+              ? "rounded-br-sm bg-gold/15 whitespace-pre-wrap"
+              : "rounded-bl-sm border border-white/[0.06] bg-white/[0.04]",
+          )}
+        >
+          {message.fallback ? (
+            <span className="text-muted-foreground">{t("ask.fallback")}</span>
+          ) : mine ? (
+            message.text
+          ) : (
+            <ReplyText text={message.text} />
+          )}
+        </div>
+        {!mine && message.sources.length > 0 && <SourceChips sources={message.sources} />}
       </div>
-      {!mine && message.sources.length > 0 && <SourceChips sources={message.sources} />}
     </div>
   );
 }

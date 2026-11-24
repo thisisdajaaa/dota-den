@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   Activity,
+  ArrowUpRight,
   BadgeCheck,
   Bell,
   Bot,
+  BotMessageSquare,
   Check,
   Clock,
   Gift,
@@ -15,6 +17,7 @@ import {
   Hammer,
   HeartHandshake,
   Layers,
+  MapPin,
   PauseCircle,
   Sparkles,
   Timer,
@@ -44,38 +47,40 @@ const FREE_KEYS = [
   "coach",
 ] as const;
 
-const PERKS: ReadonlyArray<{
-  key:
-    | "coach"
-    | "compare"
-    | "coaching"
-    | "buildCheck"
-    | "postMortem"
-    | "splits"
-    | "read"
-    | "pick"
-    | "session"
-    | "sync"
-    | "alerts"
-    | "badge"
-    | "limits"
-    | "thanks";
-  icon: LucideIcon;
-}> = [
+type PerkKey =
+  | "coach"
+  | "ask"
+  | "compare"
+  | "coaching"
+  | "buildCheck"
+  | "postMortem"
+  | "splits"
+  | "read"
+  | "pick"
+  | "session"
+  | "sync"
+  | "alerts"
+  | "badge"
+  | "limits"
+  | "thanks";
+
+/** Each perk links to where it lives; the card says how to get there. */
+const PERKS: ReadonlyArray<{ key: PerkKey; icon: LucideIcon; href?: string }> = [
   // AI and coaching first: they're what Plus pays for. Convenience perks after.
-  { key: "coach", icon: Bot },
-  { key: "read", icon: FileText },
-  { key: "pick", icon: Sparkles },
-  { key: "postMortem", icon: Swords },
-  { key: "coaching", icon: Timer },
-  { key: "buildCheck", icon: Hammer },
-  { key: "compare", icon: Gauge },
-  { key: "splits", icon: ChartColumn },
-  { key: "session", icon: Activity },
-  { key: "sync", icon: Zap },
-  { key: "alerts", icon: Bell },
-  { key: "badge", icon: BadgeCheck },
-  { key: "limits", icon: Layers },
+  { key: "coach", icon: Bot, href: "/matches" },
+  { key: "ask", icon: BotMessageSquare, href: "/ask" },
+  { key: "read", icon: FileText, href: "/report" },
+  { key: "pick", icon: Sparkles, href: "/draft/pick" },
+  { key: "postMortem", icon: Swords, href: "/matches" },
+  { key: "coaching", icon: Timer, href: "/heroes" },
+  { key: "buildCheck", icon: Hammer, href: "/heroes" },
+  { key: "compare", icon: Gauge, href: "/heroes/compare" },
+  { key: "splits", icon: ChartColumn, href: "/heroes/splits" },
+  { key: "session", icon: Activity, href: "/account#notifications" },
+  { key: "sync", icon: Zap, href: "/dashboard" },
+  { key: "alerts", icon: Bell, href: "/live" },
+  { key: "badge", icon: BadgeCheck, href: "/leaderboards" },
+  { key: "limits", icon: Layers, href: "/players" },
   { key: "thanks", icon: HeartHandshake },
 ];
 
@@ -83,6 +88,9 @@ export interface PlusLimits {
   players: number;
   streamers: number;
   groups: number;
+  /** Ask Den questions a day: free and with Plus. */
+  askFree: number;
+  askPlus: number;
 }
 
 /**
@@ -228,21 +236,49 @@ export function PlusPricing({
             {t("plus.page.plusTitle")} <PlusBadge />
           </h2>
           <ul className="grid gap-3 sm:grid-cols-2">
-            {PERKS.map(({ key, icon: Icon }) => (
-              <li key={key} className="panel space-y-1.5 p-4">
-                <p className="flex items-center gap-2 font-medium">
-                  <Icon aria-hidden className="size-4 text-gold" />
-                  {t(`plus.page.perks.${key}.title`)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t(`plus.page.perks.${key}.body`, {
-                    players: limits.players,
-                    streamers: limits.streamers,
-                    groups: limits.groups,
-                  })}
-                </p>
-              </li>
-            ))}
+            {PERKS.map(({ key, icon: Icon, href }) => {
+              const body = (
+                <>
+                  <p className="flex items-center gap-2 font-medium">
+                    <Icon aria-hidden className="size-4 shrink-0 text-gold" />
+                    {t(`plus.page.perks.${key}.title`, { plus: limits.askPlus })}
+                    {href && (
+                      <ArrowUpRight
+                        aria-hidden
+                        className="ml-auto size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-gold"
+                      />
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t(`plus.page.perks.${key}.body`, {
+                      players: limits.players,
+                      streamers: limits.streamers,
+                      groups: limits.groups,
+                      free: limits.askFree,
+                      plus: limits.askPlus,
+                    })}
+                  </p>
+                  <p className="mt-auto flex gap-1.5 border-t border-white/[0.06] pt-2 text-xs text-foreground/90">
+                    <MapPin aria-hidden className="mt-0.5 size-3.5 shrink-0 text-gold" />
+                    <span>{t(`plus.page.perks.${key}.where`)}</span>
+                  </p>
+                </>
+              );
+              return (
+                <li key={key}>
+                  {href ? (
+                    <Link
+                      href={href}
+                      className="panel group flex h-full flex-col gap-1.5 p-4 transition-colors hover:border-gold/40 hover:bg-gold/[0.04] focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:outline-none"
+                    >
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className="panel flex h-full flex-col gap-1.5 p-4">{body}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       </div>
