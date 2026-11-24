@@ -126,7 +126,7 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
         </p>
       </div>
 
-      <div ref={ref} className="w-full min-w-0 overflow-hidden">
+      <div ref={ref} className="relative w-full min-w-0 overflow-hidden">
         <svg
           width={width}
           height={HEIGHT}
@@ -234,6 +234,27 @@ export function AdvantageChart({ gold, xp }: { gold: number[]; xp: number[] | nu
             </g>
           )}
         </svg>
+        {active !== null && activeValue !== null && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-1 z-10 rounded-md border border-white/10 bg-popover px-2.5 py-1.5 text-xs whitespace-nowrap tabular-nums shadow-lg shadow-black/40"
+            style={{
+              left: Math.min(Math.max(x(active), 80), width - 80),
+              transform: "translateX(-50%)",
+            }}
+          >
+            <span className="font-semibold text-foreground">{active}:00</span>{" "}
+            <span className="text-muted-foreground">
+              ·{" "}
+              {activeValue === 0
+                ? t("matches.advantage.even")
+                : t(`matches.advantage.${series}.lead`, {
+                    side: sideName(activeValue),
+                    value: formatK(Math.abs(activeValue)),
+                  })}
+            </span>
+          </div>
+        )}
       </div>
 
       <details className="text-xs text-muted-foreground">

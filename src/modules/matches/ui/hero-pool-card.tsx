@@ -111,16 +111,23 @@ export function HeroPoolCard({
                     {i + 1}
                   </span>
                   <HeroPortrait hero={hero} heroId={h.heroId} size="md" />
-                  <div className="min-w-0 space-y-1.5">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-medium">{heroName(hero, h.heroId)}</span>
+                  {/* Name on its own line so narrow columns don't cut it short. */}
+                  <div className="min-w-0 space-y-1">
+                    <span className="block truncate font-medium" title={heroName(hero, h.heroId)}>
+                      {heroName(hero, h.heroId)}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <WinRateBar
+                        rate={h.winRate}
+                        muted={h.lowSample}
+                        className="h-1.5 min-w-8 flex-1"
+                      />
                       <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                         {sort === "recent"
                           ? formatAgo(h.lastPlayed, nowDate)
                           : plural(t, "matches.heroPool.games", h.games)}
                       </span>
                     </div>
-                    <WinRateBar rate={h.winRate} muted={h.lowSample} className="h-1.5" />
                   </div>
                   <div className="w-16 text-right">
                     <div

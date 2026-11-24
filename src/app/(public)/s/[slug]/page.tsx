@@ -266,6 +266,7 @@ export default async function SharePage({ params, searchParams }: PageProps<"/s/
                       to: s.climb.to.getTime(),
                       tone: "win" as const,
                       lane: "medal" as const,
+                      label: t("mmr.journey.medalClimb"),
                     },
                   ]
                 : []),
@@ -276,6 +277,7 @@ export default async function SharePage({ params, searchParams }: PageProps<"/s/
                       to: s.slide.to.getTime(),
                       tone: "loss" as const,
                       lane: "medal" as const,
+                      label: t("mmr.journey.medalSlide"),
                     },
                   ]
                 : []),

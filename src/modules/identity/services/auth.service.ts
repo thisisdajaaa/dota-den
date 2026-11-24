@@ -12,6 +12,8 @@ import { generateToken, hashToken, safeEqual } from "../domain/session-tokens";
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_ROTATE_AFTER_MS = 24 * 60 * 60 * 1000;
+/** However often it's used, a session ends this long after sign-in (then Steam sign-in again). */
+export const SESSION_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 export const CALLBACK_PATH = "/api/v1/auth/steam/callback";
 /** Steam names change; refresh the stored one at most this often. */
 export const PERSONA_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
@@ -109,9 +111,16 @@ export class AuthService {
     const hash = hashToken(token);
     const record = await this.deps.sessions.findByTokenHash(hash);
     if (!record || record.expiresAt <= now) return null;
+    if (now.getTime() - record.createdAt.getTime() > SESSION_MAX_AGE_MS) return null;
 
-    const user = await this.deps.users.findById(record.userId);
-    if (!user) return null;
+    const stored = await this.deps.users.findById(record.userId);
+    if (!stored) return null;
+    // Admin follows ADMIN_STEAM_IDS on every request, not the role saved at the last sign-in,
+    // so removing someone takes effect at once.
+    const user: User = {
+      ...stored,
+      roles: this.deps.adminSteamIds.includes(stored.steamId64) ? ["admin"] : [],
+    };
 
     let rotated: IssuedSession | null = null;
     if (opts.rotate && now.getTime() - record.rotatedAt.getTime() > SESSION_ROTATE_AFTER_MS) {
@@ -137,7 +146,9 @@ export class AuthService {
     createdAt: Date,
   ): { record: SessionRecord; issued: IssuedSession } {
     const token = generateToken();
-    const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
+    const expiresAt = new Date(
+      Math.min(now.getTime() + SESSION_TTL_MS, createdAt.getTime() + SESSION_MAX_AGE_MS),
+    );
     return {
       record: { tokenHash: hashToken(token), userId, createdAt, rotatedAt: now, expiresAt },
       issued: { token, expiresAt },

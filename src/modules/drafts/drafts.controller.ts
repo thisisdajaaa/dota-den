@@ -49,7 +49,8 @@ export interface ChallengeProgress {
 export class DraftsController {
   constructor(
     private readonly deps: {
-      ai: () => Promise<AiOpponentService>;
+      /** `guest`: a signed-out caller, whose model calls come from the guest lane. */
+      ai: (opts?: { guest?: boolean }) => Promise<AiOpponentService>;
       challenges: () => Promise<ChallengeService>;
       pickForMe: () => PickForMeService;
       /** Record a signed-in player's challenge answer (leaderboards); never fails the grade. */
@@ -86,14 +87,15 @@ export class DraftsController {
   /** POST /api/v1/drafts/ai-move: the AI captain's next pick or ban in a practice draft. */
   aiMove = handler(
     {
+      guard: optionalUser,
       rateLimit: limit("draftAiMove", "ai-move"),
       body: AiMoveSchema,
       invalidMessage: "Invalid request",
     },
-    async ({ req, body }) => {
+    async ({ req, user, body }) => {
       const snapshot = snapshotOrThrow(body.snapshot);
       const started = Date.now();
-      const res = await (await this.deps.ai()).move(snapshot, body.aiSide);
+      const res = await (await this.deps.ai({ guest: !user })).move(snapshot, body.aiSide);
       if (!res.ok) {
         const message = `Can't make an AI move: ${res.error.type.replaceAll("_", " ")}`;
         throw res.error.type === "invalid_snapshot"
@@ -163,13 +165,16 @@ export class DraftsController {
   /** POST /api/v1/drafts/review: an AI review of a finished draft (a language model call). */
   review = handler(
     {
+      guard: optionalUser,
       rateLimit: limit("draftReview", "draft-review"),
       body: OutlookSchema,
       invalidMessage: "Invalid request",
     },
-    async ({ body }) => {
+    async ({ user, body }) => {
       const snapshot = snapshotOrThrow(body.snapshot);
-      const res = await (await this.deps.ai()).review(snapshot, toRoleMaps(body.roles));
+      const res = await (
+        await this.deps.ai({ guest: !user })
+      ).review(snapshot, toRoleMaps(body.roles));
       if (!res.ok) {
         switch (res.error.type) {
           case "invalid_snapshot":

@@ -74,21 +74,28 @@ export class DiscordOAuth {
   }
 }
 
+/** How far an interaction's signed timestamp may be from now (Discord sends it as it calls). */
+export const INTERACTION_MAX_SKEW_S = 300;
+
 /** Ed25519 SPKI header: the 32-byte public key Discord gives goes after it. */
 const ED25519_SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
 
 /**
  * Whether an interaction request really comes from Discord: an Ed25519 signature over the
  * timestamp and the raw body, with the application's public key (Discord rejects endpoints
- * that don't check this).
+ * that don't check this). The timestamp must be within five minutes of now, so a captured
+ * request can't be replayed later.
  */
 export function verifyInteraction(
   publicKeyHex: string,
   signatureHex: string | null,
   timestamp: string | null,
   body: string,
+  nowMs: number = Date.now(),
 ): boolean {
   if (!signatureHex || !timestamp || !/^[0-9a-f]{128}$/i.test(signatureHex)) return false;
+  if (!/^\d{1,12}$/.test(timestamp)) return false;
+  if (Math.abs(nowMs / 1000 - Number(timestamp)) > INTERACTION_MAX_SKEW_S) return false;
   try {
     const key = createPublicKey({
       key: Buffer.concat([ED25519_SPKI_PREFIX, Buffer.from(publicKeyHex, "hex")]),
