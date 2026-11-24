@@ -240,3 +240,16 @@ export function reviewYears(firstGame: Date | null, today: DayKey, dayKey: (d: D
   const start = firstGame ? Math.min(yearOf(dayKey(firstGame)), now) : now;
   return Array.from({ length: now - start + 1 }, (_, i) => now - i);
 }
+
+/** The year review is offered on the overview from December 1 to January 15. */
+export const YEAR_PROMPT_LAST_JANUARY_DAY = 15;
+
+/** The year the overview offers in review today: this one in December, last one in early January. */
+export function yearPromptFor(today: DayKey): number | null {
+  const year = yearOf(today);
+  const month = Number(today.slice(5, 7));
+  const day = Number(today.slice(8, 10));
+  if (month === 12) return year;
+  if (month === 1 && day <= YEAR_PROMPT_LAST_JANUARY_DAY) return year - 1;
+  return null;
+}
