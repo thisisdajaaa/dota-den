@@ -496,6 +496,13 @@ export class MatchReadRepository implements MatchQueries {
     return docs.map(toDashboardFact);
   }
 
+  async firstStartedAt(accountId32: number): Promise<Date | null> {
+    const doc = await (
+      await this.facts()
+    ).findOne({ accountId32 }, { sort: { startedAt: 1 }, projection: { _id: 0, startedAt: 1 } });
+    return (doc?.startedAt as Date | undefined) ?? null;
+  }
+
   async playedHeroes(accountId32: number): Promise<Array<{ heroId: number; games: number }>> {
     const rows = await (
       await this.facts()

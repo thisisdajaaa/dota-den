@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { CalendarSearch } from "lucide-react";
+import { CalendarHeart, CalendarSearch, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 import { getLocale, getT } from "@/common/i18n/server";
 import { EmptyState } from "@/components/empty-state";
@@ -116,6 +117,23 @@ export default async function BattleReportPage({ searchParams }: PageProps<"/rep
         title={t("report.heading")}
         description={t("report.description", { from: fmt(range.from), to: fmt(range.to) })}
       />
+      <Link
+        href="/report/year"
+        className="panel group flex items-center gap-3 p-3 transition-colors hover:border-gold/40 sm:p-4"
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-gold/10 text-gold">
+          <CalendarHeart aria-hidden className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium group-hover:text-gold">
+            {t("report.year.entry", { year: today.slice(0, 4) })}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {t("report.year.entryDetail")}
+          </span>
+        </span>
+        <ChevronRight aria-hidden className="size-4 text-muted-foreground" />
+      </Link>
       <div className="flex flex-wrap items-end gap-3">
         <SegmentedLinks
           label={t("report.period")}
