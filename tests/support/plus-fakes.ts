@@ -2,7 +2,14 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import { subscriptionKey, type Subscription } from "@/modules/plus/domain/subscription";
 import type { WebhookEventOutcome } from "@/modules/plus/plus.model";
 import type { FreeTrial } from "@/modules/plus/domain/trial";
-import type { SubscriptionsPort, TrialsPort, WebhookEventsPort } from "@/modules/plus/plus.ports";
+import type { PlusGrant, Referral } from "@/modules/plus/domain/referral";
+import type {
+  GrantsPort,
+  ReferralsPort,
+  SubscriptionsPort,
+  TrialsPort,
+  WebhookEventsPort,
+} from "@/modules/plus/plus.ports";
 import { POSSIBLY_ENTITLED } from "@/modules/plus/domain/entitlement";
 
 /** A Polar subscription webhook body, shaped like the 2026-10 OpenAPI schema (`Subscription`). */
@@ -254,6 +261,104 @@ export class MemoryTrials implements TrialsPort {
   async deleteForOwner(owner: DataOwner) {
     let n = 0;
     for (const [k, t] of this.docs) if (t.userId === owner.userId && this.docs.delete(k)) n++;
+    return n;
+  }
+}
+
+/** In-memory ReferralsPort: one claim per friend account, codes unique. */
+export class MemoryReferrals implements ReferralsPort {
+  readonly codes = new Map<string, { userId: string; accountId32: number; createdAt: Date }>();
+  readonly claims = new Map<number, Referral>();
+
+  async codeOf(userId: string) {
+    for (const [code, c] of this.codes) if (c.userId === userId) return code;
+    return null;
+  }
+  async saveCode(c: { code: string; userId: string; accountId32: number; createdAt: Date }) {
+    if (this.codes.has(c.code) || (await this.codeOf(c.userId))) return false;
+    this.codes.set(c.code, {
+      userId: c.userId,
+      accountId32: c.accountId32,
+      createdAt: c.createdAt,
+    });
+    return true;
+  }
+  async ownerOf(code: string) {
+    const c = this.codes.get(code);
+    return c ? { userId: c.userId, accountId32: c.accountId32 } : null;
+  }
+  async claimOf(account: number, userId?: string) {
+    return (
+      this.claims.get(account) ??
+      [...this.claims.values()].find((r) => userId !== undefined && r.friendUserId === userId) ??
+      null
+    );
+  }
+  async claim(r: Referral) {
+    if (this.claims.has(r.friendAccountId32)) return false;
+    this.claims.set(r.friendAccountId32, { ...r });
+    return true;
+  }
+  async byReferrer(referrerId: string) {
+    return [...this.claims.values()]
+      .filter((r) => r.referrerId === referrerId)
+      .sort((a, b) => b.claimedAt.getTime() - a.claimedAt.getTime());
+  }
+  async settle(
+    account: number,
+    update: { status: "rewarded" | "expired"; rewardedAt: Date | null; referrerRewarded: boolean },
+  ) {
+    const r = this.claims.get(account);
+    if (!r || r.status !== "pending") return false;
+    Object.assign(r, update);
+    return true;
+  }
+  async counts() {
+    const all = [...this.claims.values()];
+    return {
+      claimed: all.length,
+      pending: all.filter((r) => r.status === "pending").length,
+      rewarded: all.filter((r) => r.status === "rewarded").length,
+    };
+  }
+  async exportForOwner() {
+    return [];
+  }
+  async deleteForOwner() {
+    return 0;
+  }
+}
+
+/** In-memory GrantsPort. */
+export class MemoryGrants implements GrantsPort {
+  readonly docs = new Map<string, PlusGrant>();
+  async forUser(userId: string) {
+    return [...this.docs.values()].filter((g) => g.userId === userId);
+  }
+  async give(g: PlusGrant) {
+    if (this.docs.has(g.id)) return false;
+    this.docs.set(g.id, g);
+    return true;
+  }
+  async activeUserIds(now: Date) {
+    return [
+      ...new Set(
+        [...this.docs.values()]
+          .filter((g) => g.startsAt <= now && now < g.endsAt)
+          .map((g) => g.userId),
+      ),
+    ];
+  }
+  async exportForOwner() {
+    return [];
+  }
+  async deleteForOwner(owner: DataOwner) {
+    let n = 0;
+    for (const [id, g] of this.docs)
+      if (g.userId === owner.userId) {
+        this.docs.delete(id);
+        n++;
+      }
     return n;
   }
 }

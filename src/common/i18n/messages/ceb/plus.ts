@@ -178,6 +178,12 @@ export const plus: MessageTree<typeof en> = {
         down: "Naay sayop. Sulayi pag-usab unya.",
       },
     },
+    invite: {
+      title: "Imbitara ang higala: tag-usa mo ka semana sa Plus",
+      body: "Ipadala ang imong link sa higala nga bag-o sa Dota Den. Kung ma-import na ang 10 sa iyang mga dula, naa mo duha og 7 ka adlaw sa Plus. Walay card, walay singil.",
+      cta: "Kuhaa ang imong invite link",
+      signIn: "Pag-sign in aron makuha ang imong invite link",
+    },
     checkoutError: {
       network: "Dili maabot ang Dota Den. Susiha ang imong koneksyon ug sulayi pag-usab.",
       hasPlus:
@@ -186,6 +192,78 @@ export const plus: MessageTree<typeof en> = {
       tooMany: "Sobra ka daghang sulay. Paghulat og usa ka minuto ug sulayi pag-usab.",
       signIn: "Nahuman ang imong session. Pag-sign in pag-usab aron makakuha og Plus.",
       down: "Dili available ang checkout karon. Walay nasingil; sulayi pag-usab human sa pipila ka minuto.",
+    },
+  },
+  invite: {
+    title: "Imbitara ang higala",
+    lead: "Ipadala ang imong link sa higala nga wala pa naggamit sa Dota Den. Kung mag-sign in siya gamit ang Steam ug ma-import na ang iyang mga dula, tag-usa mo ka semana sa Plus.",
+    linkLabel: "Imong invite link",
+    copy: "Kopyaha ang link",
+    copied: "Nakopya na",
+    share: "I-share",
+    shareText:
+      "I-track nato atong mga dula sa Dota sa Dota Den. Pag-sign in gamit kining link ug pareho ta nga makakuha og libre nga usa ka semana sa Plus:",
+    joined: "Mga higala nga ni-apil",
+    waiting: "Naghulat sa ilang mga dula",
+    earned: "Mga semana nga imong nakuha",
+    earnedOf: "{earned} sa {max}",
+    rulesTitle: "Unsaon kini paglihok",
+    rules: {
+      link: "Ablihan sa imong higala ang imong link ug mag-sign in gamit ang Steam sulod sa 7 ka adlaw sukad una niyang gigamit ang Dota Den.",
+      games:
+        "Kung ma-import na ang 10 sa iyang mga dula, naa mo duha og 7 ka adlaw sa Plus. Kasagaran pipila ra ka minuto human siya mag-sign in.",
+      free: "Walay singil ug dili kini mo-renew. Kung naa pa kay libre nga Plus nga nagdagan, magsugod ang bag-ong semana human niini.",
+      paid: "Kung nagbayad ka sa Plus, dungan modagan ang imong semana ug ang imong subscription. Dili mausab ang imong bayronon.",
+      max: "Hangtod {max} ka semana ang imong makuha. Kanunay makuha sa imong mga higala ang ila.",
+      once: "Usa ra ka imbitasyon matag Steam account, ug sa wala pa kini makabaton og Plus subscription.",
+    },
+    unavailable: "Sirado karon ang mga imbitasyon. Mobalik kini kung mapalit na usab ang Plus.",
+    maxed:
+      "Nakuha na nimo ang tanang {max} ka semana. Makuha gihapon sa mga higala nga imong imbitaron ang ila.",
+    mine: {
+      pending:
+        "Gigamit nimo ang imbitasyon sa imong higala. Magsugod ang imong semana kung ma-import na ang 10 sa imong mga dula: ablihi ang imong dashboard aron ma-import kini.",
+      rewarded:
+        "Ni-apil ka pinaagi sa imbitasyon sa imong higala ug nakuha nimo ang imong usa ka semana sa Plus.",
+      expired:
+        "Na-expire ang imbitasyon nga imong gigamit: wala mogawas ang imong mga dula sulod sa 30 ka adlaw.",
+    },
+  },
+  referral: {
+    title: "Giimbitar ka sa imong higala sa Dota Den",
+    metaDescription:
+      "Pag-sign in gamit ang Steam pinaagi niining imbitasyon: kung ma-import na ang imong mga dula, tag-usa mo sa imong higala ka semana sa Dota Den Plus.",
+    lead: "Libre nga gi-track sa Dota Den ang imong mga dula sa Dota 2, imong MMR ug imong mga hero. Pag-sign in gamit ang Steam pinaagi niining imbitasyon ug tag-usa mo sa imong higala ka semana sa Plus kung ma-import na ang imong mga dula.",
+    fine: "Dili kinahanglan og card. Walay singil, ug kusa nga mahuman ang semana.",
+    signIn: "Pag-sign in gamit ang Steam",
+    claim: "I-claim ang imong usa ka semana sa Plus",
+    claiming: "Gi-claim…",
+    check: "Tan-awa pag-usab",
+    rewarded:
+      "Human na: pareho na mo nga naay usa ka semana sa Plus. Walay singil; kusa kining mahuman.",
+    waiting:
+      "Na-claim na. Magsugod ang imong semana kung ma-import na ang 10 sa imong mga dula. Ablihi ang imong dashboard aron ma-import kini; kasagaran pipila ra ka minuto.",
+    expired: "Na-expire kining imbitasyon: wala mogawas ang imong mga dula sulod sa 30 ka adlaw.",
+    own: "Kini imong kaugalingon nga invite link. Ipadala kini sa higala.",
+    notFoundTitle: "Dili molihok kining invite link",
+    notFoundBody:
+      "Pangutan-a pag-usab ang link sa imong higala. Libre gihapon gamiton ang Dota Den.",
+    unavailable: "Sirado karon ang mga imbitasyon. Libre gihapon gamiton ang Dota Den.",
+    toDashboard: "Adto sa imong dashboard",
+    seePlus: "Tan-awa ang idugang sa Plus",
+    getYours: "Kuhaa ang imong kaugalingon nga invite link",
+    error: {
+      own_code: "Kini imong kaugalingon nga invite link. Ipadala kini sa higala.",
+      not_new:
+        "Para sa mga bag-ong player sa Dota Den ang mga imbitasyon. Pwede gihapon nimo sulayan og libre ang Plus sulod sa 7 ka adlaw sa Plus page.",
+      already_referred: "Nakagamit na og imbitasyon kining Steam account.",
+      had_plus: "Para sa mga wala pa makabaton og Plus subscription ang mga imbitasyon.",
+      unavailable: "Sirado karon ang mga imbitasyon.",
+      unknown_code: "Dili molihok kining invite link.",
+      tooMany: "Daghan kaayo nga pagsulay. Paghulat og usa ka minuto ug sulayi pag-usab.",
+      signIn: "Pag-sign in pag-usab aron ma-claim ang imbitasyon.",
+      network: "Dili maabot ang Dota Den. Susiha ang imong koneksyon ug sulayi pag-usab.",
+      down: "Naay sayop. Sulayi pag-usab unya.",
     },
   },
   card: {
@@ -208,6 +286,8 @@ export const plus: MessageTree<typeof en> = {
       "Naka-off sa pagkakaron ang mga Plus feature sa Dota Den. Dili apektado ang imong subscription.",
     alertsOn: "Naka-on ang alerto kung mag-live sa Notifications sa ubos.",
     freeTrial: "Libre nga trial: naay Plus hangtod {date}. Walay singil; kusa kining mahuman.",
+    referral: "Ganti sa pag-imbitar: naay Plus hangtod {date}. Walay singil; kusa kining mahuman.",
+    invite: "Imbitara ang higala",
     status: {
       on_trial: "Trial",
       active: "Aktibo",
@@ -232,6 +312,8 @@ export const plus: MessageTree<typeof en> = {
     disabled: "Na-configure apan naka-off (dili true ang PLUS_ENABLED): libre ang tanan.",
     trials: "Mga libre nga trial",
     trialsDetail: "{active} nagdagan · {started} nasugdan · {subscribed} nag-subscribe human",
+    referrals: "Mga imbitasyon",
+    referralsDetail: "{rewarded} nahatagan · {pending} naghulat og dula · {claimed} na-claim",
     entitled: "Mga player nga naay Plus",
     unlinked: "Wala na-link",
     unlinkedDetail: "Bayad apan wala nahigot sa user",

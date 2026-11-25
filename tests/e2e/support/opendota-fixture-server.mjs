@@ -68,6 +68,9 @@ const COACH = 200_273;
 // a million accounts up each time (support/attempt.ts), with the same games.
 const ASK = 200_274;
 const isAsk = (id) => id >= ASK && (id - ASK) % 1_000_000 === 0;
+// Invited friend (SteamID 76561197960466003): the same 20 games, enough for an invite reward.
+const INVITED = 200_275;
+const isInvited = (id) => id >= INVITED && (id - INVITED) % 1_000_000 === 0;
 const COACH_MANTA_WINS = new Set([0, 2, 4, 8, 10, 12, 14, 16]);
 const COACH_OTHER_WINS = new Set([1, 3, 5]);
 const COACH_MATCHES = Array.from({ length: 20 }, (_, i) => {
@@ -1371,7 +1374,7 @@ const routes = [
       if (PLAYED.has(Number(m[1]))) return PLAYED.get(Number(m[1])).slice(offset, offset + limit);
       if (stackIds.has(Number(m[1]))) return stackMatches(Number(m[1]), url);
       if (Number(m[1]) === COACH_AI) return COACH_AI_MATCHES.slice(offset, offset + limit);
-      if (Number(m[1]) === COACH || isAsk(Number(m[1]))) {
+      if (Number(m[1]) === COACH || isAsk(Number(m[1])) || isInvited(Number(m[1]))) {
         const heroId = url.searchParams.get("hero_id");
         return COACH_MATCHES.filter((r) => !heroId || r.hero_id === Number(heroId)).slice(
           offset,

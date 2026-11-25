@@ -4,6 +4,16 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-11-26
+
+- Invite a friend (/invite): share your link; when a friend new to Dota Den signs in with Steam through it and 10 of their games are imported, you each get 7 days of Plus. No card, nothing charged, nothing renews; up to 5 weeks per player, and the friend always gets theirs
+
+## 2026-11-25
+
+- When OpenDota is down, pages say so (data may be a saved copy and new games may be slow to show), and every server stops calling it at once instead of each one waiting on timeouts
+- Hero guide links get their own preview image; player, Meta and patch links show what's on the page
+- Admin: today's OpenDota, STRATZ and AI budgets, where players drop off between sign-in and subscribing, and alerts when a budget passes 80% or Redis fails
+
 ## 2026-11-24
 
 - Your year in Dota (/report/year, free): games, win rate, time in games, top and best heroes, longest streaks, busiest day, months, weekdays and the hours you play, and your best win, counted from your imported games in your time zone; earlier years too. Share it as a card in English, Filipino or Bisaya, and from December 1 to January 15 the overview links to it

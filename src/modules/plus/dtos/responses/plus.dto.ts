@@ -44,8 +44,32 @@ export interface PlusAdminCountsDto {
   entitled: number;
   /** Free trials started, and running now; null when unknown. */
   trials: { started: number; active: number; subscribed: number } | null;
+  /** Invite claims: made, waiting for the friend's games, rewarded; null when unknown. */
+  referrals?: { claimed: number; pending: number; rewarded: number } | null;
 }
 
 export interface WebhookResultDto {
   outcome: "applied" | "duplicate" | "stale" | "unlinked" | "ignored" | "mode_mismatch";
+}
+
+/** The invite page: the player's link and how their invited friends are doing. */
+export interface InviteDto {
+  /** Invites work only while Plus is on sale. */
+  available: boolean;
+  /** The player's invite code (the link is /r/<code>); null when not available. */
+  code: string | null;
+  /** Friends who joined and got their week. */
+  joined: number;
+  /** Friends who claimed but whose games haven't shown up yet. */
+  waiting: number;
+  /** Weeks this player earned (at most `max`). */
+  earned: number;
+  max: number;
+  /** This player's own claim of someone's invite, if they made one. */
+  mine: "pending" | "rewarded" | "expired" | null;
+}
+
+/** POST /api/v1/plus/referrals/claim: "rewarded" (both weeks given) or "waiting" for games. */
+export interface ReferralClaimDto {
+  status: "rewarded" | "waiting" | "expired";
 }

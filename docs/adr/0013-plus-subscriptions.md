@@ -303,3 +303,35 @@ itself.
 - **Privacy.** The trial record (user id, account, start, end) is exported with the account and
   deleted with it. Deleting an account therefore also forgets its trial; losing every stored game
   to get another week of Plus is an acceptable gap.
+
+## Referrals (2026-11-26)
+
+Approved by the owner on 2026-11-26 ("invite a friend, both get a week of Plus"). Built like the
+free trial: weeks granted inside Dota Den, never through the payment provider.
+
+- **Ours, not the provider's.** No coupon, discount or credit at Polar: a granted week is a
+  `plus_grants` row (`startsAt`, `endsAt`), so nothing is charged, renews or changes a bill.
+- **Links.** Each player gets one random 8-character code (`plus_referral_codes`, `_id` is the
+  code, unique per user, no 0/o/1/l/i) made on their first visit to `/invite`. The link is
+  `/r/<code>`; the landing page doesn't name the inviter (their profile may be private) and isn't
+  indexed.
+- **Who can claim.** A signed-in player claims from the landing page (`POST
+/api/v1/plus/referrals/claim`, same-origin, rate-limited) within 7 days of their first sign-in,
+  not their own link, never a subscriber of this mode, and once per Steam account ever
+  (`plus_referrals`, `_id` is `steam:<accountId32>`). Only while Plus is on sale.
+- **When it pays.** A claim waits until the friend has 10 imported games (a real player, not a
+  fresh Steam account), then both get 7 days. It's settled on the claim, on the friend's next
+  dashboard visit (after the response), when either opens `/invite`, or with "Check again"; it
+  lapses after 30 days. Grants are keyed by the claim and side, so a retry gives each once.
+- **Limits.** An inviter earns at most 5 weeks, ever; friends past that still get theirs.
+- **Stacking.** A new week starts when the free Plus already running (trial or earlier weeks)
+  ends, so the weeks add up. A paying inviter's week runs alongside the subscription (shown on
+  `/invite`); their bill doesn't change.
+- **Entitlement.** Reason `referral`, ranked with `free_trial`, below every paid state; `until`
+  is the end of the whole run of free Plus. Counted in `plusUserIds()` and the admin total, no
+  supporter badge, off with the kill switch. The trial reminder skips players whose earned week
+  carries Plus on past the trial.
+- **Admin.** The Plus box counts claims (rewarded, waiting for games, claimed).
+- **Privacy.** Codes, claims (as friend or inviter) and granted weeks are exported with the
+  account and deleted with it. Like the trial, deleting an account forgets its claim; it costs
+  every stored game and the inviter cap still applies.
