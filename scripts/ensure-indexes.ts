@@ -36,6 +36,10 @@ import { VisitDaysRepository } from "@/modules/identity/repositories/visit-days.
 import { StreamerFollowsRepository } from "@/modules/live/repositories/streamer-follows.repository";
 import { SubscriptionsRepository } from "@/modules/plus/repositories/subscriptions.repository";
 import { WebhookEventsRepository } from "@/modules/plus/repositories/webhook-events.repository";
+import {
+  GrantsRepository,
+  ReferralsRepository,
+} from "@/modules/plus/repositories/referrals.repository";
 import { TrialsRepository } from "@/modules/plus/repositories/trials.repository";
 import { ActivityRepository } from "@/modules/leaderboards/repositories/activity.repository";
 import { DraftHistoryRepository } from "@/modules/drafts/repositories/draft-history.repository";
@@ -124,6 +128,8 @@ async function main(): Promise<void> {
   await new StreamerFollowsRepository(async () => db).ensureIndexes();
   await new SubscriptionsRepository(async () => db).ensureIndexes();
   await new TrialsRepository(async () => db).ensureIndexes();
+  await new ReferralsRepository(async () => db).ensureIndexes();
+  await new GrantsRepository(async () => db).ensureIndexes();
   await new WebhookEventsRepository(async () => db).ensureIndexes();
   await Promise.all([
     new SessionNotesRepository(async () => db).ensureIndexes(),

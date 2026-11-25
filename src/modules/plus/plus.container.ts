@@ -1,4 +1,5 @@
 import "server-only";
+import { randomInt } from "node:crypto";
 import { env } from "@/common/config/env";
 import { getDb } from "@/common/db/mongo";
 import { logger } from "@/common/logging/logger";
@@ -12,14 +13,18 @@ import { PolarProvider } from "./infrastructure/polar-provider";
 import { PlusController } from "./plus.controller";
 import type { BillingProvider } from "./plus.ports";
 import { SubscriptionsRepository } from "./repositories/subscriptions.repository";
+import { GrantsRepository, ReferralsRepository } from "./repositories/referrals.repository";
 import { TrialsRepository } from "./repositories/trials.repository";
 import { WebhookEventsRepository } from "./repositories/webhook-events.repository";
 import { BillingWebhookService } from "./services/billing-webhook.service";
 import { PlusService } from "./services/plus.service";
+import { ReferralService } from "./services/referral.service";
 
 export const subscriptionsRepository = new SubscriptionsRepository(getDb);
 export const webhookEventsRepository = new WebhookEventsRepository(getDb);
 export const trialsRepository = new TrialsRepository(getDb);
+export const referralsRepository = new ReferralsRepository(getDb);
+export const grantsRepository = new GrantsRepository(getDb);
 
 /** The configured payment provider, or null: without it Plus doesn't exist (ADR 0013). */
 function billingProvider(): BillingProvider | null {
@@ -63,6 +68,8 @@ export const plusService = lazy(
       subscriptions: subscriptionsRepository,
       events: webhookEventsRepository,
       trials: trialsRepository,
+      grants: grantsRepository,
+      referrals: referralsRepository,
       provider: provider.current,
       enabled: () => env().PLUS_ENABLED,
       staff: {
@@ -93,4 +100,34 @@ export const billingWebhooks = lazy(
     }),
 );
 
-export const plusController = new PlusController({ plus: plusService, webhooks: billingWebhooks });
+export const referralService = lazy(
+  () =>
+    new ReferralService({
+      referrals: referralsRepository,
+      grants: grantsRepository,
+      plus: plusService,
+      users: {
+        byId: async (id) => {
+          if (!USER_ID_PATTERN.test(id)) return null;
+          const [user] = await usersService.findByIds([id]);
+          return user
+            ? { id: user.id, accountId32: user.accountId32, createdAt: user.createdAt }
+            : null;
+        },
+      },
+      // Loaded on use: matches reads Plus limits, so a static import would be a cycle.
+      matchCounts: async (ids) => {
+        const { matchesService } = await import("@/modules/matches");
+        const stats = await matchesService.statsByAccount(ids);
+        return new Map([...stats].map(([id, s]) => [id, s.matches]));
+      },
+      randomInt: (n) => randomInt(n),
+      logger,
+    }),
+);
+
+export const plusController = new PlusController({
+  plus: plusService,
+  webhooks: billingWebhooks,
+  referrals: referralService,
+});

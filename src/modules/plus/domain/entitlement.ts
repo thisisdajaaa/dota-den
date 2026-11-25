@@ -12,6 +12,8 @@
  * - Kill switch (PLUS_ENABLED not "true"): everyone is free; stored data is kept.
  * - Staff (admins): Plus without a subscription, whatever the above (decided by the service).
  * - `free_trial`: the 7-day trial with no subscription (domain/trial.ts), below any paid state.
+ * - `referral`: a week of Plus earned by inviting (or being invited by) a friend
+ *   (domain/referral.ts), like the trial: below any paid state.
  */
 import type { Plan } from "./plans";
 import type { Subscription, SubscriptionStatus } from "./subscription";
@@ -25,6 +27,7 @@ export type EntitlementReason =
   | "active"
   | "trial"
   | "free_trial"
+  | "referral"
   | "grace"
   | "cancelled_until_period_end"
   | "staff"
@@ -78,6 +81,7 @@ const RANK: Record<EntitlementReason, number> = {
   active: 6,
   trial: 5,
   free_trial: 4,
+  referral: 4,
   cancelled_until_period_end: 3,
   grace: 2,
   none: 1,

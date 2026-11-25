@@ -6,6 +6,7 @@ import type {
   SubscriptionSnapshot,
   SubscriptionStatus,
 } from "./domain/subscription";
+import type { PlusGrant, Referral } from "./domain/referral";
 import type { FreeTrial } from "./domain/trial";
 import type { WebhookEventOutcome } from "./plus.model";
 
@@ -104,6 +105,45 @@ export interface TrialsPort {
     now: Date,
     testMode: boolean | null,
   ): Promise<{ started: number; active: number; subscribed: number }>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+export interface ReferralsPort {
+  /** This player's invite code, or null before they first open the invite page. */
+  codeOf(userId: string): Promise<string | null>;
+  /** Saves a code for this player; false when the code is taken or they already have one. */
+  saveCode(code: {
+    code: string;
+    userId: string;
+    accountId32: number;
+    createdAt: Date;
+  }): Promise<boolean>;
+  /** Who a code belongs to. */
+  ownerOf(code: string): Promise<{ userId: string; accountId32: number } | null>;
+  /** The claim made by this Steam account (or user), if any. */
+  claimOf(friendAccountId32: number, friendUserId?: string): Promise<Referral | null>;
+  /** Records a claim; false when this account was referred before. */
+  claim(referral: Referral): Promise<boolean>;
+  /** Claims of this inviter's link, newest first. */
+  byReferrer(referrerId: string): Promise<Referral[]>;
+  /** Moves a pending claim to `status`; false when it wasn't pending any more. */
+  settle(
+    friendAccountId32: number,
+    update: { status: "rewarded" | "expired"; rewardedAt: Date | null; referrerRewarded: boolean },
+  ): Promise<boolean>;
+  /** Admin: claims by status. */
+  counts(): Promise<{ claimed: number; pending: number; rewarded: number }>;
+  exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
+  deleteForOwner(owner: DataOwner): Promise<number>;
+}
+
+export interface GrantsPort {
+  forUser(userId: string): Promise<PlusGrant[]>;
+  /** Saves a grant; false when one with this id exists (already given). */
+  give(grant: PlusGrant): Promise<boolean>;
+  /** Users with a grant running at `now`. */
+  activeUserIds(now: Date): Promise<string[]>;
   exportForOwner(owner: DataOwner): Promise<Record<string, unknown>[]>;
   deleteForOwner(owner: DataOwner): Promise<number>;
 }
