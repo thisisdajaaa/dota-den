@@ -16,6 +16,7 @@ import { RunSyncButton } from "./run-sync-button";
 import { SchedulesButton } from "./schedules-button";
 import { TestAlertButton } from "./test-alert-button";
 import { BudgetsPanel, BUDGET_WARN_SHARE } from "./budgets-panel";
+import { FunnelPanel } from "./funnel-panel";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -44,6 +45,7 @@ export default async function AdminPage() {
   const {
     totals,
     retention,
+    funnel,
     optIns,
     usage,
     budgets,
@@ -317,6 +319,8 @@ export default async function AdminPage() {
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-5">
+          <FunnelPanel funnel={funnel} t={t} />
+
           <section aria-labelledby="admin-retention" className="panel space-y-4 p-5">
             <div>
               <h2 id="admin-retention" className="text-lg font-semibold">

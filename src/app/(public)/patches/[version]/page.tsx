@@ -29,6 +29,7 @@ export async function generateMetadata({
   }
   return {
     title: t("patches.detail.metaTitle", { version: decoded }),
+    description: t("patches.detail.metaDescription", { version: decoded }),
     alternates: { canonical: `/patches/${encodeURIComponent(decoded)}` },
   };
 }

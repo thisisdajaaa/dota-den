@@ -49,6 +49,11 @@ export interface AdminStatsSource {
   ): Promise<{ games: number; parsed: number }>;
 }
 
+/** Who ever started a free trial, and who ever subscribed (Plus feature). */
+export interface AdminPlusFunnelSource {
+  funnelUserIds(): Promise<{ trialed: string[]; subscribed: string[] }>;
+}
+
 /** Today's use of each daily call budget (OpenDota, STRATZ, AI) and whether Redis answered. */
 export interface AdminBudgetSource {
   today(): Promise<BudgetsTodayView>;

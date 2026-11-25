@@ -39,6 +39,20 @@ export const admin: MessageTree<typeof en> = {
     withMatchesDetail: "na-import ang public history",
     listedPublicly: "Nasa public boards",
   },
+  funnel: {
+    title: "Funnel",
+    body: "Hanggang saan umaabot ang mga player, bilang bahagi ng lahat ng nag-sign in gamit ang Steam. Hindi kailangang sunod-sunod ang mga hakbang. Hindi sinusubaybayan ang mga bisitang hindi nag-sign in.",
+    step: "Hakbang",
+    all: "Lahat",
+    recent: "Sumali sa loob ng 30 araw",
+    steps: {
+      signedUp: "Nag-sign in gamit ang Steam",
+      imported: "May na-import na laro",
+      returned: "Bumalik sa ibang araw",
+      trialed: "Nagsimula ng free trial",
+      subscribed: "Nag-subscribe sa Plus",
+    },
+  },
   retention: {
     title: "Sino ang bumabalik",
     definition:

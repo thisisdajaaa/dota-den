@@ -1,9 +1,11 @@
 import { mapLimit } from "@/common/utils/map-limit";
+import { funnel } from "./domain/funnel";
 import { adminTotals } from "./domain/overview";
 import { retention } from "./domain/retention";
 import type {
   AdminActivitySource,
   AdminBudgetSource,
+  AdminPlusFunnelSource,
   AdminOptInSource,
   AdminOpsSource,
   AdminProfileSource,
@@ -36,6 +38,7 @@ export class AdminService {
       optIns: AdminOptInSource;
       usage: AdminUsageSource;
       budgets: AdminBudgetSource;
+      plus: AdminPlusFunnelSource;
     },
   ) {}
 
@@ -62,6 +65,7 @@ export class AdminService {
       usage,
       parse,
       budgets,
+      plusFunnel,
     ] = await Promise.all([
       stats.matchStats(accountIds),
       stats.mmrEntryCounts(userIds),
@@ -88,6 +92,7 @@ export class AdminService {
         )
         .catch(() => null),
       this.deps.budgets.today().catch(() => null),
+      this.deps.plus.funnelUserIds().catch(() => null),
     ]);
     // Count current players only (a deleted account's row may linger briefly).
     const count = (ids: string[] | null) =>
@@ -122,6 +127,16 @@ export class AdminService {
             now,
           )
         : null,
+      funnel: funnel(
+        rows.map((r) => ({
+          userId: r.userId,
+          createdAt: r.createdAt,
+          matches: r.stats?.matches ?? 0,
+          activeDays: activeDays ? (activeDays.get(r.userId) ?? []) : null,
+        })),
+        plusFunnel,
+        now,
+      ),
       optIns: {
         notifications: count(notified),
         email: count(emailed),

@@ -13,6 +13,7 @@ import { emailSubscriptionsRepository } from "@/modules/email";
 import { discordWebhooksRepository } from "@/modules/discord";
 import { AdminService } from "./admin.service";
 import { playersService } from "@/modules/players";
+import { plusService } from "@/modules/plus";
 import { usageService } from "@/modules/usage";
 
 export const adminService = new AdminService({
@@ -33,6 +34,7 @@ export const adminService = new AdminService({
   },
   usage: { summary: () => usageService.summary() },
   budgets: { today: () => budgetsToday() },
+  plus: { funnelUserIds: () => plusService.funnelUserIds() },
   ops: {
     jobFailures: () => jobRunsRepository.recentFailures(),
     cronRuns: (limit) => cronRunsRepository.recent(limit),

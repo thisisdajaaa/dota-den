@@ -32,6 +32,8 @@ export const patches: MessageTree<typeof en> = {
   },
   detail: {
     metaTitle: "Patch {version}",
+    metaDescription:
+      "Tanang kausaban sa hero, item ug ability sa Dota 2 patch {version}, sa simple nga pulong.",
     allPatches: "Tanang patch",
     kicker: "Gameplay update",
     released: "Gi-release niadtong {date} · {heroes} · {items}",

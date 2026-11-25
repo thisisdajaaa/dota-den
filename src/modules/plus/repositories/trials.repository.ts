@@ -76,6 +76,11 @@ export class TrialsRepository implements TrialsPort {
     return docs.map((d) => d.userId);
   }
 
+  async userIds() {
+    const ids = await (await this.col()).distinct("userId");
+    return ids.filter((id): id is string => typeof id === "string");
+  }
+
   async counts(now: Date, testMode: boolean | null) {
     const col = await this.col();
     const [started, active, subscribed] = await Promise.all([

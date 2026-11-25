@@ -346,6 +346,15 @@ export class PlusService {
     return this.deps.provider?.portalUrl ?? null;
   }
 
+  /** Admin funnel: who ever started a free trial, and who ever subscribed (this mode). */
+  async funnelUserIds(): Promise<{ trialed: string[]; subscribed: string[] }> {
+    const [trialed, subscribed] = await Promise.all([
+      this.deps.trials?.userIds() ?? [],
+      this.deps.subscriptions.subscriberUserIds(this.deps.provider?.testMode ?? null),
+    ]);
+    return { trialed, subscribed };
+  }
+
   async adminCounts(): Promise<PlusAdminCountsDto> {
     const [rows, entitled, trials] = await Promise.all([
       this.deps.subscriptions.countsByStatus(this.deps.provider?.testMode ?? null),

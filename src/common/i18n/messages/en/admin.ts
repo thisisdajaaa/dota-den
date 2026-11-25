@@ -37,6 +37,20 @@ export const admin = {
     withMatchesDetail: "public history imported",
     listedPublicly: "On public boards",
   },
+  funnel: {
+    title: "Funnel",
+    body: "How far players get, as a share of everyone who signed in with Steam. Steps don't have to happen in order. Visitors who never sign in aren't tracked.",
+    step: "Step",
+    all: "All time",
+    recent: "Joined in 30 days",
+    steps: {
+      signedUp: "Signed in with Steam",
+      imported: "Has games imported",
+      returned: "Came back another day",
+      trialed: "Started the free trial",
+      subscribed: "Subscribed to Plus",
+    },
+  },
   retention: {
     title: "Who comes back",
     definition:

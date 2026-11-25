@@ -95,6 +95,8 @@ export const players = {
     signInToTrack: "Sign in to track",
     compareWithYou: "Compare with you",
     compare: "Compare",
+    metaDescription:
+      "{name} on Dota Den: rank, public win/loss record, most-played heroes, recent matches and who they queue with.",
     upstreamBusy: "OpenDota is busy right now, so we couldn't load {what}. Try again in a minute.",
     upstreamError: "Couldn't load {what} from OpenDota right now. Try again shortly.",
     what: {

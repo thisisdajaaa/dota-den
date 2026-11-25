@@ -102,6 +102,8 @@ export const players: MessageTree<typeof en> = {
     signInToTrack: "Mag-sign in para mag-track",
     compareWithYou: "Ikumpara sa iyo",
     compare: "Ikumpara",
+    metaDescription:
+      "{name} sa Dota Den: rank, public na win/loss record, pinakamadalas na hero, mga bagong laro at kung sino ang kasama niyang mag-queue.",
     upstreamBusy:
       "Busy ang OpenDota ngayon, kaya hindi namin na-load ang {what}. Subukan ulit pagkalipas ng isang minuto.",
     upstreamError: "Hindi ma-load ang {what} mula sa OpenDota ngayon. Subukan ulit maya-maya.",
