@@ -18,6 +18,7 @@ vi.mock("@/modules/identity", async () => {
 });
 
 const { PlusController } = await import("@/modules/plus/plus.controller");
+type ReferralService = import("@/modules/plus/services/referral.service").ReferralService;
 const { PlusService } = await import("@/modules/plus/services/plus.service");
 const { BillingWebhookService } = await import("@/modules/plus/services/billing-webhook.service");
 const { LemonSqueezyProvider } =
@@ -51,7 +52,10 @@ function setup(configured = true) {
     users: { byId: async (id) => (id === USER ? { id, accountId32: 1 } : null) },
     logger,
   });
-  return { controller: new PlusController({ plus, webhooks }), subscriptions };
+  return {
+    controller: new PlusController({ plus, webhooks, referrals: {} as ReferralService }),
+    subscriptions,
+  };
 }
 
 const get = (path: string, user?: string) =>
@@ -123,6 +127,7 @@ describe("PlusController", () => {
         users: { byId: async () => null },
         logger,
       }),
+      referrals: {} as ReferralService,
     });
     const req = checkout({ plan: "monthly" }, USER);
     req.headers.set("x-forwarded-for", "203.0.113.5, 10.0.0.1");

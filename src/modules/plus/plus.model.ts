@@ -1,3 +1,4 @@
+import type { PlusGrant, Referral } from "./domain/referral";
 import type { BillingProviderName, Subscription } from "./domain/subscription";
 
 export const PLUS_SCHEMA_VERSION = 1;
@@ -6,7 +7,31 @@ export const PLUS_COLLECTIONS = {
   subscriptions: "plus_subscriptions",
   webhookEvents: "billing_webhook_events",
   trials: "plus_trials",
+  referralCodes: "plus_referral_codes",
+  referrals: "plus_referrals",
+  grants: "plus_grants",
 } as const;
+
+/** A player's invite code. `_id` is the code; one per user (unique index). */
+export interface ReferralCodeDocument {
+  _id: string;
+  userId: string;
+  accountId32: number;
+  createdAt: Date;
+  schemaVersion: number;
+}
+
+/** A friend's claim of an invite. `_id` is `steam:<friendAccountId32>`: once per account, ever. */
+export interface ReferralDocument extends Referral {
+  _id: string;
+  schemaVersion: number;
+}
+
+/** A granted week of Plus. `_id` is the grant id, so granting it twice is a no-op. */
+export interface GrantDocument extends Omit<PlusGrant, "id"> {
+  _id: string;
+  schemaVersion: number;
+}
 
 /**
  * A free trial. `_id` is the Steam account (`steam:<accountId32>`), so each account gets one

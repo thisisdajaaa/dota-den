@@ -179,6 +179,12 @@ export const plus: MessageTree<typeof en> = {
         down: "May nagkamali. Subukan ulit mamaya.",
       },
     },
+    invite: {
+      title: "Mag-imbita ng kaibigan: tig-isang linggo kayo ng Plus",
+      body: "Ipadala ang link mo sa kaibigang bago sa Dota Den. Kapag na-import na ang 10 sa mga laro niya, may 7 araw kayong dalawa ng Plus. Walang card, walang sisingilin.",
+      cta: "Kunin ang invite link mo",
+      signIn: "Mag-sign in para makuha ang invite link mo",
+    },
     checkoutError: {
       network: "Hindi maabot ang Dota Den. Tingnan ang koneksyon mo at subukan ulit.",
       hasPlus:
@@ -187,6 +193,78 @@ export const plus: MessageTree<typeof en> = {
       tooMany: "Masyadong maraming subok. Maghintay ng isang minuto at subukan ulit.",
       signIn: "Natapos ang session mo. Mag-sign in ulit para makakuha ng Plus.",
       down: "Hindi available ang checkout ngayon. Walang nasingil; subukan ulit pagkalipas ng ilang minuto.",
+    },
+  },
+  invite: {
+    title: "Mag-imbita ng kaibigan",
+    lead: "Ipadala ang link mo sa kaibigang hindi pa gumagamit ng Dota Den. Kapag nag-sign in siya gamit ang Steam at na-import na ang mga laro niya, tig-isang linggo kayo ng Plus.",
+    linkLabel: "Ang invite link mo",
+    copy: "Kopyahin ang link",
+    copied: "Nakopya na",
+    share: "I-share",
+    shareText:
+      "I-track natin ang mga laro natin sa Dota sa Dota Den. Mag-sign in gamit ang link na ito at pareho tayong may libreng isang linggo ng Plus:",
+    joined: "Mga kaibigang sumali",
+    waiting: "Naghihintay ng mga laro nila",
+    earned: "Mga linggong nakuha mo",
+    earnedOf: "{earned} sa {max}",
+    rulesTitle: "Paano ito gumagana",
+    rules: {
+      link: "Bubuksan ng kaibigan mo ang link mo at magsa-sign in gamit ang Steam sa loob ng 7 araw mula noong una niyang ginamit ang Dota Den.",
+      games:
+        "Kapag na-import na ang 10 sa mga laro niya, may 7 araw kayong dalawa ng Plus. Karaniwang ilang minuto lang ito pagka-sign in niya.",
+      free: "Walang sisingilin at hindi ito magre-renew. Kung may libreng Plus ka pang tumatakbo, magsisimula ang bagong linggo pagkatapos nito.",
+      paid: "Kung nagbabayad ka ng Plus, sabay na tatakbo ang linggo mo at ang subscription mo. Hindi magbabago ang bill mo.",
+      max: "Hanggang {max} linggo ang puwede mong makuha. Laging makukuha ng mga kaibigan mo ang sa kanila.",
+      once: "Isang imbitasyon lang bawat Steam account, at bago pa ito nagkaroon ng Plus subscription.",
+    },
+    unavailable:
+      "Sarado muna ang mga imbitasyon. Babalik ang mga ito kapag mabibili na ulit ang Plus.",
+    maxed:
+      "Nakuha mo na ang lahat ng {max} linggo. Makukuha pa rin ng mga kaibigang iimbitahan mo ang sa kanila.",
+    mine: {
+      pending:
+        "Ginamit mo ang imbitasyon ng kaibigan mo. Magsisimula ang linggo mo kapag na-import na ang 10 sa mga laro mo: buksan ang dashboard mo para i-import ang mga ito.",
+      rewarded:
+        "Sumali ka gamit ang imbitasyon ng kaibigan mo at nakuha mo ang isang linggo mo ng Plus.",
+      expired:
+        "Nag-expire ang imbitasyong ginamit mo: hindi lumabas ang mga laro mo sa loob ng 30 araw.",
+    },
+  },
+  referral: {
+    title: "Inimbitahan ka ng kaibigan mo sa Dota Den",
+    metaDescription:
+      "Mag-sign in gamit ang Steam sa imbitasyong ito: kapag na-import na ang mga laro mo, tig-isang linggo kayo ng kaibigan mo ng Dota Den Plus.",
+    lead: "Libreng tina-track ng Dota Den ang mga laro mo sa Dota 2, ang MMR mo at ang mga hero mo. Mag-sign in gamit ang Steam sa imbitasyong ito at tig-isang linggo kayo ng kaibigan mo ng Plus kapag na-import na ang mga laro mo.",
+    fine: "Hindi kailangan ng card. Walang sisingilin, at kusang matatapos ang linggo.",
+    signIn: "Mag-sign in gamit ang Steam",
+    claim: "I-claim ang isang linggo mo ng Plus",
+    claiming: "Kine-claim…",
+    check: "Tingnan ulit",
+    rewarded:
+      "Tapos na: pareho na kayong may isang linggo ng Plus. Walang sisingilin; kusa itong matatapos.",
+    waiting:
+      "Na-claim na. Magsisimula ang linggo mo kapag na-import na ang 10 sa mga laro mo. Buksan ang dashboard mo para i-import ang mga ito; karaniwang ilang minuto lang.",
+    expired: "Nag-expire ang imbitasyong ito: hindi lumabas ang mga laro mo sa loob ng 30 araw.",
+    own: "Ito ang sarili mong invite link. Ipadala mo ito sa kaibigan.",
+    notFoundTitle: "Hindi gumagana ang invite link na ito",
+    notFoundBody: "Itanong ulit ang link sa kaibigan mo. Libre pa ring gamitin ang Dota Den.",
+    unavailable: "Sarado muna ang mga imbitasyon. Libre pa ring gamitin ang Dota Den.",
+    toDashboard: "Pumunta sa dashboard mo",
+    seePlus: "Tingnan ang dagdag ng Plus",
+    getYours: "Kunin ang sarili mong invite link",
+    error: {
+      own_code: "Ito ang sarili mong invite link. Ipadala mo ito sa kaibigan.",
+      not_new:
+        "Para sa mga bagong player ng Dota Den ang mga imbitasyon. Puwede mo pa ring subukan nang libre ang Plus nang 7 araw sa Plus page.",
+      already_referred: "Nakagamit na ng imbitasyon ang Steam account na ito.",
+      had_plus: "Para sa mga hindi pa nagkaroon ng Plus subscription ang mga imbitasyon.",
+      unavailable: "Sarado muna ang mga imbitasyon.",
+      unknown_code: "Hindi gumagana ang invite link na ito.",
+      tooMany: "Masyadong maraming subok. Maghintay ng isang minuto at subukan ulit.",
+      signIn: "Mag-sign in ulit para i-claim ang imbitasyon.",
+      network: "Hindi maabot ang Dota Den. Tingnan ang koneksyon mo at subukan ulit.",
+      down: "May nagkaproblema. Subukan ulit maya-maya.",
     },
   },
   card: {
@@ -209,6 +287,9 @@ export const plus: MessageTree<typeof en> = {
       "Naka-off muna ang mga Plus feature sa Dota Den ngayon. Hindi apektado ang subscription mo.",
     alertsOn: "Naka-on ang alerto kapag nag-live sa Notifications sa ibaba.",
     freeTrial: "Libreng trial: may Plus hanggang {date}. Walang sisingilin; kusa itong matatapos.",
+    referral:
+      "Premyo sa pag-imbita: may Plus hanggang {date}. Walang sisingilin; kusa itong matatapos.",
+    invite: "Mag-imbita ng kaibigan",
     status: {
       on_trial: "Trial",
       active: "Aktibo",
@@ -235,6 +316,8 @@ export const plus: MessageTree<typeof en> = {
     trials: "Mga libreng trial",
     trialsDetail:
       "{active} tumatakbo · {started} nasimulan · {subscribed} nag-subscribe pagkatapos",
+    referrals: "Mga imbitasyon",
+    referralsDetail: "{rewarded} nabigyan · {pending} naghihintay ng laro · {claimed} na-claim",
     entitled: "Mga player na may Plus",
     unlinked: "Hindi naka-link",
     unlinkedDetail: "Bayad pero hindi nakatali sa user",

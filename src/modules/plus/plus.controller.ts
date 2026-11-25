@@ -4,15 +4,22 @@ import { ValidationError } from "@/common/errors/app-error";
 import { handler } from "@/common/http/controller";
 import { ServiceResponse } from "@/common/http/service-response";
 import { requireUser } from "@/modules/identity";
-import { CheckoutBodySchema } from "./schemas/plus.schema";
+import { CheckoutBodySchema, ReferralClaimBodySchema } from "./schemas/plus.schema";
 import type { BillingWebhookService } from "./services/billing-webhook.service";
 import type { PlusService } from "./services/plus.service";
+import type { ReferralService } from "./services/referral.service";
 
 /** Provider events are a few KB; anything far bigger isn't one. */
 const MAX_WEBHOOK_BYTES = 256 * 1024;
 
 export class PlusController {
-  constructor(private readonly deps: { plus: PlusService; webhooks: BillingWebhookService }) {}
+  constructor(
+    private readonly deps: {
+      plus: PlusService;
+      webhooks: BillingWebhookService;
+      referrals: ReferralService;
+    },
+  ) {}
 
   /** GET /api/v1/me/plus: the signed-in player's plan. */
   status = handler({ guard: requireUser }, async ({ user }) =>
@@ -54,6 +61,24 @@ export class PlusController {
         { "cache-control": "private, no-store" },
       );
     },
+  );
+
+  /**
+   * POST /api/v1/plus/referrals/claim {code}: the signed-in friend claims an invite. Same-origin.
+   * Answers "rewarded" (a week of Plus each, nothing charged) or "waiting" (until their games are
+   * imported). 404 for an unknown code or while Plus isn't on sale; 409 with a reason otherwise.
+   */
+  claimReferral = handler(
+    {
+      guard: requireUser,
+      rateLimit: { name: "plus:referral", limit: 10, windowMs: 60_000 },
+      body: ReferralClaimBodySchema,
+    },
+    async ({ user, body }) =>
+      ServiceResponse.success(
+        await this.deps.referrals.claim(user.id, body.code),
+        "Invite claimed",
+      ).withHeaders({ "cache-control": "private, no-store" }),
   );
 
   /** GET /api/v1/me/plus/portal: the provider's billing portal (manage, update card, cancel). */

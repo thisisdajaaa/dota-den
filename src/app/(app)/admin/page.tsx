@@ -572,6 +572,14 @@ export default async function AdminPage() {
                   </span>
                 </p>
               )}
+              {plus.referrals && (
+                <p className="flex items-baseline justify-between gap-3 text-sm">
+                  <span>{t("plus.admin.referrals")}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {t("plus.admin.referralsDetail", plus.referrals)}
+                  </span>
+                </p>
+              )}
               {plus.byStatus.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("plus.admin.none")}</p>
               ) : (

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, HeartHandshake, Sparkles } from "lucide-react";
 import { useLocale, useT } from "@/common/i18n/client";
 import { Button } from "@/components/ui/button";
 import type { PlanDto, PlusOfferDto } from "../dtos/responses/plus.dto";
@@ -23,6 +23,7 @@ export function PlanCard({ plan, offer }: { plan: PlanDto; offer: PlusOfferDto }
     line = t("plus.card.renews", { date: day(plan.renewsAt) });
   else if (plan.reason === "trial") line = t("plus.card.trial");
   else if (plan.reason === "free_trial") line = t("plus.card.freeTrial", { date: day(plan.until) });
+  else if (plan.reason === "referral") line = t("plus.card.referral", { date: day(plan.until) });
   else if (plan.reason === "staff") line = t("plus.card.staff");
   else if (!plan.plus && plan.status === "paused") line = t("plus.card.paused");
   else if (!plan.plus && plan.status) line = t("plus.card.ended");
@@ -77,10 +78,18 @@ export function PlanCard({ plan, offer }: { plan: PlanDto; offer: PlusOfferDto }
             </a>
           </Button>
         )}
-        {(!plan.plus || plan.reason === "free_trial") && offer.status === "available" && (
-          <Button asChild size="sm" className="gap-2">
-            <Link href="/plus">
-              <Sparkles aria-hidden className="size-4" /> {t("plus.card.see")}
+        {(!plan.plus || plan.reason === "free_trial" || plan.reason === "referral") &&
+          offer.status === "available" && (
+            <Button asChild size="sm" className="gap-2">
+              <Link href="/plus">
+                <Sparkles aria-hidden className="size-4" /> {t("plus.card.see")}
+              </Link>
+            </Button>
+          )}
+        {offer.status === "available" && (
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link href="/invite">
+              <HeartHandshake aria-hidden className="size-4" /> {t("plus.card.invite")}
             </Link>
           </Button>
         )}

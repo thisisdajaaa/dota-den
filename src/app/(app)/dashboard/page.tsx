@@ -23,6 +23,7 @@ import { medalService } from "@/modules/mmr";
 import { notificationService } from "@/modules/notifications";
 import { NotificationsPrompt } from "@/modules/notifications/ui/notifications-prompt";
 import { onboardingService } from "@/modules/onboarding";
+import { referralService } from "@/modules/plus";
 import { OnboardingChecklist } from "@/modules/onboarding/ui/onboarding-checklist";
 import { dayKeyFormatter } from "@/common/time/day-key";
 import { yearPromptFor } from "@/modules/report/domain/year-review";
@@ -105,6 +106,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     : null;
   const { facts, recent, latestPatch } = dashView;
   const profile = quick.profile;
+  // A friend's invite waits for their games: give both weeks once they've arrived.
+  afterResponse("referral_settle", () => referralService.settleOwn(user), { userId: user.id });
   // Medal history needs no typing: note the medal each visit (after the page is sent), from a
   // live profile only. A saved banner copy is refreshed first.
   afterResponse(

@@ -503,6 +503,8 @@ describe("PlusService", () => {
       plusSubscriptions: 1,
       plusBillingEvents: 1,
       plusFreeTrials: 0,
+      plusGrantedWeeks: 0,
+      plusInvites: 0,
     });
     expect(await plus.isPlus(USER)).toBe(false);
   });

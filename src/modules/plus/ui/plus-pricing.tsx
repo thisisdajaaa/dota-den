@@ -183,7 +183,8 @@ export function PlusPricing({
             {t("plus.page.subscribe")}
           </h2>
           {plan?.plus && plan.reason === "staff" ? null : plan?.plus &&
-            plan.reason !== "free_trial" ? (
+            plan.reason !== "free_trial" &&
+            plan.reason !== "referral" ? (
             <div className="panel flex flex-wrap items-center justify-between gap-3 p-5">
               <p className="flex items-center gap-2 font-medium" role="status">
                 <Sparkles aria-hidden className="size-4 text-gold" /> {t("plus.page.youHavePlus")}
@@ -212,6 +213,8 @@ export function PlusPricing({
           )}
         </section>
       )}
+
+      {available && <InviteOffer signedIn={signedIn} />}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <section
@@ -528,6 +531,34 @@ function TrialRunning({ endsAt }: { endsAt: string }) {
     <Banner icon={Gift} title={t("plus.page.trial.activeTitle")}>
       {t("plus.page.trial.activeBody", { date: formatBillingDate(endsAt, locale) })}
     </Banner>
+  );
+}
+
+/** Invite a friend: a week of Plus each, granted in the app (nothing charged). */
+function InviteOffer({ signedIn }: { signedIn: boolean }) {
+  const t = useT();
+  return (
+    <section
+      aria-labelledby="plus-invite"
+      className="panel flex flex-wrap items-center justify-between gap-4 p-5"
+    >
+      <div className="flex max-w-2xl items-start gap-3">
+        <HeartHandshake aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
+        <div className="space-y-1">
+          <h2 id="plus-invite" className="font-semibold">
+            {t("plus.page.invite.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("plus.page.invite.body")}</p>
+        </div>
+      </div>
+      <Button asChild variant="outline" size="sm">
+        {signedIn ? (
+          <Link href="/invite">{t("plus.page.invite.cta")}</Link>
+        ) : (
+          <a href={signInHref("/invite")}>{t("plus.page.invite.signIn")}</a>
+        )}
+      </Button>
+    </section>
   );
 }
 
