@@ -49,6 +49,20 @@ page lists recent alerts under **Alerts**, with a **Send a test alert** button.
 | Daily job stopped      | `patches` or `matches` hasn't completed on Vercel's schedule within 26 h (runs from the admin page don't count)                |
 | OpenDota looks down    | The circuit breaker is open, the latest calls failed, or half the synced accounts failed upstream, at two checks 25+ min apart |
 | Backup / restore drill | The backup or restore-drill workflow reported a failure                                                                        |
+| Daily budget at 80%    | Today's OpenDota, STRATZ or AI calls reached 80% (and again at 100%) of their daily cap; once per budget, level and UTC day    |
+| Redis is failing       | A call to Upstash Redis failed (cache, budget, circuit or AI counter), for example because the plan's request limit was hit    |
+
+Budget and Redis alerts are raised by the shared plumbing itself (registered in `src/instrumentation.ts`), not by the
+cron checks, so they arrive within a minute. The admin page's **Today's budgets** shows each budget's use and whether
+Redis answered.
+
+## OpenDota outages
+
+The gateway's circuit breaker opens after 5 failures in a row (30 s). With Redis it is shared: the instance that opens
+it writes `dd:circuit:opendota:open`, and every other instance checks that key (at most every 5 s) before calling, so a
+dead OpenDota costs one round of timeouts instead of one per instance. Cached answers are served stale meanwhile. For
+10 minutes after the circuit last opened (`dd:circuit:opendota:opened`) pages show a short notice that data may be
+saved and new games slow to appear. The explorer and the Valve feeds have their own circuits.
 
 The checks run at the end of each cron run (each run checks both jobs, so `patches` watches `matches` and vice versa)
 and whenever a backup or drill reports (the nightly backup is an outside watchdog for the crons). The same alert goes

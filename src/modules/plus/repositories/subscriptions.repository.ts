@@ -94,6 +94,16 @@ export class SubscriptionsRepository implements SubscriptionsPort {
     return docs.map(toSubscription);
   }
 
+  async subscriberUserIds(testMode: boolean | null) {
+    const ids = await (
+      await this.col()
+    ).distinct("userId", {
+      userId: { $ne: null },
+      ...(testMode === null ? {} : { testMode }),
+    });
+    return ids.filter((id): id is string => typeof id === "string");
+  }
+
   async countsByStatus(testMode: boolean | null) {
     const rows = await (
       await this.col()

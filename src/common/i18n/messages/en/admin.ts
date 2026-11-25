@@ -7,6 +7,9 @@ export const admin = {
     "Everyone who has signed in (production and staging share this database). Names and ranks come from their public OpenDota profiles.",
   notFound: { title: "Page not found", back: "Back to your overview" },
   health: {
+    budgets: "Budgets",
+    budgetsHigh: { one: "{n} over 80%", other: "{n} over 80%" },
+    redisDown: "Redis down",
     aria: "At a glance",
     jobs: "Daily jobs",
     alerts: "Alerts",
@@ -34,6 +37,20 @@ export const admin = {
     withMatchesDetail: "public history imported",
     listedPublicly: "On public boards",
   },
+  funnel: {
+    title: "Funnel",
+    body: "How far players get, as a share of everyone who signed in with Steam. Steps don't have to happen in order. Visitors who never sign in aren't tracked.",
+    step: "Step",
+    all: "All time",
+    recent: "Joined in 30 days",
+    steps: {
+      signedUp: "Signed in with Steam",
+      imported: "Has games imported",
+      returned: "Came back another day",
+      trialed: "Started the free trial",
+      subscribed: "Subscribed to Plus",
+    },
+  },
   retention: {
     title: "Who comes back",
     definition:
@@ -57,6 +74,22 @@ export const admin = {
     unavailable: "Activity couldn't be loaded.",
     ofUsers: { one: "of {n} user", other: "of {n} users" },
     reach: "Reach",
+  },
+  budgets: {
+    title: "Today's budgets",
+    body: "Calls used today against each daily cap (resets at 08:00 Manila time). You get an alert at 80% and 100%.",
+    redisOk: "Redis is answering.",
+    redisOff: "Redis isn't configured, so budgets are counted per server and aren't shown.",
+    redisError:
+      "Redis didn't answer. Caches and budgets fall back per server: check the Upstash plan and limits.",
+    usedOf: "{used} of {cap}",
+    names: {
+      opendota: "OpenDota calls",
+      opendotaGuest: "OpenDota calls by signed-out visitors",
+      stratz: "STRATZ calls",
+      ai: "AI calls (all AI features)",
+      aiGuest: "AI calls by signed-out visitors",
+    },
   },
   usage: {
     title: "What gets used",
@@ -156,7 +189,7 @@ export const admin = {
     messages: {
       plus_refund: {
         title: "Plus payment refunded",
-        body: "A {event} came in for subscription {subscription}. A refund doesn't end Plus by itself: cancel the subscription in Lemon Squeezy if Plus should stop now.",
+        body: "A {event} came in for subscription {subscription}. A refund doesn't end Plus by itself: cancel the subscription in Polar if Plus should stop now.",
       },
       cron_failed: {
         title: "Daily job failed: {cron}",
@@ -181,6 +214,14 @@ export const admin = {
       backup_failed: {
         title: "{job} failed",
         body: "{details}",
+      },
+      budget_high: {
+        title: "{budget}: {percent}% of today's budget used",
+        body: "{used} of {cap} for today (resets at 08:00 Manila time). At 100% new calls are refused until the reset; raise the cap in Vercel env if this keeps happening.",
+      },
+      store_down: {
+        title: "Redis is failing",
+        body: "Calls to Upstash Redis are failing ({op}). Caches, budgets and rate limits fall back per server until it recovers. Check the Upstash plan and usage limits.",
       },
       test: {
         title: "Test alert",

@@ -75,6 +75,8 @@ export interface SubscriptionsPort {
   possiblyEntitledForAccounts(accountIds: readonly number[]): Promise<Subscription[]>;
   /** Every linked subscription that may grant Plus (for go-live alerts). */
   possiblyEntitled(): Promise<Subscription[]>;
+  /** Users with a linked subscription in any status, of one mode or both (admin funnel). */
+  subscriberUserIds(testMode: boolean | null): Promise<string[]>;
   /** Subscriptions per status, of one mode (test or live), or of both when `testMode` is null. */
   countsByStatus(
     testMode: boolean | null,
@@ -92,6 +94,8 @@ export interface TrialsPort {
   endingBetween(from: Date, to: Date): Promise<FreeTrial[]>;
   /** Users whose trial is running at `now`. */
   activeUserIds(now: Date): Promise<string[]>;
+  /** Every user who ever started a trial (admin funnel). */
+  userIds(): Promise<string[]>;
   /**
    * Trials started, running at `now`, and whose players subscribed after starting one (of
    * `testMode`'s subscriptions, or any when null). Admin.

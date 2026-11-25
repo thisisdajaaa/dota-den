@@ -16,7 +16,7 @@ const globalForGuides = globalThis as typeof globalThis & { __ddGuideValve?: Pro
 function valveGateway(): ProviderGateway {
   globalForGuides.__ddGuideValve ??= new ProviderGateway({
     name: "valve-herodata",
-    ...sharedGatewayOptions("valve"),
+    ...sharedGatewayOptions("valve", "valve-herodata"),
     timeoutMs: 10_000,
   });
   return globalForGuides.__ddGuideValve;

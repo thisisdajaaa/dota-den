@@ -102,6 +102,8 @@ export const players: MessageTree<typeof en> = {
     signInToTrack: "Pag-sign in aron mag-track",
     compareWithYou: "Itandi kanimo",
     compare: "Itandi",
+    metaDescription:
+      "{name} sa Dota Den: rank, public nga win/loss record, kanunay nga hero, bag-ong mga dula ug kinsa ang kauban niya mag-queue.",
     upstreamBusy:
       "Busy ang OpenDota karon, mao nga wala namo ma-load ang {what}. Sulayi pag-usab human sa usa ka minuto.",
     upstreamError: "Dili ma-load ang {what} gikan sa OpenDota karon. Sulayi pag-usab unya.",

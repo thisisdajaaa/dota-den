@@ -9,6 +9,9 @@ export const admin: MessageTree<typeof en> = {
     "Tanan nga naka-sign in na (usa ra ka database ang gamit sa production ug staging). Ang mga ngalan ug rank gikan sa ilang public OpenDota profile.",
   notFound: { title: "Wala makit-i ang page", back: "Balik sa imong overview" },
   health: {
+    budgets: "Mga budget",
+    budgetsHigh: { one: "{n} labaw 80%", other: "{n} labaw 80%" },
+    redisDown: "Down ang Redis",
     aria: "Sa usa ka tan-aw",
     jobs: "Mga daily job",
     alerts: "Mga alerto",
@@ -36,6 +39,20 @@ export const admin: MessageTree<typeof en> = {
     withMatchesDetail: "na-import ang public history",
     listedPublicly: "Naa sa public boards",
   },
+  funnel: {
+    title: "Funnel",
+    body: "Hangtod asa moabot ang mga player, isip bahin sa tanan nga nag-sign in gamit ang Steam. Dili kinahanglan sunod-sunod ang mga lakang. Wala gisubay ang mga bisita nga wala nag-sign in.",
+    step: "Lakang",
+    all: "Tanan",
+    recent: "Miapil sulod sa 30 ka adlaw",
+    steps: {
+      signedUp: "Nag-sign in gamit ang Steam",
+      imported: "Adunay na-import nga dula",
+      returned: "Mibalik sa laing adlaw",
+      trialed: "Nagsugod sa free trial",
+      subscribed: "Nag-subscribe sa Plus",
+    },
+  },
   retention: {
     title: "Kinsa ang mobalik",
     definition:
@@ -59,6 +76,22 @@ export const admin: MessageTree<typeof en> = {
     unavailable: "Dili ma-load ang kalihokan.",
     ofUsers: { one: "sa {n} ka user", other: "sa {n} ka user" },
     reach: "Abot",
+  },
+  budgets: {
+    title: "Mga budget karong adlawa",
+    body: "Mga request nga nagamit karong adlawa batok sa daily cap (ma-reset sa 08:00 oras sa Manila). Adunay alert sa 80% ug 100%.",
+    redisOk: "Motubag ang Redis.",
+    redisOff: "Walay Redis, busa matag server ang pag-ihap sa budget ug dili kini mapakita.",
+    redisError:
+      "Wala motubag ang Redis. Matag server una ang cache ug budget: tan-awa ang plan ug limit sa Upstash.",
+    usedOf: "{used} sa {cap}",
+    names: {
+      opendota: "Mga request sa OpenDota",
+      opendotaGuest: "Mga request sa OpenDota sa mga wala naka-sign in",
+      stratz: "Mga request sa STRATZ",
+      ai: "Mga AI request (tanang AI feature)",
+      aiGuest: "Mga AI request sa mga wala naka-sign in",
+    },
   },
   usage: {
     title: "Unsa ang gigamit",
@@ -158,7 +191,7 @@ export const admin: MessageTree<typeof en> = {
     messages: {
       plus_refund: {
         title: "Na-refund ang bayad sa Plus",
-        body: "Adunay {event} para sa subscription {subscription}. Dili matapos ang Plus tungod lang sa refund: i-cancel ang subscription sa Lemon Squeezy kung kinahanglan na mohunong ang Plus.",
+        body: "Adunay {event} para sa subscription {subscription}. Dili matapos ang Plus tungod lang sa refund: i-cancel ang subscription sa Polar kung kinahanglan na mohunong ang Plus.",
       },
       cron_failed: {
         title: "Napakyas ang daily job: {cron}",
@@ -183,6 +216,14 @@ export const admin: MessageTree<typeof en> = {
       backup_failed: {
         title: "Napakyas ang {job}",
         body: "{details}",
+      },
+      budget_high: {
+        title: "{budget}: {percent}% na sa budget karong adlawa ang nagamit",
+        body: "{used} sa {cap} karong adlawa (ma-reset sa 08:00 oras sa Manila). Kung 100% na, ibalibaran ang bag-ong mga request hangtod ma-reset; pataasa ang cap sa Vercel env kung balik-balik kini.",
+      },
+      store_down: {
+        title: "Napakyas ang Redis",
+        body: "Napakyas ang mga request sa Upstash Redis ({op}). Matag server una ang cache, budget ug rate limit hangtod mobalik kini. Tan-awa ang plan ug usage limit sa Upstash.",
       },
       test: {
         title: "Test nga alerto",

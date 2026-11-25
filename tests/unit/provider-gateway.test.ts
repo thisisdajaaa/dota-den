@@ -226,6 +226,62 @@ describe("ProviderGateway", () => {
     expect((await gw.getJson("https://x/3")).ok).toBe(true);
     expect(gw.health()).toMatchObject({ circuitOpen: false, lastSuccessAt: 10_001 });
   });
+
+  it("shares an opened circuit with other instances", async () => {
+    let sharedUntil: number | null = null;
+    const sharedCircuit = {
+      openUntil: vi.fn(async () => sharedUntil),
+      open: vi.fn(async (until: number) => {
+        sharedUntil = until;
+      }),
+    };
+    const onCircuitOpen = vi.fn();
+    const a = gateway([json({}, 503), json({}, 503)], {
+      failureThreshold: 2,
+      openForMs: 30_000,
+      maxRetries: 0,
+      sharedCircuit,
+      onCircuitOpen,
+    });
+    await a.gw.getJson("https://x/1");
+    await a.gw.getJson("https://x/2");
+    expect(sharedCircuit.open).toHaveBeenCalledWith(30_000);
+    expect(onCircuitOpen).toHaveBeenCalledWith(
+      expect.objectContaining({
+        openForMs: 30_000,
+        last: expect.objectContaining({ status: 503 }),
+      }),
+    );
+
+    // Another instance stays off the upstream without paying for its own failures.
+    const b = gateway([json({ ok: 1 })], { sharedCircuit });
+    expect(await b.gw.getJson("https://x/3")).toEqual({ ok: false, kind: "circuit_open" });
+    expect(b.fetch).not.toHaveBeenCalled();
+    b.advance(30_001);
+    expect((await b.gw.getJson("https://x/3")).ok).toBe(true);
+  });
+
+  it("checks the shared circuit at most every few seconds and fails open when it errors", async () => {
+    const onSharedError = vi.fn();
+    const sharedCircuit = {
+      openUntil: vi.fn(async (): Promise<number | null> => {
+        throw new Error("redis down");
+      }),
+      open: vi.fn(async () => {}),
+    };
+    const { gw, fetch, advance } = gateway([json({ a: 1 }), json({ b: 2 }), json({ c: 3 })], {
+      sharedCircuit,
+      onSharedError,
+    });
+    expect((await gw.getJson("https://x/1")).ok).toBe(true);
+    expect((await gw.getJson("https://x/2")).ok).toBe(true);
+    expect(sharedCircuit.openUntil).toHaveBeenCalledTimes(1);
+    expect(onSharedError).toHaveBeenCalledWith(expect.objectContaining({ op: "circuit" }));
+    advance(5_000);
+    await gw.getJson("https://x/3");
+    expect(sharedCircuit.openUntil).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
 });
 
 describe("parseRetryAfter", () => {

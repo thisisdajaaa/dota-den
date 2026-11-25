@@ -40,6 +40,8 @@ describe("AdminService", () => {
         },
       },
       usage: { summary: async () => [] },
+      budgets: { today: async () => ({ redis: "ok" as const, budgets: [] }) },
+      plus: { funnelUserIds: async () => ({ trialed: [], subscribed: [] }) },
       profiles: {
         publicProfile: async (id) =>
           id === 2
@@ -95,6 +97,8 @@ describe("AdminService", () => {
         parseCounts: async () => Promise.reject(new Error("db")),
       },
       usage: { summary: async () => Promise.reject(new Error("db")) },
+      budgets: { today: async () => ({ redis: "ok" as const, budgets: [] }) },
+      plus: { funnelUserIds: async () => ({ trialed: [], subscribed: [] }) },
       profiles: { publicProfile: async () => null },
       ops: {
         jobFailures: async () => [],

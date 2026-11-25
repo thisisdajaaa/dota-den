@@ -32,6 +32,8 @@ export const patches: MessageTree<typeof en> = {
   },
   detail: {
     metaTitle: "Patch {version}",
+    metaDescription:
+      "Lahat ng pagbabago sa hero, item at ability sa Dota 2 patch {version}, sa simpleng salita.",
     allPatches: "Lahat ng patch",
     kicker: "Gameplay update",
     released: "Inilabas noong {date} · {heroes} · {items}",
