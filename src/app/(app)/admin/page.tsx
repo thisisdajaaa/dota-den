@@ -15,6 +15,8 @@ import { plural } from "@/common/i18n/translate";
 import { RunSyncButton } from "./run-sync-button";
 import { SchedulesButton } from "./schedules-button";
 import { TestAlertButton } from "./test-alert-button";
+import { BudgetsPanel, BUDGET_WARN_SHARE } from "./budgets-panel";
+import { FunnelPanel } from "./funnel-panel";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -43,8 +45,10 @@ export default async function AdminPage() {
   const {
     totals,
     retention,
+    funnel,
     optIns,
     usage,
+    budgets,
     parseRate,
     users: rows,
     jobFailures: failures,
@@ -62,6 +66,8 @@ export default async function AdminPage() {
   const failedRuns = latestRuns?.filter((r) => r.ok === false).length ?? 0;
   const realAlerts = alerts?.filter((a) => a.kind !== "test") ?? null;
   const errorCount = errors?.reduce((n, e) => n + e.count, 0) ?? null;
+  const highBudgets =
+    budgets?.budgets.filter((b) => b.cap > 0 && b.used >= b.cap * BUDGET_WARN_SHARE).length ?? 0;
   const health: { href: string; label: string; value: string; tone: Tone }[] = [
     {
       href: "#admin-cron",
@@ -105,6 +111,17 @@ export default async function AdminPage() {
         ? plural(t, "admin.health.failed14", failures.length)
         : t("admin.health.none"),
       tone: failures.length ? "bad" : "ok",
+    },
+    {
+      href: "#admin-budgets",
+      label: t("admin.health.budgets"),
+      ...(budgets === null || budgets.redis === "error"
+        ? { value: t("admin.health.redisDown"), tone: "bad" as const }
+        : budgets.redis === "off"
+          ? { value: t("admin.health.unknown"), tone: "muted" as const }
+          : highBudgets > 0
+            ? { value: plural(t, "admin.health.budgetsHigh", highBudgets), tone: "warn" as const }
+            : { value: t("admin.health.ok"), tone: "ok" as const }),
     },
     {
       href: "#admin-plus",
@@ -302,6 +319,8 @@ export default async function AdminPage() {
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-5">
+          <FunnelPanel funnel={funnel} t={t} />
+
           <section aria-labelledby="admin-retention" className="panel space-y-4 p-5">
             <div>
               <h2 id="admin-retention" className="text-lg font-semibold">
@@ -461,6 +480,8 @@ export default async function AdminPage() {
               <p className="text-sm text-muted-foreground">{t("admin.usage.unavailable")}</p>
             )}
           </section>
+
+          <BudgetsPanel budgets={budgets} t={t} />
 
           <section aria-labelledby="admin-errors" className="panel scroll-mt-20 overflow-hidden">
             <div className="px-5 pt-5 pb-3">

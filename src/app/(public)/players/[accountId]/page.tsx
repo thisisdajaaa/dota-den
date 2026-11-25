@@ -33,8 +33,9 @@ export async function generateMetadata({
 }: PageProps<"/players/[accountId]">): Promise<Metadata> {
   const accountId32 = parseAccountId((await params).accountId);
   if (accountId32 === null) return { title: (await getT())("players.notFound.title") };
-  const profile = await matchesService.playerProfile(accountId32);
-  return { title: displayName(profile?.personaName ?? null, accountId32) };
+  const [profile, t] = await Promise.all([matchesService.playerProfile(accountId32), getT()]);
+  const name = displayName(profile?.personaName ?? null, accountId32);
+  return { title: name, description: t("players.profile.metaDescription", { name }) };
 }
 
 export default async function PlayerPage({ params }: PageProps<"/players/[accountId]">) {

@@ -1,6 +1,7 @@
 import "server-only";
 import { getRedis } from "@/common/cache/redis";
 import { logger } from "@/common/logging/logger";
+import { BUDGET_ALERT_SHARE, emitOpsSignal } from "@/common/ops/ops-signals";
 import { RedisUpstreamBudget, type RedisLike } from "@/common/providers/redis-gateway-store";
 
 /** Reserves one paid model call; false when today's budget is spent. */
@@ -58,7 +59,11 @@ export function dailyCallBudget(
     // Only the daily cap matters here; per-client rate limits handle bursts.
     perMinute: Number.MAX_SAFE_INTEGER,
     perDay,
-    onMilestone: ({ used, cap }) => logger.info("llm_budget_usage", { budget: name, used, cap }),
+    onMilestone: ({ used, cap }) => {
+      logger.info("llm_budget_usage", { budget: name, used, cap });
+      if (used >= cap * BUDGET_ALERT_SHARE)
+        emitOpsSignal({ kind: "budget", budget: `llm:${name}`, used, cap });
+    },
     onExhausted: () => logger.warn("llm_budget_exhausted", { budget: name, cap: perDay }),
   });
   return {
@@ -69,6 +74,7 @@ export function dailyCallBudget(
         if (Date.now() - lastErrorLogAt >= 60_000) {
           lastErrorLogAt = Date.now();
           logger.warn("llm_budget_store_unavailable", { budget: name, error });
+          emitOpsSignal({ kind: "store_down", store: "redis", op: `llm:${name}` });
         }
         return !opts.failClosed;
       }

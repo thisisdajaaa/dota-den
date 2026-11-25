@@ -1,7 +1,7 @@
 /**
  * Owner alerts (pure rules): when something the owner must fix has gone wrong (a daily job
  * failed or stopped running, OpenDota is down, a backup or restore drill failed, a Plus
- * payment was refunded), and how
+ * payment was refunded, a daily call budget is nearly spent, Redis is failing), and how
  * often the same problem may be raised.
  */
 
@@ -13,6 +13,8 @@ export const ALERT_KINDS = [
   "opendota_down",
   "backup_failed",
   "plus_refund",
+  "budget_high",
+  "store_down",
   "test",
 ] as const;
 export type AlertKind = (typeof ALERT_KINDS)[number];
@@ -212,5 +214,42 @@ export function opsReportAlert(report: {
     kind: "backup_failed",
     key: `ops_failed:${report.job}`,
     vars: { job: report.job, details: text(report.details, "no details") },
+  };
+}
+
+/** What shared plumbing reports (mirrors OpsSignal in src/common/ops/ops-signals.ts). */
+export type PlumbingSignal =
+  | { kind: "budget"; budget: string; used: number; cap: number }
+  | { kind: "store_down"; store: "redis"; op: string };
+
+/** Owner-facing names of the daily budgets. */
+const BUDGET_NAMES: Record<string, string> = {
+  opendota: "OpenDota calls",
+  stratz: "STRATZ calls",
+  "llm:drafts": "AI calls (all AI features)",
+  "llm:drafts-guest": "AI calls by signed-out visitors",
+};
+
+/**
+ * A daily budget that reached 80% or 100% (one alert per budget, level and UTC day), or the
+ * shared Redis store failing (throttled like any alert, so at most every few hours).
+ */
+export function plumbingAlert(signal: PlumbingSignal, now: Date): Alert {
+  if (signal.kind === "store_down")
+    return {
+      kind: "store_down",
+      key: "store_down:redis",
+      vars: { op: text(signal.op, "unknown") },
+    };
+  const full = signal.used >= signal.cap;
+  return {
+    kind: "budget_high",
+    key: `budget:${signal.budget}:${now.toISOString().slice(0, 10)}:${full ? "full" : "high"}`,
+    vars: {
+      budget: BUDGET_NAMES[signal.budget] ?? signal.budget,
+      used: signal.used,
+      cap: signal.cap,
+      percent: signal.cap > 0 ? Math.min(100, Math.round((signal.used / signal.cap) * 100)) : 100,
+    },
   };
 }

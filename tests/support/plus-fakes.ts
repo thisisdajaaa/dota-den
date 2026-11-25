@@ -142,6 +142,15 @@ export class MemorySubscriptions implements SubscriptionsPort {
   async possiblyEntitled() {
     return [...this.docs.values()].filter((s) => s.userId && POSSIBLY_ENTITLED.includes(s.status));
   }
+  async subscriberUserIds(testMode: boolean | null) {
+    return [
+      ...new Set(
+        [...this.docs.values()]
+          .filter((d) => d.userId && (testMode === null || d.testMode === testMode))
+          .map((d) => d.userId!),
+      ),
+    ];
+  }
   async countsByStatus(testMode: boolean | null) {
     const counts = new Map<
       string,
@@ -226,6 +235,9 @@ export class MemoryTrials implements TrialsPort {
   }
   async activeUserIds(now: Date) {
     return [...this.docs.values()].filter((t) => t.endsAt > now).map((t) => t.userId);
+  }
+  async userIds() {
+    return [...new Set([...this.docs.values()].map((t) => t.userId))];
   }
   /** Set by a test: what the subscribed count reads (the fake has no subscriptions). */
   subscribed = 0;

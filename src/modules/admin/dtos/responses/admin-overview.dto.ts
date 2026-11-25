@@ -1,9 +1,11 @@
 import type { ErrorGroup } from "@/modules/errors";
 import type { FeatureUsage } from "@/modules/usage";
+import type { FunnelRow } from "../../domain/funnel";
 import type { AdminTotals } from "../../domain/overview";
 import type { Retention } from "../../domain/retention";
 import type {
   AdminProfileSource,
+  BudgetsTodayView,
   CronRunView,
   JobFailureView,
   OpsReportView,
@@ -31,10 +33,14 @@ export interface AdminOverviewDto {
   totals: AdminTotals;
   /** Null when activity couldn't be loaded. */
   retention: Retention | null;
+  /** Signed in → imported games → came back → free trial → subscribed. */
+  funnel: FunnelRow[];
   /** Players who turned on each reminder; null when that count couldn't be loaded. */
   optIns: { notifications: number | null; email: number | null; discord: number | null };
   /** Uses and players per paid or AI feature; null when the counters couldn't be loaded. */
   usage: FeatureUsage[] | null;
+  /** Today's use of each daily call budget; null when it couldn't be read. */
+  budgets: BudgetsTodayView | null;
   /** Ranked games from the window (newest day left out) and how many have a parsed replay. */
   parseRate: { games: number; parsed: number; windowDays: number } | null;
   /** Most recently active first. */

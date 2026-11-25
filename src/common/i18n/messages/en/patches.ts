@@ -30,6 +30,8 @@ export const patches = {
   },
   detail: {
     metaTitle: "Patch {version}",
+    metaDescription:
+      "Every hero, item and ability change in Dota 2 patch {version}, in plain words.",
     allPatches: "All patches",
     kicker: "Gameplay update",
     released: "Released {date} · {heroes} · {items}",

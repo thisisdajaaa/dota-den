@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
@@ -19,6 +20,7 @@ import { TimeZoneSync } from "@/modules/mmr/ui/time-zone-sync";
 import { MobileTabBar, PublicNav, SidebarNav, type NavKey } from "./app-nav";
 import { BrandMark } from "./brand-mark";
 import { SiteFooter } from "./site-footer";
+import { UpstreamNotice } from "./upstream-notice";
 
 /** Sections that have shipped. Add a key here when its page lands. */
 const ENABLED: readonly NavKey[] = [
@@ -115,6 +117,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+          <Suspense fallback={null}>
+            <UpstreamNotice />
+          </Suspense>
           {children}
         </main>
         <SiteFooter />
@@ -199,6 +204,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           id="main"
           className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-10 sm:px-6 lg:px-10 lg:pt-10 lg:pb-12"
         >
+          <Suspense fallback={null}>
+            <UpstreamNotice />
+          </Suspense>
           {children}
         </main>
         <SiteFooter />

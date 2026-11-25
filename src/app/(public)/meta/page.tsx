@@ -53,6 +53,10 @@ export async function generateMetadata({ searchParams }: PageProps<"/meta">): Pr
       bracket && bracket !== DEFAULT_BRACKET
         ? t("meta.titleBracket", { bracket: bracketLabel(bracket) })
         : t("meta.title"),
+    description:
+      bracket && bracket !== DEFAULT_BRACKET
+        ? t("meta.page.descriptionBracket", { bracket: bracketLabel(bracket) })
+        : t("meta.page.description"),
     alternates: { canonical: "/meta" },
   };
 }

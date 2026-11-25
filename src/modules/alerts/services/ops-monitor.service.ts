@@ -5,11 +5,13 @@ import {
   nextDownState,
   observeOpenDota,
   opsReportAlert,
+  plumbingAlert,
   staleCronAlerts,
   WATCHED_CRONS,
   type Alert,
   type CronResult,
   type OpsJob,
+  type PlumbingSignal,
 } from "../domain/alert-rules";
 import type { OpsReport } from "../alerts.model";
 import type {
@@ -57,6 +59,11 @@ export class OpsMonitorService {
       if (down) alerts.push(down);
       return this.raiseAll(alerts);
     });
+  }
+
+  /** Shared plumbing reported a nearly spent daily budget or a failing Redis store. */
+  async plumbing(signal: PlumbingSignal): Promise<Alert[]> {
+    return this.guard("plumbing", async () => this.raiseAll([plumbingAlert(signal, this.now())]));
   }
 
   /** Has every daily job completed within 26 hours? (Also run by the backup report.) */

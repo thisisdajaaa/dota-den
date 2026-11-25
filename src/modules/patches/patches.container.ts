@@ -29,7 +29,7 @@ function gateways(): { valve: ProviderGateway; openDota: ProviderGateway } {
   const make = (name: string) =>
     new ProviderGateway({
       name,
-      ...sharedGatewayOptions("valve"),
+      ...sharedGatewayOptions("valve", name),
       // Full patch payloads are ~200KB; allow a little longer than the default.
       timeoutMs: 15_000,
       onRequest: ({ url, status, durationMs, attempt }) =>
