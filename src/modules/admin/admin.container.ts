@@ -1,4 +1,5 @@
 import "server-only";
+import { budgetsToday } from "@/common/ops/budgets-today";
 import { ownerAlerts, opsMonitor } from "@/modules/alerts";
 import { draftHistoryRepository } from "@/modules/drafts";
 import { errorsService } from "@/modules/errors";
@@ -31,6 +32,7 @@ export const adminService = new AdminService({
     discord: async () => (await discordWebhooksRepository.active()).map((f) => f.userId),
   },
   usage: { summary: () => usageService.summary() },
+  budgets: { today: () => budgetsToday() },
   ops: {
     jobFailures: () => jobRunsRepository.recentFailures(),
     cronRuns: (limit) => cronRunsRepository.recent(limit),

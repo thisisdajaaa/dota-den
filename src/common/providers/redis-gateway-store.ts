@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { gunzip, gzip } from "node:zlib";
-import type { GatewayResponse, SharedResponseCache, UpstreamBudget } from "./provider-gateway";
+import type {
+  GatewayResponse,
+  SharedCircuit,
+  SharedResponseCache,
+  UpstreamBudget,
+} from "./provider-gateway";
 
 /** The slice of the Upstash client these adapters use (so tests can pass a fake). */
 export interface RedisLike {
@@ -67,6 +72,45 @@ export class RedisResponseCache implements SharedResponseCache {
     if (Buffer.byteLength(stored) > MAX_SHARED_BODY_BYTES) return;
     // Kept past expiry (when asked) so the gateway can serve it if the upstream fails.
     await this.redis.set(this.key(url), stored, { px: Math.max(ttlMs, retainMs ?? ttlMs) });
+  }
+}
+
+/** How long after the circuit last opened the upstream still counts as "having trouble". */
+export const TROUBLE_WINDOW_MS = 10 * 60_000;
+
+/**
+ * The gateway's circuit, shared by every instance: `<prefix>:open` holds until when it's open,
+ * `<prefix>:opened` when it last opened (kept for TROUBLE_WINDOW_MS, for the outage notice).
+ */
+export class RedisSharedCircuit implements SharedCircuit {
+  constructor(
+    private readonly redis: Pick<RedisLike, "get" | "set">,
+    private readonly opts: { prefix: string; now?: () => number },
+  ) {}
+
+  private get now(): number {
+    return (this.opts.now ?? Date.now)();
+  }
+
+  async openUntil(): Promise<number | null> {
+    const until = Number(await this.redis.get(`${this.opts.prefix}:open`));
+    return Number.isFinite(until) && until > this.now ? until : null;
+  }
+
+  async open(untilMs: number): Promise<void> {
+    const now = this.now;
+    await Promise.all([
+      this.redis.set(`${this.opts.prefix}:open`, String(untilMs), {
+        px: Math.max(1, untilMs - now),
+      }),
+      this.redis.set(`${this.opts.prefix}:opened`, String(now), { px: TROUBLE_WINDOW_MS }),
+    ]);
+  }
+
+  /** When the circuit last opened, if within TROUBLE_WINDOW_MS; null otherwise. */
+  async troubleSince(): Promise<number | null> {
+    const at = Number(await this.redis.get(`${this.opts.prefix}:opened`));
+    return Number.isFinite(at) && at > 0 && this.now - at <= TROUBLE_WINDOW_MS ? at : null;
   }
 }
 

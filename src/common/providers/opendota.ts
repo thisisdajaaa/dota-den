@@ -2,7 +2,7 @@ import "server-only";
 import { env } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
 import { ProviderGateway } from "./provider-gateway";
-import { sharedGatewayOptions } from "./shared-gateway-options";
+import { sharedCircuit, sharedGatewayOptions } from "./shared-gateway-options";
 
 export const OPENDOTA_DEFAULT_BASE_URL = "https://api.opendota.com/api";
 
@@ -58,7 +58,7 @@ export function openDotaExplorerGateway(): ProviderGateway {
   const { OPENDOTA_EXPLORER_TIMEOUT_MS, OPENDOTA_EXPLORER_MAX_RETRIES } = env();
   globalForExplorer.__ddExplorer ??= new ProviderGateway({
     name: "opendota-explorer",
-    ...sharedGatewayOptions("opendota"),
+    ...sharedGatewayOptions("opendota", "opendota-explorer"),
     timeoutMs: OPENDOTA_EXPLORER_TIMEOUT_MS,
     maxRetries: OPENDOTA_EXPLORER_MAX_RETRIES,
     onRequest: ({ status, durationMs, attempt }) =>
@@ -71,4 +71,16 @@ export function openDotaExplorerGateway(): ProviderGateway {
       }),
   });
   return globalForExplorer.__ddExplorer;
+}
+
+/**
+ * When OpenDota's API last stopped answering (its shared circuit opened) within the last few
+ * minutes, or null. One Redis read; null without Redis or when the read fails.
+ */
+export async function openDotaTroubleSince(): Promise<number | null> {
+  try {
+    return (await sharedCircuit("opendota")?.troubleSince()) ?? null;
+  } catch {
+    return null;
+  }
 }

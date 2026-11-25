@@ -9,6 +9,9 @@ export const admin: MessageTree<typeof en> = {
     "Lahat ng nakapag-sign in (iisang database ang gamit ng production at staging). Galing sa public OpenDota profile nila ang mga pangalan at rank.",
   notFound: { title: "Hindi nahanap ang page", back: "Bumalik sa buod mo" },
   health: {
+    budgets: "Mga budget",
+    budgetsHigh: { one: "{n} lampas 80%", other: "{n} lampas 80%" },
+    redisDown: "Down ang Redis",
     aria: "Sa isang tingin",
     jobs: "Mga daily job",
     alerts: "Mga alerto",
@@ -59,6 +62,22 @@ export const admin: MessageTree<typeof en> = {
     unavailable: "Hindi ma-load ang aktibidad.",
     ofUsers: { one: "sa {n} user", other: "sa {n} user" },
     reach: "Abot",
+  },
+  budgets: {
+    title: "Mga budget ngayong araw",
+    body: "Mga request na nagamit ngayong araw kumpara sa daily cap (nire-reset nang 08:00 oras sa Manila). May alert sa 80% at 100%.",
+    redisOk: "Sumasagot ang Redis.",
+    redisOff: "Walang Redis, kaya bawat server binibilang ang budget at hindi ito maipapakita.",
+    redisError:
+      "Hindi sumagot ang Redis. Bawat server muna ang cache at budget: tingnan ang plan at limit sa Upstash.",
+    usedOf: "{used} sa {cap}",
+    names: {
+      opendota: "Mga request sa OpenDota",
+      opendotaGuest: "Mga request sa OpenDota ng mga hindi naka-sign in",
+      stratz: "Mga request sa STRATZ",
+      ai: "Mga AI request (lahat ng AI feature)",
+      aiGuest: "Mga AI request ng mga hindi naka-sign in",
+    },
   },
   usage: {
     title: "Ano ang ginagamit",
@@ -158,7 +177,7 @@ export const admin: MessageTree<typeof en> = {
     messages: {
       plus_refund: {
         title: "Na-refund ang bayad sa Plus",
-        body: "May {event} para sa subscription {subscription}. Hindi natatapos ang Plus dahil lang sa refund: i-cancel ang subscription sa Lemon Squeezy kung dapat nang tumigil ang Plus.",
+        body: "May {event} para sa subscription {subscription}. Hindi natatapos ang Plus dahil lang sa refund: i-cancel ang subscription sa Polar kung dapat nang tumigil ang Plus.",
       },
       cron_failed: {
         title: "Pumalya ang daily job: {cron}",
@@ -183,6 +202,14 @@ export const admin: MessageTree<typeof en> = {
       backup_failed: {
         title: "Pumalya ang {job}",
         body: "{details}",
+      },
+      budget_high: {
+        title: "{budget}: {percent}% na ng budget ngayong araw ang nagamit",
+        body: "{used} sa {cap} ngayong araw (nire-reset nang 08:00 oras sa Manila). Pag 100% na, tatanggihan ang mga bagong request hanggang ma-reset; taasan ang cap sa Vercel env kung paulit-ulit ito.",
+      },
+      store_down: {
+        title: "Pumapalya ang Redis",
+        body: "Pumapalya ang mga request sa Upstash Redis ({op}). Bawat server muna ang cache, budget at rate limit hanggang bumalik ito. Tingnan ang plan at usage limit sa Upstash.",
       },
       test: {
         title: "Test na alerto",

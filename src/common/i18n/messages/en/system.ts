@@ -19,6 +19,8 @@ export const system = {
     skip: "Skip to content",
     account: "Account {id}",
     player: "Player {id}",
+    upstreamTrouble:
+      "OpenDota, where our match data comes from, isn't answering reliably right now. You may see saved data, and new games can take a while to show up.",
   },
   pwa: { install: "Install app" },
   search: { clear: "Clear search" },

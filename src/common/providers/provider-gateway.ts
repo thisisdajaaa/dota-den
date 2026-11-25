@@ -23,6 +23,20 @@ export function staleWindow(ttlMs: number): number {
   return Math.min(ttlMs, MAX_STALE_MS);
 }
 
+/**
+ * A circuit shared by every instance (e.g. Redis). When one instance opens its circuit, the
+ * others stop calling the upstream too instead of each finding out the slow way (a dead
+ * upstream costs a full timeout per attempt). Implementations may throw; we fail open.
+ */
+export interface SharedCircuit {
+  /** Until when (ms epoch) some instance has opened the circuit; null when it's closed. */
+  openUntil(): Promise<number | null>;
+  open(untilMs: number): Promise<void>;
+}
+
+/** How often an instance looks at the shared circuit (at most once per this many ms). */
+export const SHARED_CIRCUIT_CHECK_MS = 5_000;
+
 /** Global call budget. `take` reserves one upstream call; false when exhausted. */
 export interface UpstreamBudget {
   take(): Promise<{ allowed: boolean; retryAfterMs: number | null }>;
@@ -62,10 +76,17 @@ export interface GatewayOptions {
   sharedCache?: SharedResponseCache;
   /** Checked before every upstream call (each retry counts). */
   budget?: UpstreamBudget;
+  /** Opened here when this instance's circuit opens; checked before calling upstream. */
+  sharedCircuit?: SharedCircuit;
+  /** This instance's circuit just opened (after `failureThreshold` failures in a row). */
+  onCircuitOpen?: (event: { openForMs: number; last: GatewayResponse }) => void;
   /** The upstream failed and an expired cached answer was served instead. */
   onStale?: (event: { url: string; failure: string; ageMs: number }) => void;
   /** Shared cache or budget store failed; the gateway carried on without it. */
-  onSharedError?: (event: { op: "cache_get" | "cache_set" | "budget"; error: unknown }) => void;
+  onSharedError?: (event: {
+    op: "cache_get" | "cache_set" | "budget" | "circuit";
+    error: unknown;
+  }) => void;
 }
 
 interface CacheEntry {
@@ -111,6 +132,7 @@ export class ProviderGateway {
   private openUntil = 0;
   private lastSuccessAt: number | null = null;
   private lastFailureAt: number | null = null;
+  private sharedCheckedAt = Number.NEGATIVE_INFINITY;
 
   constructor(private readonly opts: GatewayOptions) {}
 
@@ -224,6 +246,7 @@ export class ProviderGateway {
 
   /** Fire-and-check POST (no retries or caching); used for upstream "refresh" requests. */
   async postJson(url: string): Promise<GatewayResponse> {
+    await this.adoptSharedCircuit();
     if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
     const exhausted = await this.overBudget();
     if (exhausted) return exhausted;
@@ -266,6 +289,7 @@ export class ProviderGateway {
     /** A JSON body: sent as a POST (a read-only query). */
     body?: string,
   ): Promise<GatewayResponse> {
+    await this.adoptSharedCircuit();
     if (this.openUntil > this.now) return { ok: false, kind: "circuit_open" };
 
     const fetchFn = this.opts.fetch ?? ((u, i) => fetch(u, i));
@@ -334,6 +358,20 @@ export class ProviderGateway {
     return call.isolated ? last : this.recordFailure(last);
   }
 
+  /** Another instance opened the shared circuit: stay off the upstream here too. */
+  private async adoptSharedCircuit(): Promise<void> {
+    const shared = this.opts.sharedCircuit;
+    if (!shared || this.openUntil > this.now) return;
+    if (this.now - this.sharedCheckedAt < SHARED_CIRCUIT_CHECK_MS) return;
+    this.sharedCheckedAt = this.now;
+    try {
+      const until = await shared.openUntil();
+      if (until !== null && until > this.now) this.openUntil = until;
+    } catch (error) {
+      this.opts.onSharedError?.({ op: "circuit", error });
+    }
+  }
+
   private backoff(attempt: number): number {
     const base = (this.opts.baseDelayMs ?? 250) * 2 ** attempt;
     return base / 2 + (this.opts.random ?? Math.random)() * (base / 2);
@@ -344,12 +382,17 @@ export class ProviderGateway {
     this.lastSuccessAt = this.now;
   }
 
-  private recordFailure(res: GatewayResponse): GatewayResponse {
+  private async recordFailure(res: GatewayResponse): Promise<GatewayResponse> {
     this.consecutiveFailures++;
     this.lastFailureAt = this.now;
     if (this.consecutiveFailures >= (this.opts.failureThreshold ?? 5)) {
-      this.openUntil = this.now + (this.opts.openForMs ?? 30_000);
+      const openForMs = this.opts.openForMs ?? 30_000;
+      this.openUntil = this.now + openForMs;
       this.consecutiveFailures = 0;
+      this.opts.onCircuitOpen?.({ openForMs, last: res });
+      await this.opts.sharedCircuit?.open(this.openUntil).catch((error: unknown) => {
+        this.opts.onSharedError?.({ op: "circuit", error });
+      });
     }
     return res;
   }

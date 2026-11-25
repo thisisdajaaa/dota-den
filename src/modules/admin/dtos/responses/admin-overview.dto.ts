@@ -4,6 +4,7 @@ import type { AdminTotals } from "../../domain/overview";
 import type { Retention } from "../../domain/retention";
 import type {
   AdminProfileSource,
+  BudgetsTodayView,
   CronRunView,
   JobFailureView,
   OpsReportView,
@@ -35,6 +36,8 @@ export interface AdminOverviewDto {
   optIns: { notifications: number | null; email: number | null; discord: number | null };
   /** Uses and players per paid or AI feature; null when the counters couldn't be loaded. */
   usage: FeatureUsage[] | null;
+  /** Today's use of each daily call budget; null when it couldn't be read. */
+  budgets: BudgetsTodayView | null;
   /** Ranked games from the window (newest day left out) and how many have a parsed replay. */
   parseRate: { games: number; parsed: number; windowDays: number } | null;
   /** Most recently active first. */

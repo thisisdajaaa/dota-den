@@ -21,6 +21,8 @@ export const system: MessageTree<typeof en> = {
     skip: "Laktaw sa sulod",
     account: "Account {id}",
     player: "Player {id}",
+    upstreamTrouble:
+      "Dili maayo nga motubag karon ang OpenDota, diin gikan ang among match data. Basin na-save nga data ang imong makita, ug dugay pa mogawas ang bag-ong mga dula.",
   },
   pwa: { install: "I-install ang app" },
   search: { clear: "I-clear ang search" },

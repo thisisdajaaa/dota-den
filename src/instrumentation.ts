@@ -1,5 +1,18 @@
 import type { Instrumentation } from "next";
 
+/**
+ * Once per server instance: shared plumbing (provider gateways, AI budgets) reports budget and
+ * Redis trouble through the owner alerts feature, loaded only when there's something to say.
+ */
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  const { registerOpsSink } = await import("@/common/ops/ops-signals");
+  registerOpsSink(async (signal) => {
+    const { opsMonitor } = await import("@/modules/alerts");
+    await opsMonitor.plumbing(signal);
+  });
+}
+
 /** Server errors (renders, route handlers, actions) go to the admin page's error list. */
 export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;

@@ -1,12 +1,13 @@
 import "server-only";
 import { env, openDotaBudget } from "@/common/config/env";
 import { logger } from "@/common/logging/logger";
+import { BUDGET_ALERT_SHARE, emitOpsSignal } from "@/common/ops/ops-signals";
 import { cookies } from "next/headers";
 import { getRedis } from "@/common/cache/redis";
 import { SESSION_COOKIE } from "@/common/http/session-cookie";
 import { markedLane } from "./background-work";
 import type { GatewayOptions } from "./provider-gateway";
-import { RedisResponseCache, RedisUpstreamBudget } from "./redis-gateway-store";
+import { RedisResponseCache, RedisSharedCircuit, RedisUpstreamBudget } from "./redis-gateway-store";
 import { SessionCheckMemo, type SessionVerifier } from "./session-lane";
 
 let lastErrorLogAt = 0;
@@ -80,23 +81,48 @@ function budgetFor(
     perMinute,
     perDay,
     onExhausted: (window) => logger.warn(`${upstream}_budget_exhausted`, { window }),
-    onMilestone: (usage) => logger.info(`${upstream}_budget_usage`, usage),
+    onMilestone: (usage) => {
+      logger.info(`${upstream}_budget_usage`, usage);
+      // Guests (mostly crawlers) use up their share most days; only the whole budget matters.
+      if (usage.window === "day" && usage.used >= usage.cap * BUDGET_ALERT_SHARE)
+        emitOpsSignal({ kind: "budget", budget: upstream, used: usage.used, cap: usage.cap });
+    },
     lane,
   });
 }
 
+/** The circuit one gateway shares across instances; null without Redis. */
+export function sharedCircuit(circuit: string): RedisSharedCircuit | null {
+  const redis = getRedis();
+  if (!redis) return null;
+  const store = redis as unknown as ConstructorParameters<typeof RedisSharedCircuit>[0];
+  return new RedisSharedCircuit(store, { prefix: `dd:circuit:${circuit}` });
+}
+
 /**
- * Shared cache (and, for OpenDota and STRATZ, a global call budget) for a gateway when Upstash
- * Redis is configured (ADR 0008). Without Redis this returns nothing and gateways stay
- * per-instance.
+ * Shared cache, a shared circuit (and, for OpenDota and STRATZ, a global call budget) for a
+ * gateway when Upstash Redis is configured (ADR 0008). Without Redis this returns nothing and
+ * gateways stay per-instance. `circuit` names the gateway's circuit (default: the upstream):
+ * a gateway with its own timeouts, like OpenDota's explorer, gets its own.
  */
 export function sharedGatewayOptions(
   upstream: "opendota" | "valve" | "stratz",
-): Pick<GatewayOptions, "sharedCache" | "budget" | "onSharedError"> {
+  circuit: string = upstream,
+): Pick<
+  GatewayOptions,
+  "sharedCache" | "budget" | "onSharedError" | "sharedCircuit" | "onCircuitOpen"
+> {
   const redis = getRedis();
   if (!redis) return {};
   const store = redis as unknown as ConstructorParameters<typeof RedisResponseCache>[0];
   return {
+    sharedCircuit: sharedCircuit(circuit) ?? undefined,
+    onCircuitOpen: ({ openForMs, last }) =>
+      logger.warn("provider_circuit_open", {
+        provider: circuit,
+        openForMs,
+        failure: last.ok ? null : last.kind,
+      }),
     sharedCache: new RedisResponseCache(store, { prefix: `dd:gw:${upstream}` }),
     // One budget per provider quota (OpenDota's API and explorer gateways share one).
     budget: budgetFor(upstream, store),
@@ -105,6 +131,7 @@ export function sharedGatewayOptions(
       if (Date.now() - lastErrorLogAt < 60_000) return;
       lastErrorLogAt = Date.now();
       logger.warn("shared_gateway_store_unavailable", { upstream, op, error });
+      emitOpsSignal({ kind: "store_down", store: "redis", op: `${upstream}:${op}` });
     },
   };
 }

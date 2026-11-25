@@ -3,6 +3,7 @@ import { adminTotals } from "./domain/overview";
 import { retention } from "./domain/retention";
 import type {
   AdminActivitySource,
+  AdminBudgetSource,
   AdminOptInSource,
   AdminOpsSource,
   AdminProfileSource,
@@ -34,6 +35,7 @@ export class AdminService {
       activity: AdminActivitySource;
       optIns: AdminOptInSource;
       usage: AdminUsageSource;
+      budgets: AdminBudgetSource;
     },
   ) {}
 
@@ -59,6 +61,7 @@ export class AdminService {
       opsReports,
       usage,
       parse,
+      budgets,
     ] = await Promise.all([
       stats.matchStats(accountIds),
       stats.mmrEntryCounts(userIds),
@@ -84,6 +87,7 @@ export class AdminService {
           new Date(now.getTime() - PARSE_SETTLE_MS),
         )
         .catch(() => null),
+      this.deps.budgets.today().catch(() => null),
     ]);
     // Count current players only (a deleted account's row may linger briefly).
     const count = (ids: string[] | null) =>
@@ -124,6 +128,7 @@ export class AdminService {
         discord: count(discordFeeds),
       },
       usage,
+      budgets,
       parseRate: parse && { ...parse, windowDays: PARSE_WINDOW_DAYS },
       users: rows,
       jobFailures,

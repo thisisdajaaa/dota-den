@@ -49,6 +49,20 @@ export interface AdminStatsSource {
   ): Promise<{ games: number; parsed: number }>;
 }
 
+/** Today's use of each daily call budget (OpenDota, STRATZ, AI) and whether Redis answered. */
+export interface AdminBudgetSource {
+  today(): Promise<BudgetsTodayView>;
+}
+
+export interface BudgetsTodayView {
+  redis: "ok" | "off" | "error";
+  budgets: Array<{
+    key: "opendota" | "opendotaGuest" | "stratz" | "ai" | "aiGuest";
+    used: number;
+    cap: number;
+  }>;
+}
+
 /** Uses of the paid and AI features. */
 export interface AdminUsageSource {
   summary(): Promise<FeatureUsage[]>;

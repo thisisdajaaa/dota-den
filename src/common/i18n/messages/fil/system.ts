@@ -21,6 +21,8 @@ export const system: MessageTree<typeof en> = {
     skip: "Lumaktaw sa nilalaman",
     account: "Account {id}",
     player: "Player {id}",
+    upstreamTrouble:
+      "Hindi maayos sumasagot ngayon ang OpenDota, kung saan galing ang match data namin. Baka naka-save na data ang makita mo, at matatagalan bago lumabas ang mga bagong laro.",
   },
   pwa: { install: "I-install ang app" },
   search: { clear: "I-clear ang search" },

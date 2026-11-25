@@ -11,7 +11,9 @@ import {
   COMPRESS_OVER_BYTES,
   MAX_SHARED_BODY_BYTES,
   RedisResponseCache,
+  RedisSharedCircuit,
   RedisUpstreamBudget,
+  TROUBLE_WINDOW_MS,
   type RedisLike,
 } from "@/common/providers/redis-gateway-store";
 
@@ -34,6 +36,29 @@ function fakeRedis() {
   };
   return redis;
 }
+
+describe("RedisSharedCircuit", () => {
+  it("stores until when it's open and when it last opened", async () => {
+    const redis = fakeRedis();
+    let now = 1_000;
+    const circuit = new RedisSharedCircuit(redis, {
+      prefix: "dd:circuit:opendota",
+      now: () => now,
+    });
+    expect(await circuit.openUntil()).toBeNull();
+    expect(await circuit.troubleSince()).toBeNull();
+    await circuit.open(31_000);
+    expect(redis.set).toHaveBeenCalledWith("dd:circuit:opendota:open", "31000", { px: 30_000 });
+    expect(await circuit.openUntil()).toBe(31_000);
+    expect(await circuit.troubleSince()).toBe(1_000);
+    now = 31_001;
+    // Closed again, but OpenDota still counts as having trouble for a while.
+    expect(await circuit.openUntil()).toBeNull();
+    expect(await circuit.troubleSince()).toBe(1_000);
+    now = 1_000 + TROUBLE_WINDOW_MS + 1;
+    expect(await circuit.troubleSince()).toBeNull();
+  });
+});
 
 describe("RedisResponseCache", () => {
   it("keys by a hash of the URL, so API keys never reach Redis", async () => {
