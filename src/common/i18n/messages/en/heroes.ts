@@ -157,6 +157,48 @@ export const heroes = {
     emptyLoseTo: "No enemy hero with {min}+ games where you lose more than you win.",
     emptyWinWith: "No allied hero with {min}+ games where you win half or more.",
   },
+  wards: {
+    metaTitle: "Your wards",
+    link: "Your wards",
+    kicker: "Your heroes",
+    title: "Your wards",
+    description:
+      "Where and when you ward, and how long your observers last, from your latest parsed games.",
+    heroLabel: "Hero",
+    none: "No parsed games with ward data yet. Games are read a few a day after they're parsed (Plus: up to 100 a day); open a match and use “Get detailed stats” to have its replay parsed.",
+    gamesRead:
+      "From {games}: your latest parsed games with ward data, {warded} with at least one ward.",
+    tiles: {
+      observers: "Observers per game",
+      observersDetail: "{n} placed",
+      sentries: "Sentries per game",
+      sentriesDetail: "{n} placed",
+      life: "Observer life",
+      lifeDetail: "Average time up, of {n} with a known end (full life 6:00)",
+      lifeFew: "Needs {min} observers with a known end ({n} so far)",
+      destroyed: "Observers destroyed",
+      destroyedDetail: "Taken down before their 6:00 ran out",
+      first: "First observer",
+      firstDetail: "Typical time of your first observer",
+      firstNone: "No observers yet",
+    },
+    map: {
+      title: "Your ward map",
+      description:
+        "Every ward you placed in these games, on the current map. Gold: observers; blue: sentries. Faded: destroyed within a minute.",
+      kind: "Wards",
+      kinds: { all: "All wards", observer: "Observers", sentry: "Sentries" },
+      side: "Side",
+      sides: { all: "Both sides", radiant: "As Radiant", dire: "As Dire" },
+      window: "Time",
+      label: "{n} wards on the map",
+      ward: "{kind} at {time}",
+      lasted: ", up {time}",
+      empty: "No wards in this filter.",
+    },
+    footnote:
+      "Read from the ward logs in your parsed replays; nothing is estimated. A ward with no recorded end (still up when the game ended) counts for placement but not for life or destroyed.",
+  },
   splits: {
     metaTitle: "Your splits",
     link: "Your splits",

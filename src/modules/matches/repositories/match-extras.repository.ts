@@ -2,7 +2,7 @@ import "server-only";
 import type { Db } from "mongodb";
 import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import type { MatchExtras } from "../domain/match-extras";
-import type { MatchExtrasStore, PendingExtras, StoredLane } from "../matches.ports";
+import type { MatchExtrasStore, PendingExtras, StoredLane, StoredWardGame } from "../matches.ports";
 import { MATCH_COLLECTIONS, type PlayerMatchFactDoc } from "./matches.repository";
 
 export interface MatchExtrasDoc extends MatchExtras {
@@ -12,8 +12,11 @@ export interface MatchExtrasDoc extends MatchExtras {
   schemaVersion: number;
 }
 
-/** 2: lanePartnerHeroIds. Parsed games stored at 1 are fetched again, after new games. */
-const SCHEMA_VERSION = 2;
+/**
+ * 2: lanePartnerHeroIds. 3: side and wards. Parsed games stored before are fetched again, after
+ * new games, within the same daily cap.
+ */
+const SCHEMA_VERSION = 3;
 export const matchExtrasId = (accountId32: number, matchId: string) => `${accountId32}:${matchId}`;
 
 /** Extras from parsed replays (one document per player and match), each fetched once. */
@@ -185,6 +188,38 @@ export class MatchExtrasRepository implements MatchExtrasStore {
       roaming: d.roaming ?? false,
       laneResult: d.laneResult ?? null,
       ...(d.lanePartnerHeroIds !== undefined ? { lanePartnerHeroIds: d.lanePartnerHeroIds } : {}),
+    }));
+  }
+
+  /** Your wards in your latest stored parsed games that have them, newest first. */
+  async wardsForAccount(accountId32: number, limit: number): Promise<StoredWardGame[]> {
+    const docs = await (
+      await this.col()
+    )
+      .find(
+        { accountId32, parsed: true, wards: { $type: "array" } },
+        {
+          projection: {
+            _id: 0,
+            matchId: 1,
+            heroId: 1,
+            startedAt: 1,
+            result: 1,
+            side: 1,
+            wards: 1,
+          },
+        },
+      )
+      .sort({ startedAt: -1 })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => ({
+      matchId: d.matchId,
+      heroId: d.heroId,
+      startedAt: d.startedAt,
+      result: d.result,
+      side: d.side ?? null,
+      wards: d.wards ?? [],
     }));
   }
 

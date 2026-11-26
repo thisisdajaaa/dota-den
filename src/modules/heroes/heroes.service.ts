@@ -18,6 +18,13 @@ import { heroCoaching, itemImpact, type HeroCoaching } from "./domain/hero-coach
 import { buildCheck, type BuildCheck } from "./domain/build-check";
 import { heroProgress } from "./domain/hero-progress";
 import { deeperStats, type DeeperStats } from "./domain/deeper-stats";
+import {
+  mapWards,
+  WARD_GAMES_LIMIT,
+  wardHabits,
+  type MapWard,
+  type WardHabits,
+} from "./domain/ward-habits";
 import { lineupProgress, ownMatchups } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 import type {
@@ -232,5 +239,18 @@ export class HeroesService {
       opts.heroId === undefined ? lanes : lanes.filter((l) => l.heroId === opts.heroId),
       { timeZone: opts.timeZone, rolesOf: (id) => roles.get(id) },
     );
+  }
+
+  /**
+   * Your wards: habits and map spots from your latest parsed games (optionally on one hero).
+   * Reads stored extras only: no OpenDota call.
+   */
+  async wards(
+    accountId32: number,
+    opts: { heroId?: number } = {},
+  ): Promise<{ habits: WardHabits; spots: MapWard[] }> {
+    const games = (await this.deps.extras.wards?.(accountId32, WARD_GAMES_LIMIT)) ?? [];
+    const mine = opts.heroId === undefined ? games : games.filter((g) => g.heroId === opts.heroId);
+    return { habits: wardHabits(mine), spots: mapWards(mine) };
   }
 }

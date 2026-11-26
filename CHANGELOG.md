@@ -6,6 +6,8 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-11-26
 
+- Your wards (/heroes/wards, free): where and when you ward on one map (filter by observers or sentries, side and time), observers and sentries per game, how long your observers last and how many are destroyed, and when you place your first one, from your latest parsed games
+- Hero pages show the whole hero art in the banner (heads were cut off); Play together and the Plus page no longer leave a long empty column; the match ward map is larger
 - Fuller layouts: hero pages, the battle report, Your splits and the dashboard's Stats tab lay their cards in two balanced columns (no long empty column beside a few cards, no stretched half-empty cards); hero guide item builds use two columns; a short hero list spans the page with the advice below
 - Invite a friend (/invite): share your link; when a friend new to Dota Den signs in with Steam through it and 10 of their games are imported, you each get 7 days of Plus. No card, nothing charged, nothing renews; up to 5 weeks per player, and the friend always gets theirs
 
