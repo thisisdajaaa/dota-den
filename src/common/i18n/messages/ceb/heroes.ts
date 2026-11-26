@@ -164,10 +164,10 @@ export const heroes: MessageTree<typeof en> = {
       "Walay kauban nga hero nga adunay {min}+ ka duwa diin modaog ka sa katunga o labaw pa.",
   },
   wards: {
-    metaTitle: "Imong mga ward",
-    link: "Imong mga ward",
+    metaTitle: "Imong mga ward ug rune",
+    link: "Imong mga ward ug rune",
     kicker: "Imong mga hero",
-    title: "Imong mga ward",
+    title: "Imong mga ward ug rune",
     description:
       "Asa ug kanus-a ka mag-ward, ug unsa ka dugay molungtad ang imong mga observer, gikan sa imong pinakabag-ong parsed nga dula.",
     heroLabel: "Hero",
@@ -175,6 +175,7 @@ export const heroes: MessageTree<typeof en> = {
     gamesRead:
       "Gikan sa {games}: imong pinakabag-ong parsed nga dula nga adunay ward data, {warded} nga adunay bisan usa ka ward.",
     tiles: {
+      label: "Imong batasan sa ward",
       observers: "Observer kada dula",
       observersDetail: "{n} ang gibutang",
       sentries: "Sentry kada dula",
@@ -202,6 +203,35 @@ export const heroes: MessageTree<typeof en> = {
       ward: "{kind} sa {time}",
       lasted: ", milungtad {time}",
       empty: "Walay ward niini nga filter.",
+    },
+    runes: {
+      title: "Imong mga rune",
+      description:
+        "Mga rune nga imong gikuha sa {n} niining mga dula (dili apil ang mga dula nga nabasa sa wala pa gitipigan ang rune).",
+      none: "Wala pay rune data. Gibasa pag-usab ang imong mga parsed nga dula para sa rune, pipila kada adlaw (Plus: hangtod 100 kada adlaw), mao nga mapuno kini sa sunod nga mga adlaw.",
+      tiles: {
+        bounty: "Bounty rune kada dula",
+        bountyDetail: "Bulawan para nimo ug sa imong team",
+        horn: "Bounty sa sinugdanan",
+        hornDetail: "Mga dula nga nikuha ka og bounty sa unang minuto",
+        few: "Kinahanglan og {min} ka dula nga adunay rune data ({n} pa lang)",
+        power: "Power rune kada dula",
+        powerDetail: "{n} kada dula sa wala pa ang 10:00",
+        wisdom: "Wisdom rune kada dula",
+        wisdomDetail: "Experience shrine, gikan sa 7:00",
+        water: "Water rune kada dula",
+        waterDetail: "Ang mga river rune sa 2:00 ug 4:00",
+      },
+      byKind: "Mga power rune nga imong gikuha",
+      kinds: {
+        double_damage: "Double Damage",
+        haste: "Haste",
+        illusion: "Illusion",
+        invisibility: "Invisibility",
+        regeneration: "Regeneration",
+        arcane: "Arcane",
+        shield: "Shield",
+      },
     },
     footnote:
       "Gibasa gikan sa ward logs sa imong parsed nga replay; walay gitag-an. Ang ward nga walay narekord nga katapusan (nagbarog pa sa pagkahuman sa dula) giihap sa pagbutang apan dili sa kinabuhi o pagkaguba.",

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("your wards: habits and a map from your parsed games", async ({ page }) => {
+test("wards and runes: habits and a map from your parsed games", async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto("/api/v1/auth/steam/login");
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -9,9 +9,9 @@ test("your wards: habits and a map from your parsed games", async ({ page }) => 
   });
 
   await page.goto("/heroes");
-  await page.getByRole("link", { name: "Your wards" }).click();
+  await page.getByRole("link", { name: "Wards & runes" }).click();
   await expect(page).toHaveURL(/\/heroes\/wards$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Your wards" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Wards & runes" })).toBeVisible();
 
   // Match details are read in the background after the sync: reload until they're in.
   await expect(async () => {
@@ -22,7 +22,7 @@ test("your wards: habits and a map from your parsed games", async ({ page }) => 
   }).toPass({ timeout: 45_000 });
 
   // Each fixture game: two observers (one taken down at 5:30 after 6 minutes up) and a sentry.
-  const tiles = page.getByRole("region", { name: "Your wards" });
+  const tiles = page.getByRole("region", { name: "Your ward habits" });
   await expect(tiles).toContainText("Observers per game");
   await expect(tiles).toContainText("2.0");
   await expect(tiles).toContainText("Sentries per game");
@@ -38,4 +38,13 @@ test("your wards: habits and a map from your parsed games", async ({ page }) => 
   await map.getByRole("radio", { name: "Late game (30+)" }).click();
   await expect(img).toHaveAttribute("aria-label", "0 wards on the map");
   await expect(map.getByRole("status")).toHaveText("No wards in this filter.");
+
+  // The parsed fixture game: a horn bounty, a haste rune at 6:00 and a wisdom rune.
+  const runes = page.getByRole("region", { name: "Your runes" });
+  await expect(runes).toContainText("Bounty runes per game");
+  await expect(runes).toContainText("Horn bounty");
+  // One parsed fixture game: too few for the horn share, which waits rather than guessing.
+  await expect(runes).toContainText("Needs 5 games with rune data (1 so far)");
+  await expect(runes).toContainText("1.0 per game before 10:00");
+  await expect(runes.getByRole("listitem").filter({ hasText: "Haste" })).toBeVisible();
 });

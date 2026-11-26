@@ -6,6 +6,7 @@ import { plural } from "@/common/i18n/translate";
 import { minimapAt } from "@/components/minimap";
 import { PageHeader } from "@/components/page-header";
 import { heroesService } from "@/modules/heroes";
+import { RuneHabitsView } from "@/modules/heroes/ui/rune-habits";
 import { WardHabitsView } from "@/modules/heroes/ui/ward-habits";
 import { getCurrentUser } from "@/modules/identity";
 import { matchQueries, matchesService } from "@/modules/matches";
@@ -23,7 +24,7 @@ function parseHero(value: unknown): number | undefined {
   return Number(v);
 }
 
-/** Your wards: where and when you ward and how long your observers last (free). */
+/** Wards and runes: where and when you ward, how long your observers last, which runes you take (free). */
 export default async function WardsPage({
   searchParams,
 }: {
@@ -46,7 +47,7 @@ export default async function WardsPage({
   }));
   const hrefFor: Record<string, string> = { all: "/heroes/wards" };
   for (const o of heroOptions) hrefFor[String(o.heroId)] = `/heroes/wards?hero=${o.heroId}`;
-  const { habits, spots } = wards;
+  const { habits, spots, runes } = wards;
 
   return (
     <div className="space-y-6">
@@ -82,6 +83,7 @@ export default async function WardsPage({
             spots={spots}
             mapImage={minimapAt(new Date())?.src ?? null}
           />
+          <RuneHabitsView runes={runes} />
           <p className="text-xs text-muted-foreground">{t("heroes.wards.footnote")}</p>
         </>
       )}

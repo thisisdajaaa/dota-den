@@ -3,6 +3,8 @@
  * the rest, the player can ask OpenDota to parse the replay.
  */
 
+import type { RunePickup } from "./match-runes";
+
 export interface Laning {
   /** Physical lane OpenDota assigned (1 bottom, 2 middle, 3 top, 4/5 jungle), when known. */
   lane: number | null;
@@ -23,6 +25,8 @@ export interface Laning {
   teamfight: number | null;
   /** Items bought, in order (seconds from the horn; negative before it). */
   purchases: Array<{ time: number; key: string }>;
+  /** Runes you picked up, in order. Missing where a laning is built without the rune log. */
+  runes?: RunePickup[];
 }
 
 /** Per-minute series value at minute 10, or null when the game or series is shorter. */

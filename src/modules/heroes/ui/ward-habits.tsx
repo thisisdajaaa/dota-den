@@ -82,7 +82,7 @@ export function WardHabitsView({
   return (
     <div className="space-y-6">
       <section
-        aria-label={t("heroes.wards.title")}
+        aria-label={t("heroes.wards.tiles.label")}
         className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
       >
         <StatTile

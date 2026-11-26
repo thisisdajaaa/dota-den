@@ -4,6 +4,7 @@ import type { GatewayResponse, ProviderGateway } from "@/common/providers/provid
 import type { MatchDetail, MatchPlayer } from "../domain/match-detail";
 import { atMinute, type Laning } from "../domain/match-laning";
 import { teamfightDeaths, wardSpots, type MapEvents } from "../domain/match-map";
+import { runePickups } from "../domain/match-runes";
 import { PERF_STATS, type PlayerBenchmarks } from "../domain/match-performance";
 import type { PatchTimelineEntry } from "../domain/patch-assignment";
 import { lineupsFromSlots, resultFor, sideFromPlayerSlot } from "../domain/player-match-fact";
@@ -157,6 +158,11 @@ const MatchPlayerSchema = z.object({
   teamfight_participation: nullableNum,
   purchase_log: z
     .array(z.object({ time: z.number(), key: z.string() }))
+    .nullable()
+    .optional()
+    .catch(null),
+  runes_log: z
+    .array(z.object({ time: z.number(), key: z.union([z.string(), z.number()]) }))
     .nullable()
     .optional()
     .catch(null),
@@ -577,5 +583,6 @@ function toLaning(p: z.infer<typeof MatchPlayerSchema>): Laning | null {
     stunsSec: p.stuns ?? null,
     teamfight: p.teamfight_participation ?? null,
     purchases: p.purchase_log ?? [],
+    runes: runePickups(p.runes_log),
   };
 }

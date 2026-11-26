@@ -229,6 +229,13 @@ function laningFields(slot, me) {
     camps_stacked: 1,
     stuns: 12.5,
     teamfight_participation: 0.6,
+    runes_log: me
+      ? [
+          { time: 0, key: "5" },
+          { time: 360, key: "1" },
+          { time: 423, key: "8" },
+        ]
+      : [],
     obs_log: me
       ? [
           { time: -30, x: 100, y: 90, ehandle: 1 },

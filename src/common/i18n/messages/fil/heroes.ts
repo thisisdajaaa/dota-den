@@ -164,10 +164,10 @@ export const heroes: MessageTree<typeof en> = {
       "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
   },
   wards: {
-    metaTitle: "Mga ward mo",
-    link: "Mga ward mo",
+    metaTitle: "Mga ward at rune mo",
+    link: "Mga ward at rune mo",
     kicker: "Mga hero mo",
-    title: "Mga ward mo",
+    title: "Mga ward at rune mo",
     description:
       "Saan at kailan ka nagwa-ward, at gaano katagal tumatagal ang mga observer mo, mula sa mga pinakabago mong parsed na laro.",
     heroLabel: "Hero",
@@ -175,6 +175,7 @@ export const heroes: MessageTree<typeof en> = {
     gamesRead:
       "Mula sa {games}: ang mga pinakabago mong parsed na laro na may ward data, {warded} na may kahit isang ward.",
     tiles: {
+      label: "Mga gawi mo sa ward",
       observers: "Observer kada laro",
       observersDetail: "{n} ang nailagay",
       sentries: "Sentry kada laro",
@@ -201,6 +202,35 @@ export const heroes: MessageTree<typeof en> = {
       ward: "{kind} sa {time}",
       lasted: ", tumagal {time}",
       empty: "Walang ward sa filter na ito.",
+    },
+    runes: {
+      title: "Mga rune mo",
+      description:
+        "Mga rune na kinuha mo sa {n} sa mga larong ito (hindi kasama ang mga larong nabasa bago itinago ang rune).",
+      none: "Wala pang rune data. Binabasa ulit ang mga parsed mong laro para sa rune, ilan kada araw (Plus: hanggang 100 kada araw), kaya mapupuno ito sa mga susunod na araw.",
+      tiles: {
+        bounty: "Bounty rune kada laro",
+        bountyDetail: "Ginto para sa iyo at sa team mo",
+        horn: "Bounty sa simula",
+        hornDetail: "Mga larong kumuha ka ng bounty sa unang minuto",
+        few: "Kailangan ng {min} laro na may rune data ({n} pa lang)",
+        power: "Power rune kada laro",
+        powerDetail: "{n} kada laro bago mag-10:00",
+        wisdom: "Wisdom rune kada laro",
+        wisdomDetail: "Experience shrine, mula 7:00",
+        water: "Water rune kada laro",
+        waterDetail: "Ang mga river rune sa 2:00 at 4:00",
+      },
+      byKind: "Mga power rune na kinuha mo",
+      kinds: {
+        double_damage: "Double Damage",
+        haste: "Haste",
+        illusion: "Illusion",
+        invisibility: "Invisibility",
+        regeneration: "Regeneration",
+        arcane: "Arcane",
+        shield: "Shield",
+      },
     },
     footnote:
       "Binasa mula sa ward logs ng mga parsed mong replay; walang hinula. Ang ward na walang naitalang pagtatapos (nakatayo pa nang matapos ang laro) ay binibilang sa paglalagay pero hindi sa buhay o pagkasira.",

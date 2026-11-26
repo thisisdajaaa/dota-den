@@ -5,6 +5,7 @@
  */
 import type { MatchDetail, MatchPlayer } from "./match-detail";
 import type { WardKind } from "./match-map";
+import type { RunePickup } from "./match-runes";
 import type { MatchResult } from "./player-match-fact";
 
 /** Match details fetched per player per day for extras (the rest wait for later days). */
@@ -30,6 +31,9 @@ export type LaneResult = "won" | "even" | "lost";
 
 /** Wards kept per game (a support places 20–30; the rest are left out). */
 export const EXTRAS_MAX_WARDS = 60;
+
+/** Runes kept per game (a mid takes 15–25; the rest are left out). */
+export const EXTRAS_MAX_RUNES = 40;
 
 /** One ward you placed: kind, where, and when it went up and came down (seconds from the horn). */
 export interface ExtrasWard {
@@ -71,6 +75,11 @@ export interface MatchExtras {
    * ward logs. Missing on games stored before we kept them.
    */
   wards?: ExtrasWard[] | null;
+  /**
+   * The runes you picked up, in order (at most EXTRAS_MAX_RUNES); null when the replay has no
+   * rune log. Missing on games stored before we kept them.
+   */
+  runes?: RunePickup[] | null;
 }
 
 type LanePlayer = Pick<MatchPlayer, "playerSlot" | "laning">;
@@ -177,5 +186,6 @@ export function matchExtrasFrom(
             y: w.y,
           }))
         : null,
+    runes: laning?.runes ? laning.runes.slice(0, EXTRAS_MAX_RUNES) : null,
   };
 }
