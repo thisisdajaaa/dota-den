@@ -379,15 +379,21 @@ export async function HeroGrid({
   rows,
   heroes,
   now,
+  wide = false,
 }: {
   rows: HeroIndexRow[];
   heroes: Map<number, HeroInfo>;
   now: Date;
+  /** The grid has the page's full width (more columns). */
+  wide?: boolean;
 }) {
   const t = await getT();
   return (
     <ul
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3"
+      className={cn(
+        "grid grid-cols-1 gap-3 sm:grid-cols-2",
+        wide ? "lg:grid-cols-3 2xl:grid-cols-4" : "2xl:grid-cols-3",
+      )}
       aria-label={t("heroes.grid.label")}
     >
       {rows.map((r) => {

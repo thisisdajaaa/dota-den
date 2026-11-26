@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -21,6 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return { title: t("heroes.title") };
 }
+
+/** Heroes from which the list gets a side column of advice (fewer: the advice goes below). */
+const WIDE_LIST_MIN = 12;
 
 export default async function HeroesPage() {
   const user = await getCurrentUser();
@@ -74,8 +78,12 @@ export default async function HeroesPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      {/* A long hero list keeps the advice beside it; a short one spans the page with the
+          advice below in two columns, so neither side is left mostly empty. */}
+      <div
+        className={cn("grid grid-cols-1 gap-6", rows.length >= WIDE_LIST_MIN && "lg:grid-cols-5")}
+      >
+        <div className={cn(rows.length >= WIDE_LIST_MIN && "lg:col-span-3")}>
           {rows.length === 0 ? (
             <EmptyState
               icon={Swords}
@@ -84,10 +92,15 @@ export default async function HeroesPage() {
               action={{ href: "/dashboard", label: t("heroes.index.emptyLink") }}
             />
           ) : (
-            <HeroGrid rows={rows} heroes={heroes} now={new Date()} />
+            <HeroGrid
+              rows={rows}
+              heroes={heroes}
+              now={new Date()}
+              wide={rows.length < WIDE_LIST_MIN}
+            />
           )}
         </div>
-        <div className="space-y-6 lg:col-span-2">
+        <div className={cn(rows.length >= WIDE_LIST_MIN ? "space-y-6 lg:col-span-2" : "card-flow")}>
           <Suspense
             fallback={<SectionSkeleton label={t("heroes.index.loadingSuggestions")} rows={3} />}
           >

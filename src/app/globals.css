@@ -21,6 +21,27 @@
  * Grows the hit area to at least 44x44px around a visually smaller control,
  * without changing layout. The element needs a positioning context (relative).
  */
+/*
+ * Cards of different heights in two balanced columns (lg and up), so neither side ends early and
+ * no card is stretched to match a taller neighbour. Cards keep DOM order, top to bottom then
+ * across; a card that renders nothing leaves no hole.
+ */
+@utility card-flow {
+  /* Space above each card, not below: the browser drops a margin at the top of a column, so
+     both columns start level and nothing trails past the end of the flow. */
+  & > * {
+    break-inside: avoid;
+    margin-top: 1.5rem;
+  }
+  & > *:first-child {
+    margin-top: 0;
+  }
+  @variant lg {
+    columns: 2;
+    column-gap: 1.5rem;
+  }
+}
+
 @utility tap-area {
   &::after {
     content: "";
