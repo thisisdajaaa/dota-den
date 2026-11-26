@@ -156,6 +156,11 @@ export class MatchExtrasService {
     return this.deps.store.lanesForAccount(accountId32);
   }
 
+  /** Wards from your latest stored parsed games ("Your wards"). */
+  async wards(accountId32: number, limit: number) {
+    return this.deps.store.wardsForAccount(accountId32, limit);
+  }
+
   async exportMyData(owner: DataOwner) {
     return { matchExtras: await this.deps.store.exportForOwner(owner) };
   }

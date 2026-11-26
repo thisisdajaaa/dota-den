@@ -163,6 +163,49 @@ export const heroes: MessageTree<typeof en> = {
     emptyWinWith:
       "Walay kauban nga hero nga adunay {min}+ ka duwa diin modaog ka sa katunga o labaw pa.",
   },
+  wards: {
+    metaTitle: "Imong mga ward",
+    link: "Imong mga ward",
+    kicker: "Imong mga hero",
+    title: "Imong mga ward",
+    description:
+      "Asa ug kanus-a ka mag-ward, ug unsa ka dugay molungtad ang imong mga observer, gikan sa imong pinakabag-ong parsed nga dula.",
+    heroLabel: "Hero",
+    none: "Wala pay parsed nga dula nga adunay ward data. Pipila kada adlaw ang mabasa human ma-parse (Plus: hangtod 100 kada adlaw); ablihi ang usa ka dula ug pindota ang “Get detailed stats” aron ma-parse ang replay niini.",
+    gamesRead:
+      "Gikan sa {games}: imong pinakabag-ong parsed nga dula nga adunay ward data, {warded} nga adunay bisan usa ka ward.",
+    tiles: {
+      observers: "Observer kada dula",
+      observersDetail: "{n} ang gibutang",
+      sentries: "Sentry kada dula",
+      sentriesDetail: "{n} ang gibutang",
+      life: "Kinabuhi sa observer",
+      lifeDetail:
+        "Kasagarang gidugayon, sa {n} nga nahibal-an ang katapusan (tibuok kinabuhi 6:00)",
+      lifeFew: "Kinahanglan og {min} ka observer nga nahibal-an ang katapusan ({n} pa lang)",
+      destroyed: "Naguba nga observer",
+      destroyedDetail: "Natangtang sa wala pa mahuman ang 6:00",
+      first: "Unang observer",
+      firstDetail: "Kasagarang oras sa imong unang observer",
+      firstNone: "Wala pay observer",
+    },
+    map: {
+      title: "Mapa sa imong mga ward",
+      description:
+        "Tanang ward nga imong gibutang niining mga dulaa, sa karon nga mapa. Bulawan: observer; asul: sentry. Luspad: naguba sulod sa usa ka minuto.",
+      kind: "Mga ward",
+      kinds: { all: "Tanang ward", observer: "Observer", sentry: "Sentry" },
+      side: "Kilid",
+      sides: { all: "Duha ka kilid", radiant: "Isip Radiant", dire: "Isip Dire" },
+      window: "Oras",
+      label: "{n} ka ward sa mapa",
+      ward: "{kind} sa {time}",
+      lasted: ", milungtad {time}",
+      empty: "Walay ward niini nga filter.",
+    },
+    footnote:
+      "Gibasa gikan sa ward logs sa imong parsed nga replay; walay gitag-an. Ang ward nga walay narekord nga katapusan (nagbarog pa sa pagkahuman sa dula) giihap sa pagbutang apan dili sa kinabuhi o pagkaguba.",
+  },
   splits: {
     metaTitle: "Imong splits",
     link: "Imong splits",

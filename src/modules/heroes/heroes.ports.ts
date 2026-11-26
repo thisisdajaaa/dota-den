@@ -1,3 +1,4 @@
+import type { WardGame } from "./domain/ward-habits";
 import type { HighRankPosition } from "./domain/build-check";
 import type { LaneGame } from "@/modules/meta/domain/position";
 import type { Result } from "@/common/result";
@@ -92,4 +93,6 @@ export interface StoredExtras {
   ): Promise<{ games: CoachingGame[]; parsedGames: number }>;
   /** Lanes of every stored parsed game (deeper stats); absent when not wired. */
   lanes?(accountId32: number): Promise<SplitLane[]>;
+  /** Wards from your latest `limit` stored parsed games with ward logs; absent when not wired. */
+  wards?(accountId32: number, limit: number): Promise<WardGame[]>;
 }

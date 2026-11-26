@@ -69,16 +69,23 @@ export async function HeroBanner({
   return (
     <section
       aria-label={t("heroes.banner.label")}
-      className="panel relative flex items-center gap-5 overflow-hidden p-6"
+      className="panel relative isolate flex items-center gap-5 overflow-hidden p-6"
     >
+      {/* The whole hero at the right of the banner. Renders are square with the figure at
+          different heights, so the full picture is shown (a crop cuts some heads off). */}
       {hero?.renderUrl && (
-        <Image
-          src={hero.renderUrl}
-          alt=""
-          width={220}
-          height={220}
-          className="pointer-events-none absolute -right-6 -bottom-10 hidden opacity-40 sm:block"
-        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-[12%] right-6 -z-10 hidden aspect-square h-[130%] [mask-image:linear-gradient(to_left,black_55%,transparent)] sm:block"
+        >
+          <Image
+            src={hero.renderUrl}
+            alt=""
+            fill
+            sizes="320px"
+            className="object-contain opacity-70"
+          />
+        </div>
       )}
       <HeroPortrait hero={hero} heroId={heroId} size="lg" />
       <div className="relative min-w-0 space-y-1">

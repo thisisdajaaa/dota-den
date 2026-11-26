@@ -175,3 +175,11 @@ ran in `hkg1` from 2026-10-15 (next to the Hong Kong database), which broke ever
 production. They now run in `sin1` (`vercel.json`); the Hobby plan allows one region for all
 functions. Don't move them back to `hkg1` while AI goes to Groq directly; the alternatives are a
 relay outside Hong Kong or per-function regions (Pro).
+
+## Addendum (2026-11-26): wards in match extras
+
+Match extras (one document per player and parsed game) now also keep the player's side and the
+wards they placed (kind, position, placed and removed times; at most 60 per game) for "Your
+wards" (/heroes/wards). Schema 3: parsed games stored before are fetched again after new games,
+within the same daily cap and shared OpenDota budget, as the schema 2 refetch did. Nothing is
+estimated: a ward with no recorded removal counts for placement only.

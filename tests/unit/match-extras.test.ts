@@ -99,6 +99,28 @@ describe("match extras (domain)", () => {
     ]);
   });
 
+  it("keeps your side and the wards you placed (none for an unparsed game)", () => {
+    const wards = [
+      { kind: "observer" as const, placedAt: -30.4, removedAt: 329.6, x: 100, y: 90 },
+      { kind: "sentry" as const, placedAt: 300, removedAt: null, x: 110, y: 95 },
+    ];
+    const you = player(1, {
+      accountId32: 42,
+      heroId: 1,
+      laning: laning(),
+      map: { wards, teamfightDeaths: [] },
+    });
+    const game = { accountId32: 42, heroId: 1, side: "radiant" as const, result: "win" as const };
+    expect(matchExtrasFrom(detail([you]), game, isItem)).toMatchObject({
+      side: "radiant",
+      wards: [
+        { kind: "observer", placedAt: -30, removedAt: 330, x: 100, y: 90 },
+        { kind: "sentry", placedAt: 300, removedAt: null, x: 110, y: 95 },
+      ],
+    });
+    expect(matchExtrasFrom(detail([you], false), game, isItem)?.wards).toBeNull();
+  });
+
   it("finds you by account, else by hero and side; unparsed games have no extras", () => {
     const you = player(1, {
       accountId32: 42,
@@ -159,6 +181,7 @@ describe("MatchExtrasService", () => {
       save: async (e) => void saved.push(e),
       forHero: async () => saved.filter((e) => e.parsed),
       lanesForAccount: async () => [],
+      wardsForAccount: async () => [],
       parsedGamesOnHero: async () => 3,
       exportForOwner: async () => [],
       deleteForOwner: async () => saved.length,

@@ -216,15 +216,14 @@ export function PlusPricing({
 
       {available && <InviteOffer signedIn={signedIn} />}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <section
-          aria-labelledby="plus-free"
-          className="panel space-y-4 self-start p-6 lg:sticky lg:top-6"
-        >
+      {/* What stays free across the top (a short checklist), then every perk at full width:
+          no long empty column beside a long perk list. */}
+      <div className="space-y-6">
+        <section aria-labelledby="plus-free" className="panel space-y-4 p-6">
           <h2 id="plus-free" className="text-lg font-semibold">
             {t("plus.page.freeTitle")}
           </h2>
-          <ul className="space-y-2.5">
+          <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {FREE_KEYS.map((k) => (
               <li key={k} className="flex items-start gap-2.5 text-sm">
                 <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-win" />
@@ -238,7 +237,7 @@ export function PlusPricing({
           <h2 id="plus-perks" className="flex items-center gap-2 text-lg font-semibold">
             {t("plus.page.plusTitle")} <PlusBadge />
           </h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {PERKS.map(({ key, icon: Icon, href }) => {
               const body = (
                 <>
@@ -286,7 +285,10 @@ export function PlusPricing({
         </section>
       </div>
 
-      <section aria-label={t("plus.page.faqTitle")} className="grid gap-6 lg:grid-cols-2">
+      <section
+        aria-label={t("plus.page.faqTitle")}
+        className="grid items-start gap-6 lg:grid-cols-2"
+      >
         <ul className="panel space-y-3 p-6 text-sm text-muted-foreground">
           <li>
             {offer.provider === "polar"

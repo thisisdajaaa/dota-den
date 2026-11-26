@@ -15,7 +15,7 @@ import {
 } from "../domain/match-map";
 
 /** A schematic Dota map (drawn here, not game art): bases, lanes and the river. */
-function MapBackdrop() {
+export function MapBackdrop() {
   const t = useT();
   return (
     <g aria-hidden>
@@ -94,9 +94,9 @@ export function WardMapCard({
           </button>
         ))}
       </div>
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,22rem)_1fr]">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,28rem)_1fr]">
         <ZoomableMap
-          className="max-w-[22rem] rounded-lg"
+          className="max-w-[28rem] rounded-lg"
           labels={{
             zoomIn: t("common.map.zoomIn"),
             zoomOut: t("common.map.zoomOut"),
