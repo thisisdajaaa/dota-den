@@ -183,3 +183,11 @@ wards they placed (kind, position, placed and removed times; at most 60 per game
 wards" (/heroes/wards). Schema 3: parsed games stored before are fetched again after new games,
 within the same daily cap and shared OpenDota budget, as the schema 2 refetch did. Nothing is
 estimated: a ward with no recorded removal counts for placement only.
+
+## Addendum (2026-11-26): runes in match extras
+
+Match extras also keep the runes the player picked up (kind and time, from OpenDota's `runes_log`;
+at most 40 per game) for the runes section on /heroes/wards. Schema 4, refetched like schema 3
+(the two refetches overlap: a game still on schema 2 or 3 is fetched once). Unknown rune ids are
+dropped, and games stored before schema 4 are left out of rune numbers rather than counted as
+"no runes".

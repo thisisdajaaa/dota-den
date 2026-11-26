@@ -25,6 +25,7 @@ import {
   type MapWard,
   type WardHabits,
 } from "./domain/ward-habits";
+import { runeHabits, type RuneHabits } from "./domain/rune-habits";
 import { lineupProgress, ownMatchups } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 import type {
@@ -242,15 +243,16 @@ export class HeroesService {
   }
 
   /**
-   * Your wards: habits and map spots from your latest parsed games (optionally on one hero).
+   * Your wards and runes: habits and map spots from your latest parsed games (optionally on
+   * one hero).
    * Reads stored extras only: no OpenDota call.
    */
   async wards(
     accountId32: number,
     opts: { heroId?: number } = {},
-  ): Promise<{ habits: WardHabits; spots: MapWard[] }> {
+  ): Promise<{ habits: WardHabits; spots: MapWard[]; runes: RuneHabits }> {
     const games = (await this.deps.extras.wards?.(accountId32, WARD_GAMES_LIMIT)) ?? [];
     const mine = opts.heroId === undefined ? games : games.filter((g) => g.heroId === opts.heroId);
-    return { habits: wardHabits(mine), spots: mapWards(mine) };
+    return { habits: wardHabits(mine), spots: mapWards(mine), runes: runeHabits(mine) };
   }
 }

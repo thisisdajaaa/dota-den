@@ -121,8 +121,17 @@ describe("MatchExtrasRepository", () => {
     const ward = { kind: "observer" as const, placedAt: 10, removedAt: 370, x: 100, y: 90 };
     await repo.save(extras(611, "s", { side: "dire", wards: [ward] }), new Date());
     expect(await repo.wardsForAccount(611, 10)).toEqual([
-      expect.objectContaining({ matchId: "s", heroId: 1, side: "dire", wards: [ward] }),
+      expect.objectContaining({
+        matchId: "s",
+        heroId: 1,
+        side: "dire",
+        wards: [ward],
+        runes: null,
+      }),
     ]);
+    const rune = { kind: "bounty" as const, time: 0 };
+    await repo.save(extras(611, "s", { side: "dire", wards: [ward], runes: [rune] }), new Date());
+    expect((await repo.wardsForAccount(611, 10))[0]?.runes).toEqual([rune]);
   });
 
   it("holds an account's run across servers until released or lapsed", async () => {

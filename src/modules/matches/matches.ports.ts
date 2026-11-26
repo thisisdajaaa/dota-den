@@ -37,6 +37,7 @@ import type { CoachFactSheet, CoachLocale } from "./domain/coach-facts";
 import type { CoachPoint } from "./domain/coach-review";
 import type { MatchDetail } from "./domain/match-detail";
 import type { ExtrasWard, MatchExtras } from "./domain/match-extras";
+import type { RunePickup } from "./domain/match-runes";
 import type { MatchListFilter } from "./schemas/match-list-filter.schema";
 import type { PatchTimelineEntry } from "./domain/patch-assignment";
 import type { PlayerMatchFact, Provenance } from "./domain/player-match-fact";
@@ -239,6 +240,8 @@ export interface StoredWardGame {
   /** null on games stored before the side was kept. */
   side: "radiant" | "dire" | null;
   wards: ExtrasWard[];
+  /** null on games stored before runes were kept. */
+  runes: RunePickup[] | null;
 }
 
 export interface MatchExtrasStore {

@@ -3,6 +3,7 @@
  * logs of your stored parsed games. Only what the replays say: a ward with no removal time is
  * left out of lifetimes, never guessed.
  */
+import type { HeroRune } from "./rune-habits";
 
 /** One ward you placed (seconds from the horn; game map cells). */
 export interface ExtrasWard {
@@ -29,6 +30,8 @@ export interface WardGame {
   heroId: number;
   side: "radiant" | "dire" | null;
   wards: readonly ExtrasWard[];
+  /** Runes picked up; null or missing on games stored before runes were kept. */
+  runes?: readonly HeroRune[] | null;
 }
 
 export interface WardHabits {

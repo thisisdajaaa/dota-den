@@ -158,10 +158,10 @@ export const heroes = {
     emptyWinWith: "No allied hero with {min}+ games where you win half or more.",
   },
   wards: {
-    metaTitle: "Your wards",
-    link: "Your wards",
+    metaTitle: "Wards & runes",
+    link: "Wards & runes",
     kicker: "Your heroes",
-    title: "Your wards",
+    title: "Wards & runes",
     description:
       "Where and when you ward, and how long your observers last, from your latest parsed games.",
     heroLabel: "Hero",
@@ -169,6 +169,7 @@ export const heroes = {
     gamesRead:
       "From {games}: your latest parsed games with ward data, {warded} with at least one ward.",
     tiles: {
+      label: "Your ward habits",
       observers: "Observers per game",
       observersDetail: "{n} placed",
       sentries: "Sentries per game",
@@ -195,6 +196,35 @@ export const heroes = {
       ward: "{kind} at {time}",
       lasted: ", up {time}",
       empty: "No wards in this filter.",
+    },
+    runes: {
+      title: "Your runes",
+      description:
+        "Runes you picked up in {n} of these games (games read before runes were kept aren't counted).",
+      none: "No rune data yet. Your parsed games are read again for runes a few a day (Plus: up to 100 a day), so this fills over the next days.",
+      tiles: {
+        bounty: "Bounty runes per game",
+        bountyDetail: "Gold for you and your team",
+        horn: "Horn bounty",
+        hornDetail: "Games you took a bounty in the first minute",
+        few: "Needs {min} games with rune data ({n} so far)",
+        power: "Power runes per game",
+        powerDetail: "{n} per game before 10:00",
+        wisdom: "Wisdom runes per game",
+        wisdomDetail: "Experience shrines, from 7:00",
+        water: "Water runes per game",
+        waterDetail: "The 2:00 and 4:00 river runes",
+      },
+      byKind: "Power runes you took",
+      kinds: {
+        double_damage: "Double Damage",
+        haste: "Haste",
+        illusion: "Illusion",
+        invisibility: "Invisibility",
+        regeneration: "Regeneration",
+        arcane: "Arcane",
+        shield: "Shield",
+      },
     },
     footnote:
       "Read from the ward logs in your parsed replays; nothing is estimated. A ward with no recorded end (still up when the game ended) counts for placement but not for life or destroyed.",

@@ -121,6 +121,19 @@ describe("match extras (domain)", () => {
     expect(matchExtrasFrom(detail([you], false), game, isItem)?.wards).toBeNull();
   });
 
+  it("keeps the runes you took (null without a rune log or a parse)", () => {
+    const runes = [
+      { kind: "bounty" as const, time: 0 },
+      { kind: "haste" as const, time: 360 },
+    ];
+    const game = { accountId32: 42, heroId: 1, side: "radiant" as const, result: "win" as const };
+    const you = player(1, { accountId32: 42, heroId: 1, laning: laning({ runes }) });
+    expect(matchExtrasFrom(detail([you]), game, isItem)?.runes).toEqual(runes);
+    expect(matchExtrasFrom(detail([you], false), game, isItem)?.runes).toBeNull();
+    const old = player(1, { accountId32: 42, heroId: 1, laning: laning() });
+    expect(matchExtrasFrom(detail([old]), game, isItem)?.runes).toBeNull();
+  });
+
   it("finds you by account, else by hero and side; unparsed games have no extras", () => {
     const you = player(1, {
       accountId32: 42,
