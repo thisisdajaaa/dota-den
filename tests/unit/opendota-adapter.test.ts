@@ -239,6 +239,12 @@ describe("OpenDotaAdapter.fetchMatch", () => {
           obs_log: [{ time: -26, x: 130, y: 118.3, ehandle: 7 }],
           obs_left_log: [{ time: 334, x: 130, y: 118.3, ehandle: 7 }],
           sen_log: [{ time: 400, x: 90, y: 100 }, { time: 410 }],
+          runes_log: [
+            { time: 423, key: "8" },
+            { time: 0, key: "5" },
+            { time: 500, key: 1 },
+            { time: 600, key: "99" },
+          ],
         }),
         p(128),
       ],
@@ -257,6 +263,12 @@ describe("OpenDotaAdapter.fetchMatch", () => {
       ],
       teamfightDeaths: [{ time: 370, x: 169, y: 126 }],
     });
+    // Runes in time order; an unknown rune id is left out.
+    expect(res.value.players[0].laning?.runes).toEqual([
+      { kind: "bounty", time: 0 },
+      { kind: "wisdom", time: 423 },
+      { kind: "haste", time: 500 },
+    ]);
     // Unparsed: no map, even when the match has team fights.
     expect(res.value.players[1].map).toBeNull();
   });
