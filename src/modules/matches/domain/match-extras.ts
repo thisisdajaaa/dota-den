@@ -4,6 +4,7 @@
  * replay; anything the replay doesn't have stays null, never estimated.
  */
 import type { MatchDetail, MatchPlayer } from "./match-detail";
+import type { WardKind } from "./match-map";
 import type { MatchResult } from "./player-match-fact";
 
 /** Match details fetched per player per day for extras (the rest wait for later days). */
@@ -26,6 +27,19 @@ export const EXTRAS_LANE_MARGIN = 1.1;
 export const EXTRAS_MAX_ITEMS = 12;
 
 export type LaneResult = "won" | "even" | "lost";
+
+/** Wards kept per game (a support places 20–30; the rest are left out). */
+export const EXTRAS_MAX_WARDS = 60;
+
+/** One ward you placed: kind, where, and when it went up and came down (seconds from the horn). */
+export interface ExtrasWard {
+  kind: WardKind;
+  placedAt: number;
+  /** null when the replay doesn't say (e.g. still up when the game ended). */
+  removedAt: number | null;
+  x: number;
+  y: number;
+}
 
 /** What we keep from one parsed game, for one player. */
 export interface MatchExtras {
@@ -50,6 +64,13 @@ export interface MatchExtras {
   lanePartnerHeroIds?: number[] | null;
   /** First purchase of each completed item, seconds from the horn, in order. */
   itemTimings: Array<{ key: string; time: number }>;
+  /** Your side in the game (ward spots differ by side). Missing on games stored before. */
+  side?: "radiant" | "dire";
+  /**
+   * The wards you placed, in order (at most EXTRAS_MAX_WARDS); null when the replay has no
+   * ward logs. Missing on games stored before we kept them.
+   */
+  wards?: ExtrasWard[] | null;
 }
 
 type LanePlayer = Pick<MatchPlayer, "playerSlot" | "laning">;
@@ -145,5 +166,16 @@ export function matchExtrasFrom(
     laneResult: laning ? laneResult(detail.players, you) : null,
     lanePartnerHeroIds: laning ? lanePartners(detail.players, you) : null,
     itemTimings: laning ? firstPurchases(laning.purchases, isItem) : [],
+    side: you.side,
+    wards:
+      laning && you.map
+        ? you.map.wards.slice(0, EXTRAS_MAX_WARDS).map((w) => ({
+            kind: w.kind,
+            placedAt: Math.round(w.placedAt),
+            removedAt: w.removedAt === null ? null : Math.round(w.removedAt),
+            x: w.x,
+            y: w.y,
+          }))
+        : null,
   };
 }

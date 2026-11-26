@@ -163,6 +163,48 @@ export const heroes: MessageTree<typeof en> = {
     emptyWinWith:
       "Walang kakamping hero na may {min}+ laro kung saan panalo ka sa kalahati o higit pa.",
   },
+  wards: {
+    metaTitle: "Mga ward mo",
+    link: "Mga ward mo",
+    kicker: "Mga hero mo",
+    title: "Mga ward mo",
+    description:
+      "Saan at kailan ka nagwa-ward, at gaano katagal tumatagal ang mga observer mo, mula sa mga pinakabago mong parsed na laro.",
+    heroLabel: "Hero",
+    none: "Wala pang parsed na laro na may ward data. Ilan kada araw ang nababasa pagkatapos ma-parse (Plus: hanggang 100 kada araw); buksan ang isang laro at pindutin ang “Get detailed stats” para ma-parse ang replay nito.",
+    gamesRead:
+      "Mula sa {games}: ang mga pinakabago mong parsed na laro na may ward data, {warded} na may kahit isang ward.",
+    tiles: {
+      observers: "Observer kada laro",
+      observersDetail: "{n} ang nailagay",
+      sentries: "Sentry kada laro",
+      sentriesDetail: "{n} ang nailagay",
+      life: "Buhay ng observer",
+      lifeDetail: "Karaniwang tagal, sa {n} na alam ang pagtatapos (buong buhay 6:00)",
+      lifeFew: "Kailangan ng {min} observer na alam ang pagtatapos ({n} pa lang)",
+      destroyed: "Nasirang observer",
+      destroyedDetail: "Natanggal bago maubos ang 6:00",
+      first: "Unang observer",
+      firstDetail: "Karaniwang oras ng una mong observer",
+      firstNone: "Wala pang observer",
+    },
+    map: {
+      title: "Mapa ng mga ward mo",
+      description:
+        "Lahat ng ward na nilagay mo sa mga larong ito, sa kasalukuyang mapa. Ginto: observer; asul: sentry. Malabo: nasira sa loob ng isang minuto.",
+      kind: "Mga ward",
+      kinds: { all: "Lahat ng ward", observer: "Observer", sentry: "Sentry" },
+      side: "Panig",
+      sides: { all: "Parehong panig", radiant: "Bilang Radiant", dire: "Bilang Dire" },
+      window: "Oras",
+      label: "{n} ward sa mapa",
+      ward: "{kind} sa {time}",
+      lasted: ", tumagal {time}",
+      empty: "Walang ward sa filter na ito.",
+    },
+    footnote:
+      "Binasa mula sa ward logs ng mga parsed mong replay; walang hinula. Ang ward na walang naitalang pagtatapos (nakatayo pa nang matapos ang laro) ay binibilang sa paglalagay pero hindi sa buhay o pagkasira.",
+  },
   splits: {
     metaTitle: "Iyong splits",
     link: "Iyong splits",

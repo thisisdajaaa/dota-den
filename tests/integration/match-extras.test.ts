@@ -115,6 +115,14 @@ describe("MatchExtrasRepository", () => {
 
     await repo.save(extras(611, "s", { lanePartnerHeroIds: [5] }), new Date());
     expect((await repo.lanesForAccount(611))[0]).toMatchObject({ lanePartnerHeroIds: [5] });
+
+    // Wards: only parsed games stored with ward logs, newest first.
+    expect(await repo.wardsForAccount(611, 10)).toEqual([]);
+    const ward = { kind: "observer" as const, placedAt: 10, removedAt: 370, x: 100, y: 90 };
+    await repo.save(extras(611, "s", { side: "dire", wards: [ward] }), new Date());
+    expect(await repo.wardsForAccount(611, 10)).toEqual([
+      expect.objectContaining({ matchId: "s", heroId: 1, side: "dire", wards: [ward] }),
+    ]);
   });
 
   it("holds an account's run across servers until released or lapsed", async () => {

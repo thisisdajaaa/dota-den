@@ -43,36 +43,31 @@ export default async function TogetherPage() {
         description={t("together.page.description")}
       />
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
-        {/* Friends and your groups on the left, what the parties add up to on the right:
-            both columns about the same height whatever the friend list's length. */}
-        <div className="space-y-6 lg:col-span-3">
-          <FriendList friends={friends} now={now} error={peersErrorCopy} />
-          <TogetherGroupsCard groups={groups} />
-        </div>
-        <div className="space-y-6 lg:col-span-2">
-          <StacksCard
-            stacks={overview.stacks}
-            members={members}
-            unknownPartyGames={overview.unknownPartyGames}
-          />
-          <TriosCard trios={overview.trios} members={members} />
-          <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="how">
-            <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
-            <div className="space-y-1">
-              <h2 id="how" className="font-semibold">
-                {t("together.page.howTitle")}
-              </h2>
-              <p className="text-muted-foreground">
-                {t("together.page.howBody")}{" "}
-                <Link href="/players" className="text-gold hover:underline">
-                  {t("together.page.howLink")}
-                </Link>{" "}
-                {t("together.page.howAfter")}
-              </p>
-            </div>
-          </section>
-        </div>
+      {/* Cards in two balanced columns, whatever the friend list's length. */}
+      <div className="card-flow">
+        <FriendList friends={friends} now={now} error={peersErrorCopy} />
+        <StacksCard
+          stacks={overview.stacks}
+          members={members}
+          unknownPartyGames={overview.unknownPartyGames}
+        />
+        <TogetherGroupsCard groups={groups} />
+        <TriosCard trios={overview.trios} members={members} />
+        <section className="panel flex items-start gap-3 p-5 text-sm" aria-labelledby="how">
+          <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-gold" />
+          <div className="space-y-1">
+            <h2 id="how" className="font-semibold">
+              {t("together.page.howTitle")}
+            </h2>
+            <p className="text-muted-foreground">
+              {t("together.page.howBody")}{" "}
+              <Link href="/players" className="text-gold hover:underline">
+                {t("together.page.howLink")}
+              </Link>{" "}
+              {t("together.page.howAfter")}
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

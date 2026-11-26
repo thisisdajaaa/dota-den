@@ -36,7 +36,7 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import type { CoachFactSheet, CoachLocale } from "./domain/coach-facts";
 import type { CoachPoint } from "./domain/coach-review";
 import type { MatchDetail } from "./domain/match-detail";
-import type { MatchExtras } from "./domain/match-extras";
+import type { ExtrasWard, MatchExtras } from "./domain/match-extras";
 import type { MatchListFilter } from "./schemas/match-list-filter.schema";
 import type { PatchTimelineEntry } from "./domain/patch-assignment";
 import type { PlayerMatchFact, Provenance } from "./domain/player-match-fact";
@@ -230,6 +230,17 @@ export type StoredLane = Pick<
 >;
 
 /** Stored per-match extras (match_extras) and the parsed games still waiting for them. */
+/** One stored parsed game's wards (for "Your wards"). */
+export interface StoredWardGame {
+  matchId: string;
+  heroId: number;
+  startedAt: Date;
+  result: MatchExtras["result"];
+  /** null on games stored before the side was kept. */
+  side: "radiant" | "dire" | null;
+  wards: ExtrasWard[];
+}
+
 export interface MatchExtrasStore {
   /** Your parsed imported games with no extras stored yet, newest first. */
   pendingParsed(accountId32: number, limit: number): Promise<PendingExtras[]>;
@@ -247,6 +258,8 @@ export interface MatchExtrasStore {
   forHero(accountId32: number, heroId: number): Promise<MatchExtras[]>;
   /** Lanes of all your stored parsed games, newest first. */
   lanesForAccount(accountId32: number): Promise<StoredLane[]>;
+  /** Wards from your latest `limit` stored parsed games that have them, newest first. */
+  wardsForAccount(accountId32: number, limit: number): Promise<StoredWardGame[]>;
   /** Your imported games on the hero that OpenDota has parsed (stored or not). */
   parsedGamesOnHero(accountId32: number, heroId: number): Promise<number>;
   exportForOwner(owner: { accountId32: number }): Promise<Array<Record<string, unknown>>>;
