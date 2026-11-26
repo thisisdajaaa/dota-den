@@ -121,7 +121,7 @@ export async function DeeperStatsView({
               games: games(s.overall.games),
             })}
       </p>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="card-flow">
         <SplitCard
           id="split-patches"
           title={t("heroes.splits.patches.title")}

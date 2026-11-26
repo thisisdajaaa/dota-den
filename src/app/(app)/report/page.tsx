@@ -354,25 +354,21 @@ async function ReportBody({
         previous={view.previous.totals}
         previousLabel={`${short(view.previous.from)} – ${short(view.previous.to)}`}
       />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <SidesCard sides={view.report.sides} />
-        <CalendarCard days={view.report.days} from={view.from} to={view.to} />
-      </div>
       <RecordsCard records={view.report.records} heroes={heroes} />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <HeroesCard rows={view.report.heroes} heroes={heroes} />
-        </div>
-        <div className="space-y-6 lg:col-span-2">
-          {view.report.roles.withData >= MIN_ROLE_GAMES && (
-            <RolesCard roles={view.report.roles} games={view.report.games} />
-          )}
-          {replays && (
-            <Suspense fallback={<Skeleton className="h-48 rounded-2xl" />}>
-              <ReplayCard replays={replays} card="lanes" />
-            </Suspense>
-          )}
-        </div>
+      {/* Cards of very different heights (a long hero list, a two-number sides card): two
+          balanced columns rather than rows padded out to the tallest card. */}
+      <div className="card-flow">
+        <CalendarCard days={view.report.days} from={view.from} to={view.to} />
+        <HeroesCard rows={view.report.heroes} heroes={heroes} />
+        <SidesCard sides={view.report.sides} />
+        {view.report.roles.withData >= MIN_ROLE_GAMES && (
+          <RolesCard roles={view.report.roles} games={view.report.games} />
+        )}
+        {replays && (
+          <Suspense fallback={<Skeleton className="h-48 rounded-2xl" />}>
+            <ReplayCard replays={replays} card="lanes" />
+          </Suspense>
+        )}
       </div>
       {replays && (
         <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
