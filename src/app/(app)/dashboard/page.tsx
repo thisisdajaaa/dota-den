@@ -262,12 +262,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         ) : (
           <>
             {keyStats}
-            {/* Queue split and recent form on the left, the (tall) hero pool and your gap
-                against your rank on the right: both columns about the same height. */}
+            {/* Queue split and your gap against your rank on the left, the hero pool and the
+                (compact) recent form on the right: both columns about the same height. */}
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
               <div className="space-y-6 lg:col-span-3">
                 <QueueSplitCard summary={summary} />
-                <FormStrip form={summary.form} heroes={heroes} />
+                <Suspense fallback={null}>
+                  <CompareSection user={user} heroes={heroes} />
+                </Suspense>
               </div>
               <div className="space-y-6 lg:col-span-2">
                 <HeroPoolCard
@@ -280,9 +282,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
                     .filter((h) => h !== undefined)}
                   now={now.toISOString()}
                 />
-                <Suspense fallback={null}>
-                  <CompareSection user={user} heroes={heroes} />
-                </Suspense>
+                <FormStrip form={summary.form} heroes={heroes} />
               </div>
             </div>
           </>

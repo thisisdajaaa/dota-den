@@ -83,43 +83,47 @@ export async function BuildPath({
     return <p className="text-sm text-muted-foreground">{t("guides.items.noData")}</p>;
   return (
     <div className="space-y-5">
-      {steps.map((step) => (
-        <div key={step} role="group" aria-label={t(`guides.build.steps.${step}`)}>
-          <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
-            <h3 className="text-sm font-semibold">{t(`guides.build.steps.${step}`)}</h3>
-            <p className="text-xs text-muted-foreground">
-              {step === "start" && startGold !== null
-                ? t("guides.build.startGold", { gold: startGold, max: STARTING_GOLD })
-                : t(`guides.build.hints.${step}`)}
-            </p>
+      {/* Two steps a row on wider screens, like the in-game guide's columns: a wide card
+          isn't left mostly empty beside a few item icons. */}
+      <div className="grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-2">
+        {steps.map((step) => (
+          <div key={step} role="group" aria-label={t(`guides.build.steps.${step}`)}>
+            <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
+              <h3 className="text-sm font-semibold">{t(`guides.build.steps.${step}`)}</h3>
+              <p className="text-xs text-muted-foreground">
+                {step === "start" && startGold !== null
+                  ? t("guides.build.startGold", { gold: startGold, max: STARTING_GOLD })
+                  : t(`guides.build.hints.${step}`)}
+              </p>
+            </div>
+            {step === "core" || step === "late" ? (
+              <ol className="flex flex-wrap items-start gap-x-1 gap-y-3">
+                {build[step].map((pick, i) => (
+                  <li key={pick.itemId} className="flex items-start gap-1">
+                    <ul>
+                      <ItemTile pick={pick} itemMap={itemMap} showTiming />
+                    </ul>
+                    {i < build[step].length - 1 && (
+                      <ChevronRight aria-hidden className="mt-3 size-4 text-muted-foreground" />
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <ul className="flex flex-wrap gap-x-2 gap-y-3">
+                {build[step].map((pick) => (
+                  <ItemTile
+                    key={pick.itemId}
+                    pick={pick}
+                    itemMap={itemMap}
+                    showTiming={step !== "start"}
+                  />
+                ))}
+              </ul>
+            )}
           </div>
-          {step === "core" || step === "late" ? (
-            <ol className="flex flex-wrap items-start gap-x-1 gap-y-3">
-              {build[step].map((pick, i) => (
-                <li key={pick.itemId} className="flex items-start gap-1">
-                  <ul>
-                    <ItemTile pick={pick} itemMap={itemMap} showTiming />
-                  </ul>
-                  {i < build[step].length - 1 && (
-                    <ChevronRight aria-hidden className="mt-3 size-4 text-muted-foreground" />
-                  )}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <ul className="flex flex-wrap gap-x-2 gap-y-3">
-              {build[step].map((pick) => (
-                <ItemTile
-                  key={pick.itemId}
-                  pick={pick}
-                  itemMap={itemMap}
-                  showTiming={step !== "start"}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
       {build.core.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[22rem] text-sm">

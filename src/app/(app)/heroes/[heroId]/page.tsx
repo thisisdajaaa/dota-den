@@ -157,49 +157,44 @@ export default async function HeroPage({ params }: PageProps<"/heroes/[heroId]">
         </Suspense>
       </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          <TrendCard trend={trend} heroLabel={name} />
-          <Suspense
-            fallback={<SectionSkeleton label={t("heroes.detail.loadingProgress")} rows={4} />}
-          >
-            <ProgressSection details={details} name={name} />
-          </Suspense>
-          <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingItems")} rows={4} />}>
-            <ItemsSection details={details} name={name} />
-          </Suspense>
-          <Suspense fallback={null}>
-            <WhatWorksSection details={details} name={name} />
-          </Suspense>
-          <Suspense fallback={null}>
-            <BuildSection details={details} heroId={heroId} name={name} />
-          </Suspense>
-          <Suspense fallback={null}>
-            <TimingsSection
-              service={service}
-              userId={user.id}
-              accountId32={user.accountId32}
-              heroId={heroId}
-              name={name}
-            />
-          </Suspense>
-          <Suspense fallback={null}>
-            <BuildCheckSection
-              service={service}
-              userId={user.id}
-              accountId32={user.accountId32}
-              heroId={heroId}
-              name={name}
-            />
-          </Suspense>
-        </div>
-        <div className="lg:col-span-2">
-          <Suspense
-            fallback={<SectionSkeleton label={t("heroes.detail.loadingPublic")} rows={1} />}
-          >
-            <HighRankSection service={service} heroId={heroId} record={record} name={name} />
-          </Suspense>
-        </div>
+      {/* Many cards, some only for some heroes: two balanced columns, none left half empty. */}
+      <div className="card-flow">
+        <TrendCard trend={trend} heroLabel={name} />
+        <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingPublic")} rows={1} />}>
+          <HighRankSection service={service} heroId={heroId} record={record} name={name} />
+        </Suspense>
+        <Suspense
+          fallback={<SectionSkeleton label={t("heroes.detail.loadingProgress")} rows={4} />}
+        >
+          <ProgressSection details={details} name={name} />
+        </Suspense>
+        <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingItems")} rows={4} />}>
+          <ItemsSection details={details} name={name} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <WhatWorksSection details={details} name={name} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <BuildSection details={details} heroId={heroId} name={name} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <TimingsSection
+            service={service}
+            userId={user.id}
+            accountId32={user.accountId32}
+            heroId={heroId}
+            name={name}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <BuildCheckSection
+            service={service}
+            userId={user.id}
+            accountId32={user.accountId32}
+            heroId={heroId}
+            name={name}
+          />
+        </Suspense>
       </div>
 
       <Suspense fallback={<SectionSkeleton label={t("heroes.detail.loadingMatchups")} rows={5} />}>
