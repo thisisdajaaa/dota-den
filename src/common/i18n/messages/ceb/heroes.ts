@@ -295,6 +295,16 @@ export const heroes: MessageTree<typeof en> = {
       noneListed: "Wala pay hero nga nakauban nimo sa lane sa {min} o labaw pa nga dula.",
       note: "Mga kauban sa imong lane sa 10 minutos, gikan sa {games}; gilista human sa {min} ka dula nga magkauban. Wala giapil ang solo lane ug roam.",
     },
+    opponents: {
+      title: "Mga kontra sa lane",
+      lanes: "Lane: {won} daog, {even} patas, {lost} pildi",
+      record: "dula {wins}–{losses}",
+      noneRead:
+        "Wala pay natipigan nga kontra sa lane. Mapuno kini samtang gibasa ang imong mga parsed nga dula, pipila kada adlaw.",
+      noneListed:
+        "Wala pay kontra nga hero nga nakaatubang nimo sa lane sa {min} o labaw pa nga dula.",
+      note: "Mga kontra nga hero sa imong lane, gikan sa {games}; gilista human sa {min} ka lane batok kanila. Ang bar mao ang bahin sa mga lane nga imong nadaog (bulawan sa 10 minuto). Dili apil ang roam.",
+    },
     footnote:
       "Giihap gikan sa imong imported games lang. Gimarkahan ang gagmay nga sample; kinahanglan og labing menos 10 ka dula ug 5 puntos aron markahan ang kalainan sa imong average.",
   },

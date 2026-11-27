@@ -288,6 +288,15 @@ export const heroes = {
       noneListed: "No hero has laned with you in {min} or more games yet.",
       note: "Allied heroes in your lane at 10 minutes, from {games}; listed after {min} games together. Solo lanes and roams aren't counted.",
     },
+    opponents: {
+      title: "Lane opponents",
+      lanes: "Lanes {won}W {even}E {lost}L",
+      record: "games {wins}–{losses}",
+      noneRead:
+        "No lane opponents stored yet. They fill in as your parsed games are read, a few a day.",
+      noneListed: "No enemy hero has laned against you in {min} or more games yet.",
+      note: "Enemy heroes in your lane, from {games}; listed after {min} lanes against them. W/E/L: lanes won, even or lost by gold at 10 minutes; the bar is your share of lanes won. Roams aren't counted.",
+    },
     footnote:
       "Counted from your imported games only. Small samples are marked; a gap marked above or below your average needs at least 10 games and 5 points.",
   },
