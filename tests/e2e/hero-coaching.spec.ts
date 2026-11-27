@@ -125,6 +125,16 @@ test("a hero page shows what works for you, then your timings and lanes as games
     "3 games",
   );
   await expect(page.getByRole("region", { name: "Lane partners" })).toBeVisible();
+  // Gold at 20: ahead in the 7 wins, behind in the 3 losses, each of which led by 12k first.
+  const leads = page.getByRole("region", { name: "By gold at 20 minutes" });
+  await expect(
+    leads.getByRole("listitem").filter({ hasText: "Your team ahead by 3,000+" }),
+  ).toContainText("7 games");
+  await expect(
+    leads.getByRole("listitem").filter({ hasText: "Your team behind by 3,000+" }),
+  ).toContainText("3 games");
+  await expect(leads).toContainText("Throws: lost 3 of 3 games where your team led by 10,000+.");
+  await expect(leads).toContainText("Comebacks: won 0 of 3 games");
   // The same two enemy heroes faced you in the safe lane in all 10 read games.
   const opponents = page.getByRole("region", { name: "Lane opponents" });
   await expect(opponents.getByRole("listitem")).toHaveCount(2);

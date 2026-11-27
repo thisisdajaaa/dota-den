@@ -114,12 +114,17 @@ describe("MatchExtrasRepository", () => {
     expect((await repo.pendingParsed(611, 10)).map((p) => p.matchId)).toEqual(["n"]);
 
     await repo.save(
-      extras(611, "s", { lanePartnerHeroIds: [5], laneOpponentHeroIds: [2, 3] }),
+      extras(611, "s", {
+        lanePartnerHeroIds: [5],
+        laneOpponentHeroIds: [2, 3],
+        teamGold: { at20: 3_000, maxLead: 4_000, maxDeficit: 500 },
+      }),
       new Date(),
     );
     expect((await repo.lanesForAccount(611))[0]).toMatchObject({
       lanePartnerHeroIds: [5],
       laneOpponentHeroIds: [2, 3],
+      teamGold: { at20: 3_000, maxLead: 4_000, maxDeficit: 500 },
     });
 
     // Wards: only parsed games stored with ward logs, newest first.

@@ -13,10 +13,10 @@ export interface MatchExtrasDoc extends MatchExtras {
 }
 
 /**
- * 2: lanePartnerHeroIds. 3: side and wards. 4: runes. 5: laneOpponentHeroIds. Parsed games stored before are fetched again, after
+ * 2: lanePartnerHeroIds. 3: side and wards. 4: runes. 5: laneOpponentHeroIds. 6: teamGold. Parsed games stored before are fetched again, after
  * new games, within the same daily cap.
  */
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 export const matchExtrasId = (accountId32: number, matchId: string) => `${accountId32}:${matchId}`;
 
 /** Extras from parsed replays (one document per player and match), each fetched once. */
@@ -177,6 +177,7 @@ export class MatchExtrasRepository implements MatchExtrasStore {
             laneResult: 1,
             lanePartnerHeroIds: 1,
             laneOpponentHeroIds: 1,
+            teamGold: 1,
           },
         },
       )
@@ -192,6 +193,7 @@ export class MatchExtrasRepository implements MatchExtrasStore {
       ...(d.laneOpponentHeroIds !== undefined
         ? { laneOpponentHeroIds: d.laneOpponentHeroIds }
         : {}),
+      ...(d.teamGold !== undefined ? { teamGold: d.teamGold } : {}),
     }));
   }
 

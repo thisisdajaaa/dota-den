@@ -62,7 +62,7 @@ export const plus: MessageTree<typeof en> = {
       },
       splits: {
         title: "Imong splits",
-        body: "Ang tibuok nimong history sumala sa patch, posisyon, oras sa adlaw, gitas-on sa dula, resulta sa lane ug lane partner, matag usa batok sa imong average (libre: imong heroes, lanes ug matchups).",
+        body: "Ang tibuok nimong history sumala sa patch, posisyon, oras sa adlaw, gitas-on sa dula, resulta sa lane, mga kauban ug kontra sa lane, ug bulawan sa 20 minutos (throw ug comeback), matag usa batok sa imong average (libre: imong heroes, lanes ug matchups).",
         where: "Heroes → Your splits.",
       },
       postMortem: {

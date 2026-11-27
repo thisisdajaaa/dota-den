@@ -63,7 +63,7 @@ export const plus = {
       },
       splits: {
         title: "Your splits",
-        body: "Your whole history by patch, position, time of day, game length, lane result and lane partner, each against your average (free: your heroes, lanes and matchups).",
+        body: "Your whole history by patch, position, time of day, game length, lane result, lane partners and opponents, and gold at 20 minutes (throws and comebacks), each against your average (free: your heroes, lanes and matchups).",
         where: "Heroes → Your splits.",
       },
       postMortem: {

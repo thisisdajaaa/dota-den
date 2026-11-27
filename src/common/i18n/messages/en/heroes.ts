@@ -235,10 +235,10 @@ export const heroes = {
     kicker: "Your heroes",
     title: "Your splits",
     description:
-      "Your record by patch, position, time of day, game length, how your lane went and who you laned with, each against your overall win rate.",
+      "Your record by patch, position, time of day, game length, how your lane went, who you laned with and against, and your team's gold at 20 minutes, each against your overall win rate.",
     lockedTitle: "A Plus feature",
     locked:
-      "Plus splits your whole imported history six ways (patch, position, time of day, game length, lane result and lane partner) so you can see where you win and where you don't. Free keeps your heroes, lanes and matchups.",
+      "Plus splits your whole imported history by patch, position, time of day, game length, lane result, lane partners and opponents, and gold at 20 minutes (with your throws and comebacks) so you can see where you win and where you don't. Free keeps your heroes, lanes and matchups.",
     lockedLink: "See Plus",
     overall: "Overall: {rate} over {games}.",
     overallNone: "No imported games yet. Sync your matches from the dashboard.",
@@ -279,6 +279,15 @@ export const heroes = {
       even: "Even lane",
       lost: "You lost your lane",
       note: "Lanes read by gold at 10 minutes (10% margin) in {games} with a parsed replay. Jungle and roaming games have no lane result.",
+    },
+    leads: {
+      title: "By gold at 20 minutes",
+      ahead: "Your team ahead by {gold}+",
+      close: "Within {gold} either way",
+      behind: "Your team behind by {gold}+",
+      throws: "Throws: lost {lost} of {games} where your team led by {gold}+.",
+      comebacks: "Comebacks: won {won} of {games} where your team trailed by {gold}+.",
+      note: "Team net worth from {games} with a parsed replay ({at20} reached 20 minutes).",
     },
     partners: {
       title: "Lane partners",
