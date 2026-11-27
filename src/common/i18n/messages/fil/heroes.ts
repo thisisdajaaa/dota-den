@@ -294,6 +294,15 @@ export const heroes: MessageTree<typeof en> = {
       noneListed: "Wala pang hero na nakasama mo sa lane sa {min} o higit pang laro.",
       note: "Mga kakampi sa lane mo sa 10 minuto, mula sa {games}; nakalista pagkatapos ng {min} larong magkasama. Hindi kasama ang solo lane at roam.",
     },
+    opponents: {
+      title: "Mga kalaban sa lane",
+      lanes: "Lane: {won} panalo, {even} tabla, {lost} talo",
+      record: "laro {wins}–{losses}",
+      noneRead:
+        "Wala pang nakatagong kalaban sa lane. Napupuno ito habang binabasa ang mga parsed mong laro, ilan kada araw.",
+      noneListed: "Wala pang kalabang hero na nakaharap mo sa lane sa {min} o higit pang laro.",
+      note: "Mga kalabang hero sa lane mo, mula sa {games}; nakalista pagkatapos ng {min} lane laban sa kanila. Ang bar ay ang bahagi ng mga lane na naipanalo mo (ginto sa 10 minuto). Hindi kasama ang roam.",
+    },
     footnote:
       "Binilang mula sa imported games mo lang. Minarkahan ang maliliit na sample; kailangan ng hindi bababa sa 10 laro at 5 puntos para markahan ang agwat sa average mo.",
   },

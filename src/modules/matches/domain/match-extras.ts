@@ -66,6 +66,11 @@ export interface MatchExtras {
    * (unparsed, jungle, roaming). Missing on games stored before we kept it.
    */
   lanePartnerHeroIds?: number[] | null;
+  /**
+   * Enemy heroes in your lane (not roaming); null when there's no lane to read. Missing on games
+   * stored before we kept it.
+   */
+  laneOpponentHeroIds?: number[] | null;
   /** First purchase of each completed item, seconds from the horn, in order. */
   itemTimings: Array<{ key: string; time: number }>;
   /** Your side in the game (ward spots differ by side). Missing on games stored before. */
@@ -126,6 +131,25 @@ export function lanePartners(
     .map((p) => p.heroId);
 }
 
+/** Enemy heroes laning against you (not roaming); null when you had no lane. */
+export function laneOpponents(
+  players: readonly Pick<MatchPlayer, "playerSlot" | "heroId" | "laning">[],
+  you: Pick<MatchPlayer, "playerSlot" | "laning">,
+): number[] | null {
+  const lane = you.laning?.lane;
+  if (!you.laning || you.laning.roaming || !lane || lane < 1 || lane > 3) return null;
+  const radiant = (slot: number) => slot < 128;
+  return players
+    .filter(
+      (p) =>
+        radiant(p.playerSlot) !== radiant(you.playerSlot) &&
+        p.laning?.lane === lane &&
+        !p.laning.roaming &&
+        p.heroId > 0,
+    )
+    .map((p) => p.heroId);
+}
+
 /** First purchase time of each item `isItem` accepts, in order. */
 export function firstPurchases(
   purchases: readonly { time: number; key: string }[],
@@ -174,6 +198,7 @@ export function matchExtrasFrom(
     efficiencyPct: laning?.efficiencyPct ?? null,
     laneResult: laning ? laneResult(detail.players, you) : null,
     lanePartnerHeroIds: laning ? lanePartners(detail.players, you) : null,
+    laneOpponentHeroIds: laning ? laneOpponents(detail.players, you) : null,
     itemTimings: laning ? firstPurchases(laning.purchases, isItem) : [],
     side: you.side,
     wards:

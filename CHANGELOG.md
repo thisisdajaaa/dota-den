@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-11-27
+
+- Your splits (Plus) lists your lane opponents: the enemy heroes you laned against most, how those lanes went (won, even or lost by gold at 10 minutes) and your record in those games
+
 ## 2026-11-26
 
 - Your runes, on the wards page (now "Wards & runes"): bounty, power, wisdom and water runes per game, how often you take a bounty at the horn, power runes before 10:00 and which power runes you take, from your parsed replays
