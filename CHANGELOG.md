@@ -6,6 +6,7 @@ through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Pl
 
 ## 2026-11-27
 
+- Your splits (Plus): your record by your team's gold at 20 minutes (ahead, close, behind), and your throws (led by 10,000+ and lost) and comebacks (trailed by 10,000+ and won)
 - Your splits (Plus) lists your lane opponents: the enemy heroes you laned against most, how those lanes went (won, even or lost by gold at 10 minutes) and your record in those games
 
 ## 2026-11-26

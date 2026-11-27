@@ -39,6 +39,13 @@ export const LENGTH_FROM: Record<LengthBand, number> = {
   very_long: 45,
 };
 
+/** Your team's gold at 20 minutes: ahead or behind by at least this much, else close. */
+export const LEAD_AT_20 = 3_000;
+/** A lead (or deficit) this big counts for throws (and comebacks). */
+export const BIG_SWING = 10_000;
+export type LeadState = "ahead" | "close" | "behind";
+export const LEAD_STATES: readonly LeadState[] = ["ahead", "close", "behind"];
+
 export type LaneOutcome = "won" | "even" | "lost";
 export const LANE_OUTCOMES: readonly LaneOutcome[] = ["won", "even", "lost"];
 
@@ -62,6 +69,8 @@ export interface SplitLane {
   lanePartnerHeroIds?: readonly number[] | null;
   /** Enemy heroes in your lane; undefined for games stored before we kept it. */
   laneOpponentHeroIds?: readonly number[] | null;
+  /** Your team's gold lead; undefined for games stored before we kept it. */
+  teamGold?: { at20: number | null; maxLead: number; maxDeficit: number } | null;
 }
 
 export interface SplitRow<K> extends WinRecord {
@@ -94,6 +103,19 @@ export interface DeeperStats {
   partners: { rows: PartnerRow[]; read: number; belowMin: number; minGames: number };
   /** Enemy heroes you laned against, most lanes first; roams aren't counted. */
   opponents: { rows: OpponentRow[]; read: number; belowMin: number; minGames: number };
+  /**
+   * Your record by your team's gold at 20 minutes; throws (led by BIG_SWING, lost) and
+   * comebacks (trailed by BIG_SWING, won) from every game with a gold curve.
+   */
+  leads: {
+    rows: SplitRow<LeadState>[];
+    /** Games with a gold curve (all of them count for throws and comebacks). */
+    read: number;
+    /** Of those, games that reached 20 minutes (the rows). */
+    at20: number;
+    throws: { led: number; lost: number };
+    comebacks: { trailed: number; won: number };
+  };
 }
 
 export { localHour } from "@/common/time/local-hour";
@@ -172,6 +194,11 @@ export function deeperStats(
   let outcomesRead = 0;
   let partnersRead = 0;
   let opponentsRead = 0;
+  const leadGroups = new Map<LeadState, GameResult[]>();
+  let goldRead = 0;
+  let goldAt20 = 0;
+  const throws = { led: 0, lost: 0 };
+  const comebacks = { trailed: 0, won: 0 };
   const opponentGroups = new Map<number, GameResult[]>();
   const opponentLanes = new Map<number, { won: number; even: number; lost: number }>();
   for (const l of lanes) {
@@ -191,6 +218,24 @@ export function deeperStats(
     if (Array.isArray(l.lanePartnerHeroIds) && !l.roaming) {
       partnersRead++;
       for (const id of new Set(l.lanePartnerHeroIds)) push(partnerGroups, id, g.result);
+    }
+    if (l.teamGold) {
+      goldRead++;
+      const { at20, maxLead, maxDeficit } = l.teamGold;
+      if (at20 !== null) {
+        goldAt20++;
+        const state: LeadState =
+          at20 >= LEAD_AT_20 ? "ahead" : at20 <= -LEAD_AT_20 ? "behind" : "close";
+        push(leadGroups, state, g.result);
+      }
+      if (maxLead >= BIG_SWING) {
+        throws.led++;
+        if (g.result === "loss") throws.lost++;
+      }
+      if (maxDeficit >= BIG_SWING) {
+        comebacks.trailed++;
+        if (g.result === "win") comebacks.won++;
+      }
     }
     if (Array.isArray(l.laneOpponentHeroIds) && !l.roaming && l.laneOpponentHeroIds.length > 0) {
       opponentsRead++;
@@ -242,6 +287,13 @@ export function deeperStats(
       read: partnersRead,
       belowMin: partnerAll.length - listed.length,
       minGames: MIN_PARTNER_GAMES,
+    },
+    leads: {
+      rows: rows(LEAD_STATES, leadGroups, minGames),
+      read: goldRead,
+      at20: goldAt20,
+      throws,
+      comebacks,
     },
     opponents: {
       rows: opponentsListed.slice(0, SPLIT_OPPONENTS),

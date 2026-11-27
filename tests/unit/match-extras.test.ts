@@ -8,6 +8,7 @@ import {
   PLUS_EXTRAS_PER_DAY,
   laneResult,
   laneOpponents,
+  teamGold,
   lanePartners,
   matchExtrasFrom,
   type MatchExtras,
@@ -95,6 +96,26 @@ describe("match extras (domain)", () => {
     expect(laneOpponents([roamer, foe], roamer)).toBeNull();
     const jungler = player(0, { laning: laning({ lane: 4 }) });
     expect(laneOpponents([jungler, foe], jungler)).toBeNull();
+  });
+
+  it("reads your team's gold lead from your side, at 20 minutes and at its extremes", () => {
+    const curve = Array.from({ length: 25 }, (_, m) =>
+      m <= 10 ? m * 1000 : 10_000 - (m - 10) * 2000,
+    );
+    expect(teamGold(curve, "radiant")).toEqual({
+      at20: -10_000,
+      maxLead: 10_000,
+      maxDeficit: 18_000,
+    });
+    expect(teamGold(curve, "dire")).toEqual({ at20: 10_000, maxLead: 18_000, maxDeficit: 10_000 });
+    // A game under 20 minutes has no value at 20; no curve: nothing.
+    expect(teamGold([0, 500, -200], "radiant")).toEqual({
+      at20: null,
+      maxLead: 500,
+      maxDeficit: 200,
+    });
+    expect(teamGold(null, "radiant")).toBeNull();
+    expect(teamGold([0], "dire")).toBeNull();
   });
 
   it("keeps the first purchase of each completed item, in order", () => {

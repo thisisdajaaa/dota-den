@@ -45,6 +45,28 @@ export interface ExtrasWard {
   y: number;
 }
 
+/** Your team's gold lead over a game (your side's view of the gold curve). */
+export interface TeamGold {
+  at20: number | null;
+  maxLead: number;
+  maxDeficit: number;
+}
+
+/** Your side's view of the per-minute Radiant gold lead; null without a curve. */
+export function teamGold(
+  radiantAdvantage: readonly number[] | null,
+  side: "radiant" | "dire",
+): TeamGold | null {
+  const curve = (radiantAdvantage ?? []).filter(Number.isFinite);
+  if (curve.length < 2) return null;
+  const ours = curve.map((v) => (side === "radiant" ? v : -v));
+  return {
+    at20: ours.length > 20 ? Math.round(ours[20]!) : null,
+    maxLead: Math.round(Math.max(0, ...ours)),
+    maxDeficit: Math.round(Math.max(0, ...ours.map((v) => -v))),
+  };
+}
+
 /** What we keep from one parsed game, for one player. */
 export interface MatchExtras {
   accountId32: number;
@@ -71,6 +93,12 @@ export interface MatchExtras {
    * stored before we kept it.
    */
   laneOpponentHeroIds?: number[] | null;
+  /**
+   * Your team's net worth lead (negative: behind) from the parsed replay: at 20 minutes (null in
+   * shorter games) and the biggest lead and deficit. null without the gold curve; missing on
+   * games stored before we kept it.
+   */
+  teamGold?: TeamGold | null;
   /** First purchase of each completed item, seconds from the horn, in order. */
   itemTimings: Array<{ key: string; time: number }>;
   /** Your side in the game (ward spots differ by side). Missing on games stored before. */
@@ -199,6 +227,7 @@ export function matchExtrasFrom(
     laneResult: laning ? laneResult(detail.players, you) : null,
     lanePartnerHeroIds: laning ? lanePartners(detail.players, you) : null,
     laneOpponentHeroIds: laning ? laneOpponents(detail.players, you) : null,
+    teamGold: laning ? teamGold(detail.goldAdvantage, you.side) : null,
     itemTimings: laning ? firstPurchases(laning.purchases, isItem) : [],
     side: you.side,
     wards:

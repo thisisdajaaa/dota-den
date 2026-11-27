@@ -244,7 +244,7 @@ export const heroes: MessageTree<typeof en> = {
       "Ang record mo ayon sa patch, posisyon, oras ng araw, haba ng laro, kinalabasan ng lane mo at kung sino ang kasama mo sa lane, bawat isa laban sa overall win rate mo.",
     lockedTitle: "Feature ng Plus",
     locked:
-      "Hinahati ng Plus ang buong imported history mo sa anim (patch, posisyon, oras ng araw, haba ng laro, resulta ng lane at lane partner) para makita mo kung saan ka nananalo at saan hindi. Libre pa rin ang heroes, lanes at matchups mo.",
+      "Hinahati ng Plus ang buong imported history mo ayon sa patch, posisyon, oras ng araw, haba ng laro, resulta ng lane, mga kakampi at kalaban sa lane, at ginto sa 20 minuto (kasama ang throw at comeback mo) para makita mo kung saan ka nananalo at saan hindi. Libre pa rin ang heroes, lanes at matchups mo.",
     lockedLink: "Tingnan ang Plus",
     overall: "Overall: {rate} sa {games}.",
     overallNone: "Wala pang imported na laro. I-sync ang matches mo mula sa dashboard.",
@@ -285,6 +285,15 @@ export const heroes: MessageTree<typeof en> = {
       even: "Pantay ang lane",
       lost: "Natalo ka sa lane",
       note: "Binasa ang lanes ayon sa gold sa 10 minuto (10% na agwat) sa {games} na may parsed replay. Walang resulta ng lane ang jungle at roaming.",
+    },
+    leads: {
+      title: "Ayon sa ginto sa 20 minuto",
+      ahead: "Lamang ang team mo ng {gold}+",
+      close: "Hindi lalampas ng {gold} ang agwat",
+      behind: "Talo ang team mo ng {gold}+",
+      throws: "Throw: natalo sa {lost} ng {games} na lumamang ang team mo ng {gold}+.",
+      comebacks: "Comeback: nanalo sa {won} ng {games} na naiwan ang team mo ng {gold}+.",
+      note: "Net worth ng team mula sa {games} na may parsed na replay ({at20} ang umabot ng 20 minuto).",
     },
     partners: {
       title: "Mga lane partner",

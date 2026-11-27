@@ -234,6 +234,7 @@ export type StoredLane = Pick<
   | "laneResult"
   | "lanePartnerHeroIds"
   | "laneOpponentHeroIds"
+  | "teamGold"
 >;
 
 /** Stored per-match extras (match_extras) and the parsed games still waiting for them. */
