@@ -174,7 +174,8 @@ describe("PlusController", () => {
 
   it("webhook takes signed provider calls without a session or Origin", async () => {
     const { controller } = setup();
-    const body = lsSubscriptionEvent({ userId: USER });
+    // Renews well after today (status is read on the real clock).
+    const body = lsSubscriptionEvent({ userId: USER, renewsAt: "2099-01-01T00:00:00.000000Z" });
     const signature = createHmac("sha256", SECRET).update(body).digest("hex");
     const res = await controller.webhook(
       post(body, { "x-signature": signature, "x-event-name": "subscription_created" }),

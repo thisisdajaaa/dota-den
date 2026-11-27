@@ -191,3 +191,9 @@ at most 40 per game) for the runes section on /heroes/wards. Schema 4, refetched
 (the two refetches overlap: a game still on schema 2 or 3 is fetched once). Unknown rune ids are
 dropped, and games stored before schema 4 are left out of rune numbers rather than counted as
 "no runes".
+
+## Addendum (2026-11-27): lane opponents in match extras
+
+Match extras also keep the enemy heroes in the player's lane (same physical lane, not roaming) for
+the "Lane opponents" split in Your splits (Plus). Schema 5, refetched like schemas 3 and 4. Games
+stored before are left out of the split, never counted as "no opponent".

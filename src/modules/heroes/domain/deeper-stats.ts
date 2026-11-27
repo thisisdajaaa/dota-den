@@ -14,6 +14,10 @@ export const SPLIT_PATCHES = 6;
 export const MIN_PARTNER_GAMES = 3;
 /** Lane partners listed, most games first. */
 export const SPLIT_PARTNERS = 8;
+/** An enemy lane hero needs this many lanes against you before it's listed. */
+export const MIN_OPPONENT_GAMES = 3;
+/** Lane opponents listed, most lanes first. */
+export const SPLIT_OPPONENTS = 10;
 
 export type DayPart = "morning" | "afternoon" | "evening" | "night";
 export const DAY_PARTS: readonly DayPart[] = ["morning", "afternoon", "evening", "night"];
@@ -56,6 +60,8 @@ export interface SplitLane {
   laneResult: LaneOutcome | null;
   /** Allied heroes in your lane; undefined for games stored before we kept it. */
   lanePartnerHeroIds?: readonly number[] | null;
+  /** Enemy heroes in your lane; undefined for games stored before we kept it. */
+  laneOpponentHeroIds?: readonly number[] | null;
 }
 
 export interface SplitRow<K> extends WinRecord {
@@ -64,6 +70,14 @@ export interface SplitRow<K> extends WinRecord {
 
 export interface PartnerRow extends WinRecord {
   heroId: number;
+}
+
+export interface OpponentRow extends WinRecord {
+  heroId: number;
+  /** How your lane went against them (gold at 10 minutes), where the replay could tell. */
+  lane: { won: number; even: number; lost: number };
+  /** Share of read lanes you won; null below the sample minimum. */
+  laneWonShare: number | null;
 }
 
 export interface DeeperStats {
@@ -78,6 +92,8 @@ export interface DeeperStats {
   laneOutcomes: { rows: SplitRow<LaneOutcome>[]; read: number };
   /** Allied heroes you laned with, most games first; solo lanes and roams aren't counted. */
   partners: { rows: PartnerRow[]; read: number; belowMin: number; minGames: number };
+  /** Enemy heroes you laned against, most lanes first; roams aren't counted. */
+  opponents: { rows: OpponentRow[]; read: number; belowMin: number; minGames: number };
 }
 
 export { localHour } from "@/common/time/local-hour";
@@ -155,6 +171,9 @@ export function deeperStats(
   let unplaced = 0;
   let outcomesRead = 0;
   let partnersRead = 0;
+  let opponentsRead = 0;
+  const opponentGroups = new Map<number, GameResult[]>();
+  const opponentLanes = new Map<number, { won: number; even: number; lost: number }>();
   for (const l of lanes) {
     const g = byMatch.get(l.matchId);
     if (!g) continue;
@@ -173,6 +192,15 @@ export function deeperStats(
       partnersRead++;
       for (const id of new Set(l.lanePartnerHeroIds)) push(partnerGroups, id, g.result);
     }
+    if (Array.isArray(l.laneOpponentHeroIds) && !l.roaming && l.laneOpponentHeroIds.length > 0) {
+      opponentsRead++;
+      for (const id of new Set(l.laneOpponentHeroIds)) {
+        push(opponentGroups, id, g.result);
+        const lane = opponentLanes.get(id) ?? { won: 0, even: 0, lost: 0 };
+        if (l.laneResult) lane[l.laneResult]++;
+        opponentLanes.set(id, lane);
+      }
+    }
   }
 
   const partnerAll = [...partnerGroups.entries()].map(([heroId, rs]) => ({
@@ -184,6 +212,20 @@ export function deeperStats(
     .sort(
       (a, b) => b.games - a.games || (b.winRate ?? 0) - (a.winRate ?? 0) || a.heroId - b.heroId,
     );
+
+  const opponentAll = [...opponentGroups.entries()].map(([heroId, rs]) => {
+    const lane = opponentLanes.get(heroId) ?? { won: 0, even: 0, lost: 0 };
+    const laneRead = lane.won + lane.even + lane.lost;
+    return {
+      heroId,
+      ...winRecord(rs, minGames),
+      lane,
+      laneWonShare: laneRead >= MIN_OPPONENT_GAMES ? lane.won / laneRead : null,
+    };
+  });
+  const opponentsListed = opponentAll
+    .filter((o) => o.games >= MIN_OPPONENT_GAMES)
+    .sort((a, b) => b.games - a.games || a.lane.won - b.lane.won || a.heroId - b.heroId);
 
   return {
     overall: winRecord(
@@ -200,6 +242,12 @@ export function deeperStats(
       read: partnersRead,
       belowMin: partnerAll.length - listed.length,
       minGames: MIN_PARTNER_GAMES,
+    },
+    opponents: {
+      rows: opponentsListed.slice(0, SPLIT_OPPONENTS),
+      read: opponentsRead,
+      belowMin: opponentAll.length - opponentsListed.length,
+      minGames: MIN_OPPONENT_GAMES,
     },
   };
 }

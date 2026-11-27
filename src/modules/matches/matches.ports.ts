@@ -227,7 +227,13 @@ export interface PendingExtras {
 /** One stored parsed game's lane (for deeper stats). */
 export type StoredLane = Pick<
   MatchExtras,
-  "matchId" | "heroId" | "laneRole" | "roaming" | "laneResult" | "lanePartnerHeroIds"
+  | "matchId"
+  | "heroId"
+  | "laneRole"
+  | "roaming"
+  | "laneResult"
+  | "lanePartnerHeroIds"
+  | "laneOpponentHeroIds"
 >;
 
 /** Stored per-match extras (match_extras) and the parsed games still waiting for them. */

@@ -7,6 +7,7 @@ import {
   firstPurchases,
   PLUS_EXTRAS_PER_DAY,
   laneResult,
+  laneOpponents,
   lanePartners,
   matchExtrasFrom,
   type MatchExtras,
@@ -79,6 +80,21 @@ describe("match extras (domain)", () => {
     expect(lanePartners([roamer, you], roamer)).toBeNull();
     const jungler = player(0, { laning: laning({ lane: 4 }) });
     expect(lanePartners([jungler, partner], jungler)).toBeNull();
+  });
+
+  it("lists the enemy heroes laning against you; none for a roam or the jungle", () => {
+    const you = player(0, { heroId: 1, laning: laning() });
+    const partner = player(1, { heroId: 5, laning: laning() });
+    const foe = player(128, { heroId: 2, laning: laning() });
+    const foe2 = player(129, { heroId: 3, laning: laning() });
+    const foeMid = player(130, { heroId: 4, laning: laning({ lane: 2 }) });
+    const foeRoam = player(131, { heroId: 6, laning: laning({ roaming: true }) });
+    expect(laneOpponents([you, partner, foe, foe2, foeMid, foeRoam], you)).toEqual([2, 3]);
+    expect(laneOpponents([you, partner], you)).toEqual([]);
+    const roamer = player(0, { laning: laning({ roaming: true }) });
+    expect(laneOpponents([roamer, foe], roamer)).toBeNull();
+    const jungler = player(0, { laning: laning({ lane: 4 }) });
+    expect(laneOpponents([jungler, foe], jungler)).toBeNull();
   });
 
   it("keeps the first purchase of each completed item, in order", () => {

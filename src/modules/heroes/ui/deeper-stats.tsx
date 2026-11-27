@@ -231,6 +231,64 @@ export async function DeeperStatsView({
             })}
           </p>
         </section>
+        <section aria-labelledby="split-opponents" className="panel space-y-3 p-5">
+          <h2 id="split-opponents" className="text-base font-semibold">
+            {t("heroes.splits.opponents.title")}
+          </h2>
+          {s.opponents.rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {s.opponents.read === 0
+                ? t("heroes.splits.opponents.noneRead")
+                : t("heroes.splits.opponents.noneListed", { min: s.opponents.minGames })}
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {s.opponents.rows.map((o) => {
+                const hero = heroes.get(o.heroId);
+                return (
+                  <li key={o.heroId} className="space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm">
+                      <Link
+                        href={`/heroes/${o.heroId}`}
+                        className="flex min-w-0 items-center gap-2 truncate hover:text-gold"
+                      >
+                        <HeroPortrait hero={hero} heroId={o.heroId} size="xs" />
+                        {heroName(hero, o.heroId)}
+                      </Link>
+                      <span className="text-right text-xs text-muted-foreground tabular-nums">
+                        <span
+                          className={cn(
+                            o.laneWonShare === null
+                              ? "text-muted-foreground"
+                              : "font-semibold text-foreground",
+                          )}
+                        >
+                          {t("heroes.splits.opponents.lanes", {
+                            won: o.lane.won,
+                            even: o.lane.even,
+                            lost: o.lane.lost,
+                          })}
+                        </span>{" "}
+                        · {t("heroes.splits.opponents.record", { wins: o.wins, losses: o.losses })}
+                      </span>
+                    </div>
+                    <WinRateBar
+                      rate={o.laneWonShare}
+                      muted={o.laneWonShare === null}
+                      className="h-1.5"
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {t("heroes.splits.opponents.note", {
+              games: games(s.opponents.read),
+              min: s.opponents.minGames,
+            })}
+          </p>
+        </section>
       </div>
       <p className="text-xs text-muted-foreground">{t("heroes.splits.footnote")}</p>
     </div>

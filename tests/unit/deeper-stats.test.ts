@@ -161,4 +161,27 @@ describe("deeperStats", () => {
       [8, 3, 0],
     ]);
   });
+
+  it("lists lane opponents with enough lanes, with how the lane went", () => {
+    const games = Array.from({ length: 6 }, (_, i) => game(i, { result: i < 3 ? "win" : "loss" }));
+    const results = ["won", "lost", "lost", "even", null, "lost"] as const;
+    const lanes = games.map((g, i) =>
+      lane(Number(g.matchId), {
+        laneResult: results[i],
+        laneOpponentHeroIds: i < 4 ? [2, 2] : i === 4 ? [9] : [],
+      }),
+    );
+    // Stored before opponents were kept: not read.
+    lanes.push(lane(0, { laneOpponentHeroIds: undefined }));
+    const s = deeperStats(games, lanes, { timeZone: "UTC", rolesOf });
+    expect(s.opponents).toMatchObject({ read: 5, belowMin: 1, minGames: 3 });
+    expect(s.opponents.rows).toHaveLength(1);
+    expect(s.opponents.rows[0]).toMatchObject({
+      heroId: 2,
+      games: 4,
+      wins: 3,
+      lane: { won: 1, even: 1, lost: 2 },
+      laneWonShare: 0.25,
+    });
+  });
 });

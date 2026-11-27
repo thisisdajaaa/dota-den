@@ -125,4 +125,8 @@ test("a hero page shows what works for you, then your timings and lanes as games
     "3 games",
   );
   await expect(page.getByRole("region", { name: "Lane partners" })).toBeVisible();
+  // The same two enemy heroes faced you in the safe lane in all 10 read games.
+  const opponents = page.getByRole("region", { name: "Lane opponents" });
+  await expect(opponents.getByRole("listitem")).toHaveCount(2);
+  await expect(opponents.getByRole("listitem").first()).toContainText("Lanes 7W 0E 3L");
 });
