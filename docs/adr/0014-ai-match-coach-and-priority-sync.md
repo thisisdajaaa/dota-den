@@ -197,3 +197,10 @@ dropped, and games stored before schema 4 are left out of rune numbers rather th
 Match extras also keep the enemy heroes in the player's lane (same physical lane, not roaming) for
 the "Lane opponents" split in Your splits (Plus). Schema 5, refetched like schemas 3 and 4. Games
 stored before are left out of the split, never counted as "no opponent".
+
+## Addendum (2026-11-27): team gold in match extras
+
+Match extras also keep the player's team net worth lead from the parsed gold curve, from their side:
+at 20 minutes (null in shorter games), the biggest lead and the biggest deficit. Your splits uses it
+for "By gold at 20 minutes" and for throws (led by 10,000+, lost) and comebacks (trailed by
+10,000+, won). Schema 6, refetched like the earlier schemas.

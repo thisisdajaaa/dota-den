@@ -157,6 +157,10 @@ function coachDetail(index) {
     region: 3,
     first_blood_time: 90,
     version: row.version,
+    // Your team (Radiant): wins build to +6k at 20 minutes; losses lead by 12k at 10, then fall.
+    radiant_gold_adv: Array.from({ length: 31 }, (_, m) =>
+      won ? m * 300 : m <= 10 ? m * 1200 : 12_000 - (m - 10) * 1600,
+    ),
     players,
   };
 }

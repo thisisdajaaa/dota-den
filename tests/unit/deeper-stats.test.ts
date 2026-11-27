@@ -184,4 +184,29 @@ describe("deeperStats", () => {
       laneWonShare: 0.25,
     });
   });
+
+  it("splits by gold at 20 minutes and counts throws and comebacks", () => {
+    const games = Array.from({ length: 6 }, (_, i) =>
+      game(i, { result: i % 2 === 0 ? "win" : "loss" }),
+    );
+    const gold = [
+      { at20: 5_000, maxLead: 12_000, maxDeficit: 0 }, // win, led big
+      { at20: 4_000, maxLead: 11_000, maxDeficit: 0 }, // loss: a throw
+      { at20: -6_000, maxLead: 0, maxDeficit: 15_000 }, // win: a comeback
+      { at20: 1_000, maxLead: 2_000, maxDeficit: 1_000 }, // loss, close
+      { at20: null, maxLead: 0, maxDeficit: 12_000 }, // win under 20 minutes: a comeback
+      null, // loss, no curve
+    ];
+    const lanes = games.map((g, i) => lane(Number(g.matchId), { teamGold: gold[i] }));
+    const s = deeperStats(games, lanes, { timeZone: "UTC", rolesOf });
+    expect(s.leads.read).toBe(5);
+    expect(s.leads.at20).toBe(4);
+    expect(s.leads.rows.map((r) => [r.key, r.games, r.wins])).toEqual([
+      ["ahead", 2, 1],
+      ["close", 1, 0],
+      ["behind", 1, 1],
+    ]);
+    expect(s.leads.throws).toEqual({ led: 2, lost: 1 });
+    expect(s.leads.comebacks).toEqual({ trailed: 2, won: 2 });
+  });
 });

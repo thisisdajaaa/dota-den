@@ -8,7 +8,7 @@ import { HeroPortrait, heroName } from "@/modules/matches/ui/hero-portrait";
 import { WinRateBar } from "@/modules/matches/ui/win-rate-bar";
 import { POSITION_INFO } from "@/modules/meta/domain/position";
 import type { WinRecord } from "../domain/hero-stats";
-import { LENGTH_FROM, type DeeperStats } from "../domain/deeper-stats";
+import { BIG_SWING, LEAD_AT_20, LENGTH_FROM, type DeeperStats } from "../domain/deeper-stats";
 
 /** Rows differing from your overall win rate by at least this much are marked. */
 const NOTABLE_GAP = 0.05;
@@ -86,7 +86,7 @@ async function SplitCard({
   );
 }
 
-/** Plus: your record split six ways, each row against your overall win rate. */
+/** Plus: your record split many ways, each row against your overall win rate. */
 export async function DeeperStatsView({
   stats,
   heroes,
@@ -181,6 +181,37 @@ export async function DeeperStatsView({
           }))}
           empty={t("heroes.splits.needsParsed")}
           note={t("heroes.splits.laneOutcomes.note", { games: games(s.laneOutcomes.read) })}
+        />
+        <SplitCard
+          id="split-leads"
+          title={t("heroes.splits.leads.title")}
+          overall={overall}
+          rows={s.leads.rows.map((r) => ({
+            ...r,
+            id: r.key,
+            label: t(`heroes.splits.leads.${r.key}`, { gold: LEAD_AT_20.toLocaleString("en") }),
+          }))}
+          empty={t("heroes.splits.needsParsed")}
+          note={[
+            s.leads.throws.led > 0 &&
+              t("heroes.splits.leads.throws", {
+                lost: s.leads.throws.lost,
+                games: games(s.leads.throws.led),
+                gold: BIG_SWING.toLocaleString("en"),
+              }),
+            s.leads.comebacks.trailed > 0 &&
+              t("heroes.splits.leads.comebacks", {
+                won: s.leads.comebacks.won,
+                games: games(s.leads.comebacks.trailed),
+                gold: BIG_SWING.toLocaleString("en"),
+              }),
+            t("heroes.splits.leads.note", {
+              games: games(s.leads.read),
+              at20: s.leads.at20,
+            }),
+          ]
+            .filter(Boolean)
+            .join(" ")}
         />
         <section aria-labelledby="split-partners" className="panel space-y-3 p-5">
           <h2 id="split-partners" className="text-base font-semibold">
