@@ -139,4 +139,21 @@ test("a hero page shows what works for you, then your timings and lanes as games
   const opponents = page.getByRole("region", { name: "Lane opponents" });
   await expect(opponents.getByRole("listitem")).toHaveCount(2);
   await expect(opponents.getByRole("listitem").first()).toContainText("Lanes 7W 0E 3L");
+
+  // Your deaths (free): the 10 read games, 5 deaths each, 13 of them to heroes.
+  await page.goto("/heroes/deaths");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your deaths");
+  const glance = page.getByRole("region", { name: "Your deaths at a glance" });
+  await expect(glance).toContainText("Deaths per game5.0");
+  await expect(glance).toContainText("Wins vs losses needs 5 of each (7 wins, 3 losses so far)");
+  await expect(glance).toContainText("Deaths before 10:000.3");
+  await expect(glance).toContainText("no hero kill on you before 10:00 in 70% of games");
+  await expect(glance).toContainText("First death21:40");
+  await expect(glance).toContainText("Killed by heroes26%");
+  const killers = page.getByRole("region", { name: "Who kills you most" });
+  await expect(killers.getByRole("listitem")).toHaveCount(2);
+  await expect(killers.getByRole("listitem").first()).toContainText("Fixture Hero 109");
+  await expect(killers.getByRole("listitem").first()).toContainText("7 kills in 7 games");
+  await expect(killers.getByRole("listitem").nth(1)).toContainText("6 kills in 3 games");
+  await expect(page.getByRole("region", { name: "When you die" })).toBeVisible();
 });

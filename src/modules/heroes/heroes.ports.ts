@@ -1,3 +1,4 @@
+import type { DeathGame } from "./domain/death-habits";
 import type { WardGame } from "./domain/ward-habits";
 import type { HighRankPosition } from "./domain/build-check";
 import type { LaneGame } from "@/modules/meta/domain/position";
@@ -95,4 +96,6 @@ export interface StoredExtras {
   lanes?(accountId32: number): Promise<SplitLane[]>;
   /** Wards from your latest `limit` stored parsed games with ward logs; absent when not wired. */
   wards?(accountId32: number, limit: number): Promise<WardGame[]>;
+  /** Deaths from your latest `limit` stored parsed games with kill logs; absent when not wired. */
+  deaths?(accountId32: number, limit: number): Promise<DeathGame[]>;
 }

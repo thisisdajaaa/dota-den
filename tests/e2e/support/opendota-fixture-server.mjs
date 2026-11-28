@@ -134,6 +134,17 @@ function coachDetail(index) {
       lh_t: Array.from({ length: 31 }, (_, m) => m * 5),
       dn_t: Array.from({ length: 31 }, (_, m) => Math.floor(m / 2)),
       gold_t: Array.from({ length: 31 }, (_, m) => m * perMin),
+      // Hero kills on you: Fixture Hero 107 (slot 130) at 4:00 and 25:00 in losses, Fixture
+      // Hero 109 (slot 132) at 21:40 in wins; your other deaths have no hero in the logs.
+      kills_log:
+        slot === 130 && !won
+          ? [
+              { time: 240, key: "npc_dota_hero_antimage" },
+              { time: 1500, key: "npc_dota_hero_antimage" },
+            ]
+          : slot === 132 && won
+            ? [{ time: 1300, key: "npc_dota_hero_antimage" }]
+            : [],
       purchase_log: me
         ? [
             { time: -80, key: "tango" },

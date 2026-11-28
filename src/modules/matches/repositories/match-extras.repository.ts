@@ -2,7 +2,13 @@ import "server-only";
 import type { Db } from "mongodb";
 import { forExport, type DataOwner } from "@/common/privacy/user-data";
 import type { MatchExtras } from "../domain/match-extras";
-import type { MatchExtrasStore, PendingExtras, StoredLane, StoredWardGame } from "../matches.ports";
+import type {
+  MatchExtrasStore,
+  PendingExtras,
+  StoredDeathGame,
+  StoredLane,
+  StoredWardGame,
+} from "../matches.ports";
 import { MATCH_COLLECTIONS, type PlayerMatchFactDoc } from "./matches.repository";
 
 export interface MatchExtrasDoc extends MatchExtras {
@@ -13,10 +19,11 @@ export interface MatchExtrasDoc extends MatchExtras {
 }
 
 /**
- * 2: lanePartnerHeroIds. 3: side and wards. 4: runes. 5: laneOpponentHeroIds. 6: teamGold. Parsed games stored before are fetched again, after
- * new games, within the same daily cap.
+ * 2: lanePartnerHeroIds. 3: side and wards. 4: runes. 5: laneOpponentHeroIds. 6: teamGold.
+ * 7: deaths. Parsed games stored before are fetched again, after new games, within the same
+ * daily cap.
  */
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 export const matchExtrasId = (accountId32: number, matchId: string) => `${accountId32}:${matchId}`;
 
 /** Extras from parsed replays (one document per player and match), each fetched once. */
@@ -229,6 +236,33 @@ export class MatchExtrasRepository implements MatchExtrasStore {
       wards: d.wards ?? [],
       runes: Array.isArray(d.runes) ? d.runes : null,
     }));
+  }
+
+  /** Your deaths in your latest stored parsed games that have them, newest first. */
+  async deathsForAccount(accountId32: number, limit: number): Promise<StoredDeathGame[]> {
+    const docs = await (
+      await this.col()
+    )
+      .find(
+        { accountId32, parsed: true, deaths: { $type: "object" } },
+        { projection: { _id: 0, matchId: 1, heroId: 1, startedAt: 1, result: 1, deaths: 1 } },
+      )
+      .sort({ startedAt: -1 })
+      .limit(limit)
+      .toArray();
+    return docs.flatMap((d) =>
+      d.deaths
+        ? [
+            {
+              matchId: d.matchId,
+              heroId: d.heroId,
+              startedAt: d.startedAt,
+              result: d.result,
+              deaths: d.deaths,
+            },
+          ]
+        : [],
+    );
   }
 
   async parsedGamesOnHero(accountId32: number, heroId: number): Promise<number> {

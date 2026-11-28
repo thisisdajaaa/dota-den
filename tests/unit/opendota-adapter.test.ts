@@ -245,6 +245,7 @@ describe("OpenDotaAdapter.fetchMatch", () => {
             { time: 500, key: 1 },
             { time: 600, key: "99" },
           ],
+          kills_log: [{ time: 612.7, key: "npc_dota_hero_axe" }],
         }),
         p(128),
       ],
@@ -268,6 +269,9 @@ describe("OpenDotaAdapter.fetchMatch", () => {
       { kind: "bounty", time: 0 },
       { kind: "wisdom", time: 423 },
       { kind: "haste", time: 500 },
+    ]);
+    expect(res.value.players[0].laning?.killsLog).toEqual([
+      { time: 613, key: "npc_dota_hero_axe" },
     ]);
     // Unparsed: no map, even when the match has team fights.
     expect(res.value.players[1].map).toBeNull();

@@ -27,6 +27,11 @@ export interface Laning {
   purchases: Array<{ time: number; key: string }>;
   /** Runes you picked up, in order. Missing where a laning is built without the rune log. */
   runes?: RunePickup[];
+  /**
+   * Heroes you killed, in order: the victim's internal name ("npc_dota_hero_axe") and the time.
+   * Missing when the replay has no kill log.
+   */
+  killsLog?: Array<{ time: number; key: string }>;
 }
 
 /** Per-minute series value at minute 10, or null when the game or series is shorter. */

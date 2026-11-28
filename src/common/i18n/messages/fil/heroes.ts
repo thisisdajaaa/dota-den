@@ -69,6 +69,7 @@ export const heroes: MessageTree<typeof en> = {
   },
   title: "Mga hero",
   counts: {
+    kills: { one: "1 patay", other: "{n} patay" },
     games: { one: "1 laro", other: "{n} laro" },
     heroes: { one: "1 hero", other: "{n} hero" },
     matches: { one: "1 match", other: "{n} match" },
@@ -234,6 +235,47 @@ export const heroes: MessageTree<typeof en> = {
     },
     footnote:
       "Binasa mula sa ward logs ng mga parsed mong replay; walang hinula. Ang ward na walang naitalang pagtatapos (nakatayo pa nang matapos ang laro) ay binibilang sa paglalagay pero hindi sa buhay o pagkasira.",
+  },
+  deaths: {
+    metaTitle: "Mga pagkamatay mo",
+    link: "Mga pagkamatay mo",
+    kicker: "Mga hero mo",
+    title: "Mga pagkamatay mo",
+    description:
+      "Kailan ka namamatay sa laro at aling mga hero ang pumapatay sa iyo, mula sa mga pinakabago mong parsed na laro.",
+    none: "Wala pang parsed na laro na may kill log. Ilang parsed na laro ang binabasa bawat araw (Plus: hanggang 100 bawat araw), kaya mapupuno ito sa mga susunod na araw; buksan ang isang laban at pindutin ang “Get detailed stats” para ma-parse ang replay nito.",
+    gamesRead: "Mula sa {games}: ang mga pinakabago mong parsed na laro na may kill log.",
+    tiles: {
+      label: "Buod ng mga pagkamatay mo",
+      perGame: "Pagkamatay bawat laro",
+      splitDetail: "{wins} sa mga panalo, {losses} sa mga talo",
+      splitFew: "Kailangan ng {min} panalo at {min} talo ({wins} panalo, {losses} talo sa ngayon)",
+      laning: "Pagkamatay bago ang 10:00",
+      laningDetail:
+        "Bawat laro; walang hero na nakapatay sa iyo bago ang 10:00 sa {share} ng mga laro",
+      few: "Kailangan ng {min} laro ({n} sa ngayon)",
+      first: "Unang pagkamatay",
+      firstDetail: "Karaniwang oras na una kang napapatay ng hero",
+      heroShare: "Pinatay ng hero",
+      heroShareDetail: "Ang iba: creep, tower, neutral, Roshan at deny",
+    },
+    phases: {
+      title: "Kailan ka namamatay",
+      description:
+        "Pagkamatay sa hero bawat 10 minutong nilaro sa bawat bahagi ng laro (ang oras lang na talagang nilaro ang binibilang).",
+      laning: "0–10 min",
+      early: "10–20 min",
+      mid: "20–30 min",
+      late: "30+ min",
+    },
+    killers: {
+      title: "Sino ang madalas pumatay sa iyo",
+      description: "Mga kalabang hero na pinakamaraming beses kang napatay sa mga larong ito.",
+      none: "Walang hero na nakapatay sa iyo sa mga larong ito.",
+      row: "{kills} sa {games}",
+    },
+    footnote:
+      "Binasa mula sa mga kill log ng mga parsed mong replay; walang hinulaan. Ang patay ng summon o illusion ay binibilang sa hero nito kapag sinasabi ng replay, kung hindi ay sa iba.",
   },
   splits: {
     metaTitle: "Iyong splits",

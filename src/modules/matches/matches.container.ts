@@ -84,6 +84,11 @@ export const matchExtrasService = new MatchExtrasService({
     const completed = new Set(res.value.filter(isNotableItem).map((i) => i.key));
     return (key) => completed.has(key);
   },
+  heroKeys: async () => {
+    const res = await openDotaAdapter.getHeroes();
+    if (!res.ok) return null;
+    return new Map(res.value.flatMap((h) => (h.key ? [[h.id, h.key] as const] : [])));
+  },
   // Plus faster hero coaching: a bigger daily cap for a supporter's own games.
   perDay: async (accountId32) => extrasPerDay(await accountHasPlus(accountId32)),
   logger,

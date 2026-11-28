@@ -57,6 +57,7 @@ export const heroesService = lazy(() => {
       forHero: (accountId32, heroId) => matchExtrasService.forHero(accountId32, heroId),
       lanes: (accountId32) => matchExtrasService.lanes(accountId32),
       wards: (accountId32, limit) => matchExtrasService.wards(accountId32, limit),
+      deaths: (accountId32, limit) => matchExtrasService.deaths(accountId32, limit),
     },
     // Shared, cached STRATZ aggregates only (one request per hero for everyone).
     builds: { forHero: async (heroId) => (await stratzHeroItems()?.forHero(heroId)) ?? null },

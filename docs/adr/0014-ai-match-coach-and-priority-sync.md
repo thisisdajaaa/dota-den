@@ -204,3 +204,12 @@ Match extras also keep the player's team net worth lead from the parsed gold cur
 at 20 minutes (null in shorter games), the biggest lead and the biggest deficit. Your splits uses it
 for "By gold at 20 minutes" and for throws (led by 10,000+, lost) and comebacks (trailed by
 10,000+, won). Schema 6, refetched like the earlier schemas.
+
+## Addendum (2026-11-29): deaths in match extras
+
+Match extras also keep how the player died: each kill on their hero from the enemies' kill logs
+(time and killer hero), the rest of their deaths as one count (creeps, towers, neutrals, Roshan,
+denies), and the game length. Kill logs name heroes by internal name, so the extras run needs the
+hero catalog as well as the item catalog; without it the run stops ("no_catalog") rather than store
+a game without deaths. Without every enemy's kill log, deaths stay null, never guessed. "Your
+deaths" (/heroes/deaths, free) reads them. Schema 7, refetched like the earlier schemas.

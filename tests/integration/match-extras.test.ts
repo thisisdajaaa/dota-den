@@ -143,6 +143,14 @@ describe("MatchExtrasRepository", () => {
     const rune = { kind: "bounty" as const, time: 0 };
     await repo.save(extras(611, "s", { side: "dire", wards: [ward], runes: [rune] }), new Date());
     expect((await repo.wardsForAccount(611, 10))[0]?.runes).toEqual([rune]);
+
+    // Deaths: only parsed games stored with them.
+    expect(await repo.deathsForAccount(611, 10)).toEqual([]);
+    const deaths = { durationSec: 2400, byHeroes: [{ time: 300, killerHeroId: 2 }], other: 1 };
+    await repo.save(extras(611, "s", { deaths }), new Date());
+    expect(await repo.deathsForAccount(611, 10)).toEqual([
+      expect.objectContaining({ matchId: "s", heroId: 1, deaths }),
+    ]);
   });
 
   it("holds an account's run across servers until released or lapsed", async () => {

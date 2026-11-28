@@ -40,6 +40,8 @@ export class MatchExtrasService {
       provider: Pick<MatchDetailProvider, "fetchMatch">;
       /** Which item keys are completed items; null when the item catalog is unavailable. */
       completedItems: () => Promise<((key: string) => boolean) | null>;
+      /** Hero id → internal name ("npc_dota_hero_axe"), for deaths; null when unavailable. */
+      heroKeys?: () => Promise<ReadonlyMap<number, string> | null>;
       logger: Pick<Logger, "info" | "warn">;
       now?: () => number;
       /** Daily cap: a fixed number (tests) or per account (Plus reads more). */
@@ -82,6 +84,9 @@ export class MatchExtrasService {
       const isItem = await this.deps.completedItems();
       // Without the item catalog we can't tell completed items from parts: try another day.
       if (!isItem) return { ...run, outcome: "no_catalog" };
+      // Same for hero names: a game stored without them would never get its deaths.
+      const heroKeys = this.deps.heroKeys ? await this.deps.heroKeys() : null;
+      if (this.deps.heroKeys && !heroKeys) return { ...run, outcome: "no_catalog" };
 
       for (const game of pending) {
         if (opts.deadline !== undefined && this.now() >= opts.deadline)
@@ -93,7 +98,7 @@ export class MatchExtrasService {
         }
         run.fetched++;
         const extras = res.ok
-          ? (matchExtrasFrom(res.value, { accountId32, ...game }, isItem) ??
+          ? (matchExtrasFrom(res.value, { accountId32, ...game }, isItem, heroKeys) ??
             missing(accountId32, game))
           : missing(accountId32, game);
         if (extras.parsed) run.parsed++;
@@ -159,6 +164,11 @@ export class MatchExtrasService {
   /** Wards from your latest stored parsed games ("Your wards"). */
   async wards(accountId32: number, limit: number) {
     return this.deps.store.wardsForAccount(accountId32, limit);
+  }
+
+  /** Deaths from your latest stored parsed games ("Your deaths"). */
+  async deaths(accountId32: number, limit: number) {
+    return this.deps.store.deathsForAccount(accountId32, limit);
   }
 
   async exportMyData(owner: DataOwner) {
