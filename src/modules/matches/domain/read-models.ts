@@ -43,6 +43,8 @@ export interface HeroInfo {
   roles: string[];
   attackType: "Melee" | "Ranged" | null;
   primaryAttr: "str" | "agi" | "int" | "all" | null;
+  /** Internal name ("npc_dota_hero_axe"), as replay logs name heroes; null when unknown. */
+  key?: string | null;
 }
 
 export type DashboardRange = "all" | "patch" | "30d";

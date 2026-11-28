@@ -45,6 +45,53 @@ export interface ExtrasWard {
   y: number;
 }
 
+/** Hero kills on you kept per game (a feeding game has 20+; the rest are left out). */
+export const EXTRAS_MAX_DEATHS = 40;
+
+/** How you died in one game: hero kills with their time and killer, and the rest as a count. */
+export interface ExtrasDeaths {
+  /** Game length, so deaths can be read per minute played. */
+  durationSec: number;
+  /** Deaths to an enemy hero, in order (seconds from the horn). */
+  byHeroes: Array<{ time: number; killerHeroId: number }>;
+  /** Deaths with no enemy hero in the kill log: creeps, towers, neutrals, Roshan, denies. */
+  other: number;
+}
+
+type DeathPlayer = Pick<MatchPlayer, "playerSlot" | "heroId" | "deaths" | "laning">;
+
+/**
+ * Your deaths from the enemies' kill logs. null when your hero's internal name isn't known
+ * or an enemy's kill log is missing (then the hero deaths can't be told from the rest).
+ */
+export function deathsOf(
+  players: readonly DeathPlayer[],
+  you: DeathPlayer,
+  heroKeys: ReadonlyMap<number, string>,
+  durationSec: number,
+): ExtrasDeaths | null {
+  const key = heroKeys.get(you.heroId);
+  if (!key) return null;
+  const radiant = (slot: number) => slot < 128;
+  const enemies = players.filter((p) => radiant(p.playerSlot) !== radiant(you.playerSlot));
+  if (enemies.length === 0 || enemies.some((p) => !p.laning?.killsLog)) return null;
+  const byHeroes = enemies
+    .flatMap((p) =>
+      p
+        .laning!.killsLog!.filter((k) => k.key === key)
+        .map((k) => ({
+          time: Math.round(k.time),
+          killerHeroId: p.heroId,
+        })),
+    )
+    .sort((a, b) => a.time - b.time);
+  return {
+    durationSec: Math.round(durationSec),
+    byHeroes: byHeroes.slice(0, EXTRAS_MAX_DEATHS),
+    other: Math.max(0, you.deaths - byHeroes.length),
+  };
+}
+
 /** Your team's gold lead over a game (your side's view of the gold curve). */
 export interface TeamGold {
   at20: number | null;
@@ -113,6 +160,11 @@ export interface MatchExtras {
    * rune log. Missing on games stored before we kept them.
    */
   runes?: RunePickup[] | null;
+  /**
+   * How you died (hero kills with time and killer, the rest counted); null when the replay or
+   * the hero names don't say. Missing on games stored before we kept it.
+   */
+  deaths?: ExtrasDeaths | null;
 }
 
 type LanePlayer = Pick<MatchPlayer, "playerSlot" | "laning">;
@@ -208,6 +260,8 @@ export function matchExtrasFrom(
     result: MatchResult;
   },
   isItem: (key: string) => boolean,
+  /** Hero id → internal name, for reading kill logs; without it deaths stay null. */
+  heroKeys: ReadonlyMap<number, string> | null = null,
 ): MatchExtras | null {
   const you =
     detail.players.find((p) => p.accountId32 === game.accountId32) ??
@@ -241,5 +295,6 @@ export function matchExtrasFrom(
           }))
         : null,
     runes: laning?.runes ? laning.runes.slice(0, EXTRAS_MAX_RUNES) : null,
+    deaths: laning && heroKeys ? deathsOf(detail.players, you, heroKeys, detail.durationSec) : null,
   };
 }

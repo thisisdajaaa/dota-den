@@ -26,6 +26,7 @@ import {
   type WardHabits,
 } from "./domain/ward-habits";
 import { runeHabits, type RuneHabits } from "./domain/rune-habits";
+import { DEATH_GAMES_LIMIT, deathHabits, type DeathHabits } from "./domain/death-habits";
 import { lineupProgress, ownMatchups } from "./domain/own-matchups";
 import type { MatchupsFilter } from "./schemas/matchups-filter.schema";
 import type {
@@ -254,5 +255,16 @@ export class HeroesService {
     const games = (await this.deps.extras.wards?.(accountId32, WARD_GAMES_LIMIT)) ?? [];
     const mine = opts.heroId === undefined ? games : games.filter((g) => g.heroId === opts.heroId);
     return { habits: wardHabits(mine), spots: mapWards(mine), runes: runeHabits(mine) };
+  }
+
+  /**
+   * Your deaths: when you die and who kills you, from your latest parsed games (optionally on
+   * one hero). Reads stored extras only: no OpenDota call.
+   */
+  async deaths(accountId32: number, opts: { heroId?: number } = {}): Promise<DeathHabits> {
+    const games = (await this.deps.extras.deaths?.(accountId32, DEATH_GAMES_LIMIT)) ?? [];
+    return deathHabits(
+      opts.heroId === undefined ? games : games.filter((g) => g.heroId === opts.heroId),
+    );
   }
 }

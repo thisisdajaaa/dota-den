@@ -69,6 +69,7 @@ export const heroes: MessageTree<typeof en> = {
   },
   title: "Mga hero",
   counts: {
+    kills: { one: "1 ka patay", other: "{n} ka patay" },
     games: { one: "1 ka duwa", other: "{n} ka duwa" },
     heroes: { one: "1 ka hero", other: "{n} ka hero" },
     matches: { one: "1 ka match", other: "{n} ka match" },
@@ -235,6 +236,49 @@ export const heroes: MessageTree<typeof en> = {
     },
     footnote:
       "Gibasa gikan sa ward logs sa imong parsed nga replay; walay gitag-an. Ang ward nga walay narekord nga katapusan (nagbarog pa sa pagkahuman sa dula) giihap sa pagbutang apan dili sa kinabuhi o pagkaguba.",
+  },
+  deaths: {
+    metaTitle: "Imong mga kamatayon",
+    link: "Imong mga kamatayon",
+    kicker: "Imong mga hero",
+    title: "Imong mga kamatayon",
+    description:
+      "Kanus-a ka mamatay sa duwa ug unsang mga hero ang mopatay nimo, gikan sa imong pinakabag-ong parsed nga mga duwa.",
+    none: "Wala pay parsed nga duwa nga adunay kill log. Pipila ka parsed nga duwa ang basahon matag adlaw (Plus: hangtod 100 matag adlaw), busa mapuno kini sa sunod nga mga adlaw; ablihi ang usa ka match ug pindota ang “Get detailed stats” aron ma-parse ang replay niini.",
+    gamesRead: "Gikan sa {games}: imong pinakabag-ong parsed nga mga duwa nga adunay kill log.",
+    tiles: {
+      label: "Mubo nga sumada sa imong mga kamatayon",
+      perGame: "Kamatayon matag duwa",
+      splitDetail: "{wins} sa mga daog, {losses} sa mga pildi",
+      splitFew:
+        "Kinahanglan og {min} ka daog ug {min} ka pildi ({wins} daog, {losses} pildi sa pagkakaron)",
+      laning: "Kamatayon sa wala pa ang 10:00",
+      laningDetail:
+        "Matag duwa; walay hero nga nakapatay nimo sa wala pa ang 10:00 sa {share} sa mga duwa",
+      few: "Kinahanglan og {min} ka duwa ({n} sa pagkakaron)",
+      first: "Unang kamatayon",
+      firstDetail: "Kasagarang oras nga una ka mapatay sa hero",
+      heroShare: "Gipatay sa hero",
+      heroShareDetail: "Ang uban: creep, tower, neutral, Roshan ug deny",
+    },
+    phases: {
+      title: "Kanus-a ka mamatay",
+      description:
+        "Kamatayon sa hero matag 10 ka minuto nga gidula sa matag bahin sa duwa (ang oras ra nga tinuod nga gidula ang giihap).",
+      laning: "0–10 min",
+      early: "10–20 min",
+      mid: "20–30 min",
+      late: "30+ min",
+    },
+    killers: {
+      title: "Kinsa ang kanunay mopatay nimo",
+      description:
+        "Mga kaaway nga hero nga labing daghang higayon nakapatay nimo niining mga duwa.",
+      none: "Walay hero nga nakapatay nimo niining mga duwa.",
+      row: "{kills} sa {games}",
+    },
+    footnote:
+      "Gibasa gikan sa mga kill log sa imong parsed nga mga replay; walay gitag-an. Ang patay sa summon o illusion giihap sa hero niini kung giingon sa replay, kung dili sa uban.",
   },
   splits: {
     metaTitle: "Imong splits",

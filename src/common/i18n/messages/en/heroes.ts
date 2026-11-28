@@ -66,6 +66,7 @@ export const heroes = {
   },
   title: "Heroes",
   counts: {
+    kills: { one: "1 kill", other: "{n} kills" },
     games: { one: "1 game", other: "{n} games" },
     heroes: { one: "1 hero", other: "{n} heroes" },
     matches: { one: "1 match", other: "{n} matches" },
@@ -228,6 +229,46 @@ export const heroes = {
     },
     footnote:
       "Read from the ward logs in your parsed replays; nothing is estimated. A ward with no recorded end (still up when the game ended) counts for placement but not for life or destroyed.",
+  },
+  deaths: {
+    metaTitle: "Your deaths",
+    link: "Your deaths",
+    kicker: "Your heroes",
+    title: "Your deaths",
+    description:
+      "When in the game you die and which heroes kill you, from your latest parsed games.",
+    none: "No parsed games with kill logs yet. Your parsed games are read a few a day (Plus: up to 100 a day), so this fills over the next days; open a match and use “Get detailed stats” to have its replay parsed.",
+    gamesRead: "From {games}: your latest parsed games with kill logs.",
+    tiles: {
+      label: "Your deaths at a glance",
+      perGame: "Deaths per game",
+      splitDetail: "{wins} in wins, {losses} in losses",
+      splitFew: "Wins vs losses needs {min} of each ({wins} wins, {losses} losses so far)",
+      laning: "Deaths before 10:00",
+      laningDetail: "Per game; no hero kill on you before 10:00 in {share} of games",
+      few: "Needs {min} games ({n} so far)",
+      first: "First death",
+      firstDetail: "Typical time a hero first kills you",
+      heroShare: "Killed by heroes",
+      heroShareDetail: "The rest: creeps, towers, neutrals, Roshan and denies",
+    },
+    phases: {
+      title: "When you die",
+      description:
+        "Deaths to heroes per 10 minutes played in each part of the game (only time actually played counts).",
+      laning: "0–10 min",
+      early: "10–20 min",
+      mid: "20–30 min",
+      late: "30+ min",
+    },
+    killers: {
+      title: "Who kills you most",
+      description: "Enemy heroes with the most kills on you in these games.",
+      none: "No hero kills on you in these games.",
+      row: "{kills} in {games}",
+    },
+    footnote:
+      "Read from the kill logs in your parsed replays; nothing is estimated. A kill by a summon or illusion counts for its hero when the replay says so, otherwise under the rest.",
   },
   splits: {
     metaTitle: "Your splits",

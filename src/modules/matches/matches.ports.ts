@@ -36,7 +36,7 @@ import type { DataOwner } from "@/common/privacy/user-data";
 import type { CoachFactSheet, CoachLocale } from "./domain/coach-facts";
 import type { CoachPoint } from "./domain/coach-review";
 import type { MatchDetail } from "./domain/match-detail";
-import type { ExtrasWard, MatchExtras } from "./domain/match-extras";
+import type { ExtrasDeaths, ExtrasWard, MatchExtras } from "./domain/match-extras";
 import type { RunePickup } from "./domain/match-runes";
 import type { MatchListFilter } from "./schemas/match-list-filter.schema";
 import type { PatchTimelineEntry } from "./domain/patch-assignment";
@@ -251,6 +251,15 @@ export interface StoredWardGame {
   runes: RunePickup[] | null;
 }
 
+/** One stored parsed game's deaths (for "Your deaths"). */
+export interface StoredDeathGame {
+  matchId: string;
+  heroId: number;
+  startedAt: Date;
+  result: MatchExtras["result"];
+  deaths: ExtrasDeaths;
+}
+
 export interface MatchExtrasStore {
   /** Your parsed imported games with no extras stored yet, newest first. */
   pendingParsed(accountId32: number, limit: number): Promise<PendingExtras[]>;
@@ -270,6 +279,8 @@ export interface MatchExtrasStore {
   lanesForAccount(accountId32: number): Promise<StoredLane[]>;
   /** Wards from your latest `limit` stored parsed games that have them, newest first. */
   wardsForAccount(accountId32: number, limit: number): Promise<StoredWardGame[]>;
+  /** Deaths from your latest `limit` stored parsed games that have them, newest first. */
+  deathsForAccount(accountId32: number, limit: number): Promise<StoredDeathGame[]>;
   /** Your imported games on the hero that OpenDota has parsed (stored or not). */
   parsedGamesOnHero(accountId32: number, heroId: number): Promise<number>;
   exportForOwner(owner: { accountId32: number }): Promise<Array<Record<string, unknown>>>;

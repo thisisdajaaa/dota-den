@@ -9,6 +9,7 @@ import {
   laneResult,
   laneOpponents,
   teamGold,
+  deathsOf,
   lanePartners,
   matchExtrasFrom,
   type MatchExtras,
@@ -171,6 +172,45 @@ describe("match extras (domain)", () => {
     expect(matchExtrasFrom(detail([old]), game, isItem)?.runes).toBeNull();
   });
 
+  it("reads your deaths from the enemies' kill logs, the rest counted", () => {
+    const keys = new Map([
+      [1, "npc_dota_hero_antimage"],
+      [2, "npc_dota_hero_axe"],
+    ]);
+    const you = player(1, { heroId: 1, deaths: 4, laning: laning() });
+    const ally = player(2, { heroId: 3, laning: laning({ killsLog: [] }) });
+    const axe = player(129, {
+      heroId: 2,
+      laning: laning({
+        killsLog: [
+          { time: 900.4, key: "npc_dota_hero_antimage" },
+          { time: 100, key: "npc_dota_hero_bane" },
+        ],
+      }),
+    });
+    const lion = player(130, {
+      heroId: 26,
+      laning: laning({ killsLog: [{ time: 250, key: "npc_dota_hero_antimage" }] }),
+    });
+    expect(deathsOf([you, ally, axe, lion], you, keys, 2400.6)).toEqual({
+      durationSec: 2401,
+      byHeroes: [
+        { time: 250, killerHeroId: 26 },
+        { time: 900, killerHeroId: 2 },
+      ],
+      other: 2,
+    });
+    // An enemy without a kill log, or your hero's name unknown: can't tell, so null.
+    const blind = player(131, { heroId: 5, laning: laning() });
+    expect(deathsOf([you, axe, blind], you, keys, 2400)).toBeNull();
+    expect(deathsOf([you, axe], you, new Map(), 2400)).toBeNull();
+    // Kept with extras only when the hero names are given.
+    const game = { accountId32: 0, heroId: 1, side: "radiant" as const, result: "loss" as const };
+    const d = { ...detail([you, axe]), durationSec: 1800 } as MatchDetail;
+    expect(matchExtrasFrom(d, game, isItem, keys)?.deaths).toMatchObject({ other: 3 });
+    expect(matchExtrasFrom(d, game, isItem)?.deaths).toBeNull();
+  });
+
   it("finds you by account, else by hero and side; unparsed games have no extras", () => {
     const you = player(1, {
       accountId32: 42,
@@ -232,6 +272,7 @@ describe("MatchExtrasService", () => {
       forHero: async () => saved.filter((e) => e.parsed),
       lanesForAccount: async () => [],
       wardsForAccount: async () => [],
+      deathsForAccount: async () => [],
       parsedGamesOnHero: async () => 3,
       exportForOwner: async () => [],
       deleteForOwner: async () => saved.length,
@@ -341,6 +382,17 @@ describe("MatchExtrasService", () => {
         completedItems: async () => null,
       }).backfill(7),
     ).toMatchObject({ outcome: "no_catalog" });
+    // Hero names missing too: nothing is stored without deaths.
+    const noHeroes = setup({});
+    expect(
+      await new MatchExtrasService({
+        ...base,
+        store: noHeroes.store,
+        provider: { fetchMatch },
+        completedItems: async () => isItem,
+        heroKeys: async () => null,
+      }).backfill(7),
+    ).toMatchObject({ outcome: "no_catalog", fetched: 0 });
 
     const busy = setup({});
     expect(

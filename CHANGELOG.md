@@ -4,6 +4,10 @@ Every production release, newest first, from the release merges into `main`. Eac
 through staging (CI: lint, typecheck, unit, integration and E2E tests) first. Planned work is in
 [docs/roadmap.md](docs/roadmap.md).
 
+## 2026-11-29
+
+- Your deaths (/heroes/deaths, free): deaths per game (in wins and in losses), deaths before 10:00, when a hero first kills you, how many of your deaths were to heroes, deaths per 10 minutes in each part of the game, and the enemy heroes that kill you most, from the kill logs of your latest parsed games
+
 ## 2026-11-27
 
 - Your splits (Plus): your record by your team's gold at 20 minutes (ahead, close, behind), and your throws (led by 10,000+ and lost) and comebacks (trailed by 10,000+ and won)

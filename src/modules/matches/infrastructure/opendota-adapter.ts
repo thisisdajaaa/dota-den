@@ -166,6 +166,11 @@ const MatchPlayerSchema = z.object({
     .nullable()
     .optional()
     .catch(null),
+  kills_log: z
+    .array(z.object({ time: z.number(), key: z.string() }))
+    .nullable()
+    .optional()
+    .catch(null),
   obs_log: WardLogSchema,
   obs_left_log: WardLogSchema,
   sen_log: WardLogSchema,
@@ -412,6 +417,7 @@ export class OpenDotaAdapter
         attackType: h.attack_type === "Melee" || h.attack_type === "Ranged" ? h.attack_type : null,
         primaryAttr:
           (["str", "agi", "int", "all"] as const).find((a) => a === h.primary_attr) ?? null,
+        key: h.name?.startsWith("npc_dota_hero_") ? h.name : null,
       })),
     );
   }
@@ -584,5 +590,8 @@ function toLaning(p: z.infer<typeof MatchPlayerSchema>): Laning | null {
     teamfight: p.teamfight_participation ?? null,
     purchases: p.purchase_log ?? [],
     runes: runePickups(p.runes_log),
+    ...(p.kills_log
+      ? { killsLog: p.kills_log.map((k) => ({ time: Math.round(k.time), key: k.key })) }
+      : {}),
   };
 }
